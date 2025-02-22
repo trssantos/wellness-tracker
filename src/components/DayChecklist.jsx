@@ -140,23 +140,8 @@ export const DayChecklist = ({ date, onClose }) => {
         });
       });
       setChecked(initialState);
-      
-      const allData = getStorage();
-      allData[date] = { checked: initialState };
-      setStorage(allData);
     }
-
-    const modal = document.getElementById('checklist-modal');
-    const handleClickOutside = (e) => {
-      if (e.target === modal) {
-        modal.close();
-        onClose();
-      }
-    };
-    
-    modal?.addEventListener('click', handleClickOutside);
-    return () => modal?.removeEventListener('click', handleClickOutside);
-  }, [date, onClose]);
+  }, [date]);
 
   const handleCheck = (item) => {
     const newChecked = {
@@ -165,13 +150,28 @@ export const DayChecklist = ({ date, onClose }) => {
     };
     setChecked(newChecked);
     
-    const allData = getStorage();
-    allData[date] = { checked: newChecked };
-    setStorage(allData);
+    // Preserve mood when updating progress
+    const storage = getStorage();
+    const mood = storage[date]?.mood;
+    storage[date] = { 
+      checked: newChecked,
+      mood: mood // Keep existing mood if it exists
+    };
+    setStorage(storage);
+  };
+
+  const handleClickOutside = (e) => {
+    if (e.target.id === 'checklist-modal') {
+      onClose();
+    }
   };
 
   return (
-    <dialog id="checklist-modal" className="rounded-xl p-0 bg-transparent backdrop:bg-black backdrop:bg-opacity-50">
+    <dialog 
+      id="checklist-modal" 
+      className="rounded-xl p-0 bg-transparent backdrop:bg-black backdrop:bg-opacity-50"
+      onClick={handleClickOutside}
+    >
       <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -213,28 +213,28 @@ export const DayChecklist = ({ date, onClose }) => {
 
           <div className="space-y-2 max-h-[50vh] overflow-y-auto">
             {categories[activeCategory].items.map((item) => (
-                <div
-                  key={item}
-                  className="flex items-center p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                  onClick={() => handleCheck(item)}
-                >
-                  <div className="flex items-center justify-center w-5 h-5 mr-3">
-                    {checked[item] ? (
-                      <CheckCircle2 size={20} className="text-green-500" />
-                    ) : (
-                      <Circle size={20} className="text-slate-300" />
-                    )}
-                  </div>
-                  <span className={`text-slate-700 ${checked[item] ? 'line-through text-slate-500' : ''}`}>
-                    {item}
-                  </span>
+              <div
+                key={item}
+                className="flex items-center p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                onClick={() => handleCheck(item)}
+              >
+                <div className="flex items-center justify-center w-5 h-5 mr-3">
+                  {checked[item] ? (
+                    <CheckCircle2 size={20} className="text-green-500" />
+                  ) : (
+                    <Circle size={20} className="text-slate-300" />
+                  )}
                 </div>
-              ))}
-            </div>
+                <span className={`text-slate-700 ${checked[item] ? 'line-through text-slate-500' : ''}`}>
+                  {item}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
-      </dialog>
-    );
-  };
-  
-  export default DayChecklist;
+      </div>
+    </dialog>
+  );
+};
+
+export default DayChecklist;

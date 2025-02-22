@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Plus, CheckCircle2, X } from 'lucide-react';
+import { Plus, CheckCircle2, SmilePlus, X } from 'lucide-react';
 
-export const FloatingMenu = ({ onLogProgress }) => {
+export const FloatingMenu = ({ onLogProgress, onLogMood }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleAction = (action) => {
     setIsOpen(false);
     if (action === 'log') {
       onLogProgress();
+    } else if (action === 'mood') {
+      onLogMood();
     }
   };
 
@@ -30,6 +32,14 @@ export const FloatingMenu = ({ onLogProgress }) => {
             >
               <CheckCircle2 size={18} />
               <span>Log today's progress</span>
+            </button>
+            
+            <button
+              onClick={() => handleAction('mood')}
+              className="w-full flex items-center gap-2 px-4 py-2 text-left text-slate-700 hover:bg-slate-50 rounded-lg"
+            >
+              <SmilePlus size={18} />
+              <span>Track mood</span>
             </button>
           </div>
         </>

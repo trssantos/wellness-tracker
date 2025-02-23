@@ -1,6 +1,22 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
+// Get API key from environment variables
+const getApiKey = () => {
+    // Check for Vercel environment variable first
+    const vercelKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.VERCEL_GEMINI_API_KEY;
+    if (vercelKey) return vercelKey;
+    
+    // Fallback to regular environment variable (for local development)
+    const localKey = process.env.REACT_APP_GEMINI_API_KEY;
+    if (!localKey) {
+      console.error('No Gemini API key found in environment variables');
+      throw new Error('Gemini API key not configured');
+    }
+    
+    return localKey;
+  };
+  
+const genAI = new GoogleGenerativeAI(getApiKey());
 
 // Prompt template for task generation
 const generatePromptTemplate = ({ mood, energyLevel, objective, context }) => {

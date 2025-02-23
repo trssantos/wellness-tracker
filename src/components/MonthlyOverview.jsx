@@ -87,18 +87,17 @@ export const MonthlyOverview = ({ currentMonth, storageData }) => {
       </div>
 
       {/* Mood Distribution */}
-      <div className="mt-6">
-        <h3 className="font-medium text-slate-700 mb-3">Mood Distribution</h3>
-        <div className="grid grid-cols-5 gap-2">
-          {Object.entries(MOODS).map(([key, { emoji, label, color }]) => (
-            <div key={key} className={`${color} rounded-lg p-3 text-center`}>
-              <div className="text-xl mb-1">{emoji}</div>
-              <div className="text-sm font-medium text-slate-600">{moodCounts[key]}</div>
-              <div className="text-xs text-slate-500">{label}</div>
-            </div>
-          ))}
-        </div>
+<div className="mt-6">
+  <h3 className="font-medium text-slate-700 mb-3">Mood Distribution</h3>
+  <div className="grid grid-cols-5 gap-2">
+    {Object.entries(MOODS).map(([key, { emoji, color }]) => (
+      <div key={key} className={`${color} rounded-lg p-3 text-center`}>
+        <div className="text-xl mb-1">{emoji}</div>
+        <div className="text-sm font-medium text-slate-600">{moodCounts[key]}</div>
       </div>
+    ))}
+  </div>
+</div>
     </div>
   );
 };

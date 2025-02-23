@@ -80,10 +80,10 @@ const DayContext = ({ context, onUpdate }) => {
       <h4 className="font-medium text-slate-700 mb-3">
         {isAIGenerated ? "Generated Task Context" : "Day Context"}
       </h4>
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <span className="text-slate-600 w-16">Mood:</span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {Object.entries(MOODS).map(([key, { emoji, label, color }]) => {
               const isSelected = mood === key;
               return (
@@ -125,7 +125,7 @@ const DayContext = ({ context, onUpdate }) => {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-slate-600 w-16">Focus:</span>
-          <span>{objective || "Another regular day"}</span>
+          <span className="flex-1">{objective || "Another regular day"}</span>
         </div>
       </div>
     </div>

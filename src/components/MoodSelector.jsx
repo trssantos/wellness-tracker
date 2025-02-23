@@ -8,7 +8,7 @@ export const MOODS = {
   OKAY: { emoji: '😐', label: 'Okay', color: 'bg-yellow-100' },
   MEH: { emoji: '😕', label: 'Meh', color: 'bg-orange-100' },
   BAD: { emoji: '😔', label: 'Bad', color: 'bg-red-100' },
-  OVERWHELMED: { emoji: '🤯', label: 'Overwhelmed', color: 'bg-red-100' }
+  OVERWHELMED: { emoji: '🤯', label: 'Over\u00adwhelmed', color: 'bg-red-100' }
 };
 
 export const MoodSelector = ({ date, onClose }) => {
@@ -81,7 +81,7 @@ export const MoodSelector = ({ date, onClose }) => {
           </button>
         </div>
 
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {Object.entries(MOODS).map(([key, { emoji, label, color }]) => {
             const isSelected = currentMood === key;
             return (
@@ -96,7 +96,9 @@ export const MoodSelector = ({ date, onClose }) => {
                 `}
               >
                 <span className="text-2xl mb-1">{emoji}</span>
-                <span className="text-xs text-slate-600">{label}</span>
+                <span className="text-xs text-slate-600 whitespace-normal text-center leading-tight min-h-[2rem]">
+                  {label}
+                </span>
               </button>
             );
           })}

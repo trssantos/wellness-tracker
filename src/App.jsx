@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Calendar } from './components/Calendar';
 import { FlowGuide } from './components/FlowGuide';
 import { FloatingMenu } from './components/FloatingMenu';
@@ -6,6 +6,7 @@ import { DayChecklist } from './components/DayChecklist';
 import { MoodSelector } from './components/MoodSelector';
 import { MonthlyOverview } from './components/MonthlyOverview';
 import { DayActionSelector } from './components/DayActionSelector';
+import { AITaskGenerator } from './components/AITaskGenerator';
 import { HelpCircle } from 'lucide-react';
 import { getStorage } from './utils/storage';
 
@@ -13,9 +14,11 @@ const App = () => {
   const [selectedDay, setSelectedDay] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [storageData, setStorageData] = useState(getStorage());
+  const [storageVersion, setStorageVersion] = useState(0); // Add this to force updates
 
   const handleStorageUpdate = () => {
     setStorageData(getStorage());
+    setStorageVersion(prev => prev + 1); // Increment version to force re-render
   };
 
   const handleDaySelect = (dateStr) => {
@@ -23,20 +26,26 @@ const App = () => {
     document.getElementById('day-action-modal').showModal();
   };
 
-  // Keep the selected date when transitioning between modals
   const handleDayAction = (action) => {
-    // The selectedDay is already set from handleDaySelect
-    if (action === 'mood') {
-      document.getElementById('day-action-modal').close();
-      setTimeout(() => {
+    document.getElementById('day-action-modal').close();
+    
+    setTimeout(() => {
+      if (action === 'mood') {
         document.getElementById('mood-modal').showModal();
-      }, 100);
-    } else if (action === 'progress') {
-      document.getElementById('day-action-modal').close();
-      setTimeout(() => {
+      } else if (action === 'progress') {
         document.getElementById('checklist-modal').showModal();
-      }, 100);
-    }
+      } else if (action === 'generate') {
+        document.getElementById('ai-generator-modal').showModal();
+      }
+    }, 100);
+  };
+
+  const handleAITasksGenerated = () => {
+    handleStorageUpdate(); // Update storage data first
+    document.getElementById('ai-generator-modal').close();
+    setTimeout(() => {
+      document.getElementById('checklist-modal').showModal();
+    }, 100);
   };
 
   const handleLogProgress = () => {
@@ -49,12 +58,6 @@ const App = () => {
     const today = new Date().toISOString().split('T')[0];
     setSelectedDay(today);
     document.getElementById('mood-modal').showModal();
-  };
-
-  // Only clear selectedDay when completely done
-  const handleCloseAction = () => {
-    document.getElementById('day-action-modal').close();
-    // Don't clear selectedDay here since we need it for the next modal
   };
 
   return (
@@ -96,24 +99,37 @@ const App = () => {
       
       <DayActionSelector
         date={selectedDay}
-        onClose={handleCloseAction}
+        onClose={() => {
+          document.getElementById('day-action-modal').close();
+        }}
         onSelectAction={handleDayAction}
+      />
+
+      <AITaskGenerator
+        date={selectedDay}
+        onClose={() => {
+          document.getElementById('ai-generator-modal').close();
+          setSelectedDay(null);
+          handleStorageUpdate();
+        }}
+        onTasksGenerated={handleAITasksGenerated}
       />
 
       <MoodSelector 
         date={selectedDay} 
         onClose={() => {
           document.getElementById('mood-modal').close();
-          setSelectedDay(null); // Clear selectedDay only when completely done
+          setSelectedDay(null);
           handleStorageUpdate();
         }} 
       />
       
       <DayChecklist 
         date={selectedDay}
+        storageVersion={storageVersion} // Pass this to force updates
         onClose={() => {
           document.getElementById('checklist-modal').close();
-          setSelectedDay(null); // Clear selectedDay only when completely done
+          setSelectedDay(null);
           handleStorageUpdate();
         }}
       />

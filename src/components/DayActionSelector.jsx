@@ -1,8 +1,7 @@
 import React from 'react';
-import { SmilePlus, CheckSquare, X } from 'lucide-react';
+import { SmilePlus, CheckSquare, Sparkles, X } from 'lucide-react';
 
 export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
-  // Safe conversion of date
   const getFormattedDate = () => {
     if (!date) return '';
     
@@ -15,22 +14,33 @@ export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
     });
   };
 
-  const handleAction = (action) => {
-    onClose();
-    onSelectAction(action);
-  };
-
-  const handleClickOutside = (e) => {
-    if (e.target.id === 'day-action-modal') {
-      onClose();
+  // Define actions with their properties
+  const actions = [
+    {
+      id: 'mood',
+      label: 'Track Mood',
+      icon: <SmilePlus size={24} className="text-purple-500" />,
+      bgColor: 'bg-purple-50 hover:bg-purple-100'
+    },
+    {
+      id: 'progress',
+      label: 'Track Daily Progress',
+      icon: <CheckSquare size={24} className="text-blue-500" />,
+      bgColor: 'bg-blue-50 hover:bg-blue-100'
+    },
+    {
+      id: 'generate',
+      label: 'Generate AI Tasks',
+      icon: <Sparkles size={24} className="text-amber-500" />,
+      bgColor: 'bg-amber-50 hover:bg-amber-100'
     }
-  };
+  ];
 
   return (
     <dialog 
       id="day-action-modal" 
       className="rounded-xl p-0 bg-transparent backdrop:bg-black backdrop:bg-opacity-50"
-      onClick={handleClickOutside}
+      onClick={(e) => e.target.id === 'day-action-modal' && onClose()}
     >
       <div className="w-full max-w-sm bg-white rounded-xl shadow-lg p-6" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-6">
@@ -45,22 +55,17 @@ export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            onClick={() => handleAction('mood')}
-            className="flex flex-col items-center gap-3 p-6 rounded-xl bg-purple-50 hover:bg-purple-100 transition-colors"
-          >
-            <SmilePlus size={32} className="text-purple-500" />
-            <span className="font-medium text-slate-700">Track Mood</span>
-          </button>
-
-          <button
-            onClick={() => handleAction('progress')}
-            className="flex flex-col items-center gap-3 p-6 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors"
-          >
-            <CheckSquare size={32} className="text-blue-500" />
-            <span className="font-medium text-slate-700">Track Progress</span>
-          </button>
+        <div className="grid grid-cols-1 gap-4">
+          {actions.map((action) => (
+            <button
+              key={action.id}
+              onClick={() => onSelectAction(action.id)}
+              className={`flex items-center gap-3 p-4 rounded-xl ${action.bgColor} transition-colors`}
+            >
+              {action.icon}
+              <span className="font-medium text-slate-700">{action.label}</span>
+            </button>
+          ))}
         </div>
       </div>
     </dialog>

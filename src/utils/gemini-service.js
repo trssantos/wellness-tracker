@@ -2,18 +2,14 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Get API key from environment variables
 const getApiKey = () => {
-    // Check for Vercel environment variable first
-    const vercelKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.VERCEL_GEMINI_API_KEY;
-    if (vercelKey) return vercelKey;
+    const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
     
-    // Fallback to regular environment variable (for local development)
-    const localKey = process.env.REACT_APP_GEMINI_API_KEY;
-    if (!localKey) {
+    if (!apiKey) {
       console.error('No Gemini API key found in environment variables');
       throw new Error('Gemini API key not configured');
     }
     
-    return localKey;
+    return apiKey;
   };
   
 const genAI = new GoogleGenerativeAI(getApiKey());

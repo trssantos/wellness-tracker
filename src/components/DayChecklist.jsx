@@ -65,44 +65,67 @@ const DEFAULT_CATEGORIES = [
   }
 ];
 
-const AIContextSummary = ({ aiContext }) => {
-  if (!aiContext) return null;
+const DayContext = ({ context, onUpdate }) => {
+  const { mood, energyLevel, objective, isAIGenerated } = context;
 
-  const { mood, energyLevel, objective, context } = aiContext;
-  const energyIcons = Array(3).fill(0).map((_, i) => (
-    <Zap
-      key={i}
-      size={16}
-      className={`
-        ${i < energyLevel ? 'fill-current' : 'fill-none'}
-        ${energyLevel === 1 ? 'text-red-500' : energyLevel === 2 ? 'text-yellow-500' : 'text-green-500'}
-      `}
-    />
-  ));
+  const getEnergyColor = (level, currentLevel) => {
+    if (level > currentLevel) return 'text-slate-300';
+    if (currentLevel === 1) return 'text-red-500';
+    if (currentLevel === 2) return 'text-yellow-500';
+    return 'text-green-500';
+  };
 
   return (
     <div className="bg-blue-50 rounded-lg p-4 mb-6">
-      <h4 className="font-medium text-slate-700 mb-3">Generated Task Context</h4>
+      <h4 className="font-medium text-slate-700 mb-3">
+        {isAIGenerated ? "Generated Task Context" : "Day Context"}
+      </h4>
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <span className="text-slate-600">Mood:</span>
-          <span>{mood}</span>
+          <span className="text-slate-600 w-16">Mood:</span>
+          <div className="flex gap-2">
+            {Object.entries(MOODS).map(([key, { emoji, label, color }]) => {
+              const isSelected = mood === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => onUpdate({ ...context, mood: key })}
+                  className={`
+                    p-2 rounded-lg transition-all
+                    ${isSelected ? `${color} shadow-md ring-2 ring-blue-500` : 'hover:bg-slate-100'}
+                    ${!isSelected && mood ? 'opacity-40' : 'opacity-100'}
+                  `}
+                  title={label}
+                >
+                  <span className="text-xl">{emoji}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-slate-600">Energy:</span>
-          <div className="flex">{energyIcons}</div>
+          <span className="text-slate-600 w-16">Energy:</span>
+          <div className="flex gap-1">
+            {[1, 2, 3].map((level) => (
+              <button
+                key={level}
+                onClick={() => onUpdate({ ...context, energyLevel: level })}
+                className="transition-colors cursor-pointer"
+              >
+                <Zap
+                  size={16}
+                  className={`
+                    ${level <= energyLevel ? 'fill-current' : 'fill-none'}
+                    ${getEnergyColor(level, energyLevel)}
+                  `}
+                />
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-slate-600">Focus:</span>
-          <span>{objective}</span>
-          {context && (
-            <div className="relative group">
-              <HelpCircle size={16} className="text-blue-500 cursor-help" />
-              <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-2 bg-white rounded-lg shadow-lg text-sm text-slate-600">
-                {context}
-              </div>
-            </div>
-          )}
+          <span className="text-slate-600 w-16">Focus:</span>
+          <span>{objective || "Another regular day"}</span>
         </div>
       </div>
     </div>
@@ -111,15 +134,18 @@ const AIContextSummary = ({ aiContext }) => {
 
 const ProgressSummary = ({ checked, categories }) => {
   const getCategoryProgress = (categoryItems) => {
+    if (!categoryItems || categoryItems.length === 0) return { completed: 0, total: 0, percentage: 0 };
+    
     const completed = categoryItems.filter(item => checked[item]).length;
     const total = categoryItems.length;
-    const percentage = Math.round((completed / total) * 100);
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { completed, total, percentage };
   };
 
-  const totalCompleted = Object.values(checked).filter(Boolean).length;
-  const totalItems = Object.keys(checked).length;
-  const totalPercentage = Math.round((totalCompleted / totalItems) * 100);
+  const allItems = categories.flatMap(cat => cat.items);
+  const totalCompleted = allItems.filter(item => checked[item]).length;
+  const totalItems = allItems.length;
+  const totalPercentage = totalItems > 0 ? Math.round((totalCompleted / totalItems) * 100) : 0;
 
   const getProgressColor = (percentage) => {
     if (percentage <= 25) return 'text-red-500';
@@ -173,80 +199,96 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   const [activeCategory, setActiveCategory] = useState(0);
   const [checked, setChecked] = useState({});
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
-  const [aiContext, setAiContext] = useState(null);
+  const [dayContext, setDayContext] = useState({
+    mood: null,
+    energyLevel: 0,
+    objective: '',
+    isAIGenerated: false
+  });
   
-  // Reset active category when categories change
   useEffect(() => {
     setActiveCategory(0);
   }, [categories]);
 
-  // Load data whenever date or storageVersion changes
   useEffect(() => {
     if (!date) return;
 
-    const savedData = getStorage()[date];
+    const savedData = getStorage()[date] || {};
     
     if (savedData?.aiTasks && Array.isArray(savedData.aiTasks)) {
-        // Validate each category and its items
-        const validCategories = savedData.aiTasks
-          .filter(category => 
-            category && 
-            typeof category.title === 'string' && 
-            Array.isArray(category.items)
-          )
-          .map(category => ({
-            title: category.title,
-            items: category.items
-              .filter(item => item !== null && item !== undefined)  // Remove null/undefined items
-              .map(item => item.toString().trim())  // Convert to string and trim
-              .filter(item => item.length > 0)  // Remove empty strings
-          }))
-          .filter(category => category.items.length > 0);  // Remove empty categories
-  
-        if (validCategories.length > 0) {
-          console.log('Using AI tasks:', validCategories);
-          setCategories(validCategories);
-          setAiContext({
-            ...savedData.aiContext,
-            mood: MOODS[savedData.aiContext.mood]?.label || savedData.aiContext.mood // Convert mood key to label if needed
-          });
-        } else {
-          console.log('No valid AI tasks found, using defaults');
-          setCategories(DEFAULT_CATEGORIES);
-          setAiContext(null);
-        }
+      const validCategories = savedData.aiTasks
+        .filter(category => 
+          category && 
+          typeof category.title === 'string' && 
+          Array.isArray(category.items)
+        )
+        .map(category => ({
+          title: category.title,
+          items: category.items
+            .filter(item => item !== null && item !== undefined)
+            .map(item => item.toString().trim())
+            .filter(item => item.length > 0)
+        }))
+        .filter(category => category.items.length > 0);
+
+      if (validCategories.length > 0) {
+        setCategories(validCategories);
+        setDayContext({
+          mood: savedData.mood || savedData.aiContext?.mood || null,
+          energyLevel: savedData.energyLevel || savedData.aiContext?.energyLevel || 0,
+          objective: savedData.aiContext?.objective || '',
+          isAIGenerated: true
+        });
       } else {
-        console.log('No AI tasks found, using defaults');
         setCategories(DEFAULT_CATEGORIES);
-        setAiContext(null);
       }
+    } else {
+      setCategories(DEFAULT_CATEGORIES);
+      setDayContext({
+        mood: savedData.mood || null,
+        energyLevel: savedData.energyLevel || 0,
+        objective: '',
+        isAIGenerated: false
+      });
+    }
 
     if (savedData?.checked) {
       setChecked(savedData.checked);
     } else {
-      const initialState = {};
-      const tasksToUse = (savedData?.aiTasks || DEFAULT_CATEGORIES);
-      
-      tasksToUse.forEach(category => {
-        (category.items || []).forEach(item => {
-          const taskText = typeof item === 'string' ? item : 
-                         typeof item === 'object' && item.task ? item.task :
-                         String(item);
-          initialState[taskText] = false;
+      const initialChecked = {};
+      const categoriesData = savedData?.aiTasks || DEFAULT_CATEGORIES;
+      categoriesData.forEach(category => {
+        category.items.forEach(item => {
+          initialChecked[item] = false;
         });
       });
-      
-      setChecked(initialState);
-
-      // Save initial state
-      const storage = getStorage();
-      storage[date] = {
-        ...storage[date],
-        checked: initialState
-      };
-      setStorage(storage);
+      setChecked(initialChecked);
     }
-  }, [date, storageVersion]); // Add storageVersion to dependencies
+  }, [date, storageVersion]);
+
+  const handleContextUpdate = (newContext) => {
+    setDayContext(newContext);
+    
+    const storage = getStorage();
+    const currentData = storage[date] || {};
+    
+    storage[date] = {
+      ...currentData,
+      mood: newContext.mood,
+      energyLevel: newContext.energyLevel
+    };
+
+    // If this is an AI-generated task list, also update the aiContext
+    if (currentData.aiTasks) {
+      storage[date].aiContext = {
+        ...currentData.aiContext,
+        mood: newContext.mood,
+        energyLevel: newContext.energyLevel
+      };
+    }
+    
+    setStorage(storage);
+  };
 
   const handleCheck = (item) => {
     const newChecked = {
@@ -255,14 +297,16 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
     };
     setChecked(newChecked);
     
-    // Preserve AI context and tasks when updating progress
-    const storage = getStorage();
-    const currentData = storage[date] || {};
-    storage[date] = { 
-      ...currentData,
-      checked: newChecked
-    };
-    setStorage(storage);
+    const hasCheckedItems = Object.values(newChecked).some(Boolean);
+    if (hasCheckedItems) {
+      const storage = getStorage();
+      const currentData = storage[date] || {};
+      storage[date] = {
+        ...currentData,
+        checked: newChecked
+      };
+      setStorage(storage);
+    }
   };
 
   if (!date) return null;
@@ -292,7 +336,7 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
             </button>
           </div>
 
-          {aiContext && <AIContextSummary aiContext={aiContext} />}
+          <DayContext context={dayContext} onUpdate={handleContextUpdate} />
           <ProgressSummary checked={checked} categories={categories} />
 
           <div className="flex flex-wrap gap-2 mb-6">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { MOODS } from './MoodSelector';
 
 export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange, storageData }) => {
@@ -15,22 +15,38 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
     { short: 'S', full: 'Sat' }
   ];
 
+  const isToday = (date) => {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear();
+  };
+
   const getDayData = (date) => {
     const dateStr = date.toISOString().split('T')[0];
     const dayData = storageData[dateStr];
     
-    if (!dayData) return { completionRate: 0, mood: null };
+    if (!dayData) return { completionRate: 0, mood: null, hasAITasks: false };
     
     let completionRate = 0;
     if (dayData.checked) {
       const checkedItems = Object.values(dayData.checked).filter(Boolean).length;
       const totalItems = Object.values(dayData.checked).length;
-      completionRate = Math.round((checkedItems / totalItems) * 100);
+      if (totalItems > 0) {
+        completionRate = Math.round((checkedItems / totalItems) * 100);
+      }
+    }
+
+    // Check for mood at root level first, then in aiContext
+    let mood = dayData.mood;
+    if (!mood && dayData.aiContext?.mood) {
+      mood = dayData.aiContext.mood;
     }
     
     return {
       completionRate,
-      mood: dayData.mood
+      mood,
+      hasAITasks: !!dayData.aiTasks
     };
   };
 
@@ -66,7 +82,7 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
         </div>
 
         <div className="grid grid-cols-7 gap-1 sm:gap-4">
-          {WEEKDAYS.map((day, index) => (
+          {WEEKDAYS.map((day) => (
             <div key={day.full} className="text-center font-medium text-slate-600 text-sm sm:text-base">
               {day.short}
             </div>
@@ -75,7 +91,7 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
           {weeks.map((week, i) => 
             week.map((date, j) => {
               const dateStr = date.toISOString().split('T')[0];
-              const { completionRate, mood } = getDayData(date);
+              const { completionRate, mood, hasAITasks } = getDayData(date);
               const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
               const isSelected = selectedDay === dateStr;
               
@@ -87,15 +103,21 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
                     aspect-square rounded-lg relative p-1 sm:p-2
                     ${isCurrentMonth ? getProgressColorClass(completionRate) : 'bg-slate-50 opacity-50'}
                     ${isSelected ? 'ring-2 ring-blue-500' : ''}
+                    ${isToday(date) ? 'ring-2 ring-amber-500' : ''}
                     hover:ring-2 hover:ring-blue-200 transition-all
                   `}
                 >
-                  <span className="text-xs sm:text-sm text-slate-600">{date.getDate()}</span>
+                  <span className={`
+                    text-xs sm:text-sm
+                    ${isToday(date) ? 'font-bold text-amber-500' : 'text-slate-600'}
+                  `}>
+                    {date.getDate()}
+                  </span>
                   
-                  {/* Progress percentage */}
-                  {completionRate > 0 && (
-                    <div className="absolute bottom-0.5 right-0.5 text-[8px] sm:text-xs text-slate-500">
-                      {completionRate}%
+                  {/* AI Tasks indicator */}
+                  {hasAITasks && (
+                    <div className="absolute bottom-0.5 right-0.5">
+                      <Sparkles size={12} className="text-amber-500" />
                     </div>
                   )}
                   

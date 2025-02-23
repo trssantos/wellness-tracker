@@ -24,7 +24,7 @@ export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
     },
     {
       id: 'progress',
-      label: 'Track Daily Progress',
+      label: 'Track Progress',
       icon: <CheckSquare size={24} className="text-blue-500" />,
       bgColor: 'bg-blue-50 hover:bg-blue-100'
     },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Zap, SmilePlus, AlertCircle } from 'lucide-react';
+import { X, Zap, AlertCircle } from 'lucide-react';
 import { MOODS } from './MoodSelector';
 import { generateTasks } from '../utils/gemini-service';
 import { getStorage, setStorage } from '../utils/storage';
@@ -28,7 +28,7 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
     
     try {
       const userContext = {
-        mood,  // Store the key (e.g., "MEH") rather than the label
+        mood,
         energyLevel,
         objective: dayObjective,
         context
@@ -45,12 +45,19 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
         }))
       };
       
-      // Store AI context and tasks in storage
+      // Only store data if we successfully generated tasks
       const storage = getStorage();
+      const existingData = storage[date] || {};
+      
       storage[date] = {
-        ...storage[date],
+        ...existingData,  // Preserve any existing data for this date
         aiContext: userContext,
-        aiTasks: formattedTasks.categories
+        aiTasks: formattedTasks.categories,
+        checked: existingData.checked || Object.fromEntries(
+          formattedTasks.categories.flatMap(cat => 
+            cat.items.map(item => [item, false])
+          )
+        )
       };
       setStorage(storage);
 
@@ -76,7 +83,7 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
       icons.push(
         <Zap
           key={i}
-          size={24}
+          size={20}
           className={`
             ${i < level ? 'fill-current' : 'fill-none'}
             ${level === 1 ? 'text-red-500' : level === 2 ? 'text-yellow-500' : 'text-green-500'}
@@ -143,13 +150,13 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Energy Level
             </label>
-            <div className="flex gap-4">
+            <div className="grid grid-cols-3 gap-2 max-w-xs">
               {[1, 2, 3].map((level) => (
                 <button
                   key={level}
                   onClick={() => setEnergyLevel(level)}
                   className={`
-                    flex items-center gap-1 p-3 rounded-lg transition-colors
+                    flex items-center justify-center p-2 rounded-lg transition-colors
                     ${energyLevel === level ? 'bg-slate-100' : 'hover:bg-slate-50'}
                   `}
                 >
@@ -222,5 +229,3 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
     </dialog>
   );
 };
-
-export default AITaskGenerator;

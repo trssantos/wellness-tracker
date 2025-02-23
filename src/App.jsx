@@ -15,6 +15,7 @@ const App = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [storageData, setStorageData] = useState(getStorage());
   const [storageVersion, setStorageVersion] = useState(0); // Add this to force updates
+  
 
   const handleStorageUpdate = () => {
     setStorageData(getStorage());
@@ -91,9 +92,8 @@ const App = () => {
       </div>
 
       <FloatingMenu 
-        onLogProgress={handleLogProgress}
-        onLogMood={handleLogMood}
-      />
+  onDaySelect={handleDaySelect}
+/>
       
       <FlowGuide />
       

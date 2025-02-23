@@ -7,7 +7,8 @@ export const MOODS = {
   GOOD: { emoji: '🙂', label: 'Good', color: 'bg-lime-100' },
   OKAY: { emoji: '😐', label: 'Okay', color: 'bg-yellow-100' },
   MEH: { emoji: '😕', label: 'Meh', color: 'bg-orange-100' },
-  BAD: { emoji: '😔', label: 'Bad', color: 'bg-red-100' }
+  BAD: { emoji: '😔', label: 'Bad', color: 'bg-red-100' },
+  OVERWHELMED: { emoji: '🤯', label: 'Overwhelmed', color: 'bg-red-100' }
 };
 
 export const MoodSelector = ({ date, onClose }) => {
@@ -39,13 +40,16 @@ export const MoodSelector = ({ date, onClose }) => {
     const storage = getStorage();
     const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
     
-    const existingData = storage[dateStr] || {};
-    storage[dateStr] = {
-      ...existingData,
-      mood: mood
-    };
+    // Only store if a mood is actually selected
+    if (mood) {
+      const existingData = storage[dateStr] || {};
+      storage[dateStr] = {
+        ...existingData,
+        mood: mood
+      };
+      setStorage(storage);
+    }
     
-    setStorage(storage);
     onClose();
   };
 

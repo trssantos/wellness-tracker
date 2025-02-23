@@ -66,7 +66,7 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const DayContext = ({ context, onUpdate }) => {
-  const { mood, energyLevel, objective, isAIGenerated } = context;
+  const { mood, energyLevel, objective, isAIGenerated, context: aiContext } = context;
 
   const getEnergyColor = (level, currentLevel) => {
     if (level > currentLevel) return 'text-slate-300';
@@ -126,6 +126,18 @@ const DayContext = ({ context, onUpdate }) => {
         <div className="flex items-center gap-2">
           <span className="text-slate-600 w-16">Focus:</span>
           <span className="flex-1">{objective || "Another regular day"}</span>
+          {isAIGenerated && aiContext && (
+            <div className="group relative">
+              <HelpCircle 
+                size={16} 
+                className="text-blue-500 cursor-help"
+              />
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-slate-800 text-white text-xs rounded-lg p-2 hidden group-hover:block z-10">
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                Additional Context: {aiContext}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -237,6 +249,7 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
           mood: savedData.mood || savedData.aiContext?.mood || null,
           energyLevel: savedData.energyLevel || savedData.aiContext?.energyLevel || 0,
           objective: savedData.aiContext?.objective || '',
+          context: savedData.aiContext?.context || '',
           isAIGenerated: true
         });
       } else {
@@ -248,6 +261,7 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
         mood: savedData.mood || null,
         energyLevel: savedData.energyLevel || 0,
         objective: '',
+        context: '',
         isAIGenerated: false
       });
     }

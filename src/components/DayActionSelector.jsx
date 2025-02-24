@@ -1,5 +1,5 @@
 import React from 'react';
-import { SmilePlus, CheckSquare, Sparkles, X } from 'lucide-react';
+import { SmilePlus, CheckSquare, Sparkles, X, Edit3 } from 'lucide-react';
 
 export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
   const getFormattedDate = () => {
@@ -33,6 +33,12 @@ export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
       label: 'Generate AI Tasks',
       icon: <Sparkles size={24} className="text-amber-500" />,
       bgColor: 'bg-amber-50 hover:bg-amber-100'
+    },
+    {
+      id: 'custom',
+      label: 'Create Custom Tasks',
+      icon: <Edit3 size={24} className="text-teal-500" />,
+      bgColor: 'bg-teal-50 hover:bg-teal-100'
     }
   ];
 

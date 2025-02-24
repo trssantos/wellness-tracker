@@ -7,6 +7,7 @@ import { MoodSelector } from './components/MoodSelector';
 import { MonthlyOverview } from './components/MonthlyOverview';
 import { DayActionSelector } from './components/DayActionSelector';
 import { AITaskGenerator } from './components/AITaskGenerator';
+import { CustomTaskListCreator } from './components/CustomTaskListCreator';
 import { HelpCircle } from 'lucide-react';
 import { getStorage } from './utils/storage';
 
@@ -37,6 +38,8 @@ const App = () => {
         document.getElementById('checklist-modal').showModal();
       } else if (action === 'generate') {
         document.getElementById('ai-generator-modal').showModal();
+      } else if (action === 'custom') {
+        document.getElementById('custom-tasklist-modal').showModal();
       }
     }, 100);
   };
@@ -44,6 +47,14 @@ const App = () => {
   const handleAITasksGenerated = () => {
     handleStorageUpdate(); // Update storage data first
     document.getElementById('ai-generator-modal').close();
+    setTimeout(() => {
+      document.getElementById('checklist-modal').showModal();
+    }, 100);
+  };
+
+  const handleCustomTasksCreated = () => {
+    handleStorageUpdate(); // Update storage data first
+    document.getElementById('custom-tasklist-modal').close();
     setTimeout(() => {
       document.getElementById('checklist-modal').showModal();
     }, 100);
@@ -92,8 +103,8 @@ const App = () => {
       </div>
 
       <FloatingMenu 
-  onDaySelect={handleDaySelect}
-/>
+        onDaySelect={handleDaySelect}
+      />
       
       <FlowGuide />
       
@@ -113,6 +124,16 @@ const App = () => {
           handleStorageUpdate();
         }}
         onTasksGenerated={handleAITasksGenerated}
+      />
+
+      <CustomTaskListCreator
+        date={selectedDay}
+        onClose={() => {
+          document.getElementById('custom-tasklist-modal').close();
+          setSelectedDay(null);
+          handleStorageUpdate();
+        }}
+        onTasksGenerated={handleCustomTasksCreated}
       />
 
       <MoodSelector 

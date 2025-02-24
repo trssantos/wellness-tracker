@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, Sparkles, PenTool } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, PenTool, Dumbbell } from 'lucide-react';
 import { MOODS } from './MoodSelector';
 
 export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange, storageData }) => {
@@ -26,7 +26,13 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
     const dateStr = date.toISOString().split('T')[0];
     const dayData = storageData[dateStr];
     
-    if (!dayData) return { completionRate: 0, mood: null, hasAITasks: false, hasNotes: false };
+    if (!dayData) return { 
+      completionRate: 0, 
+      mood: null, 
+      hasAITasks: false, 
+      hasNotes: false,
+      hasWorkout: false 
+    };
     
     let completionRate = 0;
     if (dayData.checked) {
@@ -47,7 +53,8 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
       completionRate,
       mood,
       hasAITasks: !!dayData.aiTasks,
-      hasNotes: !!dayData.notes
+      hasNotes: !!dayData.notes,
+      hasWorkout: !!dayData.workout
     };
   };
 
@@ -92,7 +99,7 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
           {weeks.map((week, i) => 
             week.map((date, j) => {
               const dateStr = date.toISOString().split('T')[0];
-              const { completionRate, mood, hasAITasks, hasNotes } = getDayData(date);
+              const { completionRate, mood, hasAITasks, hasNotes, hasWorkout } = getDayData(date);
               const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
               const isSelected = selectedDay === dateStr;
               
@@ -126,6 +133,13 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
                   {hasNotes && (
                     <div className="absolute bottom-0.5 left-0.5">
                       <PenTool size={10} className="text-teal-500" />
+                    </div>
+                  )}
+                  
+                  {/* Workout indicator */}
+                  {hasWorkout && (
+                    <div className="absolute top-0.5 left-0.5">
+                      <Dumbbell size={10} className="text-blue-500" />
                     </div>
                   )}
                   

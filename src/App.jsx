@@ -10,7 +10,8 @@ import { AITaskGenerator } from './components/AITaskGenerator';
 import { CustomTaskListCreator } from './components/CustomTaskListCreator';
 import { TaskListSelector } from './components/TaskListSelector';
 import { DayNotes } from './components/DayNotes';
-import { HelpCircle, PenTool } from 'lucide-react';
+import { WorkoutTracker } from './components/WorkoutTracker';
+import { HelpCircle, PenTool, Dumbbell } from 'lucide-react';
 import { getStorage } from './utils/storage';
 
 const App = () => {
@@ -58,6 +59,8 @@ const App = () => {
         document.getElementById('custom-tasklist-modal').showModal();
       } else if (action === 'notes') {
         document.getElementById('notes-modal').showModal();
+      } else if (action === 'workout') {
+        document.getElementById('workout-modal').showModal();
       }
     }, 100);
   };
@@ -232,6 +235,15 @@ const App = () => {
         date={selectedDay}
         onClose={() => {
           document.getElementById('notes-modal').close();
+          setSelectedDay(null);
+          handleStorageUpdate();
+        }}
+      />
+
+      <WorkoutTracker
+        date={selectedDay}
+        onClose={() => {
+          document.getElementById('workout-modal').close();
           setSelectedDay(null);
           handleStorageUpdate();
         }}

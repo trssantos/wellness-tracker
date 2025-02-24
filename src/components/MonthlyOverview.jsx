@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart, Calendar as CalendarIcon, SmilePlus, PenTool, CheckSquare } from 'lucide-react';
+import { BarChart, Calendar as CalendarIcon, SmilePlus, PenTool, CheckSquare, Dumbbell, Clock } from 'lucide-react';
 import { MOODS } from './MoodSelector';
 
 export const MonthlyOverview = ({ currentMonth, storageData }) => {
@@ -11,6 +11,8 @@ export const MonthlyOverview = ({ currentMonth, storageData }) => {
     let moodCounts = Object.keys(MOODS).reduce((acc, mood) => ({ ...acc, [mood]: 0 }), {});
     let progressDays = 0;
     let notesDays = 0;
+    let totalWorkoutDuration = 0;
+    let workoutDays = 0;
     let daysWithData = new Set(); // Track unique days with any data
     
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -38,11 +40,19 @@ export const MonthlyOverview = ({ currentMonth, storageData }) => {
           notesDays++;
           daysWithData.add(dateStr);
         }
+
+        // Track workouts
+        if (dayData.workout) {
+          workoutDays++;
+          totalWorkoutDuration += dayData.workout.duration || 0;
+          daysWithData.add(dateStr);
+        }
       }
     }
     
     const totalDaysTracked = daysWithData.size;
     const avgProgress = progressDays > 0 ? Math.round(totalProgress / progressDays) : 0;
+    const avgWorkoutDuration = workoutDays > 0 ? Math.round(totalWorkoutDuration / workoutDays) : 0;
     
     // Find predominant mood, if there are any moods
     const totalMoods = Object.values(moodCounts).reduce((sum, count) => sum + count, 0);
@@ -50,10 +60,19 @@ export const MonthlyOverview = ({ currentMonth, storageData }) => {
       ? Object.entries(moodCounts).sort(([, a], [, b]) => b - a)[0][0]
       : 'OKAY'; // Default mood when none is set
     
-    return { avgProgress, moodCounts, totalDaysTracked, predominantMood, notesDays, progressDays };
+    return { 
+      avgProgress, 
+      moodCounts, 
+      totalDaysTracked, 
+      predominantMood, 
+      notesDays, 
+      progressDays,
+      workoutDays,
+      avgWorkoutDuration
+    };
   };
 
-  const { avgProgress, moodCounts, totalDaysTracked, predominantMood, notesDays, progressDays } = getMonthData();
+  const { avgProgress, moodCounts, totalDaysTracked, predominantMood, notesDays, progressDays, workoutDays, avgWorkoutDuration } = getMonthData();
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6">
@@ -113,6 +132,24 @@ export const MonthlyOverview = ({ currentMonth, storageData }) => {
               <span className="text-slate-700">Journal Entries</span>
             </div>
             <span className="font-bold text-teal-700">{notesDays}</span>
+          </div>
+          
+          {/* Workouts section */}
+          <div className="bg-blue-50 rounded-lg p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Dumbbell size={18} className="text-blue-500" />
+              <span className="text-slate-700">Workouts</span>
+            </div>
+            <span className="font-bold text-blue-700">{workoutDays}</span>
+          </div>
+          
+          {/* Average workout duration */}
+          <div className="bg-blue-50 rounded-lg p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock size={18} className="text-blue-500" />
+              <span className="text-slate-700">Avg Workout</span>
+            </div>
+            <span className="font-bold text-blue-700">{avgWorkoutDuration} min</span>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { SmilePlus, CheckSquare, Sparkles, X, Edit3, PenTool } from 'lucide-react';
+import { SmilePlus, CheckSquare, Sparkles, X, Edit3, PenTool, Dumbbell } from 'lucide-react';
 
 export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
   const getFormattedDate = () => {
@@ -33,6 +33,12 @@ export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
       label: 'Add Day Notes',
       icon: <PenTool size={24} className="text-teal-500" />,
       bgColor: 'bg-teal-50 hover:bg-teal-100'
+    },
+    {
+      id: 'workout',
+      label: 'Log Workout',
+      icon: <Dumbbell size={24} className="text-blue-500" />,
+      bgColor: 'bg-blue-50 hover:bg-blue-100'
     }
   ];
 

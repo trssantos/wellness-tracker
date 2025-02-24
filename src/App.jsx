@@ -8,7 +8,9 @@ import { MonthlyOverview } from './components/MonthlyOverview';
 import { DayActionSelector } from './components/DayActionSelector';
 import { AITaskGenerator } from './components/AITaskGenerator';
 import { CustomTaskListCreator } from './components/CustomTaskListCreator';
-import { HelpCircle } from 'lucide-react';
+import { TaskListSelector } from './components/TaskListSelector';
+import { DayNotes } from './components/DayNotes';
+import { HelpCircle, PenTool } from 'lucide-react';
 import { getStorage } from './utils/storage';
 
 const App = () => {
@@ -35,18 +37,66 @@ const App = () => {
       if (action === 'mood') {
         document.getElementById('mood-modal').showModal();
       } else if (action === 'progress') {
-        document.getElementById('checklist-modal').showModal();
+        // Check if there are any tasks for this day
+        const dayData = getStorage()[selectedDay] || {};
+        const hasAnyTasks = 
+          (dayData.aiTasks && dayData.aiTasks.length > 0) || 
+          (dayData.customTasks && dayData.customTasks.length > 0) ||
+          // Check if there are any checked items, which would indicate tasks exist
+          (dayData.checked && Object.keys(dayData.checked).length > 0);
+        
+        if (hasAnyTasks) {
+          // If tasks exist, go directly to the checklist
+          document.getElementById('checklist-modal').showModal();
+        } else {
+          // If no tasks exist, show the task list selector
+          document.getElementById('task-list-selector-modal').showModal();
+        }
       } else if (action === 'generate') {
         document.getElementById('ai-generator-modal').showModal();
       } else if (action === 'custom') {
+        document.getElementById('custom-tasklist-modal').showModal();
+      } else if (action === 'notes') {
+        document.getElementById('notes-modal').showModal();
+      }
+    }, 100);
+  };
+
+  const handleTaskTypeSelection = (type) => {
+    document.getElementById('task-list-selector-modal').close();
+    
+    setTimeout(() => {
+      if (type === 'default') {
+        // For default, directly show the checklist which already loads defaults
+        document.getElementById('checklist-modal').showModal();
+      } else if (type === 'ai') {
+        document.getElementById('ai-generator-modal').showModal();
+      } else if (type === 'custom') {
         document.getElementById('custom-tasklist-modal').showModal();
       }
     }, 100);
   };
 
-  const handleAITasksGenerated = () => {
-    handleStorageUpdate(); // Update storage data first
+  const handleAITasksGenerated = (generatedDate) => {
+    // Update storage data first
+    const updatedStorage = getStorage();
+    setStorageData(updatedStorage);
+    
+    // Use the date from the generator if provided, otherwise use selectedDay
+    const dateToUse = generatedDate || selectedDay;
+    if (dateToUse !== selectedDay) {
+      setSelectedDay(dateToUse);
+    }
+    
+    // Close the AI modal
     document.getElementById('ai-generator-modal').close();
+    
+    // Force a storage version update to ensure the latest data is shown
+    setStorageVersion(prev => prev + 1);
+    
+    console.log('AI tasks generated, opening checklist for date:', dateToUse);
+    
+    // Open the checklist modal with a delay
     setTimeout(() => {
       document.getElementById('checklist-modal').showModal();
     }, 100);
@@ -63,7 +113,22 @@ const App = () => {
   const handleLogProgress = () => {
     const today = new Date().toISOString().split('T')[0];
     setSelectedDay(today);
-    document.getElementById('checklist-modal').showModal();
+    
+    // Check if there are any tasks for today
+    const dayData = getStorage()[today] || {};
+    const hasAnyTasks = 
+      (dayData.aiTasks && dayData.aiTasks.length > 0) || 
+      (dayData.customTasks && dayData.customTasks.length > 0) ||
+      // Check if there are any checked items, which would indicate tasks exist
+      (dayData.checked && Object.keys(dayData.checked).length > 0);
+    
+    if (hasAnyTasks) {
+      // If tasks exist, go directly to the checklist
+      document.getElementById('checklist-modal').showModal();
+    } else {
+      // If no tasks exist, show the task list selector
+      document.getElementById('task-list-selector-modal').showModal();
+    }
   };
 
   const handleLogMood = () => {
@@ -116,6 +181,14 @@ const App = () => {
         onSelectAction={handleDayAction}
       />
 
+      <TaskListSelector
+        date={selectedDay}
+        onClose={() => {
+          document.getElementById('task-list-selector-modal').close();
+        }}
+        onSelectType={handleTaskTypeSelection}
+      />
+
       <AITaskGenerator
         date={selectedDay}
         onClose={() => {
@@ -150,6 +223,15 @@ const App = () => {
         storageVersion={storageVersion} // Pass this to force updates
         onClose={() => {
           document.getElementById('checklist-modal').close();
+          setSelectedDay(null);
+          handleStorageUpdate();
+        }}
+      />
+
+      <DayNotes 
+        date={selectedDay}
+        onClose={() => {
+          document.getElementById('notes-modal').close();
           setSelectedDay(null);
           handleStorageUpdate();
         }}

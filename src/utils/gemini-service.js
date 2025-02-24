@@ -101,28 +101,42 @@ export const generateTasks = async (userContext) => {
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     
     const prompt = generatePromptTemplate(userContext);
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
     
-    // Parse the JSON response
     try {
-      // Find the JSON object in the response text
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('No JSON found in response');
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      
+      // Parse the JSON response
+      try {
+        // Find the JSON object in the response text
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error('No JSON found in response');
+        }
+        const taskData = JSON.parse(jsonMatch[0]);
+        
+        // Validate and clean the structure
+        const validatedData = validateTasksStructure(taskData);
+        
+        console.log('Generated tasks:', validatedData);
+        
+        return validatedData;
+      } catch (parseError) {
+        console.error('Error parsing AI response:', parseError);
+        throw new Error('Failed to parse AI response');
       }
-      const taskData = JSON.parse(jsonMatch[0]);
+    } catch (apiError) {
+      console.error('API error:', apiError);
       
-      // Validate and clean the structure
-      const validatedData = validateTasksStructure(taskData);
+      // Check for 503 Service Unavailable
+      if (apiError.status === 503 || 
+          (apiError.message && apiError.message.includes('503'))) {
+        throw new Error('503: AI service is currently overloaded. Please try again later.');
+      }
       
-      console.log('Generated tasks:', validatedData);
-      
-      return validatedData;
-    } catch (parseError) {
-      console.error('Error parsing AI response:', parseError);
-      throw new Error('Failed to parse AI response');
+      // Handle other API errors
+      throw new Error(`API error: ${apiError.message || 'Unknown error'}`);
     }
   } catch (error) {
     console.error('Error generating tasks:', error);

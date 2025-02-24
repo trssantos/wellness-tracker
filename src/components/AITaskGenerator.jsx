@@ -11,18 +11,85 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
   const [context, setContext] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [currentDate, setCurrentDate] = useState(date);
+
+  // Effect to handle date passed via props or data attribute
+  useEffect(() => {
+    // First, check if date is provided as a prop
+    if (date) {
+      setCurrentDate(date);
+      
+      // Try to load existing context from storage for this date
+      const loadExistingContext = () => {
+        try {
+          const storage = getStorage();
+          const dayData = storage[date] || {};
+          
+          // If this date has ai context, pre-populate the form
+          if (dayData.aiContext) {
+            setMood(dayData.aiContext.mood || null);
+            setEnergyLevel(dayData.aiContext.energyLevel || 0);
+            setDayObjective(dayData.aiContext.objective || '');
+            setContext(dayData.aiContext.context || '');
+          }
+        } catch (error) {
+          console.error('Error loading existing context:', error);
+        }
+      };
+      
+      loadExistingContext();
+      return;
+    }
+
+    // If not, check if date was passed via dataset
+    const modal = document.getElementById('ai-generator-modal');
+    if (modal && modal.dataset.selectedDate) {
+      const selectedDate = modal.dataset.selectedDate;
+      setCurrentDate(selectedDate);
+      
+      // Try to load existing context for the passed date
+      try {
+        const storage = getStorage();
+        const dayData = storage[selectedDate] || {};
+        
+        // If this date has ai context, pre-populate the form
+        if (dayData.aiContext) {
+          setMood(dayData.aiContext.mood || null);
+          setEnergyLevel(dayData.aiContext.energyLevel || 0);
+          setDayObjective(dayData.aiContext.objective || '');
+          setContext(dayData.aiContext.context || '');
+        } else if (dayData.mood || dayData.energyLevel) {
+          // If we have mood/energy without ai context, use those
+          setMood(dayData.mood || null);
+          setEnergyLevel(dayData.energyLevel || 0);
+        }
+      } catch (error) {
+        console.error('Error loading existing context:', error);
+      }
+      
+      // Clear the dataset after using it
+      modal.dataset.selectedDate = '';
+    }
+  }, [date]);
 
   // Reset state when date changes
   useEffect(() => {
-    setMood(null);
-    setEnergyLevel(0);
-    setDayObjective('');
-    setContext('');
-    setIsLoading(false);
-    setError(null);
-  }, [date]);
+    if (currentDate) {
+      setMood(null);
+      setEnergyLevel(0);
+      setDayObjective('');
+      setContext('');
+      setIsLoading(false);
+      setError(null);
+    }
+  }, [currentDate]);
 
   const handleGenerate = async () => {
+    if (!currentDate) {
+      setError('No date selected. Please try again.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     
@@ -45,21 +112,34 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
         }))
       };
       
-      // Only store data if we successfully generated tasks
+      // Get current storage
       const storage = getStorage();
-      const existingData = storage[date] || {};
+      const existingData = storage[currentDate] || {};
       
-      storage[date] = {
-        ...existingData,  // Preserve any existing data for this date
+      // Create new checked state based on the new categories
+      const newChecked = {};
+      formattedTasks.categories.forEach(cat => {
+        cat.items.forEach(item => {
+          // Preserve checked state if the item exists, otherwise set to false
+          newChecked[item] = existingData.checked && existingData.checked[item] 
+            ? existingData.checked[item] 
+            : false;
+        });
+      });
+      
+      // Store the new data
+      storage[currentDate] = {
+        ...existingData,  // Preserve existing data (mood, etc.)
         aiContext: userContext,
         aiTasks: formattedTasks.categories,
-        checked: existingData.checked || Object.fromEntries(
-          formattedTasks.categories.flatMap(cat => 
-            cat.items.map(item => [item, false])
-          )
-        )
+        // If a custom list existed, rename it to keep it but not use it
+        customTasks: existingData.customTasks ? existingData.customTasks : undefined,
+        // Override checked with our new map
+        checked: newChecked
       };
+      
       setStorage(storage);
+      console.log('Saved new AI tasks for date:', currentDate);
 
       // Reset state
       setMood(null);
@@ -68,10 +148,22 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
       setContext('');
       setIsLoading(false);
 
-      onTasksGenerated();
+      onTasksGenerated(currentDate);
     } catch (error) {
       console.error('Failed to generate tasks:', error);
-      setError('Failed to generate tasks. Please try again.');
+      
+      // Check for 503 Service Unavailable (model overloaded)
+      if (error.message && (
+          error.message.includes('503') || 
+          error.message.includes('overloaded') || 
+          error.message.includes('unavailable') || 
+          error.message.includes('capacity')
+        )) {
+        setError('The AI service is currently overloaded. Please wait a moment and try again later.');
+      } else {
+        setError('Failed to generate tasks. Please try again.');
+      }
+      
       setIsLoading(false);
     }
   };
@@ -94,6 +186,22 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
     return icons;
   };
 
+  const getFormattedDate = () => {
+    if (!currentDate) return '';
+    
+    try {
+      const dateObj = new Date(currentDate);
+      return dateObj.toLocaleDateString('default', { 
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return 'Select a date';
+    }
+  };
+
   return (
     <dialog 
       id="ai-generator-modal" 
@@ -105,12 +213,7 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
           <div>
             <h3 className="text-xl font-semibold text-slate-800">Generate Daily Tasks</h3>
             <p className="text-sm text-slate-600">
-              {new Date(date).toLocaleDateString('default', { 
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
+              {getFormattedDate()}
             </p>
           </div>
           <button

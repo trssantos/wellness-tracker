@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Circle, BarChart, HelpCircle, Zap, Edit2, Save, Plus, Trash2 } from 'lucide-react';
+import { X, CheckCircle2, Circle, BarChart, HelpCircle, Zap, Edit2, Save, Plus, Trash2, Sparkles } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
 import { MOODS } from './MoodSelector';
 
@@ -231,27 +231,20 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   useEffect(() => {
     if (!date) return;
 
+    // Force reset to ensure we load fresh data
+    setCategories([]);
+    setEditedCategories([]);
+    setChecked({});
+    setTaskListType('default'); // Reset the task list type first
+
     const savedData = getStorage()[date] || {};
     let taskCategories = DEFAULT_CATEGORIES;
     let listType = 'default';
 
-    // Custom Tasks take priority
-    if (savedData?.customTasks && Array.isArray(savedData.customTasks)) {
-      const validCategories = validateCategories(savedData.customTasks);
-      if (validCategories.length > 0) {
-        taskCategories = validCategories;
-        setDayContext({
-          mood: savedData.mood || null,
-          energyLevel: savedData.energyLevel || 0,
-          objective: '',
-          context: '',
-          isAIGenerated: false
-        });
-        listType = 'custom';
-      }
-    } 
-    // Then check for AI generated tasks
-    else if (savedData?.aiTasks && Array.isArray(savedData.aiTasks)) {
+    console.log('Loading data for date:', date, 'Storage data:', savedData);
+
+    // AI Tasks take highest priority (change from previous logic)
+    if (savedData?.aiTasks && Array.isArray(savedData.aiTasks)) {
       const validCategories = validateCategories(savedData.aiTasks);
       if (validCategories.length > 0) {
         taskCategories = validCategories;
@@ -264,6 +257,21 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
         });
         listType = 'ai';
       }
+    }
+    // Then check for Custom Tasks
+    else if (savedData?.customTasks && Array.isArray(savedData.customTasks)) {
+      const validCategories = validateCategories(savedData.customTasks);
+      if (validCategories.length > 0) {
+        taskCategories = validCategories;
+        setDayContext({
+          mood: savedData.mood || null,
+          energyLevel: savedData.energyLevel || 0,
+          objective: '',
+          context: '',
+          isAIGenerated: false
+        });
+        listType = 'custom';
+      }
     } else {
       // Default categories
       setDayContext({
@@ -275,6 +283,7 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
       });
     }
 
+    console.log('Setting task list type to:', listType);
     setCategories(taskCategories);
     setEditedCategories(JSON.parse(JSON.stringify(taskCategories))); // Deep copy
     setTaskListType(listType);
@@ -290,6 +299,9 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
       });
       setChecked(initialChecked);
     }
+
+    // Reset active category to 0 whenever data changes
+    setActiveCategory(0);
   }, [date, storageVersion]);
 
   const validateCategories = (categoriesData) => {
@@ -530,8 +542,28 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
                 <button
                   onClick={toggleEditing}
                   className="text-blue-500 hover:text-blue-700 p-1 rounded-md"
+                  title={isEditing ? "Save changes" : "Edit tasks"}
                 >
                   {isEditing ? <Save size={14} /> : <Edit2 size={14} />}
+                </button>
+                <button
+                  onClick={() => {
+                    const currentDate = date; // Store the current date
+                    onClose();
+                    setTimeout(() => {
+                      // Use the stored date when opening the AI generator
+                      const aiModal = document.getElementById('ai-generator-modal');
+                      if (aiModal) {
+                        // Store the date in a data attribute so AITaskGenerator can access it
+                        aiModal.dataset.selectedDate = currentDate;
+                        aiModal.showModal();
+                      }
+                    }, 100);
+                  }}
+                  className="text-amber-500 hover:text-amber-700 p-1 rounded-md"
+                  title="Generate with AI"
+                >
+                  <Sparkles size={14} />
                 </button>
               </div>
             </div>
@@ -552,12 +584,13 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
             <div className="space-y-6 max-h-[50vh] overflow-y-auto pr-2">
               {editedCategories.map((category, categoryIdx) => (
                 <div key={categoryIdx} className="border border-slate-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-4 bg-slate-100 p-3 rounded-lg border-l-4 border-blue-500">
                     <input
                       type="text"
                       value={category.title}
                       onChange={(e) => handleCategoryTitleChange(categoryIdx, e.target.value)}
-                      className="flex-1 p-2 border border-slate-300 rounded-md"
+                      className="flex-1 p-2 bg-white border border-slate-300 rounded-md font-medium"
+                      placeholder="Category title"
                     />
                     <button
                       onClick={() => handleDeleteCategory(categoryIdx)}
@@ -568,14 +601,15 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
                     </button>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 ml-4 pl-2 border-l-2 border-slate-200">
                     {category.items.map((task, taskIdx) => (
                       <div key={taskIdx} className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-slate-300 rounded-full mr-1"></div>
                         <input
                           type="text"
                           value={task}
                           onChange={(e) => handleTaskChange(categoryIdx, taskIdx, e.target.value)}
-                          className="flex-1 p-2 border border-slate-200 rounded-md"
+                          className="flex-1 p-2 border border-slate-200 rounded-md bg-white"
                           placeholder="Task description"
                         />
                         <button

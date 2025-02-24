@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, PenTool } from 'lucide-react';
 import { MOODS } from './MoodSelector';
 
 export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange, storageData }) => {
@@ -26,7 +26,7 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
     const dateStr = date.toISOString().split('T')[0];
     const dayData = storageData[dateStr];
     
-    if (!dayData) return { completionRate: 0, mood: null, hasAITasks: false };
+    if (!dayData) return { completionRate: 0, mood: null, hasAITasks: false, hasNotes: false };
     
     let completionRate = 0;
     if (dayData.checked) {
@@ -46,7 +46,8 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
     return {
       completionRate,
       mood,
-      hasAITasks: !!dayData.aiTasks
+      hasAITasks: !!dayData.aiTasks,
+      hasNotes: !!dayData.notes
     };
   };
 
@@ -91,7 +92,7 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
           {weeks.map((week, i) => 
             week.map((date, j) => {
               const dateStr = date.toISOString().split('T')[0];
-              const { completionRate, mood, hasAITasks } = getDayData(date);
+              const { completionRate, mood, hasAITasks, hasNotes } = getDayData(date);
               const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
               const isSelected = selectedDay === dateStr;
               
@@ -118,6 +119,13 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
                   {hasAITasks && (
                     <div className="absolute bottom-0.5 right-0.5">
                       <Sparkles size={12} className="text-amber-500" />
+                    </div>
+                  )}
+                  
+                  {/* Notes indicator */}
+                  {hasNotes && (
+                    <div className="absolute bottom-0.5 left-0.5">
+                      <PenTool size={10} className="text-teal-500" />
                     </div>
                   )}
                   

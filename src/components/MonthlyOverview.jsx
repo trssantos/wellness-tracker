@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart, Calendar as CalendarIcon, SmilePlus } from 'lucide-react';
+import { BarChart, Calendar as CalendarIcon, SmilePlus, PenTool, CheckSquare } from 'lucide-react';
 import { MOODS } from './MoodSelector';
 
 export const MonthlyOverview = ({ currentMonth, storageData }) => {
@@ -10,6 +10,7 @@ export const MonthlyOverview = ({ currentMonth, storageData }) => {
     let totalProgress = 0;
     let moodCounts = Object.keys(MOODS).reduce((acc, mood) => ({ ...acc, [mood]: 0 }), {});
     let progressDays = 0;
+    let notesDays = 0;
     let daysWithData = new Set(); // Track unique days with any data
     
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -31,6 +32,12 @@ export const MonthlyOverview = ({ currentMonth, storageData }) => {
           moodCounts[dayData.mood]++;
           daysWithData.add(dateStr);
         }
+
+        // Track notes
+        if (dayData.notes) {
+          notesDays++;
+          daysWithData.add(dateStr);
+        }
       }
     }
     
@@ -43,10 +50,10 @@ export const MonthlyOverview = ({ currentMonth, storageData }) => {
       ? Object.entries(moodCounts).sort(([, a], [, b]) => b - a)[0][0]
       : 'OKAY'; // Default mood when none is set
     
-    return { avgProgress, moodCounts, totalDaysTracked, predominantMood };
+    return { avgProgress, moodCounts, totalDaysTracked, predominantMood, notesDays, progressDays };
   };
 
-  const { avgProgress, moodCounts, totalDaysTracked, predominantMood } = getMonthData();
+  const { avgProgress, moodCounts, totalDaysTracked, predominantMood, notesDays, progressDays } = getMonthData();
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6">
@@ -86,18 +93,42 @@ export const MonthlyOverview = ({ currentMonth, storageData }) => {
         </div>
       </div>
 
-      {/* Mood Distribution */}
-<div className="mt-6">
-  <h3 className="font-medium text-slate-700 mb-3">Mood Distribution</h3>
-  <div className="grid grid-cols-5 gap-2">
-    {Object.entries(MOODS).map(([key, { emoji, color }]) => (
-      <div key={key} className={`${color} rounded-lg p-3 text-center`}>
-        <div className="text-xl mb-1">{emoji}</div>
-        <div className="text-sm font-medium text-slate-600">{moodCounts[key]}</div>
+      {/* Monthly Highlights */}
+      <div className="mt-6">
+        <h3 className="font-medium text-slate-700 mb-3">Monthly Highlights</h3>
+        <div className="grid grid-cols-2 gap-4">
+          {/* Days with Tasks section */}
+          <div className="bg-blue-50 rounded-lg p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckSquare size={18} className="text-blue-500" />
+              <span className="text-slate-700">Days with Tasks</span>
+            </div>
+            <span className="font-bold text-blue-700">{progressDays}</span>
+          </div>
+          
+          {/* Days with Notes section */}
+          <div className="bg-teal-50 rounded-lg p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <PenTool size={18} className="text-teal-500" />
+              <span className="text-slate-700">Journal Entries</span>
+            </div>
+            <span className="font-bold text-teal-700">{notesDays}</span>
+          </div>
+        </div>
       </div>
-    ))}
-  </div>
-</div>
+
+      {/* Mood Distribution */}
+      <div className="mt-6">
+        <h3 className="font-medium text-slate-700 mb-3">Mood Distribution</h3>
+        <div className="grid grid-cols-5 gap-2">
+          {Object.entries(MOODS).map(([key, { emoji, color }]) => (
+            <div key={key} className={`${color} rounded-lg p-3 text-center`}>
+              <div className="text-xl mb-1">{emoji}</div>
+              <div className="text-sm font-medium text-slate-600">{moodCounts[key]}</div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

@@ -2,77 +2,77 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Dumbbell, Clock, Flame, BarChart, Plus, Trash2, Tag } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
 
-// Available workout types with icons and colors
+// Available workout types with icons and colors - updated for dark mode
 const WORKOUT_TYPES = {
   WEIGHTLIFTING: { 
     name: "Weightlifting", 
     icon: "🏋️", 
-    color: "bg-blue-50 hover:bg-blue-100 text-blue-800 border-blue-200" 
+    color: "bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700" 
   },
   CARDIO: { 
     name: "Cardio", 
     icon: "🏃", 
-    color: "bg-red-50 hover:bg-red-100 text-red-800 border-red-200" 
+    color: "bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-800/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700" 
   },
   YOGA: { 
     name: "Yoga", 
     icon: "🧘", 
-    color: "bg-purple-50 hover:bg-purple-100 text-purple-800 border-purple-200" 
+    color: "bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-800/40 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-700" 
   },
   SWIMMING: { 
     name: "Swimming", 
     icon: "🏊", 
-    color: "bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border-cyan-200" 
+    color: "bg-cyan-50 dark:bg-cyan-900/30 hover:bg-cyan-100 dark:hover:bg-cyan-800/40 text-cyan-800 dark:text-cyan-300 border-cyan-200 dark:border-cyan-700" 
   },
   CYCLING: { 
     name: "Cycling", 
     icon: "🚴", 
-    color: "bg-green-50 hover:bg-green-100 text-green-800 border-green-200" 
+    color: "bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-800/40 text-green-800 dark:text-green-300 border-green-200 dark:border-green-700" 
   },
   HIIT: { 
     name: "HIIT", 
     icon: "⚡", 
-    color: "bg-orange-50 hover:bg-orange-100 text-orange-800 border-orange-200" 
+    color: "bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-800/40 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-700" 
   },
   PILATES: { 
     name: "Pilates", 
     icon: "🤸", 
-    color: "bg-pink-50 hover:bg-pink-100 text-pink-800 border-pink-200" 
+    color: "bg-pink-50 dark:bg-pink-900/30 hover:bg-pink-100 dark:hover:bg-pink-800/40 text-pink-800 dark:text-pink-300 border-pink-200 dark:border-pink-700" 
   },
   BOXING: { 
     name: "Boxing", 
     icon: "🥊", 
-    color: "bg-red-50 hover:bg-red-100 text-red-800 border-red-200" 
+    color: "bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-800/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700" 
   },
   CALISTHENICS: { 
     name: "Calisthenics", 
     icon: "💪", 
-    color: "bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200" 
+    color: "bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-800/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-700" 
   },
   STRETCHING: { 
     name: "Stretching", 
     icon: "🧠", 
-    color: "bg-teal-50 hover:bg-teal-100 text-teal-800 border-teal-200" 
+    color: "bg-teal-50 dark:bg-teal-900/30 hover:bg-teal-100 dark:hover:bg-teal-800/40 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-700" 
   },
   WALKING: { 
     name: "Walking", 
     icon: "👣", 
-    color: "bg-lime-50 hover:bg-lime-100 text-lime-800 border-lime-200" 
+    color: "bg-lime-50 dark:bg-lime-900/30 hover:bg-lime-100 dark:hover:bg-lime-800/40 text-lime-800 dark:text-lime-300 border-lime-200 dark:border-lime-700" 
   },
   OTHER: { 
     name: "Other", 
     icon: "🏅", 
-    color: "bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200" 
+    color: "bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-600" 
   }
 };
 
-// Predefined intensity levels
+// Predefined intensity levels - updated for dark mode
 const INTENSITY_LEVELS = [
-  { value: 1, label: "Light", color: "bg-green-100" },
-  { value: 2, label: "Moderate", color: "bg-yellow-100" },
-  { value: 3, label: "Challenging", color: "bg-orange-100" },
-  { value: 4, label: "Intense", color: "bg-red-100" },
-  { value: 5, label: "Maximum", color: "bg-purple-100" }
+  { value: 1, label: "Light", color: "bg-green-100 dark:bg-green-900/40" },
+  { value: 2, label: "Moderate", color: "bg-yellow-100 dark:bg-yellow-900/40" },
+  { value: 3, label: "Challenging", color: "bg-orange-100 dark:bg-orange-900/40" },
+  { value: 4, label: "Intense", color: "bg-red-100 dark:bg-red-900/40" },
+  { value: 5, label: "Maximum", color: "bg-purple-100 dark:bg-purple-900/40" }
 ];
 
 export const WorkoutTracker = ({ date, onClose }) => {
@@ -80,6 +80,7 @@ export const WorkoutTracker = ({ date, onClose }) => {
   const [workoutTypes, setWorkoutTypes] = useState([]);
   const [duration, setDuration] = useState(30);
   const [intensity, setIntensity] = useState(3);
+  const [calories, setCalories] = useState('');
   const [notes, setNotes] = useState('');
   
   // Additional tracking fields
@@ -101,6 +102,7 @@ export const WorkoutTracker = ({ date, onClose }) => {
         setWorkoutTypes(dayData.workout.types || []);
         setDuration(dayData.workout.duration || 30);
         setIntensity(dayData.workout.intensity || 3);
+        setCalories(dayData.workout.calories || '');
         setNotes(dayData.workout.notes || '');
         setExercises(dayData.workout.exercises || [{ name: '', sets: '', reps: '', weight: '' }]);
         setAddExercises(dayData.workout.exercises && dayData.workout.exercises.length > 0);
@@ -110,6 +112,7 @@ export const WorkoutTracker = ({ date, onClose }) => {
         setWorkoutTypes([]);
         setDuration(30);
         setIntensity(3);
+        setCalories('');
         setNotes('');
         setExercises([{ name: '', sets: '', reps: '', weight: '' }]);
         setAddExercises(false);
@@ -165,6 +168,12 @@ export const WorkoutTracker = ({ date, onClose }) => {
     }
   };
 
+  const handleCaloriesChange = (e) => {
+    // Allow only numbers
+    const value = e.target.value.replace(/\D/g, '');
+    setCalories(value);
+  };
+
   const saveWorkout = () => {
     const storage = getStorage();
     const dayData = storage[date] || {};
@@ -180,6 +189,7 @@ export const WorkoutTracker = ({ date, onClose }) => {
         types: workoutTypes,
         duration,
         intensity,
+        calories: calories || null,
         notes,
         exercises: validExercises,
         timestamp: new Date().toISOString()
@@ -209,10 +219,14 @@ export const WorkoutTracker = ({ date, onClose }) => {
       setWorkoutTypes([]);
       setDuration(30);
       setIntensity(3);
+      setCalories('');
       setNotes('');
       setExercises([{ name: '', sets: '', reps: '', weight: '' }]);
       setAddExercises(false);
       setWorkoutSaved(false);
+      
+      // Close the modal
+      onClose();
     }
   };
 
@@ -225,23 +239,23 @@ export const WorkoutTracker = ({ date, onClose }) => {
   return (
     <dialog 
       id="workout-modal" 
-      className="rounded-xl p-0 bg-transparent backdrop:bg-black backdrop:bg-opacity-50"
+      className="modal-base"
       onClick={(e) => e.target.id === 'workout-modal' && onClose()}
     >
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
+      <div className="modal-content max-w-2xl" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
           <div>
-            <h3 className="text-xl font-semibold text-slate-800 flex items-center gap-2">
-              <Dumbbell className="text-blue-500" size={20} />
+            <h3 className="modal-title flex items-center gap-2">
+              <Dumbbell className="text-blue-500 dark:text-blue-400" size={20} />
               Workout Tracker
             </h3>
-            <p className="text-sm text-slate-600">
+            <p className="modal-subtitle">
               {getFormattedDate()}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-full"
+            className="modal-close-button"
           >
             <X size={20} />
           </button>
@@ -250,7 +264,7 @@ export const WorkoutTracker = ({ date, onClose }) => {
         <div className="space-y-6">
           {/* Workout Type Selection */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 transition-colors">
               Workout Type (select all that apply)
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -259,22 +273,22 @@ export const WorkoutTracker = ({ date, onClose }) => {
                   key={key}
                   onClick={() => handleTypeToggle(key)}
                   className={`
-                    flex flex-col items-center p-2 rounded-lg border
+                    flex flex-col items-center p-2 rounded-lg border border-slate-200 dark:border-slate-700
                     ${workoutTypes.includes(key) 
                       ? color.replace('hover:', '') 
-                      : 'bg-white border-slate-200 hover:bg-slate-50'}
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}
                     transition-colors
                   `}
                 >
                   <span className="text-xl mb-1">{icon}</span>
-                  <span className="text-xs text-center leading-tight">{name}</span>
+                  <span className="text-xs text-center leading-tight text-slate-700 dark:text-slate-300 transition-colors">{name}</span>
                 </button>
               ))}
             </div>
             {!showAllTypes && (
               <button 
                 onClick={() => setShowAllTypes(true)}
-                className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+                className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
               >
                 Show more workout types
               </button>
@@ -287,15 +301,15 @@ export const WorkoutTracker = ({ date, onClose }) => {
                 value={customType}
                 onChange={(e) => setCustomType(e.target.value)}
                 placeholder="Add custom workout type..."
-                className="flex-1 p-2 text-sm border border-slate-200 rounded-md"
+                className="input-field text-sm p-2 flex-1"
               />
               <button
                 onClick={handleAddCustomType}
                 disabled={!customType.trim()}
                 className={`
-                  p-2 rounded-md ${!customType.trim() 
-                    ? 'bg-slate-100 text-slate-400' 
-                    : 'bg-blue-500 text-white hover:bg-blue-600'}
+                  p-2 rounded-md transition-colors ${!customType.trim() 
+                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600' 
+                    : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'}
                 `}
               >
                 <Plus size={16} />
@@ -303,39 +317,64 @@ export const WorkoutTracker = ({ date, onClose }) => {
             </div>
           </div>
 
-          {/* Duration Slider */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-sm font-medium text-slate-700 flex items-center gap-1">
-                <Clock size={16} className="text-slate-500" />
-                Duration (minutes)
-              </label>
-              <span className="text-lg font-semibold text-blue-700">{duration} min</span>
+          {/* Duration and Calories (in a row) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Duration Slider */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1 transition-colors">
+                  <Clock size={16} className="text-slate-500 dark:text-slate-400" />
+                  Duration (minutes)
+                </label>
+                <span className="text-lg font-semibold text-blue-700 dark:text-blue-400 transition-colors">{duration} min</span>
+              </div>
+              <input
+                type="range"
+                min="5"
+                max="180"
+                step="5"
+                value={duration}
+                onChange={(e) => setDuration(parseInt(e.target.value))}
+                className="w-full h-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg appearance-none cursor-pointer accent-blue-500 dark:accent-blue-600 transition-colors"
+              />
+              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">
+                <span>5 min</span>
+                <span>60 min</span>
+                <span>120 min</span>
+                <span>180 min</span>
+              </div>
             </div>
-            <input
-              type="range"
-              min="5"
-              max="180"
-              step="5"
-              value={duration}
-              onChange={(e) => setDuration(parseInt(e.target.value))}
-              className="w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-500"
-            />
-            <div className="flex justify-between text-xs text-slate-500 mt-1">
-              <span>5 min</span>
-              <span>60 min</span>
-              <span>120 min</span>
-              <span>180 min</span>
+
+            {/* Calories Burned Field */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1 transition-colors">
+                  <Flame size={16} className="text-red-500 dark:text-red-400" />
+                  Calories Burned
+                </label>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={calories}
+                  onChange={handleCaloriesChange}
+                  placeholder="Enter calories..."
+                  className="input-field pr-14"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none transition-colors">
+                  kcal
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Intensity Selection */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-1">
-              <Flame size={16} className="text-slate-500" />
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1 transition-colors">
+              <Flame size={16} className="text-slate-500 dark:text-slate-400" />
               Intensity Level
             </label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-5 gap-1 sm:gap-2">
               {INTENSITY_LEVELS.map(({ value, label, color }) => (
                 <button
                   key={value}
@@ -344,12 +383,21 @@ export const WorkoutTracker = ({ date, onClose }) => {
                     p-2 rounded-lg text-center transition-colors
                     ${intensity === value 
                       ? `${color} ring-2 ring-blue-500 font-medium` 
-                      : 'bg-slate-50 hover:bg-slate-100'}
+                      : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'}
                   `}
                 >
-                  <div className="text-lg font-semibold">{value}</div>
-                  <div className="text-xs">{label}</div>
+                  <div className="text-lg font-semibold text-slate-700 dark:text-slate-200 transition-colors">{value}</div>
+                  <div className="text-xs truncate text-slate-600 dark:text-slate-400 transition-colors">{label}</div>
                 </button>
+              ))}
+            </div>
+            
+            {/* Adding a legend for mobile users */}
+            <div className="mt-2 grid grid-cols-5 gap-1 sm:hidden text-center">
+              {INTENSITY_LEVELS.map(({ value, label }) => (
+                <div key={value} className="text-xs text-slate-500 dark:text-slate-400 transition-colors">
+                  {label}
+                </div>
               ))}
             </div>
           </div>
@@ -357,7 +405,7 @@ export const WorkoutTracker = ({ date, onClose }) => {
           {/* Exercise Tracking */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-slate-700">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors">
                 Track Exercises
               </label>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -368,41 +416,41 @@ export const WorkoutTracker = ({ date, onClose }) => {
                   checked={addExercises}
                   onChange={() => setAddExercises(!addExercises)} 
                 />
-                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500"></div>
+                <div className="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-600 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 dark:peer-checked:bg-blue-600 transition-colors"></div>
               </label>
             </div>
 
             {addExercises && (
-              <div className="space-y-3 mt-4 border-l-2 border-blue-200 pl-3">
+              <div className="space-y-3 mt-4 border-l-2 border-blue-200 dark:border-blue-800 pl-3 transition-colors">
                 {exercises.map((exercise, index) => (
                   <div key={index} className="grid grid-cols-12 gap-2">
                     <input
-                      className="col-span-5 p-2 text-sm border border-slate-200 rounded-md"
+                      className="col-span-5 p-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded-md transition-colors"
                       placeholder="Exercise name"
                       value={exercise.name}
                       onChange={(e) => handleExerciseChange(index, 'name', e.target.value)}
                     />
                     <input
-                      className="col-span-2 p-2 text-sm border border-slate-200 rounded-md"
+                      className="col-span-2 p-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded-md transition-colors"
                       placeholder="Sets"
                       value={exercise.sets}
                       onChange={(e) => handleExerciseChange(index, 'sets', e.target.value)}
                     />
                     <input
-                      className="col-span-2 p-2 text-sm border border-slate-200 rounded-md"
+                      className="col-span-2 p-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded-md transition-colors"
                       placeholder="Reps"
                       value={exercise.reps}
                       onChange={(e) => handleExerciseChange(index, 'reps', e.target.value)}
                     />
                     <input
-                      className="col-span-2 p-2 text-sm border border-slate-200 rounded-md"
+                      className="col-span-2 p-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded-md transition-colors"
                       placeholder="Weight"
                       value={exercise.weight}
                       onChange={(e) => handleExerciseChange(index, 'weight', e.target.value)}
                     />
                     <button
                       onClick={() => handleRemoveExercise(index)}
-                      className="col-span-1 p-2 text-red-500 hover:bg-red-50 rounded-md"
+                      className="col-span-1 p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -410,7 +458,7 @@ export const WorkoutTracker = ({ date, onClose }) => {
                 ))}
                 <button
                   onClick={handleAddExercise}
-                  className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 mt-2"
+                  className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mt-2 transition-colors"
                 >
                   <Plus size={16} />
                   Add exercise
@@ -421,23 +469,23 @@ export const WorkoutTracker = ({ date, onClose }) => {
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 transition-colors">
               Notes (how did it feel, what went well, etc.)
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any notes about your workout..."
-              className="w-full h-20 p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="textarea-field h-20"
             />
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-between pt-4 border-t border-slate-200">
+          <div className="flex justify-between pt-4 border-t border-slate-200 dark:border-slate-700 transition-colors">
             {workoutSaved ? (
               <button
                 onClick={deleteWorkout}
-                className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg"
+                className="btn-danger flex items-center gap-2"
               >
                 <Trash2 size={18} />
                 Delete Workout
@@ -450,10 +498,10 @@ export const WorkoutTracker = ({ date, onClose }) => {
               onClick={saveWorkout}
               disabled={workoutTypes.length === 0}
               className={`
-                flex items-center gap-2 px-6 py-2 rounded-lg font-medium
+                flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-colors
                 ${workoutTypes.length === 0 
-                  ? 'bg-slate-100 text-slate-400' 
-                  : 'bg-blue-500 text-white hover:bg-blue-600'}
+                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600' 
+                  : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'}
               `}
             >
               <Save size={18} />

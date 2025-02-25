@@ -142,14 +142,14 @@ export const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
   return (
     <dialog 
       id="custom-tasklist-modal" 
-      className="rounded-xl p-0 bg-transparent backdrop:bg-black backdrop:bg-opacity-50"
+      className="modal-base"
       onClick={(e) => e.target.id === 'custom-tasklist-modal' && onClose()}
     >
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
+      <div className="modal-content max-w-2xl" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
           <div>
-            <h3 className="text-xl font-semibold text-slate-800">Create Custom Task List</h3>
-            <p className="text-sm text-slate-600">
+            <h3 className="modal-title">Create Custom Task List</h3>
+            <p className="modal-subtitle">
               {new Date(date).toLocaleDateString('default', { 
                 weekday: 'long',
                 year: 'numeric',
@@ -160,7 +160,7 @@ export const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-full"
+            className="modal-close-button"
           >
             <X size={20} />
           </button>
@@ -168,14 +168,14 @@ export const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
 
         <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
           {categories.map((category, categoryIndex) => (
-            <div key={categoryIndex} className="border border-slate-200 rounded-lg p-4">
+            <div key={categoryIndex} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 transition-colors">
               <div className="flex items-center justify-between mb-4">
                 {category.isEditingTitle ? (
                   <input
                     type="text"
                     value={category.title}
                     onChange={(e) => handleCategoryTitleChange(categoryIndex, e.target.value)}
-                    className="flex-1 p-2 border border-slate-300 rounded-md"
+                    className="flex-1 p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 rounded-md transition-colors"
                     autoFocus
                     onBlur={() => handleToggleEditCategoryTitle(categoryIndex)}
                     onKeyDown={(e) => {
@@ -183,19 +183,19 @@ export const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
                     }}
                   />
                 ) : (
-                  <h4 className="font-medium text-slate-700">{category.title}</h4>
+                  <h4 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">{category.title}</h4>
                 )}
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => handleToggleEditCategoryTitle(categoryIndex)}
-                    className="p-1.5 hover:bg-slate-100 rounded-md"
+                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors"
                     title={category.isEditingTitle ? "Save title" : "Edit category title"}
                   >
-                    {category.isEditingTitle ? <Save size={16} /> : <Edit2 size={16} />}
+                    {category.isEditingTitle ? <Save size={16} className="text-blue-500 dark:text-blue-400" /> : <Edit2 size={16} className="text-slate-500 dark:text-slate-400" />}
                   </button>
                   <button
                     onClick={() => handleDeleteCategory(categoryIndex)}
-                    className="p-1.5 hover:bg-red-100 text-red-500 rounded-md"
+                    className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 rounded-md transition-colors"
                     title="Delete category"
                   >
                     <Trash2 size={16} />
@@ -210,12 +210,12 @@ export const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
                       type="text"
                       value={task}
                       onChange={(e) => handleTaskChange(categoryIndex, taskIndex, e.target.value)}
-                      className="flex-1 p-2 border border-slate-200 rounded-md"
+                      className="flex-1 p-2 border border-slate-200 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded-md transition-colors"
                       placeholder="Task description"
                     />
                     <button
                       onClick={() => handleDeleteTask(categoryIndex, taskIndex)}
-                      className="p-1.5 hover:bg-red-100 text-red-500 rounded-md"
+                      className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 rounded-md transition-colors"
                       title="Delete task"
                     >
                       <Trash2 size={16} />
@@ -224,7 +224,7 @@ export const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
                 ))}
                 <button
                   onClick={() => handleAddTask(categoryIndex)}
-                  className="flex items-center gap-1 text-blue-500 hover:text-blue-600 mt-2"
+                  className="flex items-center gap-1 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 mt-2 transition-colors"
                 >
                   <Plus size={16} />
                   <span>Add Task</span>
@@ -235,7 +235,7 @@ export const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
 
           <button
             onClick={handleAddCategory}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 w-full justify-center"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/40 w-full justify-center transition-colors"
           >
             <Plus size={20} />
             <span>Add Category</span>
@@ -244,7 +244,7 @@ export const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
 
         {/* Error Message */}
         {error && (
-          <div className="mt-4 text-red-600 bg-red-50 p-3 rounded-lg">
+          <div className="mt-4 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-3 rounded-lg transition-colors">
             <p>{error}</p>
           </div>
         )}
@@ -252,7 +252,7 @@ export const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
         {/* Save Button */}
         <button
           onClick={handleSave}
-          className="w-full py-3 px-4 rounded-lg font-medium bg-blue-500 text-white hover:bg-blue-600 mt-6"
+          className="w-full py-3 px-4 rounded-lg font-medium bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 mt-6 transition-colors"
         >
           Save Custom Task List
         </button>

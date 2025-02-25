@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
 
+// Updated MOODS object with dark mode compatible colors
 export const MOODS = {
-  GREAT: { emoji: '😊', label: 'Great', color: 'bg-green-100' },
-  GOOD: { emoji: '🙂', label: 'Good', color: 'bg-lime-100' },
-  OKAY: { emoji: '😐', label: 'Okay', color: 'bg-yellow-100' },
-  MEH: { emoji: '😕', label: 'Meh', color: 'bg-orange-100' },
-  BAD: { emoji: '😔', label: 'Bad', color: 'bg-red-100' },
-  OVERWHELMED: { emoji: '🤯', label: 'Over\u00adwhelmed', color: 'bg-red-100' }
+  GREAT: { emoji: '😊', label: 'Great', color: 'bg-green-100 dark:bg-green-900/40' },
+  GOOD: { emoji: '🙂', label: 'Good', color: 'bg-lime-100 dark:bg-lime-900/40' },
+  OKAY: { emoji: '😐', label: 'Okay', color: 'bg-yellow-100 dark:bg-yellow-900/40' },
+  MEH: { emoji: '😕', label: 'Meh', color: 'bg-orange-100 dark:bg-orange-900/40' },
+  BAD: { emoji: '😔', label: 'Bad', color: 'bg-red-100 dark:bg-red-900/40' },
+  OVERWHELMED: { emoji: '🤯', label: 'Over\u00adwhelmed', color: 'bg-red-100 dark:bg-red-900/40' }
 };
 
 export const MoodSelector = ({ date, onClose }) => {
@@ -62,20 +63,20 @@ export const MoodSelector = ({ date, onClose }) => {
   return (
     <dialog 
       id="mood-modal" 
-      className="rounded-xl p-0 bg-transparent backdrop:bg-black backdrop:bg-opacity-50"
+      className="modal-base"
       onClick={handleClickOutside}
     >
-      <div className="w-full max-w-sm bg-white rounded-xl shadow-lg p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
+      <div className="modal-content max-w-sm" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
           <div>
-            <h3 className="text-xl font-semibold text-slate-800">Track Mood</h3>
-            <p className="text-sm text-slate-600">
+            <h3 className="modal-title">Track Mood</h3>
+            <p className="modal-subtitle">
               {getFormattedDate()}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-full"
+            className="modal-close-button"
           >
             <X size={20} />
           </button>
@@ -90,13 +91,13 @@ export const MoodSelector = ({ date, onClose }) => {
                 onClick={() => handleMoodSelect(key)}
                 className={`
                   flex flex-col items-center p-2 rounded-lg 
-                  ${color} hover:opacity-80 transition-opacity
+                  ${color} hover:opacity-80 transition-all
                   ${isSelected ? 'ring-2 ring-blue-500' : 'opacity-60 hover:opacity-100'}
                   ${currentMood && !isSelected ? 'opacity-40' : ''}
                 `}
               >
                 <span className="text-2xl mb-1">{emoji}</span>
-                <span className="text-xs text-slate-600 whitespace-normal text-center leading-tight min-h-[2rem]">
+                <span className="text-xs text-slate-600 dark:text-slate-300 whitespace-normal text-center leading-tight min-h-[2rem] transition-colors">
                   {label}
                 </span>
               </button>

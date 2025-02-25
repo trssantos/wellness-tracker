@@ -69,20 +69,20 @@ const DayContext = ({ context, onUpdate }) => {
   const { mood, energyLevel, objective, isAIGenerated, context: aiContext } = context;
 
   const getEnergyColor = (level, currentLevel) => {
-    if (level > currentLevel) return 'text-slate-300';
-    if (currentLevel === 1) return 'text-red-500';
-    if (currentLevel === 2) return 'text-yellow-500';
-    return 'text-green-500';
+    if (level > currentLevel) return 'text-slate-300 dark:text-slate-600';
+    if (currentLevel === 1) return 'text-red-500 dark:text-red-400';
+    if (currentLevel === 2) return 'text-yellow-500 dark:text-yellow-400';
+    return 'text-green-500 dark:text-green-400';
   };
 
   return (
-    <div className="bg-blue-50 rounded-lg p-4 mb-6">
-      <h4 className="font-medium text-slate-700 mb-3">
+    <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 mb-6 transition-colors">
+      <h4 className="font-medium text-slate-700 dark:text-slate-200 mb-3 transition-colors">
         {isAIGenerated ? "Generated Task Context" : "Day Context"}
       </h4>
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          <span className="text-slate-600 w-16">Mood:</span>
+          <span className="text-slate-600 dark:text-slate-400 w-16 transition-colors">Mood:</span>
           <div className="flex flex-wrap gap-2">
             {Object.entries(MOODS).map(([key, { emoji, label, color }]) => {
               const isSelected = mood === key;
@@ -92,7 +92,7 @@ const DayContext = ({ context, onUpdate }) => {
                   onClick={() => onUpdate({ ...context, mood: key })}
                   className={`
                     p-2 rounded-lg transition-all
-                    ${isSelected ? `${color} shadow-md ring-2 ring-blue-500` : 'hover:bg-slate-100'}
+                    ${isSelected ? `${color} shadow-md ring-2 ring-blue-500` : 'hover:bg-slate-100 dark:hover:bg-slate-700'}
                     ${!isSelected && mood ? 'opacity-40' : 'opacity-100'}
                   `}
                   title={label}
@@ -104,7 +104,7 @@ const DayContext = ({ context, onUpdate }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-slate-600 w-16">Energy:</span>
+          <span className="text-slate-600 dark:text-slate-400 w-16 transition-colors">Energy:</span>
           <div className="flex gap-1">
             {[1, 2, 3].map((level) => (
               <button
@@ -124,16 +124,16 @@ const DayContext = ({ context, onUpdate }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-slate-600 w-16">Focus:</span>
-          <span className="flex-1">{objective || "Another regular day"}</span>
+          <span className="text-slate-600 dark:text-slate-400 w-16 transition-colors">Focus:</span>
+          <span className="flex-1 text-slate-700 dark:text-slate-300 transition-colors">{objective || "Another regular day"}</span>
           {isAIGenerated && aiContext && (
             <div className="group relative">
               <HelpCircle 
                 size={16} 
-                className="text-blue-500 cursor-help"
+                className="text-blue-500 dark:text-blue-400 cursor-help"
               />
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-slate-800 text-white text-xs rounded-lg p-2 hidden group-hover:block z-10">
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-slate-800 dark:bg-slate-700 text-white text-xs rounded-lg p-2 hidden group-hover:block z-10">
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-slate-800 dark:bg-slate-700 rotate-45"></div>
                 Additional Context: {aiContext}
               </div>
             </div>
@@ -160,26 +160,26 @@ const ProgressSummary = ({ checked, categories }) => {
   const totalPercentage = totalItems > 0 ? Math.round((totalCompleted / totalItems) * 100) : 0;
 
   const getProgressColor = (percentage) => {
-    if (percentage <= 25) return 'text-red-500';
-    if (percentage <= 50) return 'text-yellow-500';
-    if (percentage <= 75) return 'text-lime-500';
-    return 'text-green-500';
+    if (percentage <= 25) return 'text-red-500 dark:text-red-400';
+    if (percentage <= 50) return 'text-yellow-500 dark:text-yellow-400';
+    if (percentage <= 75) return 'text-lime-500 dark:text-lime-400';
+    return 'text-green-500 dark:text-green-400';
   };
 
   return (
-    <div className="bg-slate-50 rounded-lg p-4 mb-6">
+    <div className="bg-slate-50 dark:bg-slate-800/80 rounded-lg p-4 mb-6 transition-colors">
       <div className="flex items-center gap-2 mb-4">
-        <BarChart size={20} className="text-blue-500" />
-        <h4 className="font-medium text-slate-700">Progress Summary</h4>
+        <BarChart size={20} className="text-blue-500 dark:text-blue-400" />
+        <h4 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Progress Summary</h4>
       </div>
       
-      <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200">
-        <span className="font-medium text-slate-700">Overall Progress</span>
+      <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200 dark:border-slate-700 transition-colors">
+        <span className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Overall Progress</span>
         <div className="flex items-center gap-2">
           <span className={`font-bold ${getProgressColor(totalPercentage)}`}>
             {totalPercentage}%
           </span>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-slate-500 dark:text-slate-400 transition-colors">
             ({totalCompleted}/{totalItems} tasks)
           </span>
         </div>
@@ -190,12 +190,12 @@ const ProgressSummary = ({ checked, categories }) => {
           const progress = getCategoryProgress(category.items);
           return (
             <div key={idx} className="flex items-center justify-between text-sm">
-              <span className="text-slate-600">{category.title}</span>
+              <span className="text-slate-600 dark:text-slate-400 transition-colors">{category.title}</span>
               <div className="flex items-center gap-2">
                 <span className={`font-medium ${getProgressColor(progress.percentage)}`}>
                   {progress.percentage}%
                 </span>
-                <span className="text-slate-400">
+                <span className="text-slate-400 dark:text-slate-500 transition-colors">
                   ({progress.completed}/{progress.total})
                 </span>
               </div>
@@ -516,197 +516,195 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   return (
     <dialog 
       id="checklist-modal" 
-      className="rounded-xl p-0 bg-transparent backdrop:bg-black backdrop:bg-opacity-50"
+      className="modal-base"
       onClick={(e) => e.target.id === 'checklist-modal' && onClose()}
     >
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg" onClick={e => e.stopPropagation()}>
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="text-xl font-semibold text-slate-800">
-                {new Date(date).toLocaleDateString('default', { 
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </h3>
-              <div className="text-sm text-slate-600 flex items-center gap-2">
-                <span>
-                  {taskListType === 'ai' 
-                    ? 'AI Generated Tasks' 
-                    : taskListType === 'custom' 
-                      ? 'Custom Tasks' 
-                      : 'Default Tasks'}
-                </span>
-                <button
-                  onClick={toggleEditing}
-                  className="text-blue-500 hover:text-blue-700 p-1 rounded-md"
-                  title={isEditing ? "Save changes" : "Edit tasks"}
-                >
-                  {isEditing ? <Save size={14} /> : <Edit2 size={14} />}
-                </button>
-                <button
-                  onClick={() => {
-                    const currentDate = date; // Store the current date
-                    onClose();
-                    setTimeout(() => {
-                      // Use the stored date when opening the AI generator
-                      const aiModal = document.getElementById('ai-generator-modal');
-                      if (aiModal) {
-                        // Store the date in a data attribute so AITaskGenerator can access it
-                        aiModal.dataset.selectedDate = currentDate;
-                        aiModal.showModal();
-                      }
-                    }, 100);
-                  }}
-                  className="text-amber-500 hover:text-amber-700 p-1 rounded-md"
-                  title="Generate with AI"
-                >
-                  <Sparkles size={14} />
-                </button>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-slate-100 rounded-full"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <DayContext context={dayContext} onUpdate={handleContextUpdate} />
-          
-          {!isEditing && <ProgressSummary checked={checked} categories={categories} />}
-
-          {isEditing ? (
-            // Editing mode view
-            <div className="space-y-6 max-h-[50vh] overflow-y-auto pr-2">
-              {editedCategories.map((category, categoryIdx) => (
-                <div key={categoryIdx} className="border border-slate-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4 bg-slate-100 p-3 rounded-lg border-l-4 border-blue-500">
-                    <input
-                      type="text"
-                      value={category.title}
-                      onChange={(e) => handleCategoryTitleChange(categoryIdx, e.target.value)}
-                      className="flex-1 p-2 bg-white border border-slate-300 rounded-md font-medium"
-                      placeholder="Category title"
-                    />
-                    <button
-                      onClick={() => handleDeleteCategory(categoryIdx)}
-                      className="p-1.5 hover:bg-red-100 text-red-500 rounded-md ml-2"
-                      title="Delete category"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-
-                  <div className="space-y-2 ml-4 pl-2 border-l-2 border-slate-200">
-                    {category.items.map((task, taskIdx) => (
-                      <div key={taskIdx} className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-slate-300 rounded-full mr-1"></div>
-                        <input
-                          type="text"
-                          value={task}
-                          onChange={(e) => handleTaskChange(categoryIdx, taskIdx, e.target.value)}
-                          className="flex-1 p-2 border border-slate-200 rounded-md bg-white"
-                          placeholder="Task description"
-                        />
-                        <button
-                          onClick={() => handleDeleteTask(categoryIdx, taskIdx)}
-                          className="p-1.5 hover:bg-red-100 text-red-500 rounded-md"
-                          title="Delete task"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => handleAddTask(categoryIdx)}
-                      className="flex items-center gap-1 text-blue-500 hover:text-blue-600 mt-2"
-                    >
-                      <Plus size={16} />
-                      <span>Add Task</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-
+      <div className="modal-content max-w-2xl" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <div>
+            <h3 className="modal-title">
+              {new Date(date).toLocaleDateString('default', { 
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </h3>
+            <div className="modal-subtitle flex items-center gap-2">
+              <span>
+                {taskListType === 'ai' 
+                  ? 'AI Generated Tasks' 
+                  : taskListType === 'custom' 
+                    ? 'Custom Tasks' 
+                    : 'Default Tasks'}
+              </span>
               <button
-                onClick={handleAddCategory}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 w-full justify-center"
+                onClick={toggleEditing}
+                className="text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 p-1 rounded-md transition-colors"
+                title={isEditing ? "Save changes" : "Edit tasks"}
               >
-                <Plus size={20} />
-                <span>Add Category</span>
+                {isEditing ? <Save size={14} /> : <Edit2 size={14} />}
               </button>
-
-              {editingError && (
-                <div className="mt-4 text-red-600 bg-red-50 p-3 rounded-lg">
-                  <p>{editingError}</p>
-                </div>
-              )}
-
-              <div className="flex items-center gap-4 mt-4">
-                <button
-                  onClick={saveEdits}
-                  className="flex-1 py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                >
-                  Save Changes
-                </button>
-                <button
-                  onClick={cancelEditing}
-                  className="flex-1 py-2 px-4 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
-                >
-                  Cancel
-                </button>
-              </div>
+              <button
+                onClick={() => {
+                  const currentDate = date; // Store the current date
+                  onClose();
+                  setTimeout(() => {
+                    // Use the stored date when opening the AI generator
+                    const aiModal = document.getElementById('ai-generator-modal');
+                    if (aiModal) {
+                      // Store the date in a data attribute so AITaskGenerator can access it
+                      aiModal.dataset.selectedDate = currentDate;
+                      aiModal.showModal();
+                    }
+                  }, 100);
+                }}
+                className="text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 p-1 rounded-md transition-colors"
+                title="Generate with AI"
+              >
+                <Sparkles size={14} />
+              </button>
             </div>
-          ) : (
-            // Normal viewing mode
-            <>
-              <div className="flex flex-wrap gap-2 mb-6">
-                {categories.map((cat, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveCategory(idx)}
-                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
-                      ${activeCategory === idx 
-                        ? 'bg-blue-100 text-blue-700' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  >
-                    {cat.title}
-                  </button>
-                ))}
-              </div>
-
-              <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-                {categories[activeCategory]?.items.map((item, idx) => {
-                  const taskText = typeof item === 'string' ? item : 
-                               typeof item === 'object' && item.task ? item.task :
-                               String(item);
-                  return (
-                    <div
-                      key={`${activeCategory}-${idx}`}
-                      className="flex items-center p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                      onClick={() => handleCheck(taskText)}
-                    >
-                      <div className="flex items-center justify-center w-5 h-5 mr-3">
-                        {checked[taskText] ? (
-                          <CheckCircle2 size={20} className="text-green-500" />
-                        ) : (
-                          <Circle size={20} className="text-slate-300" />
-                        )}
-                      </div>
-                      <span className={`text-slate-700 ${checked[taskText] ? 'line-through text-slate-500' : ''}`}>
-                        {taskText}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
+          </div>
+          <button
+            onClick={onClose}
+            className="modal-close-button"
+          >
+            <X size={20} />
+          </button>
         </div>
+
+        <DayContext context={dayContext} onUpdate={handleContextUpdate} />
+        
+        {!isEditing && <ProgressSummary checked={checked} categories={categories} />}
+
+        {isEditing ? (
+          // Editing mode view
+          <div className="space-y-6 max-h-[50vh] overflow-y-auto pr-2">
+            {editedCategories.map((category, categoryIdx) => (
+              <div key={categoryIdx} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 transition-colors">
+                <div className="flex items-center justify-between mb-4 bg-slate-100 dark:bg-slate-700 p-3 rounded-lg border-l-4 border-blue-500 transition-colors">
+                  <input
+                    type="text"
+                    value={category.title}
+                    onChange={(e) => handleCategoryTitleChange(categoryIdx, e.target.value)}
+                    className="flex-1 p-2 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-md font-medium text-slate-700 dark:text-slate-200 transition-colors"
+                    placeholder="Category title"
+                  />
+                  <button
+                    onClick={() => handleDeleteCategory(categoryIdx)}
+                    className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 rounded-md ml-2 transition-colors"
+                    title="Delete category"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+
+                <div className="space-y-2 ml-4 pl-2 border-l-2 border-slate-200 dark:border-slate-700 transition-colors">
+                  {category.items.map((task, taskIdx) => (
+                    <div key={taskIdx} className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-slate-300 dark:bg-slate-600 rounded-full mr-1 transition-colors"></div>
+                      <input
+                        type="text"
+                        value={task}
+                        onChange={(e) => handleTaskChange(categoryIdx, taskIdx, e.target.value)}
+                        className="flex-1 p-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                        placeholder="Task description"
+                      />
+                      <button
+                        onClick={() => handleDeleteTask(categoryIdx, taskIdx)}
+                        className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 rounded-md transition-colors"
+                        title="Delete task"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => handleAddTask(categoryIdx)}
+                    className="flex items-center gap-1 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 mt-2 transition-colors"
+                  >
+                    <Plus size={16} />
+                    <span>Add Task</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            <button
+              onClick={handleAddCategory}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/40 w-full justify-center transition-colors"
+            >
+              <Plus size={20} />
+              <span>Add Category</span>
+            </button>
+
+            {editingError && (
+              <div className="mt-4 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-3 rounded-lg transition-colors">
+                <p>{editingError}</p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-4 mt-4">
+              <button
+                onClick={saveEdits}
+                className="flex-1 py-2 px-4 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={cancelEditing}
+                className="flex-1 py-2 px-4 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Normal viewing mode
+          <>
+            <div className="flex flex-wrap gap-2 mb-6">
+              {categories.map((cat, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveCategory(idx)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
+                    ${activeCategory === idx 
+                      ? 'bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300' 
+                      : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600'}`}
+                >
+                  {cat.title}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+              {categories[activeCategory]?.items.map((item, idx) => {
+                const taskText = typeof item === 'string' ? item : 
+                             typeof item === 'object' && item.task ? item.task :
+                             String(item);
+                return (
+                  <div
+                    key={`${activeCategory}-${idx}`}
+                    className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                    onClick={() => handleCheck(taskText)}
+                  >
+                    <div className="flex items-center justify-center w-5 h-5 mr-3">
+                      {checked[taskText] ? (
+                        <CheckCircle2 size={20} className="text-green-500 dark:text-green-400" />
+                      ) : (
+                        <Circle size={20} className="text-slate-300 dark:text-slate-600" />
+                      )}
+                    </div>
+                    <span className={`text-slate-700 dark:text-slate-200 transition-colors ${checked[taskText] ? 'line-through text-slate-500 dark:text-slate-400' : ''}`}>
+                      {taskText}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </dialog>
   );

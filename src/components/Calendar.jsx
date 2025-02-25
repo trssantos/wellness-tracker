@@ -59,39 +59,39 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
   };
 
   const getProgressColorClass = (rate) => {
-    if (rate === 0) return 'bg-white';
-    if (rate <= 25) return 'bg-red-50';
-    if (rate <= 50) return 'bg-yellow-50';
-    if (rate <= 75) return 'bg-lime-50';
-    return 'bg-green-50';
+    if (rate === 0) return 'bg-white dark:bg-slate-800';
+    if (rate <= 25) return 'bg-red-50 dark:bg-red-900/30';
+    if (rate <= 50) return 'bg-yellow-50 dark:bg-yellow-900/30';
+    if (rate <= 75) return 'bg-lime-50 dark:bg-lime-900/30';
+    return 'bg-green-50 dark:bg-green-900/30';
   };
 
   return (
     <div>
-      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-6 mb-6 transition-colors">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg sm:text-xl font-semibold text-slate-800">
+          <h2 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-100 transition-colors">
             {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
           </h2>
           <div className="flex gap-1 sm:gap-2">
             <button
               onClick={() => onMonthChange(prevMonth(currentMonth))}
-              className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-lg"
+              className="p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={18} className="text-slate-600 dark:text-slate-300" />
             </button>
             <button
               onClick={() => onMonthChange(nextMonth(currentMonth))}
-              className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-lg"
+              className="p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={18} className="text-slate-600 dark:text-slate-300" />
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-7 gap-1 sm:gap-4">
           {WEEKDAYS.map((day) => (
-            <div key={day.full} className="text-center font-medium text-slate-600 text-sm sm:text-base">
+            <div key={day.full} className="text-center font-medium text-slate-600 dark:text-slate-400 text-sm sm:text-base">
               {day.short}
             </div>
           ))}
@@ -109,15 +109,15 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
                   onClick={() => onSelectDay(dateStr)}
                   className={`
                     aspect-square rounded-lg relative p-1 sm:p-2
-                    ${isCurrentMonth ? getProgressColorClass(completionRate) : 'bg-slate-50 opacity-50'}
+                    ${isCurrentMonth ? getProgressColorClass(completionRate) : 'bg-slate-50 dark:bg-slate-700 opacity-50'}
                     ${isSelected ? 'ring-2 ring-blue-500' : ''}
                     ${isToday(date) ? 'ring-2 ring-amber-500' : ''}
-                    hover:ring-2 hover:ring-blue-200 transition-all
+                    hover:ring-2 hover:ring-blue-200 dark:hover:ring-blue-700 transition-all
                   `}
                 >
                   <span className={`
                     text-xs sm:text-sm
-                    ${isToday(date) ? 'font-bold text-amber-500' : 'text-slate-600'}
+                    ${isToday(date) ? 'font-bold text-amber-500 dark:text-amber-400' : 'text-slate-600 dark:text-slate-300'}
                   `}>
                     {date.getDate()}
                   </span>
@@ -125,21 +125,21 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
                   {/* AI Tasks indicator */}
                   {hasAITasks && (
                     <div className="absolute bottom-0.5 right-0.5">
-                      <Sparkles size={12} className="text-amber-500" />
+                      <Sparkles size={12} className="text-amber-500 dark:text-amber-400" />
                     </div>
                   )}
                   
                   {/* Notes indicator */}
                   {hasNotes && (
                     <div className="absolute bottom-0.5 left-0.5">
-                      <PenTool size={10} className="text-teal-500" />
+                      <PenTool size={10} className="text-teal-500 dark:text-teal-400" />
                     </div>
                   )}
                   
                   {/* Workout indicator */}
                   {hasWorkout && (
                     <div className="absolute top-0.5 left-0.5">
-                      <Dumbbell size={10} className="text-blue-500" />
+                      <Dumbbell size={10} className="text-blue-500 dark:text-blue-400" />
                     </div>
                   )}
                   

@@ -98,14 +98,14 @@ export const DayNotes = ({ date, onClose }) => {
   return (
     <dialog 
       id="notes-modal" 
-      className="rounded-xl p-0 bg-transparent backdrop:bg-black backdrop:bg-opacity-50"
+      className="modal-base"
       onClick={(e) => e.target.id === 'notes-modal' && onClose()}
     >
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
+      <div className="modal-content max-w-2xl" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
           <div>
-            <h3 className="text-xl font-semibold text-slate-800">Day Notes</h3>
-            <p className="text-sm text-slate-600">
+            <h3 className="modal-title">Day Notes</h3>
+            <p className="modal-subtitle">
               {getFormattedDate()}
             </p>
           </div>
@@ -113,7 +113,7 @@ export const DayNotes = ({ date, onClose }) => {
             {!isEditing && notes && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="p-2 hover:bg-blue-50 text-blue-500 rounded-full"
+                className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-500 dark:text-blue-400 rounded-full transition-colors"
                 title="Edit notes"
               >
                 <Edit2 size={20} />
@@ -121,7 +121,7 @@ export const DayNotes = ({ date, onClose }) => {
             )}
             <button
               onClick={onClose}
-              className="p-2 hover:bg-slate-100 rounded-full"
+              className="modal-close-button"
             >
               <X size={20} />
             </button>
@@ -135,7 +135,7 @@ export const DayNotes = ({ date, onClose }) => {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add your thoughts, reflections, or anything you want to remember about today..."
-                className="w-full h-60 p-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+                className="textarea-field h-60 mb-4"
                 autoFocus
               />
             
@@ -143,12 +143,12 @@ export const DayNotes = ({ date, onClose }) => {
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Lightbulb size={16} className="text-amber-500" />
-                    <span className="text-sm font-medium text-slate-700">Need inspiration? Try one of these prompts:</span>
+                    <Lightbulb size={16} className="text-amber-500 dark:text-amber-400" />
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors">Need inspiration? Try one of these prompts:</span>
                   </div>
                   <button 
                     onClick={refreshPrompts}
-                    className="p-1 hover:bg-slate-100 rounded-full text-slate-500"
+                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400 transition-colors"
                     title="Get new prompts"
                   >
                     <RefreshCw size={16} />
@@ -159,7 +159,7 @@ export const DayNotes = ({ date, onClose }) => {
                     <button
                       key={index}
                       onClick={() => addPromptToNotes(prompt)}
-                      className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-full text-sm font-medium"
+                      className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-800/40 text-amber-800 dark:text-amber-300 rounded-full text-sm font-medium transition-colors"
                     >
                       {prompt}
                     </button>
@@ -171,7 +171,7 @@ export const DayNotes = ({ date, onClose }) => {
                       const modal = document.getElementById('all-prompts-dialog');
                       if (modal) modal.showModal();
                     }}
-                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full text-sm font-medium"
+                    className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-full text-sm font-medium transition-colors"
                   >
                     More prompts...
                   </button>
@@ -183,8 +183,8 @@ export const DayNotes = ({ date, onClose }) => {
                   onClick={saveNotes}
                   disabled={!notes.trim()}
                   className={`
-                    flex items-center gap-2 px-4 py-2 rounded-lg font-medium
-                    ${!notes.trim() ? 'bg-slate-100 text-slate-400' : 'bg-blue-500 text-white hover:bg-blue-600'}
+                    flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
+                    ${!notes.trim() ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600' : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'}
                   `}
                 >
                   <Save size={18} />
@@ -195,16 +195,16 @@ export const DayNotes = ({ date, onClose }) => {
           ) : (
             <>
               {notes ? (
-                <div className="bg-slate-50 rounded-lg p-4 whitespace-pre-wrap min-h-60">
+                <div className="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-4 whitespace-pre-wrap min-h-60 text-slate-700 dark:text-slate-200 transition-colors">
                   {notes}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center bg-slate-50 rounded-lg p-8 min-h-60">
-                  <PenTool size={36} className="text-slate-300 mb-4" />
-                  <p className="text-slate-500 text-center">No notes yet for this day.</p>
+                <div className="flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/60 rounded-lg p-8 min-h-60 transition-colors">
+                  <PenTool size={36} className="text-slate-300 dark:text-slate-600 mb-4 transition-colors" />
+                  <p className="text-slate-500 dark:text-slate-400 text-center transition-colors">No notes yet for this day.</p>
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
+                    className="mt-4 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-colors"
                   >
                     Add Notes
                   </button>
@@ -218,14 +218,14 @@ export const DayNotes = ({ date, onClose }) => {
       {/* Dialog for all prompts */}
       <dialog 
         id="all-prompts-dialog" 
-        className="rounded-xl p-0 bg-transparent backdrop:bg-black backdrop:bg-opacity-50"
+        className="modal-base"
       >
-        <div className="w-full max-w-lg bg-white rounded-xl shadow-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="text-lg font-medium text-slate-800">Reflection Prompts</h4>
+        <div className="modal-content max-w-lg">
+          <div className="modal-header mb-4">
+            <h4 className="text-lg font-medium text-slate-800 dark:text-slate-100 transition-colors">Reflection Prompts</h4>
             <button
               onClick={() => document.getElementById('all-prompts-dialog').close()}
-              className="p-2 hover:bg-slate-100 rounded-full"
+              className="modal-close-button"
             >
               <X size={18} />
             </button>
@@ -238,10 +238,10 @@ export const DayNotes = ({ date, onClose }) => {
                   addPromptToNotes(prompt);
                   document.getElementById('all-prompts-dialog').close();
                 }}
-                className="text-left p-3 bg-amber-50 hover:bg-amber-100 rounded-lg flex items-center gap-2"
+                className="text-left p-3 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-800/40 rounded-lg flex items-center gap-2 transition-colors"
               >
-                <Sparkles size={16} className="text-amber-500 flex-shrink-0" />
-                <span>{prompt}</span>
+                <Sparkles size={16} className="text-amber-500 dark:text-amber-400 flex-shrink-0" />
+                <span className="text-slate-800 dark:text-slate-200 transition-colors">{prompt}</span>
               </button>
             ))}
           </div>

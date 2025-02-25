@@ -178,7 +178,7 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
           size={20}
           className={`
             ${i < level ? 'fill-current' : 'fill-none'}
-            ${level === 1 ? 'text-red-500' : level === 2 ? 'text-yellow-500' : 'text-green-500'}
+            ${level === 1 ? 'text-red-500 dark:text-red-400' : level === 2 ? 'text-yellow-500 dark:text-yellow-400' : 'text-green-500 dark:text-green-400'}
           `}
         />
       );
@@ -205,20 +205,20 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
   return (
     <dialog 
       id="ai-generator-modal" 
-      className="rounded-xl p-0 bg-transparent backdrop:bg-black backdrop:bg-opacity-50"
+      className="modal-base"
       onClick={(e) => e.target.id === 'ai-generator-modal' && onClose()}
     >
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
+      <div className="modal-content max-w-2xl" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
           <div>
-            <h3 className="text-xl font-semibold text-slate-800">Generate Daily Tasks</h3>
-            <p className="text-sm text-slate-600">
+            <h3 className="modal-title">Generate Daily Tasks</h3>
+            <p className="modal-subtitle">
               {getFormattedDate()}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-full"
+            className="modal-close-button"
           >
             <X size={20} />
           </button>
@@ -227,7 +227,7 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
         <div className="space-y-6">
           {/* Mood Selection */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 transition-colors">
               How are you feeling today?
             </label>
             <div className="grid grid-cols-5 gap-2">
@@ -237,12 +237,12 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
                   onClick={() => setMood(key)}
                   className={`
                     flex flex-col items-center p-2 rounded-lg 
-                    ${color} hover:opacity-80 transition-opacity
+                    ${color} hover:opacity-80 transition-all
                     ${mood === key ? 'ring-2 ring-blue-500' : 'opacity-60 hover:opacity-100'}
                   `}
                 >
                   <span className="text-2xl mb-1">{emoji}</span>
-                  <span className="text-xs text-slate-600">{label}</span>
+                  <span className="text-xs text-slate-600 dark:text-slate-300 transition-colors">{label}</span>
                 </button>
               ))}
             </div>
@@ -250,7 +250,7 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
 
           {/* Energy Level */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 transition-colors">
               Energy Level
             </label>
             <div className="grid grid-cols-3 gap-2 max-w-xs">
@@ -260,7 +260,7 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
                   onClick={() => setEnergyLevel(level)}
                   className={`
                     flex items-center justify-center p-2 rounded-lg transition-colors
-                    ${energyLevel === level ? 'bg-slate-100' : 'hover:bg-slate-50'}
+                    ${energyLevel === level ? 'bg-slate-100 dark:bg-slate-700' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}
                   `}
                 >
                   {renderEnergyLevel(level)}
@@ -271,7 +271,7 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
 
           {/* Day Objective */}
           <div>
-            <label htmlFor="objective" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="objective" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 transition-colors">
               Main goal for today
             </label>
             <input
@@ -280,13 +280,13 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
               value={dayObjective}
               onChange={(e) => setDayObjective(e.target.value)}
               placeholder="e.g., Start my project presentation"
-              className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="input-field"
             />
           </div>
 
           {/* Context */}
           <div>
-            <label htmlFor="context" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="context" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 transition-colors">
               Additional context
             </label>
             <textarea
@@ -294,13 +294,13 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
               value={context}
               onChange={(e) => setContext(e.target.value)}
               placeholder="e.g., Working from home today, have a meeting at 2 PM"
-              className="w-full h-24 p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="textarea-field h-24"
             />
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg">
+            <div className="flex items-center gap-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-3 rounded-lg transition-colors">
               <AlertCircle size={20} />
               <p>{error}</p>
             </div>
@@ -311,11 +311,10 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
             onClick={handleGenerate}
             disabled={!mood || !energyLevel || !dayObjective || isLoading}
             className={`
-              w-full py-3 px-4 rounded-lg font-medium
+              w-full py-3 px-4 rounded-lg font-medium transition-colors
               ${(!mood || !energyLevel || !dayObjective || isLoading)
-                ? 'bg-slate-100 text-slate-400'
-                : 'bg-blue-500 text-white hover:bg-blue-600'}
-              transition-colors
+                ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
+                : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'}
             `}
           >
             {isLoading ? (

@@ -19,43 +19,43 @@ export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
     {
       id: 'mood',
       label: 'Track Mood',
-      icon: <SmilePlus size={24} className="text-purple-500" />,
-      bgColor: 'bg-purple-50 hover:bg-purple-100'
+      icon: <SmilePlus size={24} className="text-purple-500 dark:text-purple-400" />,
+      bgColor: 'bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-800/40'
     },
     {
       id: 'progress',
       label: 'Track Progress',
-      icon: <CheckSquare size={24} className="text-blue-500" />,
-      bgColor: 'bg-blue-50 hover:bg-blue-100'
+      icon: <CheckSquare size={24} className="text-blue-500 dark:text-blue-400" />,
+      bgColor: 'bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/40'
     },
     {
       id: 'notes',
       label: 'Add Day Notes',
-      icon: <PenTool size={24} className="text-teal-500" />,
-      bgColor: 'bg-teal-50 hover:bg-teal-100'
+      icon: <PenTool size={24} className="text-teal-500 dark:text-teal-400" />,
+      bgColor: 'bg-teal-50 dark:bg-teal-900/30 hover:bg-teal-100 dark:hover:bg-teal-800/40'
     },
     {
       id: 'workout',
       label: 'Log Workout',
-      icon: <Dumbbell size={24} className="text-blue-500" />,
-      bgColor: 'bg-blue-50 hover:bg-blue-100'
+      icon: <Dumbbell size={24} className="text-blue-500 dark:text-blue-400" />,
+      bgColor: 'bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/40'
     }
   ];
 
   return (
     <dialog 
       id="day-action-modal" 
-      className="rounded-xl p-0 bg-transparent backdrop:bg-black backdrop:bg-opacity-50"
+      className="modal-base"
       onClick={(e) => e.target.id === 'day-action-modal' && onClose()}
     >
-      <div className="w-full max-w-sm bg-white rounded-xl shadow-lg p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold text-slate-800">
+      <div className="modal-content max-w-sm" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">
             {getFormattedDate()}
           </h3>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-full"
+            className="modal-close-button"
           >
             <X size={20} />
           </button>
@@ -69,7 +69,7 @@ export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
               className={`flex items-center gap-3 p-4 rounded-xl ${action.bgColor} transition-colors`}
             >
               {action.icon}
-              <span className="font-medium text-slate-700">{action.label}</span>
+              <span className="font-medium text-slate-700 dark:text-slate-200 transition-colors">{action.label}</span>
             </button>
           ))}
         </div>

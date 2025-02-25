@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar } from './components/Calendar';
 import { FlowGuide } from './components/FlowGuide';
 import { FloatingMenu } from './components/FloatingMenu';
@@ -11,11 +11,10 @@ import { CustomTaskListCreator } from './components/CustomTaskListCreator';
 import { TaskListSelector } from './components/TaskListSelector';
 import { DayNotes } from './components/DayNotes';
 import { WorkoutTracker } from './components/WorkoutTracker';
-import { ThemeProvider } from './components/ThemeProvider';
-import { ThemeToggle } from './components/ThemeToggle';
-import { MobileThemeToggle } from './components/MobileThemeToggle';
-import { HelpCircle } from 'lucide-react';
+import { ReminderSettings } from './components/ReminderSettings';
+import { HelpCircle, PenTool, Dumbbell, Bell } from 'lucide-react';
 import { getStorage } from './utils/storage';
+import reminderService from './utils/reminderService';
 
 const App = () => {
   const [selectedDay, setSelectedDay] = useState(null);
@@ -23,6 +22,21 @@ const App = () => {
   const [storageData, setStorageData] = useState(getStorage());
   const [storageVersion, setStorageVersion] = useState(0); // Add this to force updates
   
+  // Initialize reminder service on app start
+  useEffect(() => {
+    // Initialize the reminder service
+    reminderService.init();
+    
+    // Add the service to window for access from other components
+    window.reminderService = reminderService;
+    
+    // Add a handler for opening actions from reminders
+    window.openReminderAction = () => {
+      // Default action when a notification is clicked is to open today's tasks
+      const today = new Date().toISOString().split('T')[0];
+      handleDaySelect(today);
+    };
+  }, []);
 
   const handleStorageUpdate = () => {
     setStorageData(getStorage());
@@ -116,126 +130,140 @@ const App = () => {
     }, 100);
   };
 
-  return (
-    <ThemeProvider>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 transition-colors duration-200">
-        <div className="max-w-7xl mx-auto">
-          <header className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Daily Progress Tracker</h1>
-            <div className="flex items-center gap-3">
-              {/* Theme toggle only shown on desktop */}
-              <div className="hidden sm:block">
-                <ThemeToggle />
-              </div>
-              <button 
-                className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
-                onClick={() => document.getElementById('guide-modal').showModal()}
-              >
-                <HelpCircle size={20} />
-                <span className="hidden sm:inline">Guide</span>
-              </button>
-            </div>
-          </header>
+  const handleReminderSettingsOpen = () => {
+    document.getElementById('reminder-settings-modal').showModal();
+  };
 
-          <MonthlyOverview 
-            currentMonth={currentMonth} 
+  return (
+    <div className="min-h-screen bg-slate-50 p-4">
+      <div className="max-w-7xl mx-auto">
+        <header className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-bold text-slate-800">Daily Progress Tracker</h1>
+          <div className="flex items-center gap-2">
+            <button 
+              className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100"
+              onClick={handleReminderSettingsOpen}
+            >
+              <Bell size={20} />
+              <span>Reminders</span>
+            </button>
+            <button 
+              className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
+              onClick={() => document.getElementById('guide-modal').showModal()}
+            >
+              <HelpCircle size={20} />
+              <span>Guide</span>
+            </button>
+          </div>
+        </header>
+
+        <MonthlyOverview 
+          currentMonth={currentMonth} 
+          storageData={storageData}
+        />
+        
+        <main>
+          <Calendar 
+            selectedDay={selectedDay} 
+            onSelectDay={handleDaySelect}
+            currentMonth={currentMonth}
+            onMonthChange={setCurrentMonth}
             storageData={storageData}
           />
-          
-          <main>
-            <Calendar 
-              selectedDay={selectedDay} 
-              onSelectDay={handleDaySelect}
-              currentMonth={currentMonth}
-              onMonthChange={setCurrentMonth}
-              storageData={storageData}
-            />
-          </main>
-        </div>
-
-        <FloatingMenu 
-          onDaySelect={handleDaySelect}
-        />
-        
-        {/* Mobile theme toggle fixed position */}
-        <MobileThemeToggle />
-        
-        <FlowGuide />
-        
-        <DayActionSelector
-          date={selectedDay}
-          onClose={() => {
-            document.getElementById('day-action-modal').close();
-          }}
-          onSelectAction={handleDayAction}
-        />
-
-        <TaskListSelector
-          date={selectedDay}
-          onClose={() => {
-            document.getElementById('task-list-selector-modal').close();
-          }}
-          onSelectType={handleTaskTypeSelection}
-        />
-
-        <AITaskGenerator
-          date={selectedDay}
-          onClose={() => {
-            document.getElementById('ai-generator-modal').close();
-            setSelectedDay(null);
-            handleStorageUpdate();
-          }}
-          onTasksGenerated={handleAITasksGenerated}
-        />
-
-        <CustomTaskListCreator
-          date={selectedDay}
-          onClose={() => {
-            document.getElementById('custom-tasklist-modal').close();
-            setSelectedDay(null);
-            handleStorageUpdate();
-          }}
-          onTasksGenerated={handleCustomTasksCreated}
-        />
-
-        <MoodSelector 
-          date={selectedDay} 
-          onClose={() => {
-            document.getElementById('mood-modal').close();
-            setSelectedDay(null);
-            handleStorageUpdate();
-          }} 
-        />
-        
-        <DayChecklist 
-          date={selectedDay}
-          storageVersion={storageVersion} // Pass this to force updates
-          onClose={() => {
-            document.getElementById('checklist-modal').close();
-            setSelectedDay(null);
-            handleStorageUpdate();
-          }}
-        />
-
-        <DayNotes 
-          date={selectedDay}
-          onClose={() => {
-            document.getElementById('notes-modal').close();
-            setSelectedDay(null);
-            handleStorageUpdate();
-          }}
-        />
-
-        <WorkoutTracker
-          date={selectedDay}
-          onClose={() => {
-            document.getElementById('workout-modal').close();
-            setSelectedDay(null);
-            handleStorageUpdate();
-          }}
-        />
+        </main>
       </div>
-    </ThemeProvider>
+
+      <FloatingMenu 
+        onDaySelect={handleDaySelect}
+      />
+      
+      <FlowGuide />
+      
+      <DayActionSelector
+        date={selectedDay}
+        onClose={() => {
+          document.getElementById('day-action-modal').close();
+        }}
+        onSelectAction={handleDayAction}
+      />
+
+      <TaskListSelector
+        date={selectedDay}
+        onClose={() => {
+          document.getElementById('task-list-selector-modal').close();
+        }}
+        onSelectType={handleTaskTypeSelection}
+      />
+
+      <AITaskGenerator
+        date={selectedDay}
+        onClose={() => {
+          document.getElementById('ai-generator-modal').close();
+          setSelectedDay(null);
+          handleStorageUpdate();
+        }}
+        onTasksGenerated={handleAITasksGenerated}
+      />
+
+      <CustomTaskListCreator
+        date={selectedDay}
+        onClose={() => {
+          document.getElementById('custom-tasklist-modal').close();
+          setSelectedDay(null);
+          handleStorageUpdate();
+        }}
+        onTasksGenerated={handleCustomTasksCreated}
+      />
+
+      <MoodSelector 
+        date={selectedDay} 
+        onClose={() => {
+          document.getElementById('mood-modal').close();
+          setSelectedDay(null);
+          handleStorageUpdate();
+        }} 
+      />
+      
+      <DayChecklist 
+        date={selectedDay}
+        storageVersion={storageVersion} // Pass this to force updates
+        onClose={() => {
+          document.getElementById('checklist-modal').close();
+          setSelectedDay(null);
+          handleStorageUpdate();
+        }}
+      />
+
+      <DayNotes 
+        date={selectedDay}
+        onClose={() => {
+          document.getElementById('notes-modal').close();
+          setSelectedDay(null);
+          handleStorageUpdate();
+        }}
+      />
+
+      <WorkoutTracker
+        date={selectedDay}
+        onClose={() => {
+          document.getElementById('workout-modal').close();
+          setSelectedDay(null);
+          handleStorageUpdate();
+        }}
+      />
+      
+      <ReminderSettings
+        onClose={() => {
+          document.getElementById('reminder-settings-modal').close();
+          handleStorageUpdate();
+          
+          // Reload reminders when settings are closed
+          if (window.reminderService) {
+            window.reminderService.loadReminders();
+          }
+        }}
+      />
+    </div>
   );
 };
 

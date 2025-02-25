@@ -30,19 +30,46 @@ self.addEventListener('install', (event) => {
   
   // Handle notification clicks
   self.addEventListener('notificationclick', (event) => {
+    console.log('[Service Worker] Notification click received', event.notification);
+    
+    // Close the notification
     event.notification.close();
+    
+    // Data associated with the notification
+    const notificationData = event.notification.data || {};
     
     // This will focus any existing windows or open a new one
     event.waitUntil(
-      clients.matchAll({ type: 'window' }).then((clientList) => {
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        console.log('[Service Worker] Found clients:', clientList.length);
+        
         // Check if there is already a window/tab open with the target URL
         for (const client of clientList) {
-          if (client.url === '/' && 'focus' in client) {
-            return client.focus();
+          console.log('[Service Worker] Client URL:', client.url);
+          
+          // Check if this is a client for our app
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            // Focus the client
+            console.log('[Service Worker] Focusing existing client');
+            client.focus();
+            
+            // Send a message to the client to open the appropriate UI
+            if (notificationData.reminderId) {
+              console.log('[Service Worker] Sending open-reminder message to client');
+              client.postMessage({
+                type: 'open-reminder',
+                reminderId: notificationData.reminderId,
+                timestamp: notificationData.timestamp || Date.now()
+              });
+            }
+            
+            return client;
           }
         }
+        
         // If no matching window/tab found, open a new one
         if (clients.openWindow) {
+          console.log('[Service Worker] Opening new window');
           return clients.openWindow('/');
         }
       })

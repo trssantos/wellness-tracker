@@ -36,6 +36,19 @@ const App = () => {
       const today = new Date().toISOString().split('T')[0];
       handleDaySelect(today);
     };
+    
+    // Setup service worker message listener for notification clicks
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        console.log('Received message from service worker:', event.data);
+        
+        // Handle open-reminder message
+        if (event.data && event.data.type === 'open-reminder') {
+          const today = new Date().toISOString().split('T')[0];
+          handleDaySelect(today);
+        }
+      });
+    }
   }, []);
 
   const handleStorageUpdate = () => {

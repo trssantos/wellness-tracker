@@ -165,33 +165,78 @@ class ReminderService {
         }
       }
       
-      // Show the notification
-      console.log("Showing notification for reminder:", reminder);
-      const notification = new Notification('Wellness Tracker', {
+      // Notification options
+      const options = {
         body: reminder.label || 'Time to log your wellness data!',
         icon: '/favicon.ico',
         requireInteraction: true,
-        tag: `reminder-${reminder.id}`  // Prevent duplicate notifications
-      });
-      
-      // Handle click on notification
-      notification.onclick = () => {
-        // Focus on the window and close the notification
-        window.focus();
-        notification.close();
-        
-        // Trigger actions based on the reminder type
-        if (window.openReminderAction) {
-          window.openReminderAction();
+        tag: `reminder-${reminder.id}`, // Prevent duplicate notifications
+        data: {
+          reminderId: reminder.id,
+          timestamp: Date.now()
         }
       };
+      
+      let notification;
+      
+      // Try to use service worker for notifications (for mobile support)
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        try {
+          console.log("Using ServiceWorker for notification");
+          // Get the active service worker registration
+          const registration = await navigator.serviceWorker.ready;
+          
+          // Show notification via service worker
+          await registration.showNotification('Wellness Tracker', options);
+          console.log("Successfully showed notification via ServiceWorker");
+          
+          // Since we can't get a direct reference to the notification object,
+          // we just create a stub to return
+          notification = { via: 'serviceWorker' };
+        } catch (swError) {
+          console.error("ServiceWorker notification failed:", swError);
+          // Fall back to standard notification
+        }
+      }
+      
+      // If service worker notification failed or isn't available, try standard notification
+      if (!notification) {
+        try {
+          console.log("Using standard Notification API");
+          notification = new Notification('Wellness Tracker', options);
+          
+          // Handle click on notification
+          notification.onclick = () => {
+            // Focus on the window and close the notification
+            window.focus();
+            notification.close();
+            
+            // Trigger actions based on the reminder type
+            if (window.openReminderAction) {
+              window.openReminderAction();
+            }
+          };
+          
+          console.log("Successfully showed standard notification");
+        } catch (notifError) {
+          console.error("Standard notification failed:", notifError);
+          
+          // Last resort: try to show an alert if all else fails
+          if (reminder) {
+            alert(`Reminder: ${reminder.label || 'Time to log your wellness data!'}`);
+            console.log("Showed alert as last resort");
+          }
+          
+          notification = { via: 'alert' };
+        }
+      }
       
       // Mark as shown
       localStorage.setItem(lastShownKey, today);
       localStorage.setItem(lastShownTimeKey, hourMinuteStr);
       
       // Log success
-      console.log("Successfully showed notification:", notification);
+      console.log("Notification handled:", notification);
       
       return notification;
     } catch (error) {

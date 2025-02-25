@@ -147,21 +147,57 @@ export const ReminderSettings = ({ onClose }) => {
       setNotificationsBlocked(false);
     }
     
-    try {
-      // Show test notification
-      const notification = new Notification("Wellness Tracker Reminder", {
-        body: "This is a test notification. Your daily reminders will look like this.",
-        icon: "/favicon.ico"
-      });
+    // Use our reminder service to show the notification if available
+    if (window.reminderService && window.reminderService.showNotification) {
+      const testReminder = {
+        id: 'test-' + Date.now(),
+        label: 'This is a test notification. Your daily reminders will look like this.'
+      };
       
-      // Log for debugging
-      console.log("Test notification sent:", notification);
-      
-      // Force notification to show for at least 4 seconds
-      setTimeout(() => notification.close(), 4000);
-    } catch (error) {
-      console.error("Error showing test notification:", error);
-      alert("Failed to show test notification. Error: " + error.message);
+      try {
+        await window.reminderService.showNotification(testReminder);
+        console.log("Test notification sent using reminder service");
+      } catch (error) {
+        console.error("Error showing test notification:", error);
+        alert("Failed to show test notification. Error: " + error.message);
+      }
+    } else {
+      // Fallback for when reminder service isn't available
+      try {
+        // Try service worker notification first
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+          try {
+            // Get the active service worker registration
+            const registration = await navigator.serviceWorker.ready;
+            
+            // Show notification via service worker
+            await registration.showNotification('Wellness Tracker Reminder', {
+              body: "This is a test notification. Your daily reminders will look like this.",
+              icon: "/favicon.ico"
+            });
+            
+            console.log("Test notification sent via service worker");
+            return;
+          } catch (swError) {
+            console.error("Service worker notification failed:", swError);
+            // Fall back to standard notification
+          }
+        }
+        
+        // Standard notification as fallback
+        const notification = new Notification("Wellness Tracker Reminder", {
+          body: "This is a test notification. Your daily reminders will look like this.",
+          icon: "/favicon.ico"
+        });
+        
+        console.log("Test notification sent via standard API");
+        
+        // Force notification to show for at least 4 seconds
+        setTimeout(() => notification.close(), 4000);
+      } catch (error) {
+        console.error("Error showing test notification:", error);
+        alert("Failed to show test notification. Error: " + error.message + "\n\nYour browser may not support notifications in this context.");
+      }
     }
   };
   
@@ -329,6 +365,19 @@ export const ReminderSettings = ({ onClose }) => {
         {/* Footer with info */}
         <div className="mt-6 text-xs text-slate-500">
           <p>Reminders will only show when your browser is open. For best results, keep this website open or create a shortcut on your home screen.</p>
+          
+          {/* Mobile-specific instructions */}
+          {(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) && (
+            <div className="mt-2 p-3 bg-amber-50 rounded-lg border border-amber-200 text-amber-800">
+              <p className="font-medium mb-1">Mobile Device Detected</p>
+              <p>On mobile devices, notifications may be less reliable. For best results:</p>
+              <ul className="list-disc pl-4 mt-1">
+                <li>Keep browser tabs open and don't force-close the app</li>
+                <li>Add this site to your home screen for better notification support</li>
+                <li>Check notification permissions in your browser settings</li>
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </dialog>

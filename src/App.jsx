@@ -12,10 +12,11 @@ import { TaskListSelector } from './components/TaskListSelector';
 import { DayNotes } from './components/DayNotes';
 import { WorkoutTracker } from './components/WorkoutTracker';
 import { ReminderSettings } from './components/ReminderSettings';
+import { Settings } from './components/Settings';
 import { ThemeToggle } from './components/ThemeToggle';
 import { MobileThemeToggle } from './components/MobileThemeToggle';
 import { ThemeProvider } from './components/ThemeProvider';
-import { HelpCircle, PenTool, Dumbbell, Bell } from 'lucide-react';
+import { HelpCircle, PenTool, Dumbbell, Bell, Settings as SettingsIcon } from 'lucide-react';
 import { getStorage } from './utils/storage';
 import reminderService from './utils/reminderService';
 
@@ -150,6 +151,17 @@ const App = () => {
     document.getElementById('reminder-settings-modal').showModal();
   };
 
+  const handleSettingsOpen = () => {
+    document.getElementById('settings-modal').showModal();
+  };
+
+  const handleSettingsClose = (needsRefresh = false) => {
+    document.getElementById('settings-modal').close();
+    if (needsRefresh) {
+      handleStorageUpdate();
+    }
+  };
+
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 transition-colors">
@@ -158,6 +170,13 @@ const App = () => {
             <h1 className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-slate-100 transition-colors">ZenTrack</h1>
             <div className="flex items-center gap-2">
               <ThemeToggle />
+              <button 
+                className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                onClick={handleSettingsOpen}
+                aria-label="Settings"
+              >
+                <SettingsIcon size={20} />
+              </button>
               <button 
                 className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800/40 transition-colors"
                 onClick={handleReminderSettingsOpen}
@@ -282,6 +301,10 @@ const App = () => {
               window.reminderService.loadReminders();
             }
           }}
+        />
+        
+        <Settings
+          onClose={handleSettingsClose}
         />
       </div>
     </ThemeProvider>

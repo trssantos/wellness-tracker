@@ -127,10 +127,10 @@ export const MonthlyOverview = ({ currentMonth, storageData }) => {
           <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 flex items-center justify-between transition-colors">
             <div className="flex items-center gap-2">
               <SmilePlus size={18} className="text-purple-500 dark:text-purple-400" />
+              <span className="text-slate-700 dark:text-slate-200">Main Mood</span>
             </div>
             <div className="flex items-center gap-1">
               <span className="text-2xl">{MOODS[predominantMood].emoji}</span>
-              <span className="font-bold text-purple-700 dark:text-purple-400">{MOODS[predominantMood].label}</span>
             </div>
           </div>
         </div>

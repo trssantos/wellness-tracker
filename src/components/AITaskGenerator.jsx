@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Zap, AlertCircle } from 'lucide-react';
 import { MOODS } from './MoodSelector';
-import { generateTasks } from '../utils/gemini-service';
+import { generateTasks } from '../utils/ai-service'; // Updated import
 import { getStorage, setStorage } from '../utils/storage';
 
 export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
@@ -101,6 +101,7 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
         context
       };
       
+      // Use the unified AI service instead of direct call to Gemini
       const tasks = await generateTasks(userContext);
       
       // Format tasks to ensure they're strings
@@ -160,8 +161,10 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
           error.message.includes('capacity')
         )) {
         setError('The AI service is currently overloaded. Please wait a moment and try again later.');
+      } else if (error.message && error.message.includes('API key')) {
+        setError('API key issue: ' + error.message + '. Please check your settings.');
       } else {
-        setError('Failed to generate tasks. Please try again.');
+        setError('Failed to generate tasks: ' + error.message);
       }
       
       setIsLoading(false);
@@ -331,3 +334,5 @@ export const AITaskGenerator = ({ date, onClose, onTasksGenerated }) => {
     </dialog>
   );
 };
+
+export default AITaskGenerator;

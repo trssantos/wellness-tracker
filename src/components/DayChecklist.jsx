@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Circle, BarChart, HelpCircle, Zap, Edit2, Save, Plus, Trash2, Sparkles } from 'lucide-react';
+import { X, CheckCircle2, Circle, BarChart, HelpCircle, Zap, Edit2, Save, Plus, Trash2, Sparkles, Bell } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
 import { MOODS } from './MoodSelector';
+import { TaskReminder } from './TaskReminder';
 
 const DEFAULT_CATEGORIES = [
   {
@@ -224,6 +225,10 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   const [editingError, setEditingError] = useState(null);
   const [taskListType, setTaskListType] = useState('default'); // 'default', 'ai', or 'custom'
   
+  // State for task reminders
+  const [reminderTask, setReminderTask] = useState(null);
+  const [taskReminders, setTaskReminders] = useState({});
+  
   useEffect(() => {
     setActiveCategory(0);
   }, [categories]);
@@ -236,6 +241,7 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
     setEditedCategories([]);
     setChecked({});
     setTaskListType('default'); // Reset the task list type first
+    setTaskReminders({});
 
     const savedData = getStorage()[date] || {};
     let taskCategories = DEFAULT_CATEGORIES;
@@ -298,6 +304,11 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
         });
       });
       setChecked(initialChecked);
+    }
+    
+    // Load task reminders
+    if (savedData?.taskReminders) {
+      setTaskReminders(savedData.taskReminders);
     }
 
     // Reset active category to 0 whenever data changes
@@ -461,6 +472,41 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
     setEditingError(null);
   };
 
+  // Task reminder functions
+  const handleSetReminder = (taskText) => {
+    setReminderTask(taskText);
+    
+    // Open the task reminder modal
+    setTimeout(() => {
+      const modal = document.getElementById('task-reminder-modal');
+      if (modal) {
+        modal.showModal();
+      }
+    }, 100);
+  };
+  
+  const handleReminderSet = (reminderData) => {
+    // If reminderData is null, the reminder was deleted
+    if (!reminderData) {
+      const newTaskReminders = { ...taskReminders };
+      delete newTaskReminders[reminderTask];
+      setTaskReminders(newTaskReminders);
+    } else {
+      // Update task reminders state
+      setTaskReminders({
+        ...taskReminders,
+        [reminderTask]: reminderData
+      });
+    }
+    
+    // Reset the reminder task
+    setReminderTask(null);
+  };
+  
+  const hasReminderForTask = (taskText) => {
+    return taskReminders[taskText] !== undefined;
+  };
+
   // Category editing functions
   const handleAddCategory = () => {
     setEditedCategories([
@@ -514,199 +560,229 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   if (!date) return null;
 
   return (
-    <dialog 
-      id="checklist-modal" 
-      className="modal-base"
-      onClick={(e) => e.target.id === 'checklist-modal' && onClose()}
-    >
-      <div className="modal-content max-w-2xl" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <div>
-            <h3 className="modal-title">
-              {new Date(date).toLocaleDateString('default', { 
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </h3>
-            <div className="modal-subtitle flex items-center gap-2">
-              <span>
-                {taskListType === 'ai' 
-                  ? 'AI Generated Tasks' 
-                  : taskListType === 'custom' 
-                    ? 'Custom Tasks' 
-                    : 'Default Tasks'}
-              </span>
-              <button
-                onClick={toggleEditing}
-                className="text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 p-1 rounded-md transition-colors"
-                title={isEditing ? "Save changes" : "Edit tasks"}
-              >
-                {isEditing ? <Save size={14} /> : <Edit2 size={14} />}
-              </button>
-              <button
-                onClick={() => {
-                  const currentDate = date; // Store the current date
-                  onClose();
-                  setTimeout(() => {
-                    // Use the stored date when opening the AI generator
-                    const aiModal = document.getElementById('ai-generator-modal');
-                    if (aiModal) {
-                      // Store the date in a data attribute so AITaskGenerator can access it
-                      aiModal.dataset.selectedDate = currentDate;
-                      aiModal.showModal();
-                    }
-                  }, 100);
-                }}
-                className="text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 p-1 rounded-md transition-colors"
-                title="Generate with AI"
-              >
-                <Sparkles size={14} />
-              </button>
+    <>
+      <dialog 
+        id="checklist-modal" 
+        className="modal-base"
+        onClick={(e) => e.target.id === 'checklist-modal' && onClose()}
+      >
+        <div className="modal-content max-w-2xl" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <div>
+              <h3 className="modal-title">
+                {new Date(date).toLocaleDateString('default', { 
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </h3>
+              <div className="modal-subtitle flex items-center gap-2">
+                <span>
+                  {taskListType === 'ai' 
+                    ? 'AI Generated Tasks' 
+                    : taskListType === 'custom' 
+                      ? 'Custom Tasks' 
+                      : 'Default Tasks'}
+                </span>
+                <button
+                  onClick={toggleEditing}
+                  className="text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 p-1 rounded-md transition-colors"
+                  title={isEditing ? "Save changes" : "Edit tasks"}
+                >
+                  {isEditing ? <Save size={14} /> : <Edit2 size={14} />}
+                </button>
+                <button
+                  onClick={() => {
+                    const currentDate = date; // Store the current date
+                    onClose();
+                    setTimeout(() => {
+                      // Use the stored date when opening the AI generator
+                      const aiModal = document.getElementById('ai-generator-modal');
+                      if (aiModal) {
+                        // Store the date in a data attribute so AITaskGenerator can access it
+                        aiModal.dataset.selectedDate = currentDate;
+                        aiModal.showModal();
+                      }
+                    }, 100);
+                  }}
+                  className="text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 p-1 rounded-md transition-colors"
+                  title="Generate with AI"
+                >
+                  <Sparkles size={14} />
+                </button>
+              </div>
             </div>
+            <button
+              onClick={onClose}
+              className="modal-close-button"
+            >
+              <X size={20} />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="modal-close-button"
-          >
-            <X size={20} />
-          </button>
-        </div>
 
-        <DayContext context={dayContext} onUpdate={handleContextUpdate} />
-        
-        {!isEditing && <ProgressSummary checked={checked} categories={categories} />}
+          <DayContext context={dayContext} onUpdate={handleContextUpdate} />
+          
+          {!isEditing && <ProgressSummary checked={checked} categories={categories} />}
 
-        {isEditing ? (
-          // Editing mode view
-          <div className="space-y-6 max-h-[50vh] overflow-y-auto pr-2">
-            {editedCategories.map((category, categoryIdx) => (
-              <div key={categoryIdx} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 transition-colors">
-                <div className="flex items-center justify-between mb-4 bg-slate-100 dark:bg-slate-700 p-3 rounded-lg border-l-4 border-blue-500 transition-colors">
-                  <input
-                    type="text"
-                    value={category.title}
-                    onChange={(e) => handleCategoryTitleChange(categoryIdx, e.target.value)}
-                    className="flex-1 p-2 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-md font-medium text-slate-700 dark:text-slate-200 transition-colors"
-                    placeholder="Category title"
-                  />
-                  <button
-                    onClick={() => handleDeleteCategory(categoryIdx)}
-                    className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 rounded-md ml-2 transition-colors"
-                    title="Delete category"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+          {isEditing ? (
+            // Editing mode view
+            <div className="space-y-6 max-h-[50vh] overflow-y-auto pr-2">
+              {editedCategories.map((category, categoryIdx) => (
+                <div key={categoryIdx} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 transition-colors">
+                  <div className="flex items-center justify-between mb-4 bg-slate-100 dark:bg-slate-700 p-3 rounded-lg border-l-4 border-blue-500 transition-colors">
+                    <input
+                      type="text"
+                      value={category.title}
+                      onChange={(e) => handleCategoryTitleChange(categoryIdx, e.target.value)}
+                      className="flex-1 p-2 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-md font-medium text-slate-700 dark:text-slate-200 transition-colors"
+                      placeholder="Category title"
+                    />
+                    <button
+                      onClick={() => handleDeleteCategory(categoryIdx)}
+                      className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 rounded-md ml-2 transition-colors"
+                      title="Delete category"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2 ml-4 pl-2 border-l-2 border-slate-200 dark:border-slate-700 transition-colors">
+                    {category.items.map((task, taskIdx) => (
+                      <div key={taskIdx} className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-slate-300 dark:bg-slate-600 rounded-full mr-1 transition-colors"></div>
+                        <input
+                          type="text"
+                          value={task}
+                          onChange={(e) => handleTaskChange(categoryIdx, taskIdx, e.target.value)}
+                          className="flex-1 p-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                          placeholder="Task description"
+                        />
+                        <button
+                          onClick={() => handleDeleteTask(categoryIdx, taskIdx)}
+                          className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 rounded-md transition-colors"
+                          title="Delete task"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => handleAddTask(categoryIdx)}
+                      className="flex items-center gap-1 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 mt-2 transition-colors"
+                    >
+                      <Plus size={16} />
+                      <span>Add Task</span>
+                    </button>
+                  </div>
                 </div>
+              ))}
 
-                <div className="space-y-2 ml-4 pl-2 border-l-2 border-slate-200 dark:border-slate-700 transition-colors">
-                  {category.items.map((task, taskIdx) => (
-                    <div key={taskIdx} className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-slate-300 dark:bg-slate-600 rounded-full mr-1 transition-colors"></div>
-                      <input
-                        type="text"
-                        value={task}
-                        onChange={(e) => handleTaskChange(categoryIdx, taskIdx, e.target.value)}
-                        className="flex-1 p-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
-                        placeholder="Task description"
-                      />
-                      <button
-                        onClick={() => handleDeleteTask(categoryIdx, taskIdx)}
-                        className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 rounded-md transition-colors"
-                        title="Delete task"
+              <button
+                onClick={handleAddCategory}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/40 w-full justify-center transition-colors"
+              >
+                <Plus size={20} />
+                <span>Add Category</span>
+              </button>
+
+              {editingError && (
+                <div className="mt-4 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-3 rounded-lg transition-colors">
+                  <p>{editingError}</p>
+                </div>
+              )}
+
+              <div className="flex items-center gap-4 mt-4">
+                <button
+                  onClick={saveEdits}
+                  className="flex-1 py-2 px-4 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
+                >
+                  Save Changes
+                </button>
+                <button
+                  onClick={cancelEditing}
+                  className="flex-1 py-2 px-4 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            // Normal viewing mode
+            <>
+              <div className="flex flex-wrap gap-2 mb-6">
+                {categories.map((cat, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveCategory(idx)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
+                      ${activeCategory === idx 
+                        ? 'bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300' 
+                        : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600'}`}
+                  >
+                    {cat.title}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                {categories[activeCategory]?.items.map((item, idx) => {
+                  const taskText = typeof item === 'string' ? item : 
+                               typeof item === 'object' && item.task ? item.task :
+                               String(item);
+                  const hasReminder = hasReminderForTask(taskText);
+                  
+                  return (
+                    <div
+                      key={`${activeCategory}-${idx}`}
+                      className={`flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors`}
+                    >
+                      <div 
+                        className="flex items-center justify-center w-5 h-5 mr-3 cursor-pointer"
+                        onClick={() => handleCheck(taskText)}
                       >
-                        <Trash2 size={16} />
+                        {checked[taskText] ? (
+                          <CheckCircle2 size={20} className="text-green-500 dark:text-green-400" />
+                        ) : (
+                          <Circle size={20} className="text-slate-300 dark:text-slate-600" />
+                        )}
+                      </div>
+                      <span 
+                        className={`flex-1 text-slate-700 dark:text-slate-200 transition-colors ${checked[taskText] ? 'line-through text-slate-500 dark:text-slate-400' : ''}`}
+                        onClick={() => handleCheck(taskText)}
+                      >
+                        {taskText}
+                      </span>
+                      <button
+                        onClick={() => handleSetReminder(taskText)}
+                        className={`p-2 rounded-full ${
+                          hasReminder 
+                            ? 'text-blue-500 dark:text-blue-400' 
+                            : 'text-slate-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400'
+                        } transition-colors`}
+                        title={hasReminder ? "Edit reminder" : "Set reminder"}
+                      >
+                        <Bell size={16} className={hasReminder ? "fill-current" : ""} />
                       </button>
                     </div>
-                  ))}
-                  <button
-                    onClick={() => handleAddTask(categoryIdx)}
-                    className="flex items-center gap-1 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 mt-2 transition-colors"
-                  >
-                    <Plus size={16} />
-                    <span>Add Task</span>
-                  </button>
-                </div>
+                  );
+                })}
               </div>
-            ))}
-
-            <button
-              onClick={handleAddCategory}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/40 w-full justify-center transition-colors"
-            >
-              <Plus size={20} />
-              <span>Add Category</span>
-            </button>
-
-            {editingError && (
-              <div className="mt-4 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-3 rounded-lg transition-colors">
-                <p>{editingError}</p>
-              </div>
-            )}
-
-            <div className="flex items-center gap-4 mt-4">
-              <button
-                onClick={saveEdits}
-                className="flex-1 py-2 px-4 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
-              >
-                Save Changes
-              </button>
-              <button
-                onClick={cancelEditing}
-                className="flex-1 py-2 px-4 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          // Normal viewing mode
-          <>
-            <div className="flex flex-wrap gap-2 mb-6">
-              {categories.map((cat, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveCategory(idx)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
-                    ${activeCategory === idx 
-                      ? 'bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300' 
-                      : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600'}`}
-                >
-                  {cat.title}
-                </button>
-              ))}
-            </div>
-
-            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-              {categories[activeCategory]?.items.map((item, idx) => {
-                const taskText = typeof item === 'string' ? item : 
-                             typeof item === 'object' && item.task ? item.task :
-                             String(item);
-                return (
-                  <div
-                    key={`${activeCategory}-${idx}`}
-                    className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                    onClick={() => handleCheck(taskText)}
-                  >
-                    <div className="flex items-center justify-center w-5 h-5 mr-3">
-                      {checked[taskText] ? (
-                        <CheckCircle2 size={20} className="text-green-500 dark:text-green-400" />
-                      ) : (
-                        <Circle size={20} className="text-slate-300 dark:text-slate-600" />
-                      )}
-                    </div>
-                    <span className={`text-slate-700 dark:text-slate-200 transition-colors ${checked[taskText] ? 'line-through text-slate-500 dark:text-slate-400' : ''}`}>
-                      {taskText}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </div>
-    </dialog>
+            </>
+          )}
+        </div>
+      </dialog>
+      
+      {/* Task Reminder Dialog */}
+      {reminderTask && (
+        <TaskReminder
+          date={date}
+          taskText={reminderTask}
+          onClose={() => setReminderTask(null)}
+          onReminderSet={handleReminderSet}
+        />
+      )}
+    </>
   );
 };
 

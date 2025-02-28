@@ -19,12 +19,15 @@ import { ThemeProvider } from './components/ThemeProvider';
 import { HelpCircle, PenTool, Dumbbell, Bell, Settings as SettingsIcon } from 'lucide-react';
 import { getStorage } from './utils/storage';
 import reminderService from './utils/reminderService';
+// Add VoiceTaskInput to the import list
+import { VoiceTaskInput } from './components/VoiceTaskInput';
 
 const App = () => {
   const [selectedDay, setSelectedDay] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [storageData, setStorageData] = useState(getStorage());
   const [storageVersion, setStorageVersion] = useState(0); // Add this to force updates
+  const [voiceInputDate, setVoiceInputDate] = useState(null);
   
   // Initialize reminder service on app start
   useEffect(() => {
@@ -54,6 +57,13 @@ const App = () => {
       });
     }
   }, []);
+
+  // Add this handler function
+const handleVoiceInput = (dateStr) => {
+  setVoiceInputDate(dateStr);
+  document.getElementById('voice-task-modal').showModal();
+};
+
 
   const handleStorageUpdate = () => {
     setStorageData(getStorage());
@@ -211,8 +221,9 @@ const App = () => {
         </div>
 
         <FloatingMenu 
-          onDaySelect={handleDaySelect}
-        />
+  onDaySelect={handleDaySelect}
+  onVoiceInput={handleVoiceInput}
+/>
         
         {/* Mobile theme toggle removed - using same header icons on all devices */}
         
@@ -306,6 +317,43 @@ const App = () => {
         <Settings
           onClose={handleSettingsClose}
         />
+
+<VoiceTaskInput 
+  date={voiceInputDate}
+  onClose={() => {
+    document.getElementById('voice-task-modal').close();
+    setVoiceInputDate(null);
+    handleStorageUpdate();
+  }}
+  onTaskAdded={(taskType) => {
+    console.log('Task added via voice to task type:', taskType);
+    handleStorageUpdate();
+    
+    // After voice task is added, close the modal and directly open checklist
+    if (voiceInputDate) {
+      // Close the current modal
+      document.getElementById('voice-task-modal').close();
+      
+      // Update selected day
+      setSelectedDay(voiceInputDate);
+      
+      // Force a storage version update to ensure the latest data is shown
+      setStorageVersion(prev => prev + 1);
+      
+      // Directly open the checklist modal instead of the task selector
+      setTimeout(() => {
+        const checklistModal = document.getElementById('checklist-modal');
+        if (checklistModal) {
+          checklistModal.showModal();
+        } else {
+          console.error('Could not find checklist-modal element');
+          // Fallback to the regular flow if modal not found
+          handleDayAction('progress');
+        }
+      }, 100);
+    }
+  }}
+/>
       </div>
     </ThemeProvider>
   );

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Flame, BarChart2, LineChart, Activity, TrendingUp, Dumbbell } from 'lucide-react';
+import { Calendar, Clock, Flame, BarChart2, LineChart, Activity, TrendingUp, Dumbbell, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ProgressChart } from './Charts/ProgressChart';
 import { MoodTrendChart } from './Charts/MoodTrendChart';
 import { WorkoutStatsChart } from './Charts/WorkoutStatsChart';
 import { MOODS } from '../MoodSelector';
 
-export const Stats = ({ storageData, currentMonth }) => {
+export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
   const [statsData, setStatsData] = useState({
     monthlyProgress: [],
     totalTasksCompleted: 0,
@@ -16,10 +16,26 @@ export const Stats = ({ storageData, currentMonth }) => {
     workoutData: []
   });
   
+  // Add internal state for month selection
+  const [currentMonth, setCurrentMonth] = useState(propCurrentMonth || new Date());
+  
   useEffect(() => {
     const data = processStorageData(storageData, currentMonth);
     setStatsData(data);
   }, [storageData, currentMonth]);
+  
+  // Handle month navigation
+  const handlePreviousMonth = () => {
+    const prevMonth = new Date(currentMonth);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    setCurrentMonth(prevMonth);
+  };
+  
+  const handleNextMonth = () => {
+    const nextMonth = new Date(currentMonth);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    setCurrentMonth(nextMonth);
+  };
   
   const processStorageData = (data, month) => {
     // Get start and end date for the current month
@@ -284,9 +300,29 @@ export const Stats = ({ storageData, currentMonth }) => {
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-        <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-6 transition-colors">
-          Monthly Stats Overview
-        </h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 transition-colors">
+            Stats for {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+          </h2>
+          
+          {/* Month Selector */}
+          <div className="flex gap-1 sm:gap-2">
+            <button
+              onClick={handlePreviousMonth}
+              className="p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              aria-label="Previous month"
+            >
+              <ChevronLeft size={18} className="text-slate-600 dark:text-slate-300" />
+            </button>
+            <button
+              onClick={handleNextMonth}
+              className="p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              aria-label="Next month"
+            >
+              <ChevronRight size={18} className="text-slate-600 dark:text-slate-300" />
+            </button>
+          </div>
+        </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {/* Productivity Streak */}

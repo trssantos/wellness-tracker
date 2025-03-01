@@ -214,7 +214,7 @@ export const DayCoachSection = () => {
       </div>
       
       {/* Chat Preview */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-6 transition-colors">
         <h3 className="text-lg font-medium text-slate-700 dark:text-slate-200 mb-4 transition-colors flex items-center gap-2">
           <MessageCircle className="text-blue-500 dark:text-blue-400" size={20} />
           Chat Preview
@@ -225,27 +225,27 @@ export const DayCoachSection = () => {
             <h4 className="font-medium text-slate-700 dark:text-slate-200">Day Coach</h4>
           </div>
           
-          <div className="p-4 h-60 overflow-y-auto flex flex-col gap-3">
+          <div className="p-4 h-48 sm:h-60 overflow-y-auto flex flex-col gap-3">
             <div className="flex items-start gap-2">
-              <div className="bg-blue-100 dark:bg-blue-900/50 p-2 rounded-full">
+              <div className="bg-blue-100 dark:bg-blue-900/50 p-2 rounded-full flex-shrink-0">
                 <MessageCircle size={16} className="text-blue-500 dark:text-blue-400" />
               </div>
-              <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-lg max-w-xs">
+              <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-lg max-w-[75%] sm:max-w-xs">
                 <p className="text-sm text-slate-700 dark:text-slate-200">Hey there! How's your day going so far?</p>
               </div>
             </div>
             
             <div className="flex items-start gap-2 self-end">
-              <div className="bg-blue-500 p-3 rounded-lg max-w-xs">
+              <div className="bg-blue-500 p-3 rounded-lg max-w-[75%] sm:max-w-xs">
                 <p className="text-sm text-white">I'm feeling a bit stressed about my presentation tomorrow.</p>
               </div>
             </div>
             
             <div className="flex items-start gap-2">
-              <div className="bg-blue-100 dark:bg-blue-900/50 p-2 rounded-full">
+              <div className="bg-blue-100 dark:bg-blue-900/50 p-2 rounded-full flex-shrink-0">
                 <MessageCircle size={16} className="text-blue-500 dark:text-blue-400" />
               </div>
-              <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-lg max-w-xs">
+              <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-lg max-w-[75%] sm:max-w-xs">
                 <p className="text-sm text-slate-700 dark:text-slate-200">I understand. Let's break down your preparation into smaller steps so it feels more manageable.</p>
               </div>
             </div>

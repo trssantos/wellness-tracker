@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar } from './components/Calendar';
+import { Sidebar } from './components/Navigation/Sidebar';
+import { SectionContainer } from './components/Navigation/SectionContainer';
+import { Overview } from './components/Sections/Overview';
+import { Stats } from './components/Sections/Stats';
+import { MeditationSection, WorkoutSection, DayCoachSection, TemplatesSection } from './components/Sections/Placeholders';
 import { FlowGuide } from './components/FlowGuide';
 import { FloatingMenu } from './components/FloatingMenu';
 import { DayChecklist } from './components/DayChecklist';
 import { MoodSelector } from './components/MoodSelector';
-import { MonthlyOverview } from './components/MonthlyOverview';
 import { DayActionSelector } from './components/DayActionSelector';
 import { AITaskGenerator } from './components/AITaskGenerator';
 import { CustomTaskListCreator } from './components/CustomTaskListCreator';
@@ -13,21 +16,18 @@ import { DayNotes } from './components/DayNotes';
 import { WorkoutTracker } from './components/WorkoutTracker';
 import { ReminderSettings } from './components/ReminderSettings';
 import { Settings } from './components/Settings';
-import { ThemeToggle } from './components/ThemeToggle';
-import { MobileThemeToggle } from './components/MobileThemeToggle';
 import { ThemeProvider } from './components/ThemeProvider';
 import { TaskReminder } from './components/TaskReminder';
-import { HelpCircle, PenTool, Dumbbell, Bell, Settings as SettingsIcon } from 'lucide-react';
+import { VoiceTaskInput } from './components/VoiceTaskInput';
 import { getStorage } from './utils/storage';
 import reminderService from './utils/reminderService';
-// Add VoiceTaskInput to the import list
-import { VoiceTaskInput } from './components/VoiceTaskInput';
 
 const App = () => {
+  const [activeSection, setActiveSection] = useState('overview');
   const [selectedDay, setSelectedDay] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [storageData, setStorageData] = useState(getStorage());
-  const [storageVersion, setStorageVersion] = useState(0); // Add this to force updates
+  const [storageVersion, setStorageVersion] = useState(0);
   const [voiceInputDate, setVoiceInputDate] = useState(null);
   
   // Initialize reminder service on app start
@@ -79,17 +79,13 @@ const App = () => {
     // Then open the checklist modal
     setTimeout(() => {
       document.getElementById('checklist-modal').showModal();
-      
-      // TODO: Future enhancement - scroll to and highlight the specific task
     }, 100);
   };
 
-  // Add this handler function for voice input
   const handleVoiceInput = (dateStr) => {
     setVoiceInputDate(dateStr);
     document.getElementById('voice-task-modal').showModal();
   };
-
 
   const handleStorageUpdate = () => {
     setStorageData(getStorage());
@@ -123,10 +119,6 @@ const App = () => {
           // If no tasks exist, show the task list selector
           document.getElementById('task-list-selector-modal').showModal();
         }
-      } else if (action === 'generate') {
-        document.getElementById('ai-generator-modal').showModal();
-      } else if (action === 'custom') {
-        document.getElementById('custom-tasklist-modal').showModal();
       } else if (action === 'notes') {
         document.getElementById('notes-modal').showModal();
       } else if (action === 'workout') {
@@ -198,61 +190,70 @@ const App = () => {
     }
   };
 
+  const handleHelpOpen = () => {
+    document.getElementById('guide-modal').showModal();
+  };
+
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 transition-colors">
-        <div className="max-w-7xl mx-auto">
-          <header className="flex justify-between items-center mb-8">
-            <h1 className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-slate-100 transition-colors">ZenTrack</h1>
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <button 
-                className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                onClick={handleSettingsOpen}
-                aria-label="Settings"
-              >
-                <SettingsIcon size={20} />
-              </button>
-              <button 
-                className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800/40 transition-colors"
-                onClick={handleReminderSettingsOpen}
-                aria-label="Reminders"
-              >
-                <Bell size={20} />
-              </button>
-              <button 
-                className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-colors"
-                onClick={() => document.getElementById('guide-modal').showModal()}
-                aria-label="Guide"
-              >
-                <HelpCircle size={20} />
-              </button>
-            </div>
-          </header>
-
-          <MonthlyOverview 
-            currentMonth={currentMonth} 
-            storageData={storageData}
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
+        <div className="flex">
+          {/* Sidebar Navigation */}
+          <Sidebar 
+            activeSection={activeSection} 
+            onSectionChange={setActiveSection}
+            onReminderSettingsOpen={handleReminderSettingsOpen}
+            onSettingsOpen={handleSettingsOpen}
+            onHelpOpen={handleHelpOpen}
           />
           
-          <main>
-            <Calendar 
-              selectedDay={selectedDay} 
-              onSelectDay={handleDaySelect}
-              currentMonth={currentMonth}
-              onMonthChange={setCurrentMonth}
-              storageData={storageData}
-            />
-          </main>
+          {/* Main Content Area */}
+          <div className="flex-1 md:ml-20 lg:ml-64 transition-all flex justify-center">
+            <div className="w-full max-w-4xl px-4">
+              {/* Section Containers */}
+              <SectionContainer id="overview" isActive={activeSection === 'overview'}>
+                <Overview 
+                  selectedDay={selectedDay}
+                  onSelectDay={handleDaySelect}
+                  currentMonth={currentMonth}
+                  onMonthChange={setCurrentMonth}
+                  storageData={storageData}
+                />
+              </SectionContainer>
+
+              <SectionContainer id="stats" isActive={activeSection === 'stats'}>
+                <Stats 
+                  storageData={storageData}
+                  currentMonth={currentMonth}
+                />
+              </SectionContainer>
+
+              <SectionContainer id="meditation" isActive={activeSection === 'meditation'}>
+                <MeditationSection />
+              </SectionContainer>
+
+              <SectionContainer id="workout" isActive={activeSection === 'workout'}>
+                <WorkoutSection />
+              </SectionContainer>
+
+              <SectionContainer id="coach" isActive={activeSection === 'coach'}>
+                <DayCoachSection />
+              </SectionContainer>
+
+              <SectionContainer id="templates" isActive={activeSection === 'templates'}>
+                <TemplatesSection />
+              </SectionContainer>
+            </div>
+          </div>
         </div>
 
+        {/* Floating action button */}
         <FloatingMenu 
           onDaySelect={handleDaySelect}
           onVoiceInput={handleVoiceInput}
         />
         
-        {/* Mobile theme toggle removed - using same header icons on all devices */}
-        
+        {/* Modals */}
         <FlowGuide />
         
         <DayActionSelector

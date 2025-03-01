@@ -221,10 +221,9 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     // Return emoji for the dominant mood
     if (dominantMood && MOODS[dominantMood]) {
       return (
-        <>
-          <span className="mr-2">{MOODS[dominantMood].emoji}</span>
-          <span className="text-lg">{MOODS[dominantMood].label}</span>
-        </>
+        <span className="flex items-center">
+          <span className="mr-1">{MOODS[dominantMood].emoji}</span>
+        </span>
       );
     }
     

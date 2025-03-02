@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Loader, X, Check, Globe } from 'lucide-react';
+import { Mic, MicOff, Loader, X, Check, Globe, Plus, Trash2 } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
 
 export const VoiceTaskInput = ({ date, onClose, onTaskAdded }) => {
@@ -9,6 +9,9 @@ export const VoiceTaskInput = ({ date, onClose, onTaskAdded }) => {
   const [recognition, setRecognition] = useState(null);
   const [language, setLanguage] = useState('en-US'); // Default to English
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // New state for storing multiple tasks
+  const [pendingTasks, setPendingTasks] = useState([]);
 
   // Set up speech recognition on component mount
   useEffect(() => {
@@ -103,9 +106,47 @@ export const VoiceTaskInput = ({ date, onClose, onTaskAdded }) => {
     }
   };
 
-  const handleAddTask = () => {
+  // Add current transcript to pending tasks list
+  const handleAddToPending = () => {
     if (!transcript.trim()) {
-      setError('Please speak a task before adding.');
+      setError('Please speak a task before adding to the list.');
+      return;
+    }
+
+    // Add current transcript to pending tasks
+    setPendingTasks([...pendingTasks, transcript.trim()]);
+    
+    // Clear current transcript and error
+    setTranscript('');
+    setError(null);
+    
+    // If we're listening, stop listening
+    if (isListening && recognition) {
+      recognition.stop();
+      setIsListening(false);
+    }
+  };
+  
+  // Remove a pending task by index
+  const handleRemovePendingTask = (index) => {
+    setPendingTasks(pendingTasks.filter((_, i) => i !== index));
+  };
+
+  // Process all pending tasks and add them to the task list
+  const handleAddAllTasks = () => {
+    if (pendingTasks.length === 0 && !transcript.trim()) {
+      setError('Please add at least one task to the list.');
+      return;
+    }
+    
+    // If there's still an active transcript, add it to pending tasks
+    const tasksToAdd = [...pendingTasks];
+    if (transcript.trim()) {
+      tasksToAdd.push(transcript.trim());
+    }
+
+    if (tasksToAdd.length === 0) {
+      setError('No tasks to add.');
       return;
     }
 
@@ -114,7 +155,6 @@ export const VoiceTaskInput = ({ date, onClose, onTaskAdded }) => {
     try {
       const storage = getStorage();
       const dayData = storage[date] || {};
-      const taskText = transcript.trim();
       
       // Determine what type of task list already exists for this day
       let taskType = 'default';
@@ -132,17 +172,17 @@ export const VoiceTaskInput = ({ date, onClose, onTaskAdded }) => {
           dayData.aiTasks = [];
         }
         
-        // Find or create "Custom" category in AI tasks
-        let customCategory = dayData.aiTasks.find(cat => cat.title === 'Custom' || cat.title === 'Voice Tasks');
+        // Find or create "Voice Tasks" category in AI tasks
+        let voiceCategory = dayData.aiTasks.find(cat => cat.title === 'Voice Tasks' || cat.title === 'Custom');
         
-        if (!customCategory) {
-          // Create new Custom category
-          customCategory = { title: 'Custom', items: [] };
-          dayData.aiTasks.push(customCategory);
+        if (!voiceCategory) {
+          // Create new Voice Tasks category
+          voiceCategory = { title: 'Voice Tasks', items: [] };
+          dayData.aiTasks.push(voiceCategory);
         }
         
-        // Add the new task
-        customCategory.items.push(taskText);
+        // Add all the new tasks
+        voiceCategory.items.push(...tasksToAdd);
       } 
       else if (taskType === 'custom') {
         // Add to Custom tasks list
@@ -150,45 +190,49 @@ export const VoiceTaskInput = ({ date, onClose, onTaskAdded }) => {
           dayData.customTasks = [];
         }
         
-        // Find or create "Custom" category
-        let customCategory = dayData.customTasks.find(cat => cat.title === 'Custom' || cat.title === 'Voice Tasks');
+        // Find or create "Voice Tasks" category
+        let voiceCategory = dayData.customTasks.find(cat => cat.title === 'Voice Tasks' || cat.title === 'Custom');
         
-        if (!customCategory) {
-          // Create new Custom category
-          customCategory = { title: 'Custom', items: [] };
-          dayData.customTasks.push(customCategory);
+        if (!voiceCategory) {
+          // Create new Voice Tasks category
+          voiceCategory = { title: 'Voice Tasks', items: [] };
+          dayData.customTasks.push(voiceCategory);
         }
         
-        // Add the new task
-        customCategory.items.push(taskText);
+        // Add all the new tasks
+        voiceCategory.items.push(...tasksToAdd);
       }
       else {
         // Default tasks - create custom tasks instead
         dayData.customTasks = [
           {
-            title: 'Custom',
-            items: [taskText]
+            title: 'Voice Tasks',
+            items: tasksToAdd
           }
         ];
       }
       
-      // Update checked state
+      // Update checked state for all new tasks
       if (!dayData.checked) {
         dayData.checked = {};
       }
-      dayData.checked[taskText] = false;
+      
+      tasksToAdd.forEach(task => {
+        dayData.checked[task] = false;
+      });
       
       // Save back to storage
       storage[date] = dayData;
       setStorage(storage);
       
-      console.log('Voice task added:', taskText);
+      console.log('Voice tasks added:', tasksToAdd);
       console.log('Updated storage for date:', date, storage[date]);
       
-      // Reset transcript
+      // Reset state
       setTranscript('');
+      setPendingTasks([]);
       
-      // Notify parent component that we've added a task
+      // Notify parent component that we've added tasks
       if (onTaskAdded) {
         onTaskAdded(taskType);
       }
@@ -203,10 +247,25 @@ export const VoiceTaskInput = ({ date, onClose, onTaskAdded }) => {
       // Close the dialog after successful add
       onClose();
     } catch (error) {
-      console.error('Error adding voice task:', error);
-      setError('Failed to add task: ' + error.message);
+      console.error('Error adding voice tasks:', error);
+      setError('Failed to add tasks: ' + error.message);
       setIsProcessing(false);
     }
+  };
+  
+  // Handle cancel - also clear transcript
+  const handleCancel = () => {
+    // Clear any active transcript
+    setTranscript('');
+    
+    // If we're listening, stop listening
+    if (isListening && recognition) {
+      recognition.stop();
+      setIsListening(false);
+    }
+    
+    // Close the modal
+    onClose();
   };
 
   const getFormattedDate = () => {
@@ -244,7 +303,7 @@ export const VoiceTaskInput = ({ date, onClose, onTaskAdded }) => {
               <Globe size={20} />
             </button>
             <button
-              onClick={onClose}
+              onClick={handleCancel}
               className="modal-close-button"
             >
               <X size={20} />
@@ -276,24 +335,60 @@ export const VoiceTaskInput = ({ date, onClose, onTaskAdded }) => {
             </button>
           </div>
 
-          {/* Transcript display */}
-          <div 
-            className={`bg-slate-50 dark:bg-slate-800/60 rounded-lg p-4 h-24 overflow-y-auto text-center transition-colors ${
-              isListening ? 'border-2 border-blue-400 dark:border-blue-600' : 'border border-slate-200 dark:border-slate-700'
-            }`}
-          >
-            {transcript ? (
-              <p className="text-slate-700 dark:text-slate-200 transition-colors">
-                {transcript}
-              </p>
-            ) : (
-              <p className="text-slate-400 dark:text-slate-500 transition-colors">
-                {isListening 
-                  ? 'Listening... Speak now.' 
-                  : 'Press the microphone button and speak your task...'}
-              </p>
+          {/* Transcript display with add button */}
+          <div className="mb-4">
+            <div 
+              className={`bg-slate-50 dark:bg-slate-800/60 rounded-lg p-4 h-24 overflow-y-auto text-center transition-colors ${
+                isListening ? 'border-2 border-blue-400 dark:border-blue-600' : 'border border-slate-200 dark:border-slate-700'
+              }`}
+            >
+              {transcript ? (
+                <p className="text-slate-700 dark:text-slate-200 transition-colors">
+                  {transcript}
+                </p>
+              ) : (
+                <p className="text-slate-400 dark:text-slate-500 transition-colors">
+                  {isListening 
+                    ? 'Listening... Speak now.' 
+                    : 'Press the microphone button and speak your task...'}
+                </p>
+              )}
+            </div>
+            
+            {transcript && (
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={handleAddToPending}
+                  className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md"
+                >
+                  <Plus size={16} />
+                  <span>Add to task list</span>
+                </button>
+              </div>
             )}
           </div>
+          
+          {/* Pending Tasks List */}
+          {pendingTasks.length > 0 && (
+            <div className="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-4 mb-4 border border-slate-200 dark:border-slate-700 transition-colors">
+              <h4 className="font-medium text-slate-700 dark:text-slate-200 mb-2 transition-colors">
+                Tasks to add ({pendingTasks.length}):
+              </h4>
+              <ul className="space-y-2 max-h-36 overflow-y-auto">
+                {pendingTasks.map((task, index) => (
+                  <li key={index} className="flex items-center justify-between text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 p-2 rounded-lg">
+                    <span>{task}</span>
+                    <button 
+                      onClick={() => handleRemovePendingTask(index)}
+                      className="p-1 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Error display */}
           {error && (
@@ -305,17 +400,17 @@ export const VoiceTaskInput = ({ date, onClose, onTaskAdded }) => {
           {/* Actions */}
           <div className="flex justify-between">
             <button
-              onClick={onClose}
+              onClick={handleCancel}
               className="btn-secondary flex items-center gap-2"
             >
               <X size={18} />
               Cancel
             </button>
             <button
-              onClick={handleAddTask}
-              disabled={!transcript.trim() || isProcessing}
+              onClick={handleAddAllTasks}
+              disabled={(pendingTasks.length === 0 && !transcript.trim()) || isProcessing}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-colors ${
-                !transcript.trim() || isProcessing
+                (pendingTasks.length === 0 && !transcript.trim()) || isProcessing
                   ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600' 
                   : 'bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700'
               }`}
@@ -325,7 +420,9 @@ export const VoiceTaskInput = ({ date, onClose, onTaskAdded }) => {
               ) : (
                 <Check size={18} />
               )}
-              Add Task
+              Add {pendingTasks.length > 0 || transcript ? 
+                `Tasks (${pendingTasks.length + (transcript.trim() ? 1 : 0)})` : 
+                'Tasks'}
             </button>
           </div>
         </div>

@@ -7,6 +7,7 @@ import { MoodEnergyComparisonChart } from './Charts/MoodEnergyComparisonChart';
 import { MoodImpactAnalysis } from './Charts/MoodImpactAnalysis';
 import { MOODS } from '../MoodSelector';
 import { processMoodComparisonData, analyzeMoodImpacts } from '../../utils/moodAnalysisUtils';
+import ProcrastinationStats from './Charts/ProcrastinationStats';
 
 export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
   const [statsData, setStatsData] = useState({
@@ -603,6 +604,15 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
             <WorkoutStatsChart data={statsData.workoutData} />
           </div>
         </div>
+
+        {/* Procrastination Stats Section */}
+<div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors mb-6 lg:col-span-2">
+  <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors flex items-center gap-2">
+    <Clock className="text-amber-500 dark:text-amber-400" size={20} />
+    Procrastination Analyzer
+  </h3>
+  <ProcrastinationStats currentMonth={currentMonth} />
+</div>
       </div>
     </div>
   );

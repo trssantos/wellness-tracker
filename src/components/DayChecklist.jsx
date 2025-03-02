@@ -1,4 +1,4 @@
-// DayChecklist.jsx
+// DayChecklist.jsx with Procrastination Feature
 import React, { useState, useEffect } from 'react';
 import { X, Edit2, Save, Sparkles } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
@@ -8,6 +8,8 @@ import TaskCategoryTabs from './DayChecklist/TaskCategoryTabs';
 import TaskList from './DayChecklist/TaskList';
 import EditTaskPanel from './DayChecklist/EditTaskPanel';
 import { TaskReminder } from './TaskReminder';
+import PendingTasksPrompt from './PendingTasksPrompt';
+import { findPreviousTaskDate, importDeferredTasks } from '../utils/taskDeferralService';
 
 // Default categories moved to a separate file for better organization
 import { DEFAULT_CATEGORIES } from '../utils/defaultTasks';
@@ -37,6 +39,10 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   const [quickAddCategory, setQuickAddCategory] = useState(null);
   const [quickAddText, setQuickAddText] = useState('');
   
+  // State for pending tasks feature
+  const [showPendingPrompt, setShowPendingPrompt] = useState(false);
+  const [previousTaskDate, setPreviousTaskDate] = useState(null);
+
   useEffect(() => {
     setActiveCategory(0);
   }, [categories]);
@@ -44,7 +50,7 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   useEffect(() => {
     if (!date) return;
 
-    // Force reset to ensure we load fresh data
+    // Reset all state to ensure we load fresh data
     setCategories([]);
     setEditedCategories([]);
     setChecked({});
@@ -52,6 +58,29 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
     setTaskReminders({});
 
     const savedData = getStorage()[date] || {};
+    
+    // Check if this is a new day without tasks
+    const hasNoTasks = 
+      (!savedData.aiTasks || savedData.aiTasks.length === 0) && 
+      (!savedData.customTasks || savedData.customTasks.length === 0);
+    
+    // If this is a new day without tasks, check for pending tasks from previous days
+    if (hasNoTasks) {
+      // Look for the most recent previous date with tasks
+      const prevDate = findPreviousTaskDate(date);
+      if (prevDate) {
+        setPreviousTaskDate(prevDate);
+        setShowPendingPrompt(true);
+      } else {
+        setShowPendingPrompt(false);
+        setPreviousTaskDate(null);
+      }
+    } else {
+      // Already has tasks, don't show the prompt
+      setShowPendingPrompt(false);
+      setPreviousTaskDate(null);
+    }
+
     let taskCategories = DEFAULT_CATEGORIES;
     let listType = 'default';
 
@@ -447,6 +476,32 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
     }, 100);
   };
 
+  // Pending tasks handlers
+  const handleImportPendingTasks = (tasksToImport) => {
+    if (!tasksToImport || tasksToImport.length === 0) {
+      setShowPendingPrompt(false);
+      return;
+    }
+    
+    // Import the deferred tasks into the current day
+    const updatedDayData = importDeferredTasks(date, tasksToImport);
+    
+    if (updatedDayData) {
+      // Update local state
+      setCategories(updatedDayData.customTasks || updatedDayData.aiTasks || []);
+      setChecked(updatedDayData.checked || {});
+      setTaskListType(updatedDayData.customTasks ? 'custom' : 'ai');
+    }
+    
+    // Hide the prompt
+    setShowPendingPrompt(false);
+  };
+
+  const handleSkipPendingTasks = () => {
+    setShowPendingPrompt(false);
+    setPreviousTaskDate(null);
+  };
+
   if (!date) return null;
 
   return (
@@ -456,97 +511,137 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
         className="modal-base"
         onClick={(e) => e.target.id === 'checklist-modal' && onClose()}
       >
-        <div className="modal-content max-w-2xl" onClick={e => e.stopPropagation()}>
-          <div className="modal-header">
-            <div>
-              <h3 className="modal-title">
-                {new Date(date).toLocaleDateString('default', { 
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </h3>
-              <div className="modal-subtitle flex items-center gap-2">
-                <span>
-                  {taskListType === 'ai' 
-                    ? 'AI Generated Tasks' 
-                    : taskListType === 'custom' 
-                      ? 'Custom Tasks' 
-                      : 'Default Tasks'}
-                </span>
-                <button
-                  onClick={toggleEditing}
-                  className="text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 p-1 rounded-md transition-colors"
-                  title={isEditing ? "Save changes" : "Edit tasks"}
-                >
-                  {isEditing ? <Save size={14} /> : <Edit2 size={14} />}
-                </button>
-                <button
-                  onClick={openAIGenerator}
-                  className="text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 p-1 rounded-md transition-colors"
-                  title="Generate with AI"
-                >
-                  <Sparkles size={14} />
-                </button>
+        {/* Show Pending Tasks Prompt if applicable */}
+        {showPendingPrompt && previousTaskDate ? (
+          <div className="modal-content max-w-2xl" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3 className="modal-title">
+                  {new Date(date).toLocaleDateString('default', { 
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </h3>
+                <p className="modal-subtitle">
+                  Pending Tasks from {new Date(previousTaskDate).toLocaleDateString('default', { 
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </p>
               </div>
+              <button
+                onClick={onClose}
+                className="modal-close-button"
+              >
+                <X size={20} />
+              </button>
             </div>
-            <button
-              onClick={onClose}
-              className="modal-close-button"
-            >
-              <X size={20} />
-            </button>
+            
+            <PendingTasksPrompt
+              date={date}
+              previousDate={previousTaskDate}
+              onImport={handleImportPendingTasks}
+              onSkip={handleSkipPendingTasks}
+              onClose={onClose}
+            />
           </div>
+        ) : (
+          /* Original Task List Content */
+          <div className="modal-content max-w-2xl" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3 className="modal-title">
+                  {new Date(date).toLocaleDateString('default', { 
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </h3>
+                <div className="modal-subtitle flex items-center gap-2">
+                  <span>
+                    {taskListType === 'ai' 
+                      ? 'AI Generated Tasks' 
+                      : taskListType === 'custom' 
+                        ? 'Custom Tasks' 
+                        : 'Default Tasks'}
+                  </span>
+                  <button
+                    onClick={toggleEditing}
+                    className="text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 p-1 rounded-md transition-colors"
+                    title={isEditing ? "Save changes" : "Edit tasks"}
+                  >
+                    {isEditing ? <Save size={14} /> : <Edit2 size={14} />}
+                  </button>
+                  <button
+                    onClick={openAIGenerator}
+                    className="text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 p-1 rounded-md transition-colors"
+                    title="Generate with AI"
+                  >
+                    <Sparkles size={14} />
+                  </button>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="modal-close-button"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-          <DayContext 
-            context={dayContext} 
-            onUpdate={handleContextUpdate} 
-          />
-          
-          {!isEditing && (
-            <ProgressSummary 
-              checked={checked} 
-              categories={categories} 
+            <DayContext 
+              context={dayContext} 
+              onUpdate={handleContextUpdate} 
             />
-          )}
-
-          {isEditing ? (
-            // Editing mode view
-            <EditTaskPanel
-              editedCategories={editedCategories}
-              setEditedCategories={setEditedCategories}
-              editingError={editingError}
-              setEditingError={setEditingError}
-              saveEdits={saveEdits}
-              cancelEditing={cancelEditing}
-            />
-          ) : (
-            // Normal viewing mode
-            <>
-              <TaskCategoryTabs
-                categories={categories}
-                activeCategory={activeCategory}
-                setActiveCategory={setActiveCategory}
+            
+            {!isEditing && (
+              <ProgressSummary 
+                checked={checked} 
+                categories={categories} 
               />
+            )}
 
-              <TaskList
-                categories={categories}
-                activeCategory={activeCategory}
-                checked={checked}
-                handleCheck={handleCheck}
-                hasReminderForTask={hasReminderForTask}
-                handleSetReminder={handleSetReminder}
-                quickAddCategory={quickAddCategory}
-                setQuickAddCategory={setQuickAddCategory}
-                quickAddText={quickAddText}
-                setQuickAddText={setQuickAddText}
-                handleQuickAddTask={handleQuickAddTask}
-                handleDeleteTask={handleDeleteTask}
+            {isEditing ? (
+              // Editing mode view
+              <EditTaskPanel
+                editedCategories={editedCategories}
+                setEditedCategories={setEditedCategories}
+                editingError={editingError}
+                setEditingError={setEditingError}
+                saveEdits={saveEdits}
+                cancelEditing={cancelEditing}
               />
-            </>
-          )}
-        </div>
+            ) : (
+              // Normal viewing mode
+              <>
+                <TaskCategoryTabs
+                  categories={categories}
+                  activeCategory={activeCategory}
+                  setActiveCategory={setActiveCategory}
+                />
+
+                <TaskList
+                  categories={categories}
+                  activeCategory={activeCategory}
+                  checked={checked}
+                  handleCheck={handleCheck}
+                  hasReminderForTask={hasReminderForTask}
+                  handleSetReminder={handleSetReminder}
+                  quickAddCategory={quickAddCategory}
+                  setQuickAddCategory={setQuickAddCategory}
+                  quickAddText={quickAddText}
+                  setQuickAddText={setQuickAddText}
+                  handleQuickAddTask={handleQuickAddTask}
+                  handleDeleteTask={handleDeleteTask}
+                />
+              </>
+            )}
+          </div>
+        )}
       </dialog>
       
       {/* Task Reminder Dialog */}

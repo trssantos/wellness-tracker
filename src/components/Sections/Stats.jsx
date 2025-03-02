@@ -220,11 +220,7 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     
     // Return emoji for the dominant mood
     if (dominantMood && MOODS[dominantMood]) {
-      return (
-        <span className="flex items-center">
-          <span className="mr-1">{MOODS[dominantMood].emoji}</span>
-        </span>
-      );
+      return MOODS[dominantMood].emoji;
     }
     
     return 'N/A';
@@ -323,96 +319,96 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
           </div>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-6">
           {/* Productivity Streak */}
-          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 transition-colors">
+          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-2 sm:p-4 transition-colors">
             <div className="flex items-center gap-2 mb-2">
               <Activity className="text-blue-500 dark:text-blue-400" size={20} />
               <h3 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Streak</h3>
             </div>
-            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 transition-colors">
+            <p className="text-xl sm:text-2xl font-bold text-blue-700 dark:text-blue-300 transition-colors">
               {calculateStreak(statsData.monthlyProgress)} days
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 transition-colors">
               current productivity streak
             </p>
           </div>
           
           {/* Most Productive Day */}
-          <div className="bg-teal-50 dark:bg-teal-900/30 rounded-lg p-4 transition-colors">
+          <div className="bg-teal-50 dark:bg-teal-900/30 rounded-lg p-2 sm:p-4 transition-colors">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="text-teal-500 dark:text-teal-400" size={20} />
               <h3 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Best Day</h3>
             </div>
-            <p className="text-2xl font-bold text-teal-700 dark:text-teal-300 transition-colors">
+            <p className="text-xl sm:text-2xl font-bold text-teal-700 dark:text-teal-300 transition-colors">
               {findMostProductiveDay(statsData.monthlyProgress)}
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 transition-colors">
               most productive date
             </p>
           </div>
           
           {/* Task Completion Rate */}
-          <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4 transition-colors">
+          <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-2 sm:p-4 transition-colors">
             <div className="flex items-center gap-2 mb-2">
               <BarChart2 className="text-green-500 dark:text-green-400" size={20} />
               <h3 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Completion</h3>
             </div>
-            <p className="text-2xl font-bold text-green-700 dark:text-green-300 transition-colors">
+            <p className="text-xl sm:text-2xl font-bold text-green-700 dark:text-green-300 transition-colors">
               {statsData.totalTasksCompleted}/{statsData.totalTasksCreated}
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 transition-colors">
               {statsData.avgProgress}% average rate
             </p>
           </div>
           
           {/* Mood Distribution */}
-          <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4 transition-colors">
+          <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-2 sm:p-4 transition-colors">
             <div className="flex items-center gap-2 mb-2">
               <LineChart className="text-purple-500 dark:text-purple-400" size={20} />
               <h3 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Dominant Mood</h3>
             </div>
-            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300 transition-colors flex items-center">
+            <p className="text-xl sm:text-2xl font-bold text-purple-700 dark:text-purple-300 transition-colors">
               {calculateDominantMood(statsData.moodTrend)}
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 transition-colors">
               most frequent mood
             </p>
           </div>
         </div>
         
         {/* Second row with more detailed metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-6">
           {/* Workout Statistics */}
-          <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg p-4 transition-colors">
+          <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg p-2 sm:p-4 transition-colors">
             <div className="flex items-center gap-2 mb-2">
               <Dumbbell className="text-orange-500 dark:text-orange-400" size={20} />
               <h3 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Workouts</h3>
             </div>
-            <p className="text-2xl font-bold text-orange-700 dark:text-orange-300 transition-colors">
+            <p className="text-xl sm:text-2xl font-bold text-orange-700 dark:text-orange-300 transition-colors">
               {statsData.workoutData.length} sessions
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 transition-colors">
               {statsData.totalWorkoutMinutes} total minutes
             </p>
           </div>
           
           {/* Calories Burned */}
-          <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-4 transition-colors">
+          <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-2 sm:p-4 transition-colors">
             <div className="flex items-center gap-2 mb-2">
               <Flame className="text-red-500 dark:text-red-400" size={20} />
               <h3 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Calories</h3>
             </div>
-            <p className="text-2xl font-bold text-red-700 dark:text-red-300 transition-colors">
+            <p className="text-xl sm:text-2xl font-bold text-red-700 dark:text-red-300 transition-colors">
               {statsData.totalCaloriesBurned} kcal
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 transition-colors">
               {statsData.totalCaloriesBurned > 0 ? `~${Math.round(statsData.totalCaloriesBurned / (statsData.workoutData.length || 1))} per session` : '0 per session'}
             </p>
           </div>
           
           {/* Productivity Rating */}
-          <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-4 transition-colors col-span-2">
+          <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-2 sm:p-4 transition-colors col-span-2">
             <div className="flex items-center gap-2 mb-2">
               <BarChart2 className="text-indigo-500 dark:text-indigo-400" size={20} />
               <h3 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Productivity Score</h3>
@@ -424,11 +420,11 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
                   style={{ width: `${calculateProductivityScore(statsData)}%` }}
                 ></div>
               </div>
-              <p className="ml-3 text-2xl font-bold text-indigo-700 dark:text-indigo-300 transition-colors">
+              <p className="ml-3 text-xl sm:text-2xl font-bold text-indigo-700 dark:text-indigo-300 transition-colors">
                 {calculateProductivityScore(statsData)}/100
               </p>
             </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 transition-colors mt-1">
               based on task completion, mood, and consistency
             </p>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Menu, X, Home, BarChart2, Brain, Dumbbell, 
   MessageCircle, Layout, Bell, Settings, HelpCircle, Moon, Sun
@@ -27,6 +27,47 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
     };
   }, []);
 
+  // Add swipe gesture detection for mobile
+  useEffect(() => {
+    // Only apply touch handlers on mobile
+    if (!isMobile) return;
+    
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    const handleTouchStart = (e) => {
+      touchStartX = e.touches[0].clientX;
+    };
+    
+    const handleTouchMove = (e) => {
+      touchEndX = e.touches[0].clientX;
+    };
+    
+    const handleTouchEnd = () => {
+      // If swipe right (from left edge of screen)
+      if (touchEndX - touchStartX > 75 && touchStartX < 30) {
+        setIsOpen(true);
+      }
+      
+      // If swipe left while menu is open
+      if (touchStartX - touchEndX > 75 && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    
+    // Add event listeners to document
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isMobile, isOpen]); // Add isOpen as dependency to react to changes
+
   // Close sidebar on mobile when changing sections
   const handleSectionClick = (section) => {
     onSectionChange(section);
@@ -53,6 +94,7 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
           className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-white dark:bg-slate-800 shadow-md text-slate-700 dark:text-slate-300 transition-colors"
           onClick={() => setIsOpen(!isOpen)}
           aria-label={isOpen ? "Close menu" : "Open menu"}
+          style={{ transform: isOpen ? 'translateZ(0)' : 'none' }} // Ensure button is above all other elements
         >
           {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -77,14 +119,21 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
         <div className="flex flex-col h-full">
           {/* App Logo/Name */}
           <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-2">
-              <div className="flex-shrink-0 w-8 h-8 rounded-md bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white">
-                <span className="text-lg font-bold">Z</span>
+            <div className="flex items-center justify-between"> {/* Changed to justify-between */}
+              <div className="flex items-center gap-2">
+                <div className="flex-shrink-0 w-8 h-8 rounded-md bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white">
+                  <span className="text-lg font-bold">Z</span>
+                </div>
+                <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400 transition-colors">
+                  <span className="md:hidden lg:inline">ZenTrack</span>
+                  <span className="hidden md:inline lg:hidden sr-only">ZT</span>
+                </h1>
               </div>
-              <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400 transition-colors">
-                <span className="md:hidden lg:inline">ZenTrack</span>
-                <span className="hidden md:inline lg:hidden sr-only">ZT</span>
-              </h1>
+              
+              {/* Add this spacer for mobile to ensure X button doesn't overlap */}
+              {isMobile && isOpen && (
+                <div className="w-8"></div>
+              )}
             </div>
           </div>
 

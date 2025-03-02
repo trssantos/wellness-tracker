@@ -1,7 +1,7 @@
 // DayChecklist/TaskList.jsx
 import React from 'react';
-import { CheckCircle2, Circle, Bell, Plus, X } from 'lucide-react';
-import TaskItem from './TaskItem';
+import { Plus, X } from 'lucide-react';
+import TaskItem from './TaskItem'; // Fallback to regular TaskItem if needed
 import QuickAddTask from './QuickAddTask';
 
 const TaskList = ({
@@ -15,7 +15,8 @@ const TaskList = ({
   setQuickAddCategory,
   quickAddText,
   setQuickAddText,
-  handleQuickAddTask
+  handleQuickAddTask,
+  handleDeleteTask // May be undefined if not passed
 }) => {
   const currentCategory = categories[activeCategory];
   
@@ -38,6 +39,8 @@ const TaskList = ({
           hasReminder={hasReminderForTask(item)}
           onCheck={() => handleCheck(item)}
           onSetReminder={() => handleSetReminder(item)}
+          // Only pass onDeleteTask if handleDeleteTask is defined
+          onDeleteTask={handleDeleteTask ? () => handleDeleteTask(item) : undefined}
         />
       ))}
       

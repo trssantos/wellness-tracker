@@ -230,6 +230,70 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
     setQuickAddCategory(null);
   };
 
+  // Task deletion function
+  const handleDeleteTask = (taskText) => {
+    // Create a copy of the current categories
+    const newCategories = JSON.parse(JSON.stringify(categories));
+    
+    // Find the category that contains this task
+    const categoryIndex = newCategories.findIndex(category => 
+      category.items.includes(taskText)
+    );
+    
+    if (categoryIndex === -1) return; // Task not found
+    
+    // Remove the task from the category
+    newCategories[categoryIndex].items = newCategories[categoryIndex].items.filter(
+      item => item !== taskText
+    );
+    
+    // Update checked state by removing the deleted task
+    const newChecked = { ...checked };
+    delete newChecked[taskText];
+    
+    // Update storage
+    const storage = getStorage();
+    const dayData = storage[date] || {};
+    
+    if (taskListType === 'custom') {
+      storage[date] = {
+        ...dayData,
+        customTasks: newCategories,
+        checked: newChecked
+      };
+    } else if (taskListType === 'ai') {
+      storage[date] = {
+        ...dayData,
+        aiTasks: newCategories,
+        checked: newChecked
+      };
+    } else {
+      // For default, convert to custom when edited
+      storage[date] = {
+        ...dayData,
+        customTasks: newCategories,
+        checked: newChecked
+      };
+      setTaskListType('custom');
+    }
+    
+    // If this task had a reminder, remove it
+    if (dayData.taskReminders && dayData.taskReminders[taskText]) {
+      delete storage[date].taskReminders[taskText];
+      
+      // Clean up empty reminders object
+      if (Object.keys(storage[date].taskReminders).length === 0) {
+        delete storage[date].taskReminders;
+      }
+    }
+    
+    setStorage(storage);
+    
+    // Update local state
+    setCategories(newCategories);
+    setChecked(newChecked);
+  };
+
   // Editing functions
   const toggleEditing = () => {
     if (isEditing) {
@@ -472,6 +536,7 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
                 quickAddText={quickAddText}
                 setQuickAddText={setQuickAddText}
                 handleQuickAddTask={handleQuickAddTask}
+                handleDeleteTask={handleDeleteTask}
               />
             </>
           )}

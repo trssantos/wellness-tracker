@@ -225,6 +225,35 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     
     return 'N/A';
   };
+
+  // Calculate the dominant mood
+  const calculateDominantLabel = (moodData) => {
+    if (!moodData || moodData.length === 0) return 'N/A';
+    
+    // Count occurrences of each mood
+    const moodCounts = {};
+    moodData.forEach(item => {
+      moodCounts[item.mood] = (moodCounts[item.mood] || 0) + 1;
+    });
+    
+    // Find mood with highest count
+    let dominantMood = null;
+    let maxCount = 0;
+    
+    Object.entries(moodCounts).forEach(([mood, count]) => {
+      if (count > maxCount) {
+        dominantMood = mood;
+        maxCount = count;
+      }
+    });
+    
+    // Return emoji for the dominant mood
+    if (dominantMood && MOODS[dominantMood]) {
+      return MOODS[dominantMood].label;
+    }
+    
+    return 'N/A';
+  };
   
   // Calculate overall productivity score (0-100)
   const calculateProductivityScore = (data) => {
@@ -372,7 +401,7 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
               {calculateDominantMood(statsData.moodTrend)}
             </p>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 transition-colors">
-              most frequent mood
+            {calculateDominantLabel(statsData.moodTrend)}
             </p>
           </div>
         </div>

@@ -1,3 +1,4 @@
+// components/Navigation/Sidebar.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Menu, X, Home, BarChart2, Brain, Dumbbell, 
@@ -117,23 +118,16 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
         `}
       >
         <div className="flex flex-col h-full">
-          {/* App Logo/Name */}
+          {/* App Logo/Name - Changed to right alignment */}
           <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-            <div className="flex items-center justify-between"> {/* Changed to justify-between */}
-              <div className="flex items-center gap-2">
-                <div className="flex-shrink-0 w-8 h-8 rounded-md bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white">
-                  <span className="text-lg font-bold">Z</span>
-                </div>
-                <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400 transition-colors">
-                  <span className="md:hidden lg:inline">ZenTrack</span>
-                  <span className="hidden md:inline lg:hidden sr-only">ZT</span>
-                </h1>
+            <div className="flex items-center justify-end"> {/* Changed to justify-end for right alignment */}
+              <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400 transition-colors mr-2">
+                <span className="md:hidden lg:inline">ZenTrack</span>
+                <span className="hidden md:inline lg:hidden sr-only">ZT</span>
+              </h1>
+              <div className="flex-shrink-0 w-8 h-8 rounded-md bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white">
+                <span className="text-lg font-bold">Z</span>
               </div>
-              
-              {/* Add this spacer for mobile to ensure X button doesn't overlap */}
-              {isMobile && isOpen && (
-                <div className="w-8"></div>
-              )}
             </div>
           </div>
 

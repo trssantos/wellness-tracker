@@ -1,18 +1,18 @@
-// DayChecklist/TaskItem.jsx
+// DayChecklist/DeletableTaskItem.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import { CheckCircle2, Circle, Bell, AlertTriangle, Trash2 } from 'lucide-react';
 
-const TaskItem = ({ 
+const DeletableTaskItem = ({ 
   taskText, 
   isChecked, 
   hasReminder, 
   onCheck, 
   onSetReminder, 
-  onDeleteTask // This is now optional
+  onDeleteTask
 }) => {
-  // Only setup deletion functionality if onDeleteTask is provided
   const [isLongPressing, setIsLongPressing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePosition, setDeletePosition] = useState({ x: 0, y: 0 });
   const pressTimeoutRef = useRef(null);
   const taskItemRef = useRef(null);
 
@@ -25,13 +25,20 @@ const TaskItem = ({
     };
   }, []);
 
-  // Handle long press on mobile (only if deletion is enabled)
+  // Handle long press on mobile
   const handleTouchStart = (e) => {
-    if (!onDeleteTask) return; // Skip if deletion not enabled
-    
+    e.preventDefault(); // Prevent default to allow long press
     pressTimeoutRef.current = setTimeout(() => {
       setIsLongPressing(true);
       setShowDeleteConfirm(true);
+      // Center the delete confirmation
+      if (taskItemRef.current) {
+        const rect = taskItemRef.current.getBoundingClientRect();
+        setDeletePosition({ 
+          x: rect.width / 2, 
+          y: rect.height / 2 
+        });
+      }
     }, 500); // 500ms for long press
   };
 
@@ -42,39 +49,30 @@ const TaskItem = ({
     setIsLongPressing(false);
   };
 
-  // Handle right-click on desktop (only if deletion is enabled)
+  // Handle right-click on desktop
   const handleContextMenu = (e) => {
-    if (!onDeleteTask) return; // Skip if deletion not enabled
-    
     e.preventDefault();
     setShowDeleteConfirm(true);
+    setDeletePosition({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
   };
 
   const handleDelete = () => {
     setShowDeleteConfirm(false);
-    if (onDeleteTask) {
-      onDeleteTask();
-    }
+    onDeleteTask(taskText);
   };
 
   const handleCancelDelete = () => {
     setShowDeleteConfirm(false);
   };
 
-  // Handle click on delete icon
-  const handleDeleteClick = (e) => {
-    e.stopPropagation();
-    setShowDeleteConfirm(true);
-  };
-
   return (
     <div
       ref={taskItemRef}
       className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors relative"
-      onTouchStart={onDeleteTask ? handleTouchStart : undefined}
-      onTouchEnd={onDeleteTask ? handleTouchEnd : undefined}
-      onTouchCancel={onDeleteTask ? handleTouchEnd : undefined}
-      onContextMenu={onDeleteTask ? handleContextMenu : undefined}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+      onContextMenu={handleContextMenu}
     >
       <div 
         className="flex items-center justify-center w-5 h-5 mr-3 cursor-pointer"
@@ -95,8 +93,6 @@ const TaskItem = ({
       >
         {taskText}
       </span>
-      
-      {/* Reminder Button */}
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -112,19 +108,8 @@ const TaskItem = ({
         <Bell size={16} className={hasReminder ? "fill-current" : ""} />
       </button>
 
-      {/* Delete Button - Only show if deletion is enabled */}
-      {onDeleteTask && (
-        <button
-          onClick={handleDeleteClick}
-          className="p-2 rounded-full text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-          title="Delete task"
-        >
-          <Trash2 size={16} />
-        </button>
-      )}
-
-      {/* Delete Confirmation Popup - Only show if deletion is enabled */}
-      {showDeleteConfirm && onDeleteTask && (
+      {/* Delete Confirmation Popup */}
+      {showDeleteConfirm && (
         <div className="absolute z-10 top-0 left-0 right-0 bottom-0 bg-slate-900/20 dark:bg-slate-900/40 backdrop-blur-sm rounded-lg flex items-center justify-center">
           <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-lg max-w-xs w-full">
             <div className="flex items-center gap-2 mb-2 text-amber-500 dark:text-amber-400">
@@ -156,4 +141,4 @@ const TaskItem = ({
   );
 };
 
-export default TaskItem;
+export default DeletableTaskItem;

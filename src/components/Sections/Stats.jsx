@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Flame, BarChart2, LineChart, Activity, TrendingUp, Dumbbell, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, Flame, BarChart2, LineChart, Activity, TrendingUp, Dumbbell, ChevronLeft, ChevronRight, Sparkles, Sun, Moon, ArrowRight } from 'lucide-react';
 import { ProgressChart } from './Charts/ProgressChart';
 import { MoodTrendChart } from './Charts/MoodTrendChart';
 import { WorkoutStatsChart } from './Charts/WorkoutStatsChart';
+import { MoodEnergyComparisonChart } from './Charts/MoodEnergyComparisonChart';
+import { MoodImpactAnalysis } from './Charts/MoodImpactAnalysis';
 import { MOODS } from '../MoodSelector';
+import { processMoodComparisonData, analyzeMoodImpacts } from '../../utils/moodAnalysisUtils';
 
 export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
   const [statsData, setStatsData] = useState({
@@ -13,11 +16,16 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     totalWorkoutMinutes: 0,
     totalCaloriesBurned: 0,
     moodTrend: [],
-    workoutData: []
+    workoutData: [],
+    moodComparisonData: [],
+    moodImpactData: { insights: {} }
   });
   
   // Add internal state for month selection
   const [currentMonth, setCurrentMonth] = useState(propCurrentMonth || new Date());
+  
+  // Add state for showing the mood impact section
+  const [showMoodImpactSection, setShowMoodImpactSection] = useState(true);
   
   useEffect(() => {
     const data = processStorageData(storageData, currentMonth);
@@ -80,11 +88,12 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
           }
         }
         
-        // Process mood data
-        if (dayData.mood) {
+        // Process mood data - prioritize morning mood for backward compatibility
+        const moodToUse = dayData.morningMood || dayData.mood;
+        if (moodToUse) {
           moodData.push({
             date: dateStr,
-            mood: dayData.mood,
+            mood: moodToUse,
             day: d.getDate()
           });
         }
@@ -114,6 +123,12 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     moodData.sort((a, b) => new Date(a.date) - new Date(b.date));
     workoutData.sort((a, b) => new Date(a.date) - new Date(b.date));
     
+    // Process the morning/evening mood comparison data
+    const moodComparisonData = processMoodComparisonData(data, month);
+    
+    // Analyze the mood impact data
+    const moodImpactData = analyzeMoodImpacts(data, month);
+    
     return {
       monthlyProgress: dailyProgressData,
       totalTasksCompleted,
@@ -122,7 +137,9 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
       totalWorkoutMinutes,
       totalCaloriesBurned,
       moodTrend: moodData,
-      workoutData: workoutData
+      workoutData: workoutData,
+      moodComparisonData,
+      moodImpactData
     };
   };
 
@@ -255,12 +272,34 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     return 'N/A';
   };
   
+  // Calculate average mood improvement - NEW METRIC
+  const calculateAvgMoodImprovement = () => {
+    if (!statsData.moodComparisonData || statsData.moodComparisonData.length === 0) return null;
+    
+    // Only include days with both morning and evening moods
+    const daysWithBothMoods = statsData.moodComparisonData.filter(
+      day => day.morningMood !== null && day.eveningMood !== null
+    );
+    
+    if (daysWithBothMoods.length === 0) return null;
+    
+    // Calculate average change
+    const totalChange = daysWithBothMoods.reduce((sum, day) => sum + (day.change || 0), 0);
+    const avgChange = totalChange / daysWithBothMoods.length;
+    
+    return {
+      value: avgChange,
+      daysCount: daysWithBothMoods.length
+    };
+  };
+  
   // Calculate overall productivity score (0-100)
   const calculateProductivityScore = (data) => {
     // Initial weights for different metrics
     const weights = {
-      taskCompletion: 0.5,  // 50% of score
-      moodPositivity: 0.3,  // 30% of score
+      taskCompletion: 0.4,  // 40% of score
+      moodPositivity: 0.2,  // 20% of score
+      moodImprovement: 0.2, // 20% of score - NEW
       consistency: 0.2      // 20% of score
     };
     
@@ -289,6 +328,14 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
       moodScore = (avgMood / 5) * 100;
     }
     
+    // Mood improvement score (0-100) - NEW
+    let moodImprovementScore = 50; // Default to neutral
+    const avgImprovement = calculateAvgMoodImprovement();
+    if (avgImprovement && avgImprovement.daysCount >= 3) {
+      // Map from -5 to +5 scale to 0-100 scale (50 is neutral)
+      moodImprovementScore = Math.max(0, Math.min(100, (avgImprovement.value + 2.5) * 20));
+    }
+    
     // Consistency score (0-100)
     const daysInMonth = new Date(
       currentMonth.getFullYear(),
@@ -315,11 +362,15 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     const finalScore = Math.round(
       (completionScore * weights.taskCompletion) +
       (moodScore * weights.moodPositivity) +
+      (moodImprovementScore * weights.moodImprovement) +
       (consistencyScore * weights.consistency)
     );
     
     return finalScore;
   };
+
+  // Get average mood improvement for display
+  const avgMoodImprovement = calculateAvgMoodImprovement();
 
   return (
     <div className="space-y-6">
@@ -436,11 +487,37 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
             </p>
           </div>
           
+          {/* NEW: Daily Mood Change */}
+          <div className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-2 sm:p-4 transition-colors">
+            <div className="flex items-center gap-2 mb-2">
+              <Sun className="text-amber-500 dark:text-amber-400" size={20} />
+              <Moon className="text-indigo-500 dark:text-indigo-400" size={20} />
+              <h3 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Mood Trend</h3>
+            </div>
+            <p className="text-xl sm:text-2xl font-bold text-slate-700 dark:text-slate-200 transition-colors">
+              {avgMoodImprovement ? (
+                <span className={
+                  avgMoodImprovement.value > 0 
+                    ? 'text-green-600 dark:text-green-400' 
+                    : avgMoodImprovement.value < 0 
+                      ? 'text-red-600 dark:text-red-400' 
+                      : ''
+                }>
+                  {avgMoodImprovement.value > 0 ? '+' : ''}
+                  {avgMoodImprovement.value.toFixed(1)}
+                </span>
+              ) : 'N/A'}
+            </p>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 transition-colors">
+              {avgMoodImprovement ? `avg daily change (${avgMoodImprovement.daysCount} days)` : 'not enough data'}
+            </p>
+          </div>
+          
           {/* Productivity Rating */}
-          <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-2 sm:p-4 transition-colors col-span-2">
+          <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-2 sm:p-4 transition-colors">
             <div className="flex items-center gap-2 mb-2">
               <BarChart2 className="text-indigo-500 dark:text-indigo-400" size={20} />
-              <h3 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Productivity Score</h3>
+              <h3 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Productivity</h3>
             </div>
             <div className="flex items-center">
               <div className="flex-1 bg-slate-200 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
@@ -454,13 +531,45 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
               </p>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 transition-colors mt-1">
-              based on task completion, mood, and consistency
+              includes mood improvement
             </p>
           </div>
         </div>
       </div>
       
-      {/* Charts Section */}
+      {/* Morning/Evening Mood Comparison Chart - NEW SECTION */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors flex items-center gap-2">
+          <Sun className="text-amber-500 dark:text-amber-400" size={20} />
+          <Moon className="text-indigo-500 dark:text-indigo-400" size={20} />
+          <span>Morning vs Evening Mood</span>
+        </h3>
+        <div className="h-64">
+          <MoodEnergyComparisonChart data={statsData.moodComparisonData} />
+        </div>
+      </div>
+      
+      {/* Mood Impact Analysis - NEW SECTION */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+        <div onClick={() => setShowMoodImpactSection(!showMoodImpactSection)} className="cursor-pointer">
+          <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-1 transition-colors flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="text-purple-500 dark:text-purple-400" size={20} />
+              <span>Mood Impact Analysis</span>
+            </div>
+            <ArrowRight className={`transition-transform duration-300 ${showMoodImpactSection ? 'rotate-90' : ''}`} size={20} />
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 transition-colors">
+            Discover which activities and patterns affect your daily mood
+          </p>
+        </div>
+        
+        {showMoodImpactSection && (
+          <MoodImpactAnalysis data={statsData.moodImpactData} />
+        )}
+      </div>
+      
+      {/* Original Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Progress Chart */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
@@ -477,7 +586,7 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
           <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors flex items-center gap-2">
             <LineChart className="text-purple-500 dark:text-purple-400" size={20} />
-            Mood Trend
+            Morning Mood Trend
           </h3>
           <div className="h-64">
             <MoodTrendChart data={statsData.moodTrend} />

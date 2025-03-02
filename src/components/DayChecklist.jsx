@@ -63,8 +63,10 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
       if (validCategories.length > 0) {
         taskCategories = validCategories;
         setDayContext({
-          mood: savedData.mood || savedData.aiContext?.mood || null,
-          energyLevel: savedData.energyLevel || savedData.aiContext?.energyLevel || 0,
+          morningMood: savedData.morningMood || savedData.mood || savedData.aiContext?.mood || null,
+          eveningMood: savedData.eveningMood || null,
+          morningEnergy: savedData.morningEnergy || savedData.energyLevel || savedData.aiContext?.energyLevel || 0,
+          eveningEnergy: savedData.eveningEnergy || 0,
           objective: savedData.aiContext?.objective || '',
           context: savedData.aiContext?.context || '',
           isAIGenerated: true
@@ -78,8 +80,10 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
       if (validCategories.length > 0) {
         taskCategories = validCategories;
         setDayContext({
-          mood: savedData.mood || null,
-          energyLevel: savedData.energyLevel || 0,
+          morningMood: savedData.morningMood || savedData.mood || null,
+          eveningMood: savedData.eveningMood || null,
+          morningEnergy: savedData.morningEnergy || savedData.energyLevel || 0,
+          eveningEnergy: savedData.eveningEnergy || 0,
           objective: '',
           context: '',
           isAIGenerated: false
@@ -89,8 +93,10 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
     } else {
       // Default categories
       setDayContext({
-        mood: savedData.mood || null,
-        energyLevel: savedData.energyLevel || 0,
+        morningMood: savedData.morningMood || savedData.mood || null,
+        eveningMood: savedData.eveningMood || null,
+        morningEnergy: savedData.morningEnergy || savedData.energyLevel || 0,
+        eveningEnergy: savedData.eveningEnergy || 0,
         objective: '',
         context: '',
         isAIGenerated: false

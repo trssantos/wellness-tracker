@@ -1,5 +1,5 @@
 import React from 'react';
-import { SmilePlus, CheckSquare, Sparkles, X, Edit3, PenTool, Dumbbell } from 'lucide-react';
+import { SmilePlus, CheckSquare, X, PenTool, Dumbbell } from 'lucide-react';
 
 export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
   const getFormattedDate = () => {
@@ -14,7 +14,7 @@ export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
     });
   };
 
-  // Define actions with their properties
+  // Define actions with their properties - back to single mood tracking option
   const actions = [
     {
       id: 'mood',

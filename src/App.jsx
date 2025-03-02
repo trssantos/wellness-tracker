@@ -19,8 +19,10 @@ import { Settings } from './components/Settings';
 import { ThemeProvider } from './components/ThemeProvider';
 import { TaskReminder } from './components/TaskReminder';
 import { VoiceTaskInput } from './components/VoiceTaskInput';
-import { getStorage } from './utils/storage';
+import MoodTimeTracker from './components/MoodTimeTracker'; // Import the new component
+import { getStorage, setStorage } from './utils/storage';
 import reminderService from './utils/reminderService';
+import { migrateToMorningEveningFormat } from './utils/dataMigration';
 
 const App = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -30,8 +32,20 @@ const App = () => {
   const [storageVersion, setStorageVersion] = useState(0);
   const [voiceInputDate, setVoiceInputDate] = useState(null);
   
-  // Initialize reminder service on app start
+  // Add new state for mood time tracker
+  const [moodTimeDate, setMoodTimeDate] = useState(null);
+  const [moodTimeDefaultTime, setMoodTimeDefaultTime] = useState('morning');
+
+  // Initialize reminder service on app start and run data migration
   useEffect(() => {
+    // Run data migration for mood/energy levels
+    const migrationResult = migrateToMorningEveningFormat();
+    if (migrationResult.migrated) {
+      console.log(`Data migration complete: Migrated ${migrationResult.count} entries to morning/evening format`);
+      // Update the storage data after migration
+      setStorageData(getStorage());
+    }
+    
     // Initialize the reminder service
     reminderService.init();
     
@@ -102,7 +116,9 @@ const App = () => {
     
     setTimeout(() => {
       if (action === 'mood') {
-        document.getElementById('mood-modal').showModal();
+        // Set the mood time date and open modal
+        setMoodTimeDate(selectedDay);
+        document.getElementById('mood-time-tracker-modal').showModal();
       } else if (action === 'progress') {
         // Check if there are any tasks for this day
         const dayData = getStorage()[selectedDay] || {};
@@ -263,6 +279,16 @@ const App = () => {
           }}
           onSelectAction={handleDayAction}
         />
+        
+        {/* New Morning/Evening Mood Tracker */}
+        <MoodTimeTracker
+  date={moodTimeDate}
+  onClose={() => {
+    document.getElementById('mood-time-tracker-modal').close();
+    setMoodTimeDate(null);
+    handleStorageUpdate();
+  }}
+/>
 
         <TaskListSelector
           date={selectedDay}

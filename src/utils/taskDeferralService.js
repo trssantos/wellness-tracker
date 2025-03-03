@@ -106,9 +106,13 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
   
   // Update deferral history for each task
   deferredTasks.forEach(task => {
+    // IMPORTANT: Always increment defer count by 1 when importing
+    // This ensures that imported tasks count as deferred tasks immediately
+    const newDeferCount = task.deferCount > 0 ? task.deferCount : 1;
+    
     // If this task already has history, we need to preserve the first deferral date
     if (dayData.taskDeferHistory[task.text]) {
-      dayData.taskDeferHistory[task.text].count = task.deferCount;
+      dayData.taskDeferHistory[task.text].count = newDeferCount;
     } else {
       // Calculate the first date this task was created based on defer count and days
       let firstDate;
@@ -117,12 +121,14 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
         firstDateObj.setDate(firstDateObj.getDate() - task.daysSinceFirstDefer);
         firstDate = firstDateObj.toISOString().split('T')[0];
       } else {
-        firstDate = currentDate;
+        // If no previous defer date, use the previous date as the first date
+        // NOT the current date - since it was originally created on the previous day
+        firstDate = task.firstDate || currentDate;
       }
       
       // Create new history entry
       dayData.taskDeferHistory[task.text] = {
-        count: task.deferCount,
+        count: newDeferCount,
         firstDate: firstDate
       };
     }
@@ -238,11 +244,19 @@ export const getProcrastinationStats = (startDate, endDate) => {
   stats.averageDeferDays = totalTasks > 0 ? (totalDeferDays / totalTasks).toFixed(1) : 0;
   
   // Convert histogram data to array
-  for (let i = 0; i <= stats.maxDeferCount; i++) {
+  if (stats.maxDeferCount === 0 && Object.keys(deferCountMap).length === 0) {
+    // Add dummy data point if there's no data
     stats.tasksByDeferCount.push({
-      deferCount: i,
-      taskCount: deferCountMap[i] || 0
+      deferCount: 0,
+      taskCount: 0
     });
+  } else {
+    for (let i = 0; i <= stats.maxDeferCount; i++) {
+      stats.tasksByDeferCount.push({
+        deferCount: i,
+        taskCount: deferCountMap[i] || 0
+      });
+    }
   }
   
   // Sort timeline data

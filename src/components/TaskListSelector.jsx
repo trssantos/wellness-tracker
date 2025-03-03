@@ -1,7 +1,28 @@
 import React from 'react';
 import { X, CheckSquare, Sparkles, Edit3 } from 'lucide-react';
+import { findPreviousTaskDate } from '../utils/taskDeferralService';
+import { useEffect, useState } from 'react';
 
 export const TaskListSelector = ({ date, onClose, onSelectType }) => {
+
+  const [hasPendingTasks, setHasPendingTasks] = useState(false);
+  const [previousTaskDate, setPreviousTaskDate] = useState(null);
+
+  // Add useEffect to check for pending tasks
+useEffect(() => {
+  if (date) {
+    // Look for pending tasks
+    const prevDate = findPreviousTaskDate(date);
+    if (prevDate) {
+      setHasPendingTasks(true);
+      setPreviousTaskDate(prevDate);
+    } else {
+      setHasPendingTasks(false);
+      setPreviousTaskDate(null);
+    }
+  }
+}, [date]);
+
   const getFormattedDate = () => {
     if (!date) return '';
     

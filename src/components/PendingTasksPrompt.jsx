@@ -45,7 +45,8 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
               text: task,
               category: category.title,
               deferCount: deferCount,
-              daysSinceFirstDefer: daysSinceFirstDefer > 0 ? daysSinceFirstDefer : 0
+              daysSinceFirstDefer: daysSinceFirstDefer > 0 ? daysSinceFirstDefer : 0,
+              firstDate: deferHistory.firstDate
             });
             
             // Track oldest task for stats
@@ -111,7 +112,8 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
         text: task.text,
         category: task.category,
         deferCount: task.deferCount + 1, // Increment defer count
-        daysSinceFirstDefer: task.daysSinceFirstDefer
+        daysSinceFirstDefer: task.daysSinceFirstDefer,
+        firstDate: task.firstDate
       }));
     
     onImport(tasksToImport);

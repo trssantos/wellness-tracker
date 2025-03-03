@@ -144,6 +144,25 @@ const App = () => {
   };
 
   const handleTaskTypeSelection = (type) => {
+
+
+
+// If there are pending tasks, first go to the pending tasks prompt
+if (hasPendingTasks) {
+  // Store the selected task type to use after handling pending tasks
+  localStorage.setItem('pendingSelectedTaskType', type);
+  onClose();
+  
+  // Open the checklist with pending tasks prompt
+  setTimeout(() => {
+    document.getElementById('checklist-modal').showModal();
+  }, 100);
+} else {
+
+
+
+
+
     document.getElementById('task-list-selector-modal').close();
     
     setTimeout(() => {
@@ -156,7 +175,7 @@ const App = () => {
         document.getElementById('custom-tasklist-modal').showModal();
       }
     }, 100);
-  };
+  }};
 
   const handleAITasksGenerated = (generatedDate) => {
     // Update storage data first

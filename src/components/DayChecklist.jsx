@@ -14,6 +14,7 @@ import { findPreviousTaskDate, importDeferredTasks } from '../utils/taskDeferral
 // Default categories moved to a separate file for better organization
 import { DEFAULT_CATEGORIES } from '../utils/defaultTasks';
 
+
 export const DayChecklist = ({ date, storageVersion, onClose }) => {
   const [activeCategory, setActiveCategory] = useState(0);
   const [checked, setChecked] = useState({});
@@ -43,12 +44,21 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   const [showPendingPrompt, setShowPendingPrompt] = useState(false);
   const [previousTaskDate, setPreviousTaskDate] = useState(null);
 
+  const [pendingSelectedTaskType, setPendingSelectedTaskType] = useState(null);
+
   useEffect(() => {
     setActiveCategory(0);
   }, [categories]);
 
   useEffect(() => {
     if (!date) return;
+
+    // Get the selected task type if coming from task selector
+  const storedTaskType = localStorage.getItem('pendingSelectedTaskType');
+  if (storedTaskType) {
+    setPendingSelectedTaskType(storedTaskType);
+    localStorage.removeItem('pendingSelectedTaskType'); // Clear it after use
+  }
 
     // Reset all state to ensure we load fresh data
     setCategories([]);
@@ -495,11 +505,39 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
     
     // Hide the prompt
     setShowPendingPrompt(false);
+
+    // If there was a selected task type and we're not just continuing with the imported tasks
+  if (pendingSelectedTaskType && pendingSelectedTaskType !== 'default') {
+    onClose();
+    setTimeout(() => {
+      if (pendingSelectedTaskType === 'ai') {
+        document.getElementById('ai-generator-modal').showModal();
+      } else if (pendingSelectedTaskType === 'custom') {
+        document.getElementById('custom-tasklist-modal').showModal();
+      }
+    }, 100);
+    setPendingSelectedTaskType(null);
+  }
   };
 
   const handleSkipPendingTasks = () => {
     setShowPendingPrompt(false);
     setPreviousTaskDate(null);
+    
+    // If there was a selected task type, continue to that flow
+    if (pendingSelectedTaskType) {
+      onClose();
+      setTimeout(() => {
+        if (pendingSelectedTaskType === 'default') {
+          document.getElementById('checklist-modal').showModal();
+        } else if (pendingSelectedTaskType === 'ai') {
+          document.getElementById('ai-generator-modal').showModal();
+        } else if (pendingSelectedTaskType === 'custom') {
+          document.getElementById('custom-tasklist-modal').showModal();
+        }
+      }, 100);
+      setPendingSelectedTaskType(null);
+    }
   };
 
   if (!date) return null;

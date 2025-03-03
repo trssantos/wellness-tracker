@@ -1,16 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Clock, AlertCircle, TrendingUp, TrendingDown, RefreshCw, BarChart2, Calendar, ArrowRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { getProcrastinationStats } from '../../../utils/taskDeferralService';
+import { getStorage } from '../../../utils/storage';
 
-const ProcrastinationStats = ({ currentMonth }) => {
+const ProcrastinationStats = forwardRef(({ currentMonth }, ref) => {
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedView, setSelectedView] = useState('overview'); // 'overview', 'history', 'tasks'
   
-  useEffect(() => {
-    loadStats();
-  }, [currentMonth]);
+  // Expose the refresh method to parent components
+  useImperativeHandle(ref, () => ({
+    refresh: () => {
+      console.log("Refreshing procrastination stats");
+      loadStats();
+    }
+  }));
   
   const loadStats = () => {
     setIsLoading(true);
@@ -23,6 +28,44 @@ const ProcrastinationStats = ({ currentMonth }) => {
     const procStats = getProcrastinationStats(start, end);
     setStats(procStats);
     setIsLoading(false);
+  };
+  
+  useEffect(() => {
+    loadStats();
+  }, [currentMonth]);
+  
+  const debugProcrastinationData = () => {
+    console.log("=== DEBUGGING PROCRASTINATION DATA ===");
+    console.log("Current Month:", currentMonth);
+    
+    // Calculate start and end dates from currentMonth
+    const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const end = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+    console.log("Date Range:", start.toISOString().split('T')[0], "to", end.toISOString().split('T')[0]);
+    
+    // Get the raw storage data
+    const storage = getStorage();
+    console.log("Full Storage Data:", storage);
+    
+    // Look for task deferral history
+    const daysWithHistory = [];
+    Object.entries(storage).forEach(([key, value]) => {
+      if (key.match(/^\d{4}-\d{2}-\d{2}$/) && value.taskDeferHistory) {
+        daysWithHistory.push({
+          date: key,
+          history: value.taskDeferHistory
+        });
+      }
+    });
+    console.log("Days with taskDeferHistory:", daysWithHistory);
+    
+    // Debug the stats calculation
+    const procStats = getProcrastinationStats(start, end);
+    console.log("Procrastination Stats:", JSON.parse(JSON.stringify(procStats)));
+    
+    // Specific debug for chart data
+    console.log("Chart Data (tasksByDeferCount):", JSON.parse(JSON.stringify(procStats.tasksByDeferCount)));
+    console.log("=== END DEBUGGING ===");
   };
   
   if (isLoading) {
@@ -147,7 +190,10 @@ const ProcrastinationStats = ({ currentMonth }) => {
             <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors">Tasks by Deferral Count</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.tasksByDeferCount} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                <BarChart 
+                  data={stats.tasksByDeferCount.length > 0 ? stats.tasksByDeferCount : [{ deferCount: 0, taskCount: 0 }]} 
+                  margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
                   <XAxis 
                     dataKey="deferCount" 
@@ -157,6 +203,8 @@ const ProcrastinationStats = ({ currentMonth }) => {
                   <YAxis 
                     label={{ value: 'Task Count', angle: -90, position: 'insideLeft' }}
                     tick={{ fill: '#6b7280' }} 
+                    allowDecimals={false}
+                    domain={[0, 'auto']}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar 
@@ -341,6 +389,6 @@ const ProcrastinationStats = ({ currentMonth }) => {
       </div>
     </div>
   );
-};
+});
 
 export default ProcrastinationStats;

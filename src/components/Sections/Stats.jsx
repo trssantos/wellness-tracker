@@ -20,7 +20,18 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     workoutData: [],
     moodComparisonData: [],
     moodImpactData: { insights: {} }
+    
   });
+
+  // Create ref for ProcrastinationStats
+  const procrastinationStatsRef = useRef(null);
+  
+  // Function to refresh stats
+  const refreshProcrastinationStats = () => {
+    if (procrastinationStatsRef.current) {
+      procrastinationStatsRef.current.refresh();
+    }
+  };
   
   // Add internal state for month selection
   const [currentMonth, setCurrentMonth] = useState(propCurrentMonth || new Date());
@@ -611,7 +622,10 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     <Clock className="text-amber-500 dark:text-amber-400" size={20} />
     Procrastination Analyzer
   </h3>
-  <ProcrastinationStats currentMonth={currentMonth} />
+  <ProcrastinationStats 
+          ref={procrastinationStatsRef}
+          currentMonth={currentMonth} 
+        />
 </div>
       </div>
     </div>

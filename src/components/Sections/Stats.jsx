@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Clock, Flame, BarChart2, LineChart, Activity, TrendingUp, Dumbbell, ChevronLeft, ChevronRight, Sparkles, Sun, Moon, ArrowRight } from 'lucide-react';
 import { ProgressChart } from './Charts/ProgressChart';
 import { MoodTrendChart } from './Charts/MoodTrendChart';

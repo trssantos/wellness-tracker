@@ -143,39 +143,32 @@ const App = () => {
     }, 100);
   };
 
-  const handleTaskTypeSelection = (type) => {
-
-
-
-// If there are pending tasks, first go to the pending tasks prompt
-if (hasPendingTasks) {
-  // Store the selected task type to use after handling pending tasks
-  localStorage.setItem('pendingSelectedTaskType', type);
-  onClose();
-  
-  // Open the checklist with pending tasks prompt
-  setTimeout(() => {
-    document.getElementById('checklist-modal').showModal();
-  }, 100);
-} else {
-
-
-
-
-
+  const handleTaskTypeSelection = (type, hasPendingTasks = false) => {
     document.getElementById('task-list-selector-modal').close();
     
-    setTimeout(() => {
-      if (type === 'default') {
-        // For default, directly show the checklist which already loads defaults
+    // If there are pending tasks, first go to the pending tasks prompt
+    if (hasPendingTasks) {
+      // Store the selected task type to use after handling pending tasks
+      localStorage.setItem('pendingSelectedTaskType', type);
+      
+      // Open the checklist with pending tasks prompt
+      setTimeout(() => {
         document.getElementById('checklist-modal').showModal();
-      } else if (type === 'ai') {
-        document.getElementById('ai-generator-modal').showModal();
-      } else if (type === 'custom') {
-        document.getElementById('custom-tasklist-modal').showModal();
-      }
-    }, 100);
-  }};
+      }, 100);
+    } else {
+      // No pending tasks, go directly to selected task type
+      setTimeout(() => {
+        if (type === 'default') {
+          // For default, directly show the checklist which already loads defaults
+          document.getElementById('checklist-modal').showModal();
+        } else if (type === 'ai') {
+          document.getElementById('ai-generator-modal').showModal();
+        } else if (type === 'custom') {
+          document.getElementById('custom-tasklist-modal').showModal();
+        }
+      }, 100);
+    }
+  };
 
   const handleAITasksGenerated = (generatedDate) => {
     // Update storage data first

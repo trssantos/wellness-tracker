@@ -4,24 +4,23 @@ import { findPreviousTaskDate } from '../utils/taskDeferralService';
 import { useEffect, useState } from 'react';
 
 export const TaskListSelector = ({ date, onClose, onSelectType }) => {
-
   const [hasPendingTasks, setHasPendingTasks] = useState(false);
   const [previousTaskDate, setPreviousTaskDate] = useState(null);
 
   // Add useEffect to check for pending tasks
-useEffect(() => {
-  if (date) {
-    // Look for pending tasks
-    const prevDate = findPreviousTaskDate(date);
-    if (prevDate) {
-      setHasPendingTasks(true);
-      setPreviousTaskDate(prevDate);
-    } else {
-      setHasPendingTasks(false);
-      setPreviousTaskDate(null);
+  useEffect(() => {
+    if (date) {
+      // Look for pending tasks
+      const prevDate = findPreviousTaskDate(date);
+      if (prevDate) {
+        setHasPendingTasks(true);
+        setPreviousTaskDate(prevDate);
+      } else {
+        setHasPendingTasks(false);
+        setPreviousTaskDate(null);
+      }
     }
-  }
-}, [date]);
+  }, [date]);
 
   const getFormattedDate = () => {
     if (!date) return '';
@@ -60,6 +59,11 @@ useEffect(() => {
     }
   ];
 
+  // Handle type selection and pass hasPendingTasks to parent
+  const handleTypeSelect = (typeId) => {
+    onSelectType(typeId, hasPendingTasks);
+  };
+
   return (
     <dialog 
       id="task-list-selector-modal" 
@@ -86,7 +90,7 @@ useEffect(() => {
           {listTypes.map((type) => (
             <button
               key={type.id}
-              onClick={() => onSelectType(type.id)}
+              onClick={() => handleTypeSelect(type.id)}
               className={`flex items-start gap-4 p-4 rounded-xl ${type.bgColor} transition-colors text-left`}
             >
               <div className="mt-1">{type.icon}</div>
@@ -97,6 +101,15 @@ useEffect(() => {
             </button>
           ))}
         </div>
+
+        {hasPendingTasks && (
+          <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <p className="text-sm text-amber-800 dark:text-amber-300 flex items-center">
+              <span className="mr-2">⚠️</span>
+              You have pending tasks from {previousTaskDate ? new Date(previousTaskDate).toLocaleDateString('default', { month: 'short', day: 'numeric' }) : 'a previous day'}.
+            </p>
+          </div>
+        )}
       </div>
     </dialog>
   );

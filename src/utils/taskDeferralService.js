@@ -11,7 +11,7 @@ export const findPreviousTaskDate = (currentDate) => {
   const currentDateObj = new Date(currentDate);
   
   // Look back up to 7 days to find previous tasks
-  for (let i = 1; i <= 7; i++) {
+  for (let i = 1; i <= 1; i++) {
     const prevDate = new Date(currentDateObj);
     prevDate.setDate(prevDate.getDate() - i);
     const prevDateStr = prevDate.toISOString().split('T')[0];
@@ -40,7 +40,7 @@ const hasPendingTasks = (dayData) => {
   const hasTaskItems = 
     (dayData.aiTasks && dayData.aiTasks.some(cat => cat.items && cat.items.length > 0)) ||
     (dayData.customTasks && dayData.customTasks.some(cat => cat.items && cat.items.length > 0));
-  
+  console.log('hasTaskItems',hasTaskItems);
   return hasUncompleted && hasTaskItems;
 };
 
@@ -56,47 +56,72 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
   const storage = getStorage();
   const dayData = storage[currentDate] || {};
   
-  // Create Deferred Tasks category
+  // Determine what type of task list to create/update
   let taskList;
   let taskType;
   
-  // Determine what type of task list to create/update
-  if (dayData.aiTasks && dayData.aiTasks.length > 0) {
-    taskList = dayData.aiTasks;
+  if (dayData.customTasks && dayData.customTasks.length > 0) {
+    taskList = [...dayData.customTasks]; // Create a copy to avoid direct mutation
+    taskType = 'customTasks';
+  } else if (dayData.aiTasks && dayData.aiTasks.length > 0) {
+    taskList = [...dayData.aiTasks]; // Create a copy to avoid direct mutation
     taskType = 'aiTasks';
-  } else if (dayData.customTasks && dayData.customTasks.length > 0) {
-    taskList = dayData.customTasks;
-    taskType = 'customTasks';
   } else {
-    // Default to creating custom tasks
-    taskList = [];
+    // Default to creating custom tasks with some basic categories
+    taskList = [
+      { title: 'Priority', items: [] },
+      { title: 'Daily', items: [] }
+    ];
     taskType = 'customTasks';
   }
   
-  // Look for existing Deferred Tasks category
-  let deferredCategory = taskList.find(cat => cat.title === 'Deferred Tasks');
+  // Look for existing Deferred category
+  let deferredCategoryIndex = taskList.findIndex(cat => cat.title === 'Deferred');
   
-  if (!deferredCategory) {
+  if (deferredCategoryIndex === -1) {
     // Create new category for deferred tasks
-    deferredCategory = { title: 'Deferred Tasks', items: [] };
-    taskList.push(deferredCategory);
+    taskList.push({ title: 'Deferred', items: [] });
+    deferredCategoryIndex = taskList.length - 1;
   }
   
-  // Add deferred tasks to the category
+  // Group tasks by their original category
+  const categorizedTasks = {};
   deferredTasks.forEach(task => {
-    if (!deferredCategory.items.includes(task.text)) {
-      deferredCategory.items.push(task.text);
+    const category = task.category || 'Uncategorized';
+    if (!categorizedTasks[category]) {
+      categorizedTasks[category] = [];
     }
+    categorizedTasks[category].push(task);
   });
   
-  // Initialize checked status for new tasks
+  // Add imported tasks to the deferred category with prefixes
+  Object.entries(categorizedTasks).forEach(([category, tasks]) => {
+    tasks.forEach(task => {
+      // Create prefixed task text that shows original category and defer count if > 1
+      const prefixedTask = task.deferCount > 1 
+        ? `[${category} - ${task.deferCount}x] ${task.text}` 
+        : `[${category}] ${task.text}`;
+      
+      // Avoid duplicates
+      if (!taskList[deferredCategoryIndex].items.includes(prefixedTask)) {
+        taskList[deferredCategoryIndex].items.push(prefixedTask);
+      }
+    });
+  });
+  
+  // Initialize or update checked status for tasks
   if (!dayData.checked) {
     dayData.checked = {};
   }
   
-  // Set all imported tasks as unchecked
-  deferredTasks.forEach(task => {
-    dayData.checked[task.text] = false;
+  // Update checked status
+  const newChecked = { ...dayData.checked };
+  taskList.forEach(category => {
+    category.items.forEach(item => {
+      if (newChecked[item] === undefined) {
+        newChecked[item] = false;
+      }
+    });
   });
   
   // Initialize or update task deferral history
@@ -106,36 +131,27 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
   
   // Update deferral history for each task
   deferredTasks.forEach(task => {
-    // IMPORTANT: Always increment defer count by 1 when importing
-    // This ensures that imported tasks count as deferred tasks immediately
-    const newDeferCount = task.deferCount > 0 ? task.deferCount : 1;
+    // Create prefixed task text to match what we added to the list
+    const prefixedTask = task.deferCount > 1 
+      ? `[${task.category} - ${task.deferCount}x] ${task.text}` 
+      : `[${task.category}] ${task.text}`;
     
-    // If this task already has history, we need to preserve the first deferral date
-    if (dayData.taskDeferHistory[task.text]) {
-      dayData.taskDeferHistory[task.text].count = newDeferCount;
-    } else {
-      // Calculate the first date this task was created based on defer count and days
-      let firstDate;
-      if (task.daysSinceFirstDefer > 0) {
-        const firstDateObj = new Date(currentDate);
-        firstDateObj.setDate(firstDateObj.getDate() - task.daysSinceFirstDefer);
-        firstDate = firstDateObj.toISOString().split('T')[0];
-      } else {
-        // If no previous defer date, use the previous date as the first date
-        // NOT the current date - since it was originally created on the previous day
-        firstDate = task.firstDate || currentDate;
-      }
-      
-      // Create new history entry
-      dayData.taskDeferHistory[task.text] = {
-        count: newDeferCount,
-        firstDate: firstDate
-      };
-    }
+    // Update deferral history
+    dayData.taskDeferHistory[prefixedTask] = {
+      count: task.deferCount + 1, // Increment defer count
+      firstDate: task.firstDate
+    };
+    
+    // Also maintain history for the original task text for backward compatibility
+    dayData.taskDeferHistory[task.text] = {
+      count: task.deferCount + 1,
+      firstDate: task.firstDate
+    };
   });
   
   // Update the day data
   dayData[taskType] = taskList;
+  dayData.checked = newChecked;
   
   // Save to storage
   storage[currentDate] = dayData;

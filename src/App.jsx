@@ -143,61 +143,83 @@ const App = () => {
     }, 100);
   };
 
-  const handleTaskTypeSelection = (type, hasPendingTasks = false) => {
+  const handleTaskTypeSelection = (type) => {
     document.getElementById('task-list-selector-modal').close();
     
-    // If there are pending tasks, first go to the pending tasks prompt
-    if (hasPendingTasks) {
-      // Store the selected task type to use after handling pending tasks
-      localStorage.setItem('pendingSelectedTaskType', type);
+    // For default tasks, we need to set the freshly created flag 
+    // since we're going directly to the checklist
+    if (type === 'default') {
+      const storage = getStorage();
+      const dayData = storage[selectedDay] || {};
       
-      // Open the checklist with pending tasks prompt
+      // Only set the flag if this date doesn't already have tasks
+      if (!dayData.customTasks && !dayData.aiTasks) {
+        dayData._freshlyCreated = true;
+        storage[selectedDay] = dayData;
+        setStorage(storage);
+        handleStorageUpdate();
+      }
+      
       setTimeout(() => {
         document.getElementById('checklist-modal').showModal();
       }, 100);
-    } else {
-      // No pending tasks, go directly to selected task type
+    } else if (type === 'ai') {
       setTimeout(() => {
-        if (type === 'default') {
-          // For default, directly show the checklist which already loads defaults
-          document.getElementById('checklist-modal').showModal();
-        } else if (type === 'ai') {
-          document.getElementById('ai-generator-modal').showModal();
-        } else if (type === 'custom') {
-          document.getElementById('custom-tasklist-modal').showModal();
-        }
+        document.getElementById('ai-generator-modal').showModal();
+      }, 100);
+    } else if (type === 'custom') {
+      setTimeout(() => {
+        document.getElementById('custom-tasklist-modal').showModal();
       }, 100);
     }
   };
 
   const handleAITasksGenerated = (generatedDate) => {
     // Update storage data first
-    const updatedStorage = getStorage();
-    setStorageData(updatedStorage);
-    
-    // Use the date from the generator if provided, otherwise use selectedDay
     const dateToUse = generatedDate || selectedDay;
+    const storage = getStorage();
+    const dayData = storage[dateToUse] || {};
+    
+    // Set the freshly created flag
+    dayData._freshlyCreated = true;
+    storage[dateToUse] = dayData;
+    setStorage(storage);
+    
+    // Update app state
+    setStorageData(storage);
     if (dateToUse !== selectedDay) {
       setSelectedDay(dateToUse);
     }
     
+    // Force storage version update
+    setStorageVersion(prev => prev + 1);
+    
     // Close the AI modal
     document.getElementById('ai-generator-modal').close();
     
-    // Force a storage version update to ensure the latest data is shown
-    setStorageVersion(prev => prev + 1);
-    
-    console.log('AI tasks generated, opening checklist for date:', dateToUse);
-    
-    // Open the checklist modal with a delay
+    // Open the checklist modal
     setTimeout(() => {
       document.getElementById('checklist-modal').showModal();
     }, 100);
   };
 
   const handleCustomTasksCreated = () => {
-    handleStorageUpdate(); // Update storage data first
+    // Mark the tasks as freshly created to trigger pending tasks check
+    const storage = getStorage();
+    const dayData = storage[selectedDay] || {};
+    
+    // Set the freshly created flag
+    dayData._freshlyCreated = true;
+    storage[selectedDay] = dayData;
+    setStorage(storage);
+    
+    // Update app state
+    handleStorageUpdate();
+    
+    // Close the custom task modal
     document.getElementById('custom-tasklist-modal').close();
+    
+    // Open the checklist modal
     setTimeout(() => {
       document.getElementById('checklist-modal').showModal();
     }, 100);
@@ -294,13 +316,13 @@ const App = () => {
         
         {/* New Morning/Evening Mood Tracker */}
         <MoodTimeTracker
-  date={moodTimeDate}
-  onClose={() => {
-    document.getElementById('mood-time-tracker-modal').close();
-    setMoodTimeDate(null);
-    handleStorageUpdate();
-  }}
-/>
+          date={moodTimeDate}
+          onClose={() => {
+            document.getElementById('mood-time-tracker-modal').close();
+            setMoodTimeDate(null);
+            handleStorageUpdate();
+          }}
+        />
 
         <TaskListSelector
           date={selectedDay}
@@ -424,4 +446,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default App; 

@@ -1,27 +1,7 @@
 import React from 'react';
 import { X, CheckSquare, Sparkles, Edit3 } from 'lucide-react';
-import { findPreviousTaskDate } from '../utils/taskDeferralService';
-import { useEffect, useState } from 'react';
 
 export const TaskListSelector = ({ date, onClose, onSelectType }) => {
-  const [hasPendingTasks, setHasPendingTasks] = useState(false);
-  const [previousTaskDate, setPreviousTaskDate] = useState(null);
-
-  // Add useEffect to check for pending tasks
-  useEffect(() => {
-    if (date) {
-      // Look for pending tasks
-      const prevDate = findPreviousTaskDate(date);
-      if (prevDate) {
-        setHasPendingTasks(true);
-        setPreviousTaskDate(prevDate);
-      } else {
-        setHasPendingTasks(false);
-        setPreviousTaskDate(null);
-      }
-    }
-  }, [date]);
-
   const getFormattedDate = () => {
     if (!date) return '';
     
@@ -59,9 +39,46 @@ export const TaskListSelector = ({ date, onClose, onSelectType }) => {
     }
   ];
 
-  // Handle type selection and pass hasPendingTasks to parent
+  // Handle type selection - set flag to check for pending tasks after creating the list
   const handleTypeSelect = (typeId) => {
-    onSelectType(typeId, hasPendingTasks);
+    // For all task list types, we'll set the flag to check for pending tasks
+    // The flag will be checked after the task list is created
+    
+    if (typeId === 'default') {
+      // For default tasks, set the flag directly on the checklist modal
+      const checklistModal = document.getElementById('checklist-modal');
+      if (checklistModal) {
+        checklistModal.dataset.checkPendingAfter = 'true';
+        checklistModal.dataset.selectedTaskType = typeId;
+      }
+    } else if (typeId === 'ai') {
+      // For AI tasks, set the flag on the AI generator modal
+      const aiModal = document.getElementById('ai-generator-modal');
+      if (aiModal) {
+        aiModal.dataset.checkPendingAfter = 'true';
+      }
+      
+      // Also store the task type in the checklist modal for later reference
+      const checklistModal = document.getElementById('checklist-modal');
+      if (checklistModal) {
+        checklistModal.dataset.selectedTaskType = typeId;
+      }
+    } else if (typeId === 'custom') {
+      // For custom tasks, set the flag on the custom task creator modal
+      const customModal = document.getElementById('custom-tasklist-modal');
+      if (customModal) {
+        customModal.dataset.checkPendingAfter = 'true';
+      }
+      
+      // Also store the task type in the checklist modal for later reference
+      const checklistModal = document.getElementById('checklist-modal');
+      if (checklistModal) {
+        checklistModal.dataset.selectedTaskType = typeId;
+      }
+    }
+    
+    // Pass the selected type to the parent component
+    onSelectType(typeId);
   };
 
   return (
@@ -101,15 +118,6 @@ export const TaskListSelector = ({ date, onClose, onSelectType }) => {
             </button>
           ))}
         </div>
-
-        {hasPendingTasks && (
-          <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <p className="text-sm text-amber-800 dark:text-amber-300 flex items-center">
-              <span className="mr-2">⚠️</span>
-              You have pending tasks from {previousTaskDate ? new Date(previousTaskDate).toLocaleDateString('default', { month: 'short', day: 'numeric' }) : 'a previous day'}.
-            </p>
-          </div>
-        )}
       </div>
     </dialog>
   );

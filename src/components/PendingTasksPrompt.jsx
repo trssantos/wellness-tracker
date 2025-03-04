@@ -159,7 +159,7 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
           onClick={onSkip}
           className="btn-primary"
         >
-          Continue
+          Continue to Your Tasks
         </button>
       </div>
     );
@@ -177,7 +177,7 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
               You have {pendingTasks.length} pending tasks from yesterday
             </h3>
             <p className="text-slate-600 dark:text-slate-400">
-              Would you like to carry these tasks forward to today's list?
+              Would you like to add these tasks to your new list?
             </p>
           </div>
         </div>
@@ -288,7 +288,7 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
           onClick={onSkip}
           className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
         >
-          Skip
+          Don't Add
         </button>
         <button
           onClick={handleImport}
@@ -299,7 +299,7 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
               : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
           }`}
         >
-          Import Selected
+          Add Selected
           <ArrowRight size={18} />
         </button>
       </div>

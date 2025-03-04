@@ -1,4 +1,4 @@
-// DayChecklist.jsx with Procrastination Feature
+// DayChecklist.jsx with Pending Tasks Feature
 import React, { useState, useEffect } from 'react';
 import { X, Edit2, Save, Sparkles } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
@@ -11,9 +11,8 @@ import { TaskReminder } from './TaskReminder';
 import PendingTasksPrompt from './PendingTasksPrompt';
 import { findPreviousTaskDate, importDeferredTasks } from '../utils/taskDeferralService';
 
-// Default categories moved to a separate file for better organization
+// Default categories from separate file
 import { DEFAULT_CATEGORIES } from '../utils/defaultTasks';
-
 
 export const DayChecklist = ({ date, storageVersion, onClose }) => {
   const [activeCategory, setActiveCategory] = useState(0);
@@ -43,7 +42,6 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   // State for pending tasks feature
   const [showPendingPrompt, setShowPendingPrompt] = useState(false);
   const [previousTaskDate, setPreviousTaskDate] = useState(null);
-
   const [pendingSelectedTaskType, setPendingSelectedTaskType] = useState(null);
 
   useEffect(() => {
@@ -52,50 +50,51 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
 
   useEffect(() => {
     if (!date) return;
-
-    // Get the selected task type if coming from task selector
-  const storedTaskType = localStorage.getItem('pendingSelectedTaskType');
-  if (storedTaskType) {
-    setPendingSelectedTaskType(storedTaskType);
-    localStorage.removeItem('pendingSelectedTaskType'); // Clear it after use
-  }
-
+  
     // Reset all state to ensure we load fresh data
     setCategories([]);
     setEditedCategories([]);
     setChecked({});
-    setTaskListType('default'); // Reset the task list type first
+    setTaskListType('default');
     setTaskReminders({});
-
-    const savedData = getStorage()[date] || {};
+  
+    const storage = getStorage();
+    const savedData = storage[date] || {};
     
-    // Check if this is a new day without tasks
-    const hasNoTasks = 
-      (!savedData.aiTasks || savedData.aiTasks.length === 0) && 
-      (!savedData.customTasks || savedData.customTasks.length === 0);
+    // Get the task list type from the saved data
+    const hasAITasks = savedData.aiTasks && savedData.aiTasks.length > 0;
+    const hasCustomTasks = savedData.customTasks && savedData.customTasks.length > 0;
     
-    // If this is a new day without tasks, check for pending tasks from previous days
-    if (hasNoTasks) {
-      // Look for the most recent previous date with tasks
+    // Check if this is a freshly created task list
+    const isFreshlyCreated = savedData._freshlyCreated === true;
+    
+    // Only check for pending tasks if this is a freshly created list
+    if (isFreshlyCreated && (hasAITasks || hasCustomTasks)) {
+      // Remove the freshly created flag
+      delete savedData._freshlyCreated;
+      storage[date] = savedData;
+      setStorage(storage);
+      
+      // Now check for pending tasks
       const prevDate = findPreviousTaskDate(date);
       if (prevDate) {
         setPreviousTaskDate(prevDate);
         setShowPendingPrompt(true);
-      } else {
-        setShowPendingPrompt(false);
-        setPreviousTaskDate(null);
+        // Load tasks to give context about the current list
+        loadTasksFromStorage(savedData);
+        return;
       }
-    } else {
-      // Already has tasks, don't show the prompt
-      setShowPendingPrompt(false);
-      setPreviousTaskDate(null);
     }
-
+    
+    // Load tasks if not showing pending prompt
+    loadTasksFromStorage(savedData);
+  }, [date, storageVersion]);
+  
+  // Helper function to load tasks from storage
+  const loadTasksFromStorage = (savedData) => {
     let taskCategories = DEFAULT_CATEGORIES;
     let listType = 'default';
-
-    console.log('Loading data for date:', date, 'Storage data:', savedData);
-
+  
     // AI Tasks take highest priority
     if (savedData?.aiTasks && Array.isArray(savedData.aiTasks)) {
       const validCategories = validateCategories(savedData.aiTasks);
@@ -141,11 +140,11 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
         isAIGenerated: false
       });
     }
-
+  
     setCategories(taskCategories);
     setEditedCategories(JSON.parse(JSON.stringify(taskCategories))); // Deep copy
     setTaskListType(listType);
-
+  
     if (savedData?.checked) {
       setChecked(savedData.checked);
     } else {
@@ -162,10 +161,10 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
     if (savedData?.taskReminders) {
       setTaskReminders(savedData.taskReminders);
     }
-
+  
     // Reset active category to 0 whenever data changes
     setActiveCategory(0);
-  }, [date, storageVersion]);
+  };
 
   const validateCategories = (categoriesData) => {
     return categoriesData
@@ -497,7 +496,7 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
     const updatedDayData = importDeferredTasks(date, tasksToImport);
     
     if (updatedDayData) {
-      // Update local state
+      // Update local state with the new categories that include the Deferred category
       setCategories(updatedDayData.customTasks || updatedDayData.aiTasks || []);
       setChecked(updatedDayData.checked || {});
       setTaskListType(updatedDayData.customTasks ? 'custom' : 'ai');
@@ -505,39 +504,11 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
     
     // Hide the prompt
     setShowPendingPrompt(false);
-
-    // If there was a selected task type and we're not just continuing with the imported tasks
-  if (pendingSelectedTaskType && pendingSelectedTaskType !== 'default') {
-    onClose();
-    setTimeout(() => {
-      if (pendingSelectedTaskType === 'ai') {
-        document.getElementById('ai-generator-modal').showModal();
-      } else if (pendingSelectedTaskType === 'custom') {
-        document.getElementById('custom-tasklist-modal').showModal();
-      }
-    }, 100);
-    setPendingSelectedTaskType(null);
-  }
   };
 
   const handleSkipPendingTasks = () => {
     setShowPendingPrompt(false);
     setPreviousTaskDate(null);
-    
-    // If there was a selected task type, continue to that flow
-    if (pendingSelectedTaskType) {
-      onClose();
-      setTimeout(() => {
-        if (pendingSelectedTaskType === 'default') {
-          document.getElementById('checklist-modal').showModal();
-        } else if (pendingSelectedTaskType === 'ai') {
-          document.getElementById('ai-generator-modal').showModal();
-        } else if (pendingSelectedTaskType === 'custom') {
-          document.getElementById('custom-tasklist-modal').showModal();
-        }
-      }, 100);
-      setPendingSelectedTaskType(null);
-    }
   };
 
   if (!date) return null;
@@ -587,7 +558,7 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
             />
           </div>
         ) : (
-          /* Original Task List Content */
+          /* Task List Content */
           <div className="modal-content max-w-2xl" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
@@ -630,7 +601,7 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
                 <X size={20} />
               </button>
             </div>
-
+  
             <DayContext 
               context={dayContext} 
               onUpdate={handleContextUpdate} 
@@ -642,7 +613,7 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
                 categories={categories} 
               />
             )}
-
+  
             {isEditing ? (
               // Editing mode view
               <EditTaskPanel
@@ -661,7 +632,7 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
                   activeCategory={activeCategory}
                   setActiveCategory={setActiveCategory}
                 />
-
+  
                 <TaskList
                   categories={categories}
                   activeCategory={activeCategory}

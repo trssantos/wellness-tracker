@@ -11,12 +11,13 @@ export const findPreviousTaskDate = (currentDate) => {
   const currentDateObj = new Date(currentDate);
   
   // Look back up to 7 days to find previous tasks
-  for (let i = 1; i <= 1; i++) {
+  for (let i = 1; i <= 2; i++) {
     const prevDate = new Date(currentDateObj);
     prevDate.setDate(prevDate.getDate() - i);
     const prevDateStr = prevDate.toISOString().split('T')[0];
     
     const prevDayData = storage[prevDateStr];
+    console.log('Previous day tasks: ',prevDayData);
     if (prevDayData && hasPendingTasks(prevDayData)) {
       return prevDateStr;
     }

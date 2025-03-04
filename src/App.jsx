@@ -39,7 +39,7 @@ const App = () => {
   const [moodTimeDate, setMoodTimeDate] = useState(null);
   const [moodTimeDefaultTime, setMoodTimeDefaultTime] = useState('morning');
   const [pendingTasksDate, setPendingTasksDate] = useState(null);
-const [showPendingTasksModal, setShowPendingTasksModal] = useState(false);
+const [pendingTasksForDate, setPendingTasksForDate] = useState(null);
 
   // Initialize reminder service on app start and run data migration
   useEffect(() => {
@@ -97,7 +97,18 @@ const [showPendingTasksModal, setShowPendingTasksModal] = useState(false);
     if (prevDate) {
       console.log('Found pending tasks from date:', prevDate);
       setPendingTasksDate(prevDate);
-      setShowPendingTasksModal(true);
+      setPendingTasksForDate(currentDate);
+      
+      // Use setTimeout to ensure the state updates before showing the modal
+      setTimeout(() => {
+        const modal = document.getElementById('pending-tasks-modal');
+        if (modal) {
+          modal.showModal();
+        } else {
+          console.error('Pending tasks modal not found');
+        }
+      }, 100);
+      
       return true;
     }
     return false;
@@ -163,6 +174,8 @@ const [showPendingTasksModal, setShowPendingTasksModal] = useState(false);
     }, 100);
   };
 
+  // Update the handleTaskTypeSelection function in App.jsx
+
   const handleTaskTypeSelection = (type) => {
     document.getElementById('task-list-selector-modal').close();
     
@@ -172,10 +185,13 @@ const [showPendingTasksModal, setShowPendingTasksModal] = useState(false);
       const dayData = storage[selectedDay] || {};
       
       // Only create if this date doesn't already have tasks
-      if (!dayData.customTasks && !dayData.aiTasks) {
+      if (!dayData.customTasks && !dayData.aiTasks && !dayData.defaultTasks) {
+        // Store the DEFAULT_CATEGORIES directly in the storage
+        const defaultTasks = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+        
         // Initialize checked state
         const initialChecked = {};
-        DEFAULT_CATEGORIES.forEach(category => {
+        defaultTasks.forEach(category => {
           category.items.forEach(item => {
             initialChecked[item] = false;
           });
@@ -184,18 +200,21 @@ const [showPendingTasksModal, setShowPendingTasksModal] = useState(false);
         // Save to storage
         storage[selectedDay] = {
           ...dayData,
-          checked: initialChecked,
+          defaultTasks: defaultTasks, // Store the tasks explicitly
+          checked: initialChecked
         };
         setStorage(storage);
         handleStorageUpdate();
         
-  // Now check for pending tasks
-  if (!checkForPendingTasks(selectedDay)) {
-    // If no pending tasks, open checklist directly
-    setTimeout(() => {
-      document.getElementById('checklist-modal').showModal();
-    }, 100);
-  }
+        console.log('Created default task list with', Object.keys(initialChecked).length, 'tasks');
+        
+        // Now check for pending tasks
+        if (!checkForPendingTasks(selectedDay)) {
+          // If no pending tasks, open checklist directly
+          setTimeout(() => {
+            document.getElementById('checklist-modal').showModal();
+          }, 100);
+        }
       } else {
         // Tasks already exist, just open the checklist
         setTimeout(() => {
@@ -205,18 +224,25 @@ const [showPendingTasksModal, setShowPendingTasksModal] = useState(false);
     } else if (type === 'ai') {
       // For AI tasks, just open the generator
       setTimeout(() => {
-        document.getElementById('ai-generator-modal').showModal();
+        const aiModal = document.getElementById('ai-generator-modal');
+        if (aiModal) {
+          aiModal.dataset.selectedDate = selectedDay;
+          aiModal.showModal();
+        }
       }, 100);
     } else if (type === 'custom') {
       // For custom tasks, just open the creator
       setTimeout(() => {
-        document.getElementById('custom-tasklist-modal').showModal();
+        const customModal = document.getElementById('custom-tasklist-modal');
+        if (customModal) {
+          customModal.showModal();
+        }
       }, 100);
     }
   };
 
-
-  const handleAITasksGenerated = (generatedDate) => {
+// Update the handleAITasksGenerated function in App.jsx
+const handleAITasksGenerated = (generatedDate) => {
   // Update storage data
   const dateToUse = generatedDate || selectedDay;
   handleStorageUpdate();
@@ -227,7 +253,6 @@ const [showPendingTasksModal, setShowPendingTasksModal] = useState(false);
   
   document.getElementById('ai-generator-modal').close();
 
-  // Explicitly check for pending tasks
   // Check for pending tasks
   if (!checkForPendingTasks(dateToUse)) {
     // If no pending tasks, open checklist directly
@@ -235,9 +260,9 @@ const [showPendingTasksModal, setShowPendingTasksModal] = useState(false);
       document.getElementById('checklist-modal').showModal();
     }, 100);
   }
-
 };
 
+// Update the handleCustomTasksCreated function in App.jsx
 const handleCustomTasksCreated = () => {
   // Close the custom task modal first
   document.getElementById('custom-tasklist-modal').close();
@@ -259,17 +284,24 @@ const handlePendingTasksAction = (action, tasks = []) => {
   
   if (action === 'import' && tasks.length > 0) {
     // Import tasks into the current day
-    console.log('Importing tasks into day:', selectedDay);
-    importDeferredTasks(selectedDay, tasks);
+    console.log('Importing tasks into day:', pendingTasksForDate);
+    importDeferredTasks(pendingTasksForDate, tasks);
     handleStorageUpdate();
   }
   
   // Close pending tasks modal
-  setShowPendingTasksModal(false);
-  setPendingTasksDate(null);
+  const modal = document.getElementById('pending-tasks-modal');
+  if (modal) {
+    modal.close();
+  }
   
-  // Open regular checklist
+  // Reset pending tasks state
+  setPendingTasksDate(null);
+  setPendingTasksForDate(null);
+  
+  // Open regular checklist with the current date
   setTimeout(() => {
+    setSelectedDay(pendingTasksForDate);
     document.getElementById('checklist-modal').showModal();
   }, 100);
 };
@@ -456,8 +488,7 @@ const handlePendingTasksAction = (action, tasks = []) => {
 
         {/* Pending Tasks Modal */}
         <PendingTasksModal
-  isOpen={showPendingTasksModal}
-  currentDate={selectedDay}
+  currentDate={pendingTasksForDate}
   previousDate={pendingTasksDate}
   onAction={handlePendingTasksAction}
 />

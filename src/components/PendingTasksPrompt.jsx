@@ -26,8 +26,7 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
     
     if (prevDayData.checked) {
       // Collect tasks from custom or AI tasks
-      const taskCategories = prevDayData.customTasks || prevDayData.aiTasks || [];
-      
+      const taskCategories = prevDayData.customTasks || prevDayData.aiTasks || prevDayData.defaultTasks;
       taskCategories.forEach(category => {
         category.items.forEach(task => {
           // Only include if task exists in checked and is false (incomplete)

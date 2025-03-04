@@ -10,19 +10,36 @@ export const findPreviousTaskDate = (currentDate) => {
   const storage = getStorage();
   const currentDateObj = new Date(currentDate);
   
+  console.log(`Looking for pending tasks before ${currentDate}`);
+  
   // Look back up to 7 days to find previous tasks
-  for (let i = 1; i <= 2; i++) {
+  for (let i = 1; i <= 7; i++) {
     const prevDate = new Date(currentDateObj);
     prevDate.setDate(prevDate.getDate() - i);
     const prevDateStr = prevDate.toISOString().split('T')[0];
     
     const prevDayData = storage[prevDateStr];
-    console.log('Previous day tasks: ',prevDayData);
-    if (prevDayData && hasPendingTasks(prevDayData)) {
-      return prevDateStr;
+    console.log(`Checking date ${prevDateStr}:`, prevDayData ? 'has data' : 'no data');
+    
+    if (prevDayData) {
+      console.log('Examining data for', prevDateStr);
+      if (prevDayData.checked) {
+        console.log('Has checked items:', Object.keys(prevDayData.checked).length);
+      }
+      console.log('Has defaultTasks:', !!prevDayData.defaultTasks);
+      console.log('Has aiTasks:', !!prevDayData.aiTasks);
+      console.log('Has customTasks:', !!prevDayData.customTasks);
+      
+      const hasPending = hasPendingTasks(prevDayData);
+      
+      if (hasPending) {
+        console.log(`Found pending tasks for date ${prevDateStr}`);
+        return prevDateStr;
+      }
     }
   }
   
+  console.log('No pending tasks found in previous days');
   return null;
 };
 
@@ -32,17 +49,69 @@ export const findPreviousTaskDate = (currentDate) => {
  * @returns {boolean} True if there are pending tasks
  */
 const hasPendingTasks = (dayData) => {
-  if (!dayData.checked) return false;
+  if (!dayData || !dayData.checked) return false;
   
-  // Check if there are any uncompleted tasks
-  const hasUncompleted = Object.values(dayData.checked).some(checked => checked === false);
+  // Get all uncompleted tasks
+  const uncompletedTasks = Object.entries(dayData.checked)
+    .filter(([task, isChecked]) => isChecked === false)
+    .map(([task]) => task);
   
-  // Also verify that we have either AI or custom tasks with actual items
-  const hasTaskItems = 
-    (dayData.aiTasks && dayData.aiTasks.some(cat => cat.items && cat.items.length > 0)) ||
-    (dayData.customTasks && dayData.customTasks.some(cat => cat.items && cat.items.length > 0));
-  console.log('hasTaskItems',hasTaskItems);
-  return hasUncompleted && hasTaskItems;
+  if (uncompletedTasks.length === 0) {
+    console.log('No uncompleted tasks found');
+    return false;
+  }
+  
+  console.log('Found uncompleted tasks:', uncompletedTasks.length, 'uncompleted tasks');
+  
+  // Get all tasks from all task lists (default, AI, or custom)
+  let allTasks = [];
+  
+  // Check new format - explicit defaultTasks property
+  if (dayData.defaultTasks && Array.isArray(dayData.defaultTasks)) {
+    console.log('Found defaultTasks array with', dayData.defaultTasks.length, 'categories');
+    allTasks = allTasks.concat(dayData.defaultTasks.flatMap(cat => cat.items || []));
+  }
+  
+  // Check AI tasks
+  if (dayData.aiTasks && Array.isArray(dayData.aiTasks)) {
+    console.log('Found aiTasks array with', dayData.aiTasks.length, 'categories');
+    allTasks = allTasks.concat(dayData.aiTasks.flatMap(cat => cat.items || []));
+  }
+  
+  // Check custom tasks
+  if (dayData.customTasks && Array.isArray(dayData.customTasks)) {
+    console.log('Found customTasks array with', dayData.customTasks.length, 'categories');
+    allTasks = allTasks.concat(dayData.customTasks.flatMap(cat => cat.items || []));
+  }
+  
+  // Handle old format - check against DEFAULT_CATEGORIES directly if no explicit lists exist
+  const hasExplicitTaskLists = allTasks.length > 0;
+  
+  if (!hasExplicitTaskLists) {
+    // Import DEFAULT_CATEGORIES
+    const DEFAULT_CATEGORIES = require('./defaultTasks').DEFAULT_CATEGORIES;
+    const defaultTaskItems = DEFAULT_CATEGORIES.flatMap(cat => cat.items || []);
+    
+    // Check if this day has default tasks by comparing with DEFAULT_CATEGORIES
+    const checkedTasks = Object.keys(dayData.checked || {});
+    const defaultTaskCount = checkedTasks.filter(task => defaultTaskItems.includes(task)).length;
+    
+    console.log('Checking for default tasks (old format):', defaultTaskCount, 'matching tasks');
+    
+    if (defaultTaskCount > 0) {
+      // This appears to be a default task list in the old format
+      allTasks = allTasks.concat(defaultTaskItems);
+    }
+  }
+  
+  // Now check if any uncompleted tasks exist in our combined task list
+  const pendingTasks = uncompletedTasks.filter(task => allTasks.includes(task));
+  const hasPendingTasks = pendingTasks.length > 0;
+  
+  console.log('Found', pendingTasks.length, 'pending tasks out of', uncompletedTasks.length, 'uncompleted tasks');
+  console.log('Pending task detection result:', hasPendingTasks);
+  
+  return hasPendingTasks;
 };
 
 /**
@@ -57,24 +126,48 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
   const storage = getStorage();
   const dayData = storage[currentDate] || {};
   
-  // Determine what type of task list to create/update
+  // Determine what type of task list to use/merge with
   let taskList;
   let taskType;
+  let convertingDefault = false;
   
   if (dayData.customTasks && dayData.customTasks.length > 0) {
-    taskList = [...dayData.customTasks]; // Create a copy to avoid direct mutation
+    taskList = JSON.parse(JSON.stringify(dayData.customTasks));
     taskType = 'customTasks';
   } else if (dayData.aiTasks && dayData.aiTasks.length > 0) {
-    taskList = [...dayData.aiTasks]; // Create a copy to avoid direct mutation
+    taskList = JSON.parse(JSON.stringify(dayData.aiTasks));
     taskType = 'aiTasks';
+  } else if (dayData.defaultTasks && dayData.defaultTasks.length > 0) {
+    // New format - explicit defaultTasks property
+    taskList = JSON.parse(JSON.stringify(dayData.defaultTasks));
+    taskType = 'customTasks'; // Convert to custom
+    convertingDefault = true;
+    console.log('Converting explicit defaultTasks to customTasks with deferred tasks');
   } else {
-    // Default to creating custom tasks with some basic categories
-    taskList = [
-      { title: 'Priority', items: [] },
-      { title: 'Daily', items: [] }
-    ];
-    taskType = 'customTasks';
+    // Check if we have old-style default tasks by comparing checked items with DEFAULT_CATEGORIES
+    const DEFAULT_CATEGORIES = require('./defaultTasks').DEFAULT_CATEGORIES;
+    const defaultTaskItems = DEFAULT_CATEGORIES.flatMap(cat => cat.items || []);
+    const checkedTasks = Object.keys(dayData.checked || {});
+    
+    // If many checked items match default tasks, this is likely a default task list
+    const matchCount = checkedTasks.filter(task => defaultTaskItems.includes(task)).length;
+    
+    if (matchCount > 5) { // Arbitrary threshold to determine if these are default tasks
+      console.log('Detected old-style default tasks with', matchCount, 'matching items');
+      taskList = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+      taskType = 'customTasks';
+      convertingDefault = true;
+    } else {
+      // Default to creating new custom tasks with basic categories
+      taskList = [
+        { title: 'Priority', items: [] },
+        { title: 'Daily', items: [] }
+      ];
+      taskType = 'customTasks';
+    }
   }
+  
+  console.log(`Using task list type: ${taskType} with ${taskList.length} categories`);
   
   // Look for existing Deferred category
   let deferredCategoryIndex = taskList.findIndex(cat => cat.title === 'Deferred');
@@ -99,9 +192,7 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
   Object.entries(categorizedTasks).forEach(([category, tasks]) => {
     tasks.forEach(task => {
       // Create prefixed task text that shows original category and defer count if > 1
-      const prefixedTask = task.deferCount > 1 
-        ? `[${category} - ${task.deferCount}x] ${task.text}` 
-        : `[${category}] ${task.text}`;
+      const prefixedTask =  `[${task.deferCount}x] ${task.text}`;
       
       // Avoid duplicates
       if (!taskList[deferredCategoryIndex].items.includes(prefixedTask)) {
@@ -110,13 +201,10 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
     });
   });
   
-  // Initialize or update checked status for tasks
-  if (!dayData.checked) {
-    dayData.checked = {};
-  }
+  // Initialize or preserve checked status 
+  const newChecked = { ...dayData.checked || {} };
   
-  // Update checked status
-  const newChecked = { ...dayData.checked };
+  // Update checked status for new tasks
   taskList.forEach(category => {
     category.items.forEach(item => {
       if (newChecked[item] === undefined) {
@@ -133,19 +221,17 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
   // Update deferral history for each task
   deferredTasks.forEach(task => {
     // Create prefixed task text to match what we added to the list
-    const prefixedTask = task.deferCount > 1 
-      ? `[${task.category} - ${task.deferCount}x] ${task.text}` 
-      : `[${task.category}] ${task.text}`;
+    const prefixedTask =  `[${task.deferCount}x] ${task.text}`;
     
     // Update deferral history
     dayData.taskDeferHistory[prefixedTask] = {
-      count: task.deferCount + 1, // Increment defer count
+      count: task.deferCount,
       firstDate: task.firstDate
     };
     
     // Also maintain history for the original task text for backward compatibility
     dayData.taskDeferHistory[task.text] = {
-      count: task.deferCount + 1,
+      count: task.deferCount,
       firstDate: task.firstDate
     };
   });
@@ -154,9 +240,16 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
   dayData[taskType] = taskList;
   dayData.checked = newChecked;
   
+  // Remove defaultTasks if we converted to customTasks
+  if (convertingDefault && dayData.defaultTasks) {
+    delete dayData.defaultTasks;
+  }
+  
   // Save to storage
   storage[currentDate] = dayData;
   setStorage(storage);
+  
+  console.log(`Imported ${deferredTasks.length} tasks into ${currentDate}`);
   
   return dayData;
 };

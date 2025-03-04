@@ -59,45 +59,33 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   }, [date, storageVersion]);
   
   // Helper function to load tasks from storage
-  const loadTasksFromStorage = (savedData) => {
-    let taskCategories = DEFAULT_CATEGORIES;
-    let listType = 'default';
-  
-    // AI Tasks take highest priority
-    if (savedData?.aiTasks && Array.isArray(savedData.aiTasks)) {
-      const validCategories = validateCategories(savedData.aiTasks);
-      if (validCategories.length > 0) {
-        taskCategories = validCategories;
-        setDayContext({
-          morningMood: savedData.morningMood || savedData.mood || savedData.aiContext?.mood || null,
-          eveningMood: savedData.eveningMood || null,
-          morningEnergy: savedData.morningEnergy || savedData.energyLevel || savedData.aiContext?.energyLevel || 0,
-          eveningEnergy: savedData.eveningEnergy || 0,
-          objective: savedData.aiContext?.objective || '',
-          context: savedData.aiContext?.context || '',
-          isAIGenerated: true
-        });
-        listType = 'ai';
-      }
+  // In DayChecklist.jsx, update the loadTasksFromStorage function
+const loadTasksFromStorage = (savedData) => {
+  let taskCategories = [];
+  let listType = 'default';
+
+  // AI Tasks take highest priority
+  if (savedData?.aiTasks && Array.isArray(savedData.aiTasks)) {
+    const validCategories = validateCategories(savedData.aiTasks);
+    if (validCategories.length > 0) {
+      taskCategories = validCategories;
+      setDayContext({
+        morningMood: savedData.morningMood || savedData.mood || savedData.aiContext?.mood || null,
+        eveningMood: savedData.eveningMood || null,
+        morningEnergy: savedData.morningEnergy || savedData.energyLevel || savedData.aiContext?.energyLevel || 0,
+        eveningEnergy: savedData.eveningEnergy || 0,
+        objective: savedData.aiContext?.objective || '',
+        context: savedData.aiContext?.context || '',
+        isAIGenerated: true
+      });
+      listType = 'ai';
     }
-    // Then check for Custom Tasks
-    else if (savedData?.customTasks && Array.isArray(savedData.customTasks)) {
-      const validCategories = validateCategories(savedData.customTasks);
-      if (validCategories.length > 0) {
-        taskCategories = validCategories;
-        setDayContext({
-          morningMood: savedData.morningMood || savedData.mood || null,
-          eveningMood: savedData.eveningMood || null,
-          morningEnergy: savedData.morningEnergy || savedData.energyLevel || 0,
-          eveningEnergy: savedData.eveningEnergy || 0,
-          objective: '',
-          context: '',
-          isAIGenerated: false
-        });
-        listType = 'custom';
-      }
-    } else {
-      // Default categories
+  }
+  // Then check for Custom Tasks
+  else if (savedData?.customTasks && Array.isArray(savedData.customTasks)) {
+    const validCategories = validateCategories(savedData.customTasks);
+    if (validCategories.length > 0) {
+      taskCategories = validCategories;
       setDayContext({
         morningMood: savedData.morningMood || savedData.mood || null,
         eveningMood: savedData.eveningMood || null,
@@ -107,32 +95,63 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
         context: '',
         isAIGenerated: false
       });
+      listType = 'custom';
     }
-  
-    setCategories(taskCategories);
-    setEditedCategories(JSON.parse(JSON.stringify(taskCategories))); // Deep copy
-    setTaskListType(listType);
-  
-    if (savedData?.checked) {
-      setChecked(savedData.checked);
-    } else {
-      const initialChecked = {};
-      taskCategories.forEach(category => {
-        category.items.forEach(item => {
-          initialChecked[item] = false;
-        });
+  }
+  // Check for Default Tasks (now stored in the same way as AI and custom)
+  else if (savedData?.defaultTasks && Array.isArray(savedData.defaultTasks)) {
+    const validCategories = validateCategories(savedData.defaultTasks);
+    if (validCategories.length > 0) {
+      taskCategories = validCategories;
+      setDayContext({
+        morningMood: savedData.morningMood || savedData.mood || null,
+        eveningMood: savedData.eveningMood || null,
+        morningEnergy: savedData.morningEnergy || savedData.energyLevel || 0,
+        eveningEnergy: savedData.eveningEnergy || 0,
+        objective: '',
+        context: '',
+        isAIGenerated: false
       });
-      setChecked(initialChecked);
+      listType = 'default';
     }
-    
-    // Load task reminders
-    if (savedData?.taskReminders) {
-      setTaskReminders(savedData.taskReminders);
-    }
+  } else {
+    // Fallback to the original DEFAULT_CATEGORIES if nothing is stored
+    taskCategories = DEFAULT_CATEGORIES;
+    setDayContext({
+      morningMood: savedData.morningMood || savedData.mood || null,
+      eveningMood: savedData.eveningMood || null,
+      morningEnergy: savedData.morningEnergy || savedData.energyLevel || 0,
+      eveningEnergy: savedData.eveningEnergy || 0,
+      objective: '',
+      context: '',
+      isAIGenerated: false
+    });
+  }
+
+  setCategories(taskCategories);
+  setEditedCategories(JSON.parse(JSON.stringify(taskCategories))); // Deep copy
+  setTaskListType(listType);
+
+  if (savedData?.checked) {
+    setChecked(savedData.checked);
+  } else {
+    const initialChecked = {};
+    taskCategories.forEach(category => {
+      category.items.forEach(item => {
+        initialChecked[item] = false;
+      });
+    });
+    setChecked(initialChecked);
+  }
   
-    // Reset active category to 0 whenever data changes
-    setActiveCategory(0);
-  };
+  // Load task reminders
+  if (savedData?.taskReminders) {
+    setTaskReminders(savedData.taskReminders);
+  }
+
+  // Reset active category to 0 whenever data changes
+  setActiveCategory(0);
+};
 
   const validateCategories = (categoriesData) => {
     return categoriesData

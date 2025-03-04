@@ -1,23 +1,20 @@
-// PendingTasksModal.jsx
+// Update the PendingTasksModal.jsx component
 import React from 'react';
 import PendingTasksPrompt from './PendingTasksPrompt';
 import { X } from 'lucide-react';
 
-export const PendingTasksModal = ({ isOpen, currentDate, previousDate, onAction }) => {
-  if (!isOpen || !currentDate || !previousDate) return null;
-
+export const PendingTasksModal = ({ currentDate, previousDate, onAction }) => {
   return (
     <dialog 
       id="pending-tasks-modal" 
       className="modal-base"
-      open={isOpen}
       onClick={(e) => e.target.id === 'pending-tasks-modal' && onAction('skip')}
     >
       <div className="modal-content max-w-2xl" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div>
             <h3 className="modal-title">
-              {new Date(currentDate).toLocaleDateString('default', { 
+              {currentDate && new Date(currentDate).toLocaleDateString('default', { 
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
@@ -25,11 +22,11 @@ export const PendingTasksModal = ({ isOpen, currentDate, previousDate, onAction 
               })}
             </h3>
             <p className="modal-subtitle">
-              Pending Tasks from {new Date(previousDate).toLocaleDateString('default', { 
+              {previousDate && `Pending Tasks from ${new Date(previousDate).toLocaleDateString('default', { 
                 weekday: 'long',
                 month: 'short',
                 day: 'numeric'
-              })}
+              })}`}
             </p>
           </div>
           <button
@@ -40,13 +37,15 @@ export const PendingTasksModal = ({ isOpen, currentDate, previousDate, onAction 
           </button>
         </div>
         
-        <PendingTasksPrompt
-          date={currentDate}
-          previousDate={previousDate}
-          onImport={(tasks) => onAction('import', tasks)}
-          onSkip={() => onAction('skip')}
-          onClose={() => onAction('skip')}
-        />
+        {currentDate && previousDate && (
+          <PendingTasksPrompt
+            date={currentDate}
+            previousDate={previousDate}
+            onImport={(tasks) => onAction('import', tasks)}
+            onSkip={() => onAction('skip')}
+            onClose={() => onAction('skip')}
+          />
+        )}
       </div>
     </dialog>
   );

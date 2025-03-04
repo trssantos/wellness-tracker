@@ -29,6 +29,7 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
   // Function to refresh stats
   const refreshProcrastinationStats = () => {
     if (procrastinationStatsRef.current) {
+      console.log("Manually refreshing procrastination stats");
       procrastinationStatsRef.current.refresh();
     }
   };
@@ -41,6 +42,7 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
   
   useEffect(() => {
     const data = processStorageData(storageData, currentMonth);
+    refreshProcrastinationStats();
     setStatsData(data);
   }, [storageData, currentMonth]);
   
@@ -388,7 +390,7 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 transition-colors">
+          <h2 className="text-xrefreshProcrastinationStats();l font-semibold text-slate-800 dark:text-slate-100 transition-colors">
             Stats for {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
           </h2>
           
@@ -548,6 +550,18 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
           </div>
         </div>
       </div>
+
+      {/* Procrastination Stats Section */}
+<div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors mb-6 lg:col-span-2">
+  <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors flex items-center gap-2">
+    <Clock className="text-amber-500 dark:text-amber-400" size={20} />
+    Procrastination Analyzer
+  </h3>
+  <ProcrastinationStats 
+          ref={procrastinationStatsRef}
+          currentMonth={currentMonth} 
+        />
+</div>
       
       {/* Morning/Evening Mood Comparison Chart - NEW SECTION */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
@@ -616,17 +630,7 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
           </div>
         </div>
 
-        {/* Procrastination Stats Section */}
-<div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors mb-6 lg:col-span-2">
-  <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors flex items-center gap-2">
-    <Clock className="text-amber-500 dark:text-amber-400" size={20} />
-    Procrastination Analyzer
-  </h3>
-  <ProcrastinationStats 
-          ref={procrastinationStatsRef}
-          currentMonth={currentMonth} 
-        />
-</div>
+        
       </div>
     </div>
   );

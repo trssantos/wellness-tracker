@@ -191,13 +191,7 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
   // Add imported tasks to the deferred category with prefixes
   Object.entries(categorizedTasks).forEach(([category, tasks]) => {
     tasks.forEach(task => {
-      // Create prefixed task text that shows original category and defer count if > 1
-      const prefixedTask =  `[${task.deferCount}x] ${task.text}`;
-      
-      // Avoid duplicates
-      if (!taskList[deferredCategoryIndex].items.includes(prefixedTask)) {
-        taskList[deferredCategoryIndex].items.push(prefixedTask);
-      }
+      taskList[deferredCategoryIndex].items.push(task.text);
     });
   });
   
@@ -220,16 +214,8 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
   
   // Update deferral history for each task
   deferredTasks.forEach(task => {
-    // Create prefixed task text to match what we added to the list
-    const prefixedTask =  `[${task.deferCount}x] ${task.text}`;
     
     // Update deferral history
-    dayData.taskDeferHistory[prefixedTask] = {
-      count: task.deferCount,
-      firstDate: task.firstDate
-    };
-    
-    // Also maintain history for the original task text for backward compatibility
     dayData.taskDeferHistory[task.text] = {
       count: task.deferCount,
       firstDate: task.firstDate
@@ -273,12 +259,13 @@ export const getProcrastinationStats = (startDate, endDate) => {
     deferralHistory: []
   };
   
+  // Maps for tracking data within the selected month
+  const deferCountMap = {};
+  const deferCountByDayMap = {};
+  
   let totalDeferCount = 0;
   let totalDeferDays = 0;
   let totalTasks = 0;
-  
-  // Count of tasks by defer count (for histogram)
-  const deferCountMap = {};
   
   // Process each day in the date range
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
@@ -290,88 +277,79 @@ export const getProcrastinationStats = (startDate, endDate) => {
     // Count deferrals for this day
     let dayDeferrals = 0;
     
-    // Analyze task deferral history
+    // Analyze task deferral history for this specific day
     Object.entries(dayData.taskDeferHistory).forEach(([task, history]) => {
-      // Only count tasks that were active on this day (either created or completed)
-      const isTaskActiveOnDay = 
-        (dayData.checked && task in dayData.checked) || 
-        history.firstDate === dateStr;
+      const deferCount = history.count || 0;
       
-      if (isTaskActiveOnDay) {
-        const deferCount = history.count;
+      // Only count tasks that were active on this day within the month
+      if (deferCount > 0) {
         dayDeferrals += deferCount;
+        totalTasks++;
+        totalDeferCount += deferCount;
         
-        // Only process each unique task once across all days
-        if (history.firstDate === dateStr) {
-          totalDeferCount += deferCount;
-          totalTasks++;
-          
-          // Update max defer count
-          if (deferCount > stats.maxDeferCount) {
-            stats.maxDeferCount = deferCount;
-          }
-          
-          // Track in histogram data
-          deferCountMap[deferCount] = (deferCountMap[deferCount] || 0) + 1;
-          
-          // Calculate days since first deferral
-          const firstDate = new Date(history.firstDate);
-          const currentDate = new Date(dateStr);
-          const deferDays = Math.ceil((currentDate - firstDate) / (1000 * 60 * 60 * 24));
-          
-          if (deferDays > 0) {
-            totalDeferDays += deferDays;
-            
-            // Update max defer days
-            if (deferDays > stats.maxDeferDays) {
-              stats.maxDeferDays = deferDays;
-            }
-            
-            // Add to deferral history for timeline
-            stats.deferralHistory.push({
-              task,
-              date: dateStr,
-              count: deferCount,
-              days: deferDays
-            });
-          }
+        // Update max defer count
+        if (deferCount > stats.maxDeferCount) {
+          stats.maxDeferCount = deferCount;
         }
+        
+        // Track in histogram data
+        deferCountMap[deferCount] = (deferCountMap[deferCount] || 0) + 1;
+        
+        // Calculate days since first deferral (but only within this month)
+        const firstDate = new Date(history.firstDate);
+        // If first date is before the month started, use month start
+        const effectiveFirstDate = firstDate < startDate ? startDate : firstDate;
+        const currentDate = new Date(dateStr);
+        const deferDays = Math.ceil((currentDate - effectiveFirstDate) / (1000 * 60 * 60 * 24));
+        
+        totalDeferDays += deferDays;
+        
+        // Update max defer days
+        if (deferDays > stats.maxDeferDays) {
+          stats.maxDeferDays = deferDays;
+        }
+        
+        // Add to deferral history for timeline
+        stats.deferralHistory.push({
+          task,
+          date: dateStr,
+          count: deferCount,
+          days: deferDays,
+          firstDate: history.firstDate
+        });
       }
     });
     
     // Add to daily defer count timeline
     if (dayDeferrals > 0) {
-      stats.deferCountByDay.push({
-        date: dateStr,
-        count: dayDeferrals
-      });
+      deferCountByDayMap[dateStr] = dayDeferrals;
     }
   }
   
+  // Convert daily defer counts to array
+  Object.entries(deferCountByDayMap).forEach(([date, count]) => {
+    stats.deferCountByDay.push({
+      date,
+      count
+    });
+  });
+  
   // Calculate averages
   stats.totalDeferred = totalTasks;
-  stats.averageDeferCount = totalTasks > 0 ? (totalDeferCount / totalTasks).toFixed(1) : 0;
-  stats.averageDeferDays = totalTasks > 0 ? (totalDeferDays / totalTasks).toFixed(1) : 0;
+  stats.averageDeferCount = totalTasks > 0 ? parseFloat((totalDeferCount / totalTasks).toFixed(1)) : 0;
+  stats.averageDeferDays = totalTasks > 0 ? parseFloat((totalDeferDays / totalTasks).toFixed(1)) : 0;
   
   // Convert histogram data to array
-  if (stats.maxDeferCount === 0 && Object.keys(deferCountMap).length === 0) {
-    // Add dummy data point if there's no data
+  for (let i = 0; i <= stats.maxDeferCount; i++) {
     stats.tasksByDeferCount.push({
-      deferCount: 0,
-      taskCount: 0
+      deferCount: i,
+      taskCount: deferCountMap[i] || 0
     });
-  } else {
-    for (let i = 0; i <= stats.maxDeferCount; i++) {
-      stats.tasksByDeferCount.push({
-        deferCount: i,
-        taskCount: deferCountMap[i] || 0
-      });
-    }
   }
   
   // Sort timeline data
   stats.deferCountByDay.sort((a, b) => new Date(a.date) - new Date(b.date));
-  stats.deferralHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
+  stats.deferralHistory.sort((a, b) => new Date(b.date) - new Date(a.date)); // Most recent first
   
   return stats;
 };

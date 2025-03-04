@@ -26,6 +26,10 @@ import { migrateToMorningEveningFormat } from './utils/dataMigration';
 import { findPreviousTaskDate, importDeferredTasks } from './utils/taskDeferralService';
 import { DEFAULT_CATEGORIES } from './utils/defaultTasks';
 import PendingTasksModal from './components/PendingTasksModal';
+import HabitSection from './components/Sections/HabitSection';
+import HabitTaskIntegration from './components/HabitTaskIntegration';
+import { injectHabitTasks } from './utils/habitTrackerUtils';
+
 
 const App = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -40,6 +44,7 @@ const App = () => {
   const [moodTimeDefaultTime, setMoodTimeDefaultTime] = useState('morning');
   const [pendingTasksDate, setPendingTasksDate] = useState(null);
 const [pendingTasksForDate, setPendingTasksForDate] = useState(null);
+
 
   // Initialize reminder service on app start and run data migration
   useEffect(() => {
@@ -139,6 +144,10 @@ const [pendingTasksForDate, setPendingTasksForDate] = useState(null);
 
   const handleDaySelect = (dateStr) => {
     setSelectedDay(dateStr);
+
+    // Inject habit tasks into the daily task list
+  injectHabitTasks(dateStr);
+
     document.getElementById('day-action-modal').showModal();
   };
 
@@ -204,6 +213,9 @@ const [pendingTasksForDate, setPendingTasksForDate] = useState(null);
           checked: initialChecked
         };
         setStorage(storage);
+
+        injectHabitTasks(selectedDay);
+
         handleStorageUpdate();
         
         console.log('Created default task list with', Object.keys(initialChecked).length, 'tasks');
@@ -245,6 +257,9 @@ const [pendingTasksForDate, setPendingTasksForDate] = useState(null);
 const handleAITasksGenerated = (generatedDate) => {
   // Update storage data
   const dateToUse = generatedDate || selectedDay;
+
+  injectHabitTasks(dateToUse);
+
   handleStorageUpdate();
   
   if (dateToUse !== selectedDay) {
@@ -266,6 +281,8 @@ const handleAITasksGenerated = (generatedDate) => {
 const handleCustomTasksCreated = () => {
   // Close the custom task modal first
   document.getElementById('custom-tasklist-modal').close();
+
+  injectHabitTasks(selectedDay);
   
   // Update storage state
   handleStorageUpdate();
@@ -286,6 +303,9 @@ const handlePendingTasksAction = (action, tasks = []) => {
     // Import tasks into the current day
     console.log('Importing tasks into day:', pendingTasksForDate);
     importDeferredTasks(pendingTasksForDate, tasks);
+
+    injectHabitTasks(pendingTasksForDate);
+
     handleStorageUpdate();
   }
   
@@ -358,6 +378,9 @@ const handlePendingTasksAction = (action, tasks = []) => {
                   currentMonth={currentMonth}
                 />
               </SectionContainer>
+              <SectionContainer id="habits" isActive={activeSection === 'habits'}>
+  <HabitSection />
+</SectionContainer>
 
               <SectionContainer id="meditation" isActive={activeSection === 'meditation'}>
                 <MeditationSection />

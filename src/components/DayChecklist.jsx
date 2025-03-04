@@ -8,6 +8,8 @@ import TaskCategoryTabs from './DayChecklist/TaskCategoryTabs';
 import TaskList from './DayChecklist/TaskList';
 import EditTaskPanel from './DayChecklist/EditTaskPanel';
 import { TaskReminder } from './TaskReminder';
+import HabitTaskIntegration from './HabitTaskIntegration';
+import { getHabitsForDate, trackHabitCompletion } from '../utils/habitTrackerUtils';
 
 // Default categories from separate file
 import { DEFAULT_CATEGORIES } from '../utils/defaultTasks';
@@ -57,6 +59,37 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
     // Load tasks directly
     loadTasksFromStorage(savedData);
   }, [date, storageVersion]);
+
+  const updateHabitCompletions = (newChecked) => {
+    // Import the needed functions if not already imported
+    // import { getHabitsForDate, trackHabitCompletion } from '../utils/habitTrackerUtils';
+    
+    // Get habits for this day
+    const habits = getHabitsForDate(date);
+    
+    if (!habits || habits.length === 0) return;
+    
+    // For each habit, check if all its tasks are completed
+    habits.forEach(habit => {
+      // Get all tasks for this habit
+      const habitTasks = [];
+      habit.steps.forEach(step => {
+        habitTasks.push(`[${habit.name}] ${step}`);
+      });
+      
+      // Check if all habit tasks exist and are checked
+      const allTasksExist = habitTasks.every(task => newChecked.hasOwnProperty(task));
+      const allTasksCompleted = habitTasks.every(task => newChecked[task] === true);
+      
+      // Only mark habit as complete if all tasks exist and are completed
+      if (allTasksExist && allTasksCompleted) {
+        trackHabitCompletion(habit.id, date, true);
+      } else if (allTasksExist) {
+        // If not all tasks are completed, mark habit as not complete
+        trackHabitCompletion(habit.id, date, false);
+      }
+    });
+  };
   
   // Helper function to load tasks from storage
   // In DayChecklist.jsx, update the loadTasksFromStorage function
@@ -208,6 +241,9 @@ const loadTasksFromStorage = (savedData) => {
       checked: newChecked
     };
     setStorage(storage);
+    
+    // Update habit completions based on checked tasks
+    updateHabitCompletions(newChecked);
   };
 
   // Handle quick adding tasks
@@ -528,6 +564,9 @@ const loadTasksFromStorage = (savedData) => {
             context={dayContext} 
             onUpdate={handleContextUpdate} 
           />
+
+<HabitTaskIntegration date={date} />
+
           
           {!isEditing && (
             <ProgressSummary 

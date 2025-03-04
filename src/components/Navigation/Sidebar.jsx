@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Menu, X, Home, BarChart2, Brain, Dumbbell, 
-  MessageCircle, Layout, Bell, Settings, HelpCircle, Moon, Sun
+  MessageCircle, Layout, Bell, Settings, HelpCircle, Moon, Sun, Zap
 } from 'lucide-react';
 import { useTheme } from '../ThemeProvider';
 
@@ -81,6 +81,7 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
   const sections = [
     { id: 'overview', label: 'Overview', icon: <Home size={20} /> },
     { id: 'stats', label: 'Stats', icon: <BarChart2 size={20} /> },
+    { id: 'habits', label: 'Habits', icon: <Zap size={20} /> },
     { id: 'meditation', label: 'Meditation', icon: <Brain size={20} /> },
     { id: 'workout', label: 'Workout', icon: <Dumbbell size={20} /> },
     { id: 'coach', label: 'Day Coach', icon: <MessageCircle size={20} /> },

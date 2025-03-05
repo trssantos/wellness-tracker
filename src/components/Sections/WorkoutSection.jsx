@@ -4,6 +4,7 @@ import WorkoutList from '../Workout/WorkoutList';
 import WorkoutDetails from '../Workout/WorkoutDetails';
 import WorkoutForm from '../Workout/WorkoutForm';
 import WorkoutAnalytics from '../Workout/WorkoutAnalytics';
+import AiWorkoutGenerator from '../Workout/AiWorkoutGenerator';
 
 const WorkoutSection = () => {
   // Main view states
@@ -11,6 +12,7 @@ const WorkoutSection = () => {
   const [activeWorkout, setActiveWorkout] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
   const [viewingAnalytics, setViewingAnalytics] = useState(false);
 
   // Initialize and load workouts
@@ -32,6 +34,7 @@ const WorkoutSection = () => {
     setActiveWorkout(null);
     setIsCreating(false);
     setIsEditing(false);
+    setIsGeneratingWithAI(false);
   };
 
   // Handle selecting a workout to view details
@@ -40,6 +43,7 @@ const WorkoutSection = () => {
     setActiveWorkout(workout);
     setIsEditing(false);
     setViewingAnalytics(false);
+    setIsGeneratingWithAI(false);
   };
 
   // Handle creating a new workout manually
@@ -48,6 +52,16 @@ const WorkoutSection = () => {
     setIsCreating(true);
     setIsEditing(false);
     setViewingAnalytics(false);
+    setIsGeneratingWithAI(false);
+  };
+
+  // Handle creating a workout with AI
+  const handleCreateWithAI = () => {
+    setActiveWorkout(null);
+    setIsCreating(false);
+    setIsEditing(false);
+    setViewingAnalytics(false);
+    setIsGeneratingWithAI(true);
   };
 
   // Handle editing an existing workout
@@ -60,6 +74,7 @@ const WorkoutSection = () => {
     loadWorkouts();
     setIsCreating(false);
     setIsEditing(false);
+    setIsGeneratingWithAI(false);
     setActiveWorkout(newWorkout);
   };
 
@@ -76,6 +91,7 @@ const WorkoutSection = () => {
     setIsCreating(false);
     setIsEditing(false);
     setViewingAnalytics(false);
+    setIsGeneratingWithAI(false);
   };
 
   // Handle deleting a workout
@@ -92,6 +108,11 @@ const WorkoutSection = () => {
       {viewingAnalytics ? (
         <WorkoutAnalytics 
           onBack={handleBackToList}
+        />
+      ) : isGeneratingWithAI ? (
+        <AiWorkoutGenerator
+          onWorkoutGenerated={handleWorkoutSaved}
+          onCancel={handleBackToList}
         />
       ) : isCreating ? (
         <WorkoutForm 
@@ -118,6 +139,7 @@ const WorkoutSection = () => {
           workouts={workouts} 
           onSelectWorkout={handleSelectWorkout}
           onCreateWorkout={handleCreateWorkout}
+          onCreateWithAI={handleCreateWithAI}
           onViewAnalytics={handleViewAnalytics}
         />
       )}

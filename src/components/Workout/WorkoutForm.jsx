@@ -83,208 +83,212 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
       case 'walking':
       case 'cardio':
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-            <h4 className="col-span-full font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-2">
+          <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 w-full">
+            <h4 className="font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-4">
               <Route size={16} />
               Cardio Information
             </h4>
             
-            <div className="flex gap-3 items-start">
-              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
-                <Ruler size={18} className="text-blue-500 dark:text-blue-400" />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="distance" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Target Distance
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    id="distance"
-                    name="distance"
-                    value={formData.distance}
-                    onChange={handleInputChange}
-                    className="flex-1 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                    placeholder="e.g., 5.0"
-                  />
-                  <select
-                    name="distanceUnit"
-                    value={formData.distanceUnit}
-                    onChange={handleInputChange}
-                    className="w-20 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                  >
-                    <option value="km">km</option>
-                    <option value="mi">mi</option>
-                    <option value="m">m</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex gap-3 items-start">
-              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
-                <Gauge size={18} className="text-green-500 dark:text-green-400" />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="targetPace" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Target Pace
-                </label>
-                <input
-                  type="text"
-                  id="targetPace"
-                  name="targetPace"
-                  value={formData.targetPace}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                  placeholder={formData.distanceUnit === 'km' ? "min/km (e.g., 5:30)" : "min/mile (e.g., 8:45)"}
-                />
-              </div>
-            </div>
-            
-            <div className="flex gap-3 items-start">
-              <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
-                <Target size={18} className="text-purple-500 dark:text-purple-400" />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="intensityLevel" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Intensity Level
-                </label>
-                <select
-                  id="intensityLevel"
-                  name="intensityLevel"
-                  value={formData.intensityLevel}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                >
-                  <option value="easy">Easy</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="challenging">Challenging</option>
-                  <option value="intense">Intense</option>
-                  <option value="maximum">Maximum</option>
-                </select>
-              </div>
-            </div>
-            
-            {(formData.type === 'running' || formData.type === 'cycling') && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex gap-3 items-start">
-                <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
-                  <Activity size={18} className="text-amber-500 dark:text-amber-400" />
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                  <Ruler size={18} className="text-blue-500 dark:text-blue-400" />
                 </div>
                 <div className="flex-1">
-                  <label htmlFor="elevation" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Elevation Gain
+                  <label htmlFor="distance" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Target Distance
                   </label>
-                  <div className="relative">
+                  <div className="flex gap-2">
                     <input
                       type="text"
-                      id="elevation"
-                      name="elevation"
-                      value={formData.elevation}
+                      id="distance"
+                      name="distance"
+                      value={formData.distance}
                       onChange={handleInputChange}
-                      className="w-full p-2 pr-12 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                      placeholder="e.g., 150"
+                      className="flex-1 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                      placeholder="e.g., 5.0"
                     />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 dark:text-slate-400">
-                      {formData.distanceUnit === 'mi' ? 'ft' : 'm'}
-                    </div>
+                    <select
+                      name="distanceUnit"
+                      value={formData.distanceUnit}
+                      onChange={handleInputChange}
+                      className="w-20 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    >
+                      <option value="km">km</option>
+                      <option value="mi">mi</option>
+                      <option value="m">m</option>
+                    </select>
                   </div>
                 </div>
               </div>
-            )}
+              
+              <div className="flex gap-3 items-start">
+                <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
+                  <Gauge size={18} className="text-green-500 dark:text-green-400" />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="targetPace" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Target Pace
+                  </label>
+                  <input
+                    type="text"
+                    id="targetPace"
+                    name="targetPace"
+                    value={formData.targetPace}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    placeholder={formData.distanceUnit === 'km' ? "min/km (e.g., 5:30)" : "min/mile (e.g., 8:45)"}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-3 items-start">
+                <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
+                  <Target size={18} className="text-purple-500 dark:text-purple-400" />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="intensityLevel" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Intensity Level
+                  </label>
+                  <select
+                    id="intensityLevel"
+                    name="intensityLevel"
+                    value={formData.intensityLevel}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="challenging">Challenging</option>
+                    <option value="intense">Intense</option>
+                    <option value="maximum">Maximum</option>
+                  </select>
+                </div>
+              </div>
+              
+              {(formData.type === 'running' || formData.type === 'cycling') && (
+                <div className="flex gap-3 items-start">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+                    <Activity size={18} className="text-amber-500 dark:text-amber-400" />
+                  </div>
+                  <div className="flex-1">
+                    <label htmlFor="elevation" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Elevation Gain
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        id="elevation"
+                        name="elevation"
+                        value={formData.elevation}
+                        onChange={handleInputChange}
+                        className="w-full p-2 pr-12 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                        placeholder="e.g., 150"
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 dark:text-slate-400">
+                        {formData.distanceUnit === 'mi' ? 'ft' : 'm'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         );
         
-      case 'strength':
-      case 'bodyweight':
-      case 'hiit':
-      case 'crossfit':
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-            <h4 className="col-span-full font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-2">
-              <Dumbbell size={16} />
-              Strength Training Information
-            </h4>
-            
-            <div className="flex gap-3 items-start">
-              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
-                <Target size={18} className="text-red-500 dark:text-red-400" />
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Focus Areas
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {['Upper Body', 'Lower Body', 'Core', 'Full Body', 'Push', 'Pull', 'Legs'].map(focus => (
-                    <button
-                      key={focus}
-                      type="button"
-                      onClick={() => handleFocusAreaToggle(focus)}
-                      className={`px-3 py-1 rounded-full text-xs transition-colors ${
-                        formData.focusAreas.includes(focus)
-                          ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
-                          : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
-                      }`}
-                    >
-                      {focus}
-                    </button>
-                  ))}
+        case 'strength':
+            case 'bodyweight':
+            case 'hiit':
+            case 'crossfit':
+              return (
+                <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 w-full">
+                  <h4 className="font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-4">
+                    <Dumbbell size={16} />
+                    Strength Training Information
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex gap-3 items-start">
+                      <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
+                        <Target size={18} className="text-red-500 dark:text-red-400" />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          Focus Areas
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {['Upper Body', 'Lower Body', 'Core', 'Full Body', 'Push', 'Pull', 'Legs'].map(focus => (
+                            <button
+                              key={focus}
+                              type="button"
+                              onClick={() => handleFocusAreaToggle(focus)}
+                              className={`px-3 py-1 rounded-full text-xs transition-colors ${
+                                formData.focusAreas.includes(focus)
+                                  ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+                                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
+                              }`}
+                            >
+                              {focus}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3 items-start">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+                        <Repeat size={18} className="text-amber-500 dark:text-amber-400" />
+                      </div>
+                      <div className="flex-1">
+                        <label htmlFor="style" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          Training Style
+                        </label>
+                        <select
+                          id="style"
+                          name="style"
+                          value={formData.style}
+                          onChange={handleInputChange}
+                          className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                        >
+                          <option value="">Select Style</option>
+                          <option value="circuit">Circuit Training</option>
+                          <option value="supersets">Supersets</option>
+                          <option value="pyramid">Pyramid Sets</option>
+                          <option value="dropsets">Drop Sets</option>
+                          <option value="standard">Standard Sets</option>
+                          <option value="emom">Every Minute on the Minute (EMOM)</option>
+                          <option value="amrap">As Many Rounds as Possible (AMRAP)</option>
+                          <option value="tabata">Tabata</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3 items-start">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
+                        <Zap size={18} className="text-purple-500 dark:text-purple-400" />
+                      </div>
+                      <div className="flex-1">
+                        <label htmlFor="intensityLevel" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          Intensity Level
+                        </label>
+                        <select
+                          id="intensityLevel"
+                          name="intensityLevel"
+                          value={formData.intensityLevel}
+                          onChange={handleInputChange}
+                          className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                        >
+                          <option value="easy">Easy</option>
+                          <option value="moderate">Moderate</option>
+                          <option value="challenging">Challenging</option>
+                          <option value="intense">Intense</option>
+                          <option value="maximum">Maximum</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            
-            <div className="flex gap-3 items-start">
-              <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
-                <Repeat size={18} className="text-amber-500 dark:text-amber-400" />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="style" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Training Style
-                </label>
-                <select
-                  id="style"
-                  name="style"
-                  value={formData.style}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                >
-                  <option value="">Select Style</option>
-                  <option value="circuit">Circuit Training</option>
-                  <option value="supersets">Supersets</option>
-                  <option value="pyramid">Pyramid Sets</option>
-                  <option value="dropsets">Drop Sets</option>
-                  <option value="standard">Standard Sets</option>
-                  <option value="emom">Every Minute on the Minute (EMOM)</option>
-                  <option value="amrap">As Many Rounds as Possible (AMRAP)</option>
-                  <option value="tabata">Tabata</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="flex gap-3 items-start">
-              <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
-                <Zap size={18} className="text-purple-500 dark:text-purple-400" />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="intensityLevel" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Intensity Level
-                </label>
-                <select
-                  id="intensityLevel"
-                  name="intensityLevel"
-                  value={formData.intensityLevel}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                >
-                  <option value="easy">Easy</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="challenging">Challenging</option>
-                  <option value="intense">Intense</option>
-                  <option value="maximum">Maximum</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        );
+              );
         
       case 'sports':
       case 'boxing':
@@ -624,166 +628,148 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
 
       <div className="space-y-6">
         {/* Basic Info Section - Enhanced with icons and better styling */}
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-          {/* Section Header */}
-          <button
-            onClick={() => setActiveInfoSection(activeInfoSection === 'basic' ? '' : 'basic')}
-            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <Activity size={16} className="text-blue-600 dark:text-blue-400" />
-              </div>
-              <h3 className="font-medium text-slate-800 dark:text-slate-100">Basic Information</h3>
-            </div>
-            {activeInfoSection === 'basic' ? 
-              <ChevronUp size={20} className="text-slate-500 dark:text-slate-400" /> : 
-              <ChevronDown size={20} className="text-slate-500 dark:text-slate-400" />
-            }
-          </button>
-          
-          {/* Section Content */}
-          {activeInfoSection === 'basic' && (
-            <div className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Workout Name */}
-                <div className="flex gap-3 items-start md:col-span-2">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                    <Dumbbell size={16} className="text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <label htmlFor="name" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Workout Name*
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                      placeholder="e.g., Full Body Strength"
-                    />
-                    {errors.name && (
-                      <p className="mt-1 text-sm text-red-500 dark:text-red-400">{errors.name}</p>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Workout Type */}
-                <div className="flex gap-3 items-start">
-                  <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                    <Activity size={16} className="text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <div className="flex-1">
-                    <label htmlFor="type" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Workout Type
-                    </label>
-                    <select
-                      id="type"
-                      name="type"
-                      value={formData.type}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                    >
-                      {getWorkoutTypes().map(type => (
-                        <option key={type.value} value={type.value}>{type.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                
-                {/* Duration */}
-                <div className="flex gap-3 items-start">
-                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                    <Clock size={16} className="text-green-600 dark:text-green-400" />
-                  </div>
-                  <div className="flex-1">
-                    <label htmlFor="duration" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Duration (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      id="duration"
-                      name="duration"
-                      value={formData.duration}
-                      onChange={handleInputChange}
-                      min="5"
-                      max="180"
-                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                    />
-                  </div>
-                </div>
-                
-                {/* Location */}
-                <div className="flex gap-3 items-start">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
-                    <MapPin size={16} className="text-amber-600 dark:text-amber-400" />
-                  </div>
-                  <div className="flex-1">
-                    <label htmlFor="location" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Location
-                    </label>
-                    <select
-                      id="location"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                    >
-                      {getWorkoutLocations().map(location => (
-                        <option key={location.value} value={location.value}>{location.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                
-                {/* Type-specific fields */}
-                {getTypeSpecificFields()}
-                
-                {/* Notes */}
-                <div className="flex gap-3 items-start md:col-span-2">
-                  <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
-                    <Calendar size={16} className="text-teal-600 dark:text-teal-400" />
-                  </div>
-                  <div className="flex-1">
-                    <label htmlFor="notes" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Notes
-                    </label>
-                    <textarea
-                      id="notes"
-                      name="notes"
-                      value={formData.notes}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 h-20"
-                      placeholder="Any additional notes about this workout..."
-                    />
-                  </div>
-                </div>
-                
-                {/* Limitations */}
-                <div className="flex gap-3 items-start md:col-span-2">
-                  <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle size={16} className="text-red-600 dark:text-red-400" />
-                  </div>
-                  <div className="flex-1">
-                    <label htmlFor="limitations" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Limitations or Considerations
-                    </label>
-                    <textarea
-                      id="limitations"
-                      name="limitations"
-                      value={formData.limitations}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 h-20"
-                      placeholder="Any health issues, injuries or limitations to consider..."
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+        {/* Basic Info Section */}
+  <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+    {/* Section Header */}
+    <button
+      onClick={() => setActiveInfoSection(activeInfoSection === 'basic' ? '' : 'basic')}
+      className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+    >
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+          <Activity size={16} className="text-blue-600 dark:text-blue-400" />
         </div>
+        <h3 className="font-medium text-slate-800 dark:text-slate-100">Basic Information</h3>
+      </div>
+      {activeInfoSection === 'basic' ? 
+        <ChevronUp size={20} className="text-slate-500 dark:text-slate-400" /> : 
+        <ChevronDown size={20} className="text-slate-500 dark:text-slate-400" />
+      }
+    </button>
+    
+    {/* Section Content - Modified to have better mobile layout */}
+    {activeInfoSection === 'basic' && (
+      <div className="p-4">
+        <div className="grid grid-cols-1 gap-6">
+          {/* Workout Name */}
+          <div className="flex gap-3 items-start">
+            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+              <Dumbbell size={16} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <label htmlFor="name" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                Workout Name*
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                placeholder="e.g., Full Body Strength"
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-500 dark:text-red-400">{errors.name}</p>
+              )}
+            </div>
+          </div>
+          
+          {/* Workout Type and Duration - Side by side on larger screens */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                <Activity size={16} className="text-purple-600 dark:text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="type" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Workout Type
+                </label>
+                <select
+                  id="type"
+                  name="type"
+                  value={formData.type}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  {getWorkoutTypes().map(type => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                <Clock size={16} className="text-green-600 dark:text-green-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="duration" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Duration (minutes)
+                </label>
+                <input
+                  type="number"
+                  id="duration"
+                  name="duration"
+                  value={formData.duration}
+                  onChange={handleInputChange}
+                  min="5"
+                  max="180"
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Location */}
+          <div className="flex gap-3 items-start">
+            <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+              <MapPin size={16} className="text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex-1">
+              <label htmlFor="location" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                Location
+              </label>
+              <select
+                id="location"
+                name="location"
+                value={formData.location}
+                onChange={handleInputChange}
+                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+              >
+                {getWorkoutLocations().map(location => (
+                  <option key={location.value} value={location.value}>{location.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          {/* Type-specific fields now rendered HERE - within the Basic Information section */}
+          {getTypeSpecificFields()}
+          
+          {/* Notes */}
+          <div className="flex gap-3 items-start">
+            <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
+              <Calendar size={16} className="text-teal-600 dark:text-teal-400" />
+            </div>
+            <div className="flex-1">
+              <label htmlFor="notes" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                Notes
+              </label>
+              <textarea
+                id="notes"
+                name="notes"
+                value={formData.notes}
+                onChange={handleInputChange}
+                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 h-20"
+                placeholder="Any additional notes about this workout..."
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
         
         {/* Schedule Section */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">

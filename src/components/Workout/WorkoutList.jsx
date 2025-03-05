@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, BarChart2, Activity, Clock, Calendar, ChevronRight, Dumbbell } from 'lucide-react';
+import { Plus, BarChart2, Activity, Clock, Calendar, ChevronRight, Dumbbell, Sparkles } from 'lucide-react';
 import { getWorkoutTypes } from '../../utils/workoutUtils';
 
 // Helper function to get icon for workout type
@@ -23,7 +23,7 @@ const getWorkoutTypeLabel = (type) => {
   return foundType ? foundType.label : 'Workout';
 };
 
-const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onViewAnalytics }) => {
+const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onCreateWithAI, onViewAnalytics }) => {
   return (
     <div className="px-2 sm:px-0 w-full overflow-hidden">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2 sm:gap-0">
@@ -38,6 +38,13 @@ const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onViewAnalyti
               <span className="hidden sm:inline">Analytics</span>
             </button>
           )}
+          <button 
+            onClick={onCreateWithAI}
+            className="text-sm sm:text-base bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1"
+          >
+            <Sparkles size={16} />
+            <span className="hidden sm:inline">AI Generate</span>
+          </button>
           <button 
             onClick={onCreateWorkout}
             className="text-sm sm:text-base bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1"
@@ -57,13 +64,22 @@ const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onViewAnalyti
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
             Create your first workout template to start tracking your fitness journey.
           </p>
-          <button 
-            onClick={onCreateWorkout}
-            className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 justify-center text-sm sm:text-base"
-          >
-            <Plus size={16} />
-            Create Workout
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button 
+              onClick={onCreateWithAI}
+              className="bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 justify-center text-sm sm:text-base"
+            >
+              <Sparkles size={16} />
+              AI Generate
+            </button>
+            <button 
+              onClick={onCreateWorkout}
+              className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 justify-center text-sm sm:text-base"
+            >
+              <Plus size={16} />
+              Create Workout
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-4 overflow-x-hidden">

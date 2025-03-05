@@ -272,9 +272,9 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
   };
   
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 w-full max-w-md mx-auto overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm w-full sm:w-[90%] md:w-3/4 lg:w-2/3 mx-auto overflow-x-hidden px-3 sm:px-4 md:px-6 py-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+        <h2 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-100">
           {habit ? 'Edit Habit' : 'Create New Habit'}
         </h2>
         <button 
@@ -304,7 +304,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             value={formData.name}
             onChange={handleInputChange}
             placeholder="e.g., Morning Meditation"
-            className={`w-full p-3 border rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 ${
+            className={`w-full p-2 sm:p-3 border rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 ${
               errors.name 
                 ? 'border-red-500 dark:border-red-600' 
                 : 'border-slate-300 dark:border-slate-600'
@@ -324,7 +324,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             value={formData.description}
             onChange={handleInputChange}
             placeholder="Describe your habit and why it's important to you"
-            className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 h-20"
+            className="w-full p-2 sm:p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 h-20"
           ></textarea>
         </div>
         
@@ -334,12 +334,12 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             Frequency*
           </label>
           
-          {/* Preset buttons */}
-          <div className="flex flex-wrap gap-1 mb-2">
+          {/* Preset buttons with overflow scroll on mobile */}
+          <div className="flex flex-wrap gap-1 mb-2 overflow-x-auto pb-1 -mx-1 px-1">
             <button 
               type="button"
               onClick={() => handleFrequencyPreset('daily')}
-              className={`px-2 py-1 rounded-full text-xs ${
+              className={`px-2 py-1 rounded-full text-xs whitespace-nowrap ${
                 formData.frequency.length === 7 
                   ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' 
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -350,7 +350,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             <button 
               type="button"
               onClick={() => handleFrequencyPreset('weekdays')}
-              className={`px-2 py-1 rounded-full text-xs ${
+              className={`px-2 py-1 rounded-full text-xs whitespace-nowrap ${
                 formData.frequency.length === 5 && !formData.frequency.includes('sat') 
                   ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' 
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -361,7 +361,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             <button 
               type="button"
               onClick={() => handleFrequencyPreset('weekends')}
-              className={`px-2 py-1 rounded-full text-xs ${
+              className={`px-2 py-1 rounded-full text-xs whitespace-nowrap ${
                 formData.frequency.length === 2 && formData.frequency.includes('sat') 
                   ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' 
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -372,7 +372,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             <button 
               type="button"
               onClick={() => handleFrequencyPreset('alternate')}
-              className={`px-2 py-1 rounded-full text-xs ${
+              className={`px-2 py-1 rounded-full text-xs whitespace-nowrap ${
                 formData.frequency.length === 4 && formData.frequency.includes('mon') && formData.frequency.includes('wed')
                   ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' 
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -383,7 +383,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             <button 
               type="button"
               onClick={() => handleFrequencyPreset('custom')}
-              className={`px-2 py-1 rounded-full text-xs ${
+              className={`px-2 py-1 rounded-full text-xs whitespace-nowrap ${
                 customFrequency
                   ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' 
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -395,13 +395,13 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
           
           {/* Day selector */}
           {(customFrequency || errors.frequency) && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1 sm:gap-2">
               {['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map(day => (
                 <button
                   key={day}
                   type="button"
                   onClick={() => handleFrequencyToggle(day)}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors ${
                     formData.frequency.includes(day)
                       ? 'bg-blue-500 dark:bg-blue-600 text-white'
                       : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -423,7 +423,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
             Time of Day (Optional)
           </label>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1 sm:gap-2">
             {['morning', 'afternoon', 'evening', 'anytime'].map(time => (
               <button
                 key={time}
@@ -581,7 +581,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
           </div>
           <div className="space-y-2 mb-2">
             {formData.milestones.map((milestone, index) => (
-              <div key={index} className="flex items-center gap-2">
+              <div key={index} className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                 <div className="w-6 h-6 flex-shrink-0 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full flex items-center justify-center">
                   <Target size={14} />
                 </div>
@@ -590,14 +590,14 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
                   value={milestone.name}
                   onChange={(e) => handleMilestoneChange(index, 'name', e.target.value)}
                   placeholder="Milestone name"
-                  className="flex-1 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs"
+                  className="flex-1 min-w-0 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs"
                 />
                 <input
                   type="number"
                   value={milestone.value}
                   onChange={(e) => handleMilestoneChange(index, 'value', parseInt(e.target.value) || 0)}
                   placeholder="Value"
-                  className="w-14 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs"
+                  className="w-14 sm:w-16 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs"
                 />
                 <button 
                   type="button"
@@ -625,7 +625,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
         </div>
         
         {/* Date Selection */}
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Start Date
@@ -664,20 +664,20 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
       </div>
       
       {/* Form Actions */}
-      <div className="flex justify-between mt-6 pt-3 border-t border-slate-200 dark:border-slate-700">
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 mt-6 pt-3 border-t border-slate-200 dark:border-slate-700">
         <button 
           type="button"
           onClick={onCancel}
-          className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 text-xs"
+          className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 text-sm text-center"
         >
           Cancel
         </button>
         <button 
           type="button"
           onClick={handleSubmit}
-          className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 flex items-center gap-2 text-xs"
+          className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 flex items-center justify-center gap-2 text-sm"
         >
-          <Save size={14} />
+          <Save size={16} />
           {habit ? 'Update Habit' : 'Save Habit'}
         </button>
       </div>

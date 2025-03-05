@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Download, Upload, AlertCircle, Info, ArrowRight, CheckCircle, Settings as SettingsIcon, HelpCircle, Save } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
 import { BackupRestoreDemo } from './BackupRestoreDemo';
-import { AI_PROVIDERS, getAIProvider, isProviderConfigured } from '../utils/ai-service';
-import { getOpenAISettings } from '../utils/openai-service';
+import { AI_PROVIDERS } from '../utils/ai-service';
 
 export const Settings = ({ onClose }) => {
   const [backupStatus, setBackupStatus] = useState(null);
@@ -13,11 +12,9 @@ export const Settings = ({ onClose }) => {
   
   // AI Provider settings
   const [showAISettings, setShowAISettings] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState(getAIProvider());
   const [openaiKey, setOpenaiKey] = useState('');
   const [savedKey, setSavedKey] = useState('');
   const [useEnvVariableKey, setUseEnvVariableKey] = useState(true);
-  const [openaiModel, setOpenaiModel] = useState('gpt-3.5-turbo');
   const [openaiTemperature, setOpenaiTemperature] = useState(0.7);
   const [aiSettingsStatus, setAISettingsStatus] = useState(null);
   const [isApiKeyConfigured, setIsApiKeyConfigured] = useState(false);
@@ -37,9 +34,10 @@ export const Settings = ({ onClose }) => {
       setSavedKey(maskApiKey(storage.settings.openaiApiKey));
     }
     
-    const openaiSettings = getOpenAISettings();
-    setOpenaiModel(openaiSettings.model);
-    setOpenaiTemperature(openaiSettings.temperature);
+    // Load temperature setting
+    if (storage.settings?.openaiSettings?.temperature !== undefined) {
+      setOpenaiTemperature(storage.settings.openaiSettings.temperature);
+    }
   }, []);
   
   const maskApiKey = (key) => {
@@ -143,8 +141,8 @@ export const Settings = ({ onClose }) => {
         storage.settings = {};
       }
       
-      // Save AI provider
-      storage.settings.aiProvider = selectedProvider;
+      // Save AI provider - now always OpenAI
+      storage.settings.aiProvider = AI_PROVIDERS.OPENAI;
       
       // Save whether to use environment variable for API key
       storage.settings.useEnvVariableKey = useEnvVariableKey;
@@ -156,9 +154,8 @@ export const Settings = ({ onClose }) => {
         setOpenaiKey(''); // Clear input after saving for security
       }
       
-      // OpenAI model settings
+      // OpenAI temperature settings (but not model, which is fixed)
       storage.settings.openaiSettings = {
-        model: openaiModel,
         temperature: parseFloat(openaiTemperature)
       };
       
@@ -207,152 +204,100 @@ export const Settings = ({ onClose }) => {
               onClick={() => setShowAISettings(!showAISettings)}
               className="w-full flex items-center justify-between text-lg font-medium text-slate-800 dark:text-slate-200 mb-2 transition-colors"
             >
-              <span>AI Provider Settings</span>
+              <span>AI Settings</span>
               <ArrowRight className={`transition-transform duration-300 ${showAISettings ? 'rotate-90' : ''}`} size={20} />
             </button>
             
             {showAISettings && (
               <div className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors">
-                    Select AI Provider
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-700 dark:text-blue-300 text-sm transition-colors">
+                  This app uses OpenAI's GPT-4o-mini model for all AI features. You'll need to provide an API key in the settings below.
+                </div>
+                
+                {/* API Key Source Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 transition-colors">
+                    OpenAI API Key Source
                   </label>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col space-y-2">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
-                        name="aiProvider"
-                        value={AI_PROVIDERS.GEMINI}
-                        checked={selectedProvider === AI_PROVIDERS.GEMINI}
-                        onChange={() => setSelectedProvider(AI_PROVIDERS.GEMINI)}
+                        name="apiKeySource"
+                        checked={useEnvVariableKey}
+                        onChange={() => setUseEnvVariableKey(true)}
                         className="form-radio text-blue-500 focus:ring-blue-500"
                       />
-                      <span className="text-slate-700 dark:text-slate-300 transition-colors">Gemini</span>
+                      <span className="text-slate-700 dark:text-slate-300 transition-colors">
+                        Use environment variable (REACT_APP_OPENAI_API_KEY)
+                      </span>
                     </label>
                     
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
-                        name="aiProvider"
-                        value={AI_PROVIDERS.OPENAI}
-                        checked={selectedProvider === AI_PROVIDERS.OPENAI}
-                        onChange={() => setSelectedProvider(AI_PROVIDERS.OPENAI)}
-                        className="form-radio text-green-500 focus:ring-green-500"
+                        name="apiKeySource"
+                        checked={!useEnvVariableKey}
+                        onChange={() => setUseEnvVariableKey(false)}
+                        className="form-radio text-blue-500 focus:ring-blue-500"
                       />
-                      <span className="text-slate-700 dark:text-slate-300 transition-colors">OpenAI</span>
+                      <span className="text-slate-700 dark:text-slate-300 transition-colors">
+                        Use custom API key
+                      </span>
                     </label>
                   </div>
                 </div>
                 
-                {selectedProvider === AI_PROVIDERS.GEMINI && (
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-700 dark:text-blue-300 text-sm transition-colors">
-                    Gemini uses the API key configured in your environment variables (.env file). For local development, add REACT_APP_GEMINI_API_KEY to your .env file.
+                {/* Environment variable status */}
+                {useEnvVariableKey && (
+                  <div className={`p-3 rounded-lg text-sm ${
+                    isApiKeyConfigured 
+                      ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                      : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                    } transition-colors`}>
+                    {isApiKeyConfigured 
+                      ? 'OpenAI API key is configured in environment variables.' 
+                      : 'OpenAI API key is not configured in environment variables. Add REACT_APP_OPENAI_API_KEY to your environment.'}
                   </div>
                 )}
                 
-                {selectedProvider === AI_PROVIDERS.OPENAI && (
-                  <div className="space-y-4">
-                    {/* API Key Source Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 transition-colors">
-                        OpenAI API Key Source
-                      </label>
-                      <div className="flex flex-col space-y-2">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="apiKeySource"
-                            checked={useEnvVariableKey}
-                            onChange={() => setUseEnvVariableKey(true)}
-                            className="form-radio text-blue-500 focus:ring-blue-500"
-                          />
-                          <span className="text-slate-700 dark:text-slate-300 transition-colors">
-                            Use environment variable (REACT_APP_OPENAI_API_KEY)
-                          </span>
-                        </label>
-                        
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="apiKeySource"
-                            checked={!useEnvVariableKey}
-                            onChange={() => setUseEnvVariableKey(false)}
-                            className="form-radio text-blue-500 focus:ring-blue-500"
-                          />
-                          <span className="text-slate-700 dark:text-slate-300 transition-colors">
-                            Use custom API key
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-                    
-                    {/* Environment variable status */}
-                    {useEnvVariableKey && (
-                      <div className={`p-3 rounded-lg text-sm ${
-                        isApiKeyConfigured 
-                          ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
-                          : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                        } transition-colors`}>
-                        {isApiKeyConfigured 
-                          ? 'OpenAI API key is configured in environment variables.' 
-                          : 'OpenAI API key is not configured in environment variables. Add REACT_APP_OPENAI_API_KEY to your environment.'}
-                      </div>
-                    )}
-                    
-                    {/* Custom API key input */}
-                    {!useEnvVariableKey && (
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 transition-colors">
-                          OpenAI API Key
-                        </label>
-                        <input
-                          type="password"
-                          value={openaiKey}
-                          onChange={(e) => setOpenaiKey(e.target.value)}
-                          placeholder={savedKey || "Enter your OpenAI API key"}
-                          className="input-field"
-                        />
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 transition-colors">
-                          {savedKey ? "API key saved. Enter a new key to update." : "Your API key will be stored locally and never sent to our servers."}
-                        </p>
-                      </div>
-                    )}
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 transition-colors">
-                        OpenAI Model
-                      </label>
-                      <select
-                        value={openaiModel}
-                        onChange={(e) => setOpenaiModel(e.target.value)}
-                        className="input-field"
-                      >
-                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                        <option value="gpt-4">GPT-4</option>
-                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 transition-colors">
-                        Temperature ({openaiTemperature})
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        value={openaiTemperature}
-                        onChange={(e) => setOpenaiTemperature(e.target.value)}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 transition-colors">
-                        <span>More focused (0)</span>
-                        <span>More creative (1)</span>
-                      </div>
-                    </div>
+                {/* Custom API key input */}
+                {!useEnvVariableKey && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 transition-colors">
+                      OpenAI API Key
+                    </label>
+                    <input
+                      type="password"
+                      value={openaiKey}
+                      onChange={(e) => setOpenaiKey(e.target.value)}
+                      placeholder={savedKey || "Enter your OpenAI API key"}
+                      className="input-field"
+                    />
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 transition-colors">
+                      {savedKey ? "API key saved. Enter a new key to update." : "Your API key will be stored locally and never sent to our servers."}
+                    </p>
                   </div>
                 )}
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 transition-colors">
+                    AI Temperature ({openaiTemperature})
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={openaiTemperature}
+                    onChange={(e) => setOpenaiTemperature(e.target.value)}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 transition-colors">
+                    <span>More focused (0)</span>
+                    <span>More creative (1)</span>
+                  </div>
+                </div>
                 
                 <button
                   onClick={handleSaveAISettings}

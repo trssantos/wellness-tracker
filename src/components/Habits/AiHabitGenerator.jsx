@@ -1,107 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, CheckCircle, X, Brain, Lightbulb, MoreHorizontal, Loader } from 'lucide-react';
-
-// Mock AI service - this would connect to your actual AI service
-const mockAiSuggestHabit = async (input) => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  const suggestions = {
-    "meditation": {
-      name: "Daily Mindful Meditation",
-      description: "A regular meditation practice to reduce stress and improve focus",
-      steps: [
-        "Find a quiet space free from distractions",
-        "Sit comfortably with good posture",
-        "Set a timer for your session (start with 5 minutes)",
-        "Focus on your breath, noticing inhalations and exhalations",
-        "When your mind wanders, gently bring attention back to breath",
-        "After timer ends, slowly open your eyes and notice how you feel"
-      ],
-      frequency: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
-      timeOfDay: "morning",
-      milestones: [
-        { name: "7-day streak", value: 7 },
-        { name: "21-day habit formation", value: 21 },
-        { name: "30-day consistency", value: 30 },
-        { name: "100-day mindfulness master", value: 100 }
-      ]
-    },
-    "exercise": {
-      name: "Regular Exercise Routine",
-      description: "Consistent physical activity to improve overall health",
-      steps: [
-        "Change into workout clothes",
-        "Do a 5-minute warm-up",
-        "Complete the day's exercise routine",
-        "Cool down with light stretching",
-        "Track your workout in the app",
-        "Drink water to rehydrate"
-      ],
-      frequency: ["mon", "wed", "fri"],
-      timeOfDay: "anytime",
-      milestones: [
-        { name: "First week complete", value: 7 },
-        { name: "First month milestone", value: 30 },
-        { name: "Three month consistency", value: 90 },
-        { name: "Six month transformation", value: 180 }
-      ]
-    },
-    "reading": {
-      name: "Daily Reading Habit",
-      description: "Read regularly to expand knowledge and improve focus",
-      steps: [
-        "Select your reading material",
-        "Find a comfortable, quiet place",
-        "Turn off notifications on your devices",
-        "Set a timer for at least 20 minutes",
-        "Take brief notes if desired",
-        "Mark your progress in your book"
-      ],
-      frequency: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
-      timeOfDay: "evening",
-      milestones: [
-        { name: "7-day reading streak", value: 7 },
-        { name: "First book completed", value: 21 },
-        { name: "30-day consistent reader", value: 30 },
-        { name: "100-day literature lover", value: 100 }
-      ]
-    },
-    "journaling": {
-      name: "Daily Journaling Practice",
-      description: "Regular reflection through writing to process thoughts and emotions",
-      steps: [
-        "Find a quiet moment in your day",
-        "Open your journal or digital app",
-        "Take a deep breath and center yourself",
-        "Reflect on what you want to write about",
-        "Write freely for at least 10 minutes",
-        "Review what you've written if desired"
-      ],
-      frequency: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
-      timeOfDay: "evening",
-      milestones: [
-        { name: "One week of insights", value: 7 },
-        { name: "21-day journaling habit", value: 21 },
-        { name: "Monthly reflection master", value: 30 },
-        { name: "100 entries milestone", value: 100 }
-      ]
-    }
-  };
-  
-  // Parse the input to find relevant suggestions
-  const inputLower = input.toLowerCase();
-  const relevantKeys = Object.keys(suggestions).filter(key => 
-    inputLower.includes(key) || key.includes(inputLower)
-  );
-  
-  if (relevantKeys.length > 0) {
-    return suggestions[relevantKeys[0]];
-  }
-  
-  // Default suggestion if no match found
-  return suggestions["meditation"];
-};
+import { generateHabitSuggestion } from '../../utils/aiHabitService';
 
 const AiHabitGenerator = ({ onHabitGenerated, onCancel }) => {
   const [habitInput, setHabitInput] = useState('');
@@ -120,11 +19,11 @@ const AiHabitGenerator = ({ onHabitGenerated, onCancel }) => {
     setGenerating(true);
     
     try {
-      const result = await mockAiSuggestHabit(habitInput);
+      const result = await generateHabitSuggestion(habitInput);
       setSuggestion(result);
       setSelectedTab('steps');
     } catch (err) {
-      setError("Failed to generate habit suggestion. Please try again.");
+      setError("Failed to generate habit suggestion: " + (err.message || "Please try again."));
       console.error(err);
     } finally {
       setGenerating(false);

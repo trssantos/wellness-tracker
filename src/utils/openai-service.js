@@ -1,3 +1,4 @@
+// src/utils/openai-service.js
 import { getStorage } from './storage';
 
 // Get API key from environment variables or localStorage
@@ -30,11 +31,15 @@ const getApiKey = () => {
 export const getOpenAISettings = () => {
   const storage = getStorage();
   const defaultSettings = {
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4o-mini-2024-07-18', // Fixed model to gpt-4o-mini
     temperature: 0.7
   };
   
-  return storage.settings?.openaiSettings || defaultSettings;
+  // Only get temperature from settings, ignore model selection
+  return {
+    ...defaultSettings,
+    temperature: storage.settings?.openaiSettings?.temperature || defaultSettings.temperature
+  };
 };
 
 // Prompt template for task generation
@@ -72,6 +77,58 @@ Format your response EXACTLY as a JSON object with this structure:
 Create 5-6 categories, each with 4-5 simple tasks ideally add an appropriate icon to the end of each task. Tasks MUST be strings, not objects.
 Make tasks specific, actionable, and encouraging.
 Make sure each task is a simple string, not an object or complex structure.`;
+};
+
+// Handle raw text prompt for general content generation
+export const generateContent = async (prompt) => {
+  try {
+    const apiKey = getApiKey();
+    const settings = getOpenAISettings();
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that responds directly and accurately.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: settings.temperature
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('OpenAI API error:', errorData);
+      
+      // Handle specific errors
+      if (response.status === 401) {
+        throw new Error('Invalid OpenAI API key');
+      } else if (response.status === 429) {
+        throw new Error('OpenAI rate limit exceeded. Please try again later.');
+      } else if (response.status === 503) {
+        throw new Error('503: OpenAI service is currently overloaded. Please try again later.');
+      }
+      
+      throw new Error(`API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content || '';
+  } catch (error) {
+    console.error('Error generating content with OpenAI:', error);
+    throw error;
+  }
 };
 
 const validateTasksStructure = (data) => {
@@ -122,7 +179,16 @@ const validateTasksStructure = (data) => {
 export const generateTasks = async (userContext) => {
   try {
     const apiKey = getApiKey();
-    const prompt = generatePromptTemplate(userContext);
+    
+    // Handle different types of prompts
+    let prompt;
+    if (userContext.prompt) {
+      // Direct prompt for general content generation
+      prompt = userContext.prompt;
+    } else {
+      // Task generation prompt
+      prompt = generatePromptTemplate(userContext);
+    }
     
     // Get settings from storage
     const settings = getOpenAISettings();
@@ -134,18 +200,18 @@ export const generateTasks = async (userContext) => {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: settings.model || 'gpt-3.5-turbo',
+        model: settings.model,
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that creates task lists in JSON format.'
+            content: 'You are a helpful assistant that creates structured content in JSON format.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: settings.temperature || 0.7
+        temperature: settings.temperature
       })
     });
 
@@ -170,6 +236,11 @@ export const generateTasks = async (userContext) => {
 
     if (!content) {
       throw new Error('No content in OpenAI response');
+    }
+
+    // If this is a direct prompt, return the raw content
+    if (userContext.prompt) {
+      return content;
     }
 
     try {

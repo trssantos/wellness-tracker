@@ -367,29 +367,75 @@ export const updateHabitStats = (habit) => {
   }
   
   // Check for milestone achievements
-  if (habit.milestones && habit.milestones.length > 0) {
-    habit.milestones = habit.milestones.map(milestone => {
-      // Check if milestone is newly achieved
-      if (!milestone.achieved) {
-        // Check for streak-based milestones
-        if (milestone.name.toLowerCase().includes('streak') && currentStreak >= milestone.value) {
-          milestone.achieved = true;
-          milestone.achievedDate = today;
-        }
-        // Check for total completion milestones
-        else if (milestone.name.toLowerCase().includes('total') && totalCompletions >= milestone.value) {
-          milestone.achieved = true;
-          milestone.achievedDate = today;
-        }
-        // Check for general progress milestones
-        else if (progress >= milestone.value) {
-          milestone.achieved = true;
-          milestone.achievedDate = today;
-        }
-      }
+  // Check for milestone achievements
+if (habit.milestones && habit.milestones.length > 0) {
+  habit.milestones = habit.milestones.map(milestone => {
+    // Check if milestone is already achieved (don't change it)
+    if (milestone.achieved) {
       return milestone;
-    });
-  }
+    }
+    
+    let isAchieved = false;
+    const milestoneName = milestone.name.toLowerCase();
+    
+    // Check if this is a streak-based milestone
+    if (milestoneName.includes('streak')) {
+      isAchieved = currentStreak >= milestone.value || longestStreak >= milestone.value;
+    }
+    // Check if this is a time-based milestone (week, month, etc.)
+    else if (milestoneName.includes('week') || milestoneName.includes('month')) {
+      // Calculate days since start
+      const startDate = new Date(habit.startDate);
+      const today = new Date();
+      const daysSinceStart = Math.round((today - startDate) / (1000 * 60 * 60 * 24));
+      
+      let requiredDays = 0;
+      
+      // Figure out the required days based on milestone description
+      if (milestoneName.includes('week')) {
+        // Extract the number of weeks (e.g. "two weeks" -> 2, "first week" -> 1)
+        let weeks = 1;
+        if (milestoneName.includes('two')) weeks = 2;
+        if (milestoneName.includes('three') || milestoneName.includes('3')) weeks = 3;
+        if (milestoneName.includes('four') || milestoneName.includes('4')) weeks = 4;
+        requiredDays = weeks * 7;
+      }
+      else if (milestoneName.includes('month')) {
+        // Extract the number of months
+        let months = 1;
+        if (milestoneName.includes('two') || milestoneName.includes('2')) months = 2;
+        if (milestoneName.includes('three') || milestoneName.includes('3')) months = 3;
+        if (milestoneName.includes('six') || milestoneName.includes('6')) months = 6;
+        requiredDays = months * 30; // Approximate
+      }
+      
+      // Also check completion ratio - must have at least 70% completion rate over the period
+      const completionsCount = Object.values(completions).filter(Boolean).length;
+      const completionRatio = completionsCount / Math.max(1, Object.keys(completions).length);
+      
+      isAchieved = daysSinceStart >= requiredDays && completionRatio >= 0.7;
+    }
+    // Check for total completion milestones
+    else if (milestoneName.includes('total') || milestoneName.includes('complet')) {
+      isAchieved = totalCompletions >= milestone.value;
+    }
+    // Generic progress milestones
+    else {
+      isAchieved = progress >= milestone.value;
+    }
+    
+    // Update the milestone if achieved
+    if (isAchieved) {
+      return {
+        ...milestone,
+        achieved: true,
+        achievedDate: today
+      };
+    }
+    
+    return milestone;
+  });
+}
   
   return habit;
 };

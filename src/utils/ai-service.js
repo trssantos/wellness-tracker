@@ -1,3 +1,4 @@
+// src/utils/ai-service.js
 import { getStorage } from './storage';
 import * as geminiService from './gemini-service';
 import * as openaiService from './openai-service';
@@ -11,7 +12,7 @@ export const AI_PROVIDERS = {
 // Get the currently selected AI provider
 export const getAIProvider = () => {
   const storage = getStorage();
-  return storage.settings?.aiProvider || AI_PROVIDERS.GEMINI;
+  return storage.settings?.aiProvider || AI_PROVIDERS.OPENAI; // Default to OpenAI
 };
 
 // Check if a provider is properly configured
@@ -36,6 +37,19 @@ export const isProviderConfigured = (provider) => {
   } catch (error) {
     console.error("Error checking provider configuration:", error);
     return false;
+  }
+};
+
+// Generate content with the selected provider - generic function
+export const generateContent = async (prompt) => {
+  const provider = getAIProvider();
+  
+  if (provider === AI_PROVIDERS.OPENAI) {
+    return await openaiService.generateContent(prompt);
+  } else {
+    // Use Gemini as fallback
+    // Implementation would go here if we want to support Gemini for general prompts
+    return await openaiService.generateContent(prompt); // Fallback to OpenAI for now
   }
 };
 

@@ -37,72 +37,137 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
   };
   
   // Render completion history
+  // Replace the renderCompletionHistory function with this corrected version:
+
   const renderCompletionHistory = (history) => {
-    // Group by week (7 days)
-    const weeks = [];
-    for (let i = 0; i < history.length; i += 7) {
-      weeks.push(history.slice(i, i + 7));
+    // Handle empty history case
+    if (!history || history.length === 0) {
+      return (
+        <div className="text-center py-4 text-slate-500 dark:text-slate-400">
+          No completion history available yet.
+        </div>
+      );
     }
     
-    // Calculate dates for the history (working backwards from today)
+    // Calculate today and dates for the calendar
     const today = new Date();
-    const dates = [];
-    for (let i = history.length - 1; i >= 0; i--) {
+    today.setHours(0, 0, 0, 0); // Normalize time portion
+    
+    // Create a map for status lookup
+    const statusMap = {};
+    
+    // First, figure out which dates are in our history data
+    // Assuming history represents the last 28 days in order
+    const historyDates = [];
+    for (let i = 0; i < history.length; i++) {
       const date = new Date(today);
-      date.setDate(today.getDate() - (history.length - 1 - i));
-      dates.push(date);
+      date.setDate(today.getDate() - (history.length - 1) + i);
+      
+      const dateStr = date.toISOString().split('T')[0];
+      historyDates.push(dateStr);
+      statusMap[dateStr] = history[i];
+    }
+    
+    // Generate calendar grid
+    // First, calculate what day TODAY is (0=Sun, 1=Mon, etc)
+    const todayDayOfWeek = today.getDay();
+    
+    // Then find the Sunday of the current week (back up to Sunday)
+    const currentWeekSunday = new Date(today);
+    currentWeekSunday.setDate(today.getDate() - todayDayOfWeek);
+    
+    // Now go back 3 more weeks to start our calendar (4 weeks total)
+    const calendarStart = new Date(currentWeekSunday);
+    calendarStart.setDate(calendarStart.getDate() - 21); // 3 weeks before this week's Sunday
+    
+    // Generate 4 weeks of data
+    const weeks = [];
+    let currentWeek = [];
+    const currentDate = new Date(calendarStart);
+    
+    for (let i = 0; i < 28; i++) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const inRange = statusMap[dateStr] !== undefined;
+      
+      // Add day to current week
+      currentWeek.push({
+        date: new Date(currentDate),
+        status: inRange ? statusMap[dateStr] : 0,
+        inRange: inRange,
+        dateStr: dateStr
+      });
+      
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
+      
+      // Start a new week if we've filled 7 days
+      if (currentWeek.length === 7) {
+        weeks.push(currentWeek);
+        currentWeek = [];
+      }
     }
     
     return (
       <div className="flex flex-col gap-2">
         {/* Day of week headers */}
         <div className="flex">
-          <div className="w-10 flex-shrink-0"></div> {/* Empty cell for offset */}
+          <div className="w-16 flex-shrink-0"></div> {/* Empty cell for offset */}
           <div className="grid grid-cols-7 gap-1 flex-1">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-xs text-center text-slate-500 dark:text-slate-400">
+              <div key={day} className="text-xs text-center text-slate-500 dark:text-slate-400 font-medium">
                 {day}
               </div>
             ))}
           </div>
         </div>
         
+        {/* Calendar weeks */}
         {weeks.map((week, weekIndex) => {
-          // Calculate the week date range for the label
-          const weekStart = dates[weekIndex * 7];
-          const weekLabel = weekIndex === 0 ? 'This week' : 
-                            weekIndex === 1 ? 'Last week' : 
-                            `${weekIndex} weeks ago`;
+          // Calculate the week label
+          const weekLabel = weekIndex === 3 ? 'This week' : 
+                           weekIndex === 2 ? 'Last week' : 
+                           weekIndex === 1 ? '2 weeks ago' : 
+                           '3 weeks ago';
           
           return (
             <div key={weekIndex} className="flex items-center">
-              <div className="w-10 text-xs text-slate-500 dark:text-slate-400 text-right pr-2">
+              <div className="w-16 text-xs text-slate-500 dark:text-slate-400 text-right pr-2">
                 {weekLabel}
               </div>
               <div className="grid grid-cols-7 gap-1 flex-1">
                 {week.map((day, dayIndex) => {
-                  const date = dates[(weekIndex * 7) + dayIndex];
-                  const dateStr = date.getDate().toString();
+                  const dayDate = day.date;
+                  const isToday = dayDate && today && 
+                    dayDate.getDate() === today.getDate() &&
+                    dayDate.getMonth() === today.getMonth() &&
+                    dayDate.getFullYear() === today.getFullYear();
                   
                   return (
                     <div
                       key={dayIndex}
                       className={`
                         aspect-square rounded-md flex flex-col items-center justify-center relative
-                        ${day === 1 
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' 
-                          : day === 0 
-                            ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600' 
-                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+                        ${!day.inRange 
+                          ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-600' 
+                          : day.status === 1 
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' 
+                            : day.status === 0 
+                              ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600' 
+                              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
                         }
+                        ${isToday ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''}
                         hover:opacity-80 transition-opacity
                       `}
-                      title={date.toLocaleDateString()}
+                      title={dayDate ? dayDate.toLocaleDateString() : 'Unknown date'}
                     >
-                      <span className="text-xs opacity-70">{dateStr}</span>
-                      <span className="text-xs font-bold">
-                        {day === 1 ? '✓' : day === 0 ? '·' : '✗'}
+                      <span className={`text-xs ${isToday ? 'font-bold' : 'opacity-70'}`}>
+                        {dayDate ? dayDate.getDate() : '?'}
                       </span>
+                      {day.inRange && (
+                        <span className="text-xs font-bold">
+                          {day.status === 1 ? '✓' : day.status === 0 ? '·' : '✗'}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
@@ -111,7 +176,7 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
           );
         })}
         
-        <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1 px-10">
+        <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1 px-16">
           <span>4 weeks ago</span>
           <span>Today</span>
         </div>

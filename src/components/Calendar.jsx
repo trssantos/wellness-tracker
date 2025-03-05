@@ -63,6 +63,9 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
     const habits = getHabitsForDate(dateStr);
     const habitCount = habits.length;
 
+    // Check for workout data - this is the critical part for Phase 3
+  const hasWorkout = !!dayData.workout;
+
     // Count completed habits
     let habitCompletedCount = 0;
     habits.forEach(habit => {
@@ -76,7 +79,7 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
       mood,
       hasAITasks: !!dayData.aiTasks,
       hasNotes: !!dayData.notes,
-      hasWorkout: !!dayData.workout,
+      hasWorkout,
       hasTaskList,
       habitCount,
       habitCompletedCount

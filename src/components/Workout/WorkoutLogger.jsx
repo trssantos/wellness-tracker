@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle, Clock, Calendar, 
-         Save, Plus, Minus, Info, AlertTriangle } from 'lucide-react';
+         Save, Plus, Minus, Info, AlertTriangle,
+         Flame, Award, Trash2, RotateCcw, Dumbbell } from 'lucide-react';
 import { getWorkoutById, logWorkout } from '../../utils/workoutUtils';
+import { getStorage } from '../../utils/storage';
 
 const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
   const [workout, setWorkout] = useState(null);
@@ -11,19 +13,74 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [completedWorkoutId, setCompletedWorkoutId] = useState(null);
 
-  // Load workout details on mount
+  // Load workout details or existing log on mount
   useEffect(() => {
-    if (!workoutId) {
-      setError("No workout selected");
+    if (!date) {
+      setError("No date selected");
       setLoading(false);
       return;
     }
-
+    
     try {
-      const workoutDetails = getWorkoutById(workoutId);
+      // Check if there's an existing workout logged for this date
+      const storage = getStorage();
+      const dayData = storage[date] || {};
+      
+      if (dayData.workout) {
+        // Found an existing workout log
+        setIsEditing(true);
+        
+        // If a specific workout ID was provided, still load that instead
+        if (workoutId) {
+          loadWorkoutTemplate(workoutId);
+        } else {
+          // Otherwise, load the existing logged workout data
+          const existingLog = dayData.workout;
+          setDuration(existingLog.duration || 45);
+          setCalories(existingLog.calories || '');
+          setNotes(existingLog.notes || '');
+          
+          if (existingLog.exercises) {
+            setCompletedExercises(
+              existingLog.exercises.map(ex => ({
+                ...ex,
+                completed: true,
+                actualSets: ex.sets || ex.actualSets,
+                actualReps: ex.reps || ex.actualReps,
+                actualWeight: ex.weight || ex.actualWeight || ''
+              }))
+            );
+          }
+          
+          if (existingLog.id) {
+            setCompletedWorkoutId(existingLog.id);
+          }
+          
+          setLoading(false);
+        }
+      } else if (workoutId) {
+        // No existing log, load the template
+        loadWorkoutTemplate(workoutId);
+      } else {
+        setError("No workout selected");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("Error loading workout data:", err);
+      setError("Failed to load workout data");
+      setLoading(false);
+    }
+  }, [workoutId, date]);
+  
+  // Helper function to load a workout template
+  const loadWorkoutTemplate = (id) => {
+    try {
+      const workoutDetails = getWorkoutById(id);
       if (!workoutDetails) {
-        setError("Workout not found");
+        setError("Workout template not found");
         setLoading(false);
         return;
       }
@@ -46,11 +103,11 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
       
       setLoading(false);
     } catch (err) {
-      console.error("Error loading workout:", err);
-      setError("Failed to load workout details");
+      console.error("Error loading workout template:", err);
+      setError("Failed to load workout template");
       setLoading(false);
     }
-  }, [workoutId]);
+  };
 
   // Handle exercise completion toggle
   const handleExerciseToggle = (index) => {
@@ -78,7 +135,10 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
 
   // Adjust duration
   const adjustDuration = (amount) => {
-    setDuration(prev => Math.max(1, prev + amount));
+    setDuration(prev => {
+      const newValue = parseInt(prev) + amount;
+      return Math.max(5, isNaN(newValue) ? 45 : newValue);
+    });
   };
 
   // Handle calories input
@@ -88,15 +148,49 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
     setCalories(value);
   };
 
+  // Toggle all exercises completion
+  const toggleAllExercises = (completed) => {
+    setCompletedExercises(prev => 
+      prev.map(ex => ({
+        ...ex,
+        completed
+      }))
+    );
+  };
+
+  // Reset form to initial values
+  const resetForm = () => {
+    if (workout) {
+      setDuration(workout.duration);
+      setCalories('');
+      setNotes('');
+      
+      setCompletedExercises(
+        workout.exercises.map(exercise => ({
+          ...exercise,
+          completed: false,
+          actualSets: exercise.sets,
+          actualReps: exercise.reps,
+          actualWeight: exercise.weight || ''
+        }))
+      );
+    } else {
+      setDuration(45);
+      setCalories('');
+      setNotes('');
+      setCompletedExercises([]);
+    }
+  };
+
   // Save completed workout
   const handleSaveWorkout = () => {
     try {
       // Create logged workout data
       const workoutData = {
-        workoutId,
-        name: workout.name,
-        type: workout.type,
-        duration,
+        workoutId: workout?.id || null,
+        name: workout?.name || "Completed Workout",
+        type: workout?.type || "strength",
+        duration: parseInt(duration) || 45,
         calories: calories ? parseInt(calories) : null,
         exercises: completedExercises.map(ex => ({
           name: ex.name,
@@ -108,6 +202,11 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
         notes
       };
       
+      // If we're editing, preserve the original ID
+      if (isEditing && completedWorkoutId) {
+        workoutData.id = completedWorkoutId;
+      }
+      
       // Save to storage
       const completedWorkout = logWorkout(date, workoutData);
       
@@ -117,6 +216,14 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
       console.error("Error saving workout:", error);
       setError("Failed to save workout completion");
     }
+  };
+
+  // Calculate completion percentage
+  const calculateCompletion = () => {
+    if (completedExercises.length === 0) return 0;
+    
+    const completed = completedExercises.filter(ex => ex.completed).length;
+    return Math.round((completed / completedExercises.length) * 100);
   };
 
   if (loading) {
@@ -143,13 +250,7 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
     );
   }
 
-  if (!workout) {
-    return (
-      <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-lg text-center">
-        No workout found.
-      </div>
-    );
-  }
+  const completionPercentage = calculateCompletion();
 
   return (
     <div className="px-2 sm:px-0 w-full">
@@ -162,7 +263,7 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
           <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
         </button>
         <h2 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100 truncate">
-          Log: {workout.name}
+          {isEditing ? 'Edit: ' : 'Log: '}{workout?.name || "Workout"}
         </h2>
       </div>
 
@@ -178,10 +279,53 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
             })}
           </div>
           <div className="text-sm text-slate-600 dark:text-slate-400">
-            Logging workout completion
+            {isEditing ? 'Editing workout log' : 'Logging workout completion'}
           </div>
         </div>
       </div>
+
+      {/* Completion Progress */}
+      {completedExercises.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-6 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-medium text-slate-800 dark:text-slate-100">Completion Progress</h3>
+            <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{completionPercentage}%</div>
+          </div>
+          
+          <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div 
+              className={`h-full rounded-full transition-all duration-500 ${
+                completionPercentage > 75 
+                  ? 'bg-green-500 dark:bg-green-600' 
+                  : completionPercentage > 50 
+                    ? 'bg-blue-500 dark:bg-blue-600' 
+                    : completionPercentage > 25 
+                      ? 'bg-yellow-500 dark:bg-yellow-600' 
+                      : 'bg-red-500 dark:bg-red-600'
+              }`}
+              style={{ width: `${completionPercentage}%` }}
+            ></div>
+          </div>
+          
+          <div className="flex justify-between mt-3">
+            <button
+              onClick={() => toggleAllExercises(true)}
+              className="text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 flex items-center gap-1"
+            >
+              <CheckCircle size={14} />
+              Mark All Complete
+            </button>
+            
+            <button
+              onClick={() => toggleAllExercises(false)}
+              className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-300 flex items-center gap-1"
+            >
+              <RotateCcw size={14} />
+              Reset All
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Workout Duration */}
       <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-6 border border-slate-200 dark:border-slate-700">
@@ -195,28 +339,62 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
         <div className="flex items-center justify-center gap-4">
           <button
             onClick={() => adjustDuration(-5)}
-            className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center"
+            className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
           >
             <Minus size={20} className="text-slate-600 dark:text-slate-300" />
           </button>
           
-          <div className="w-24 text-center">
-            <div className="text-2xl font-bold text-slate-800 dark:text-slate-100">{duration}</div>
+          <div className="w-24 text-center relative">
+            <input 
+              type="number" 
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              min="5"
+              step="5"
+              className="w-full text-center text-2xl font-bold text-slate-800 dark:text-slate-100 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md"
+            />
             <div className="text-xs text-slate-500 dark:text-slate-400">minutes</div>
           </div>
           
           <button
             onClick={() => adjustDuration(5)}
-            className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center"
+            className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
           >
             <Plus size={20} className="text-slate-600 dark:text-slate-300" />
           </button>
         </div>
       </div>
 
+      {/* Calories */}
+      <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-6 border border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <Flame size={18} className="text-red-500 dark:text-red-400" />
+            Calories Burned
+          </h3>
+        </div>
+        
+        <div className="relative">
+          <input
+            type="text"
+            value={calories}
+            onChange={handleCaloriesChange}
+            placeholder="Enter calories burned..."
+            className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 pl-10"
+          />
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500 dark:text-red-400">
+            <Flame size={18} />
+          </div>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none">
+            kcal
+          </div>
+        </div>
+      </div>
+
       {/* Completed Exercises */}
       <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-6 border border-slate-200 dark:border-slate-700">
-        <h3 className="font-medium text-slate-800 dark:text-slate-100 mb-4">
+        <h3 className="font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">
+          <Dumbbell size={18} className="text-slate-500 dark:text-slate-400" />
           Exercise Completion
         </h3>
         
@@ -229,29 +407,36 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
             {completedExercises.map((exercise, index) => (
               <div 
                 key={index}
-                className={`p-3 rounded-lg border ${
+                className={`p-4 rounded-lg border transition-all transform ${
                   exercise.completed 
                     ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900'
-                    : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700'
+                    : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <div 
                     className="font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2 cursor-pointer"
                     onClick={() => handleExerciseToggle(index)}
                   >
-                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                    <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${
                       exercise.completed 
                         ? 'bg-green-500 border-green-500' 
                         : 'border-slate-300 dark:border-slate-600'
                     }`}>
-                      {exercise.completed && <CheckCircle size={12} className="text-white" />}
+                      {exercise.completed && <CheckCircle size={14} className="text-white" />}
                     </div>
-                    {exercise.name}
+                    <span className="text-base">{exercise.name}</span>
                   </div>
+                  
+                  {/* Exercise completion status badge */}
+                  {exercise.completed && (
+                    <span className="bg-green-500 dark:bg-green-600 text-white text-xs px-2 py-1 rounded-full">
+                      Completed
+                    </span>
+                  )}
                 </div>
                 
-                <div className="grid grid-cols-3 gap-2 mt-3">
+                <div className="grid grid-cols-3 gap-3 mt-3">
                   <div>
                     <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
                       Sets
@@ -260,7 +445,11 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
                       type="number"
                       value={exercise.actualSets}
                       onChange={(e) => handleExerciseValueChange(index, 'actualSets', parseInt(e.target.value) || 0)}
-                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+                      className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+                        exercise.completed 
+                          ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+                          : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+                      }`}
                       min="0"
                     />
                   </div>
@@ -273,7 +462,11 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
                       type="text"
                       value={exercise.actualReps}
                       onChange={(e) => handleExerciseValueChange(index, 'actualReps', e.target.value)}
-                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+                      className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+                        exercise.completed 
+                          ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+                          : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+                      }`}
                     />
                   </div>
                   
@@ -285,7 +478,11 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
                       type="text"
                       value={exercise.actualWeight}
                       onChange={(e) => handleExerciseValueChange(index, 'actualWeight', e.target.value)}
-                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+                      className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+                        exercise.completed 
+                          ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+                          : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+                      }`}
                       placeholder="lbs"
                     />
                   </div>
@@ -296,55 +493,36 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
         )}
       </div>
 
-      {/* Additional Details */}
+      {/* Notes */}
       <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-6 border border-slate-200 dark:border-slate-700">
-        <h3 className="font-medium text-slate-800 dark:text-slate-100 mb-4">
-          Additional Details
+        <h3 className="font-medium text-slate-800 dark:text-slate-100 mb-3">
+          Workout Notes
         </h3>
         
-        <div className="space-y-4">
-          {/* Calories */}
-          <div>
-            <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">
-              Calories Burned (optional)
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={calories}
-                onChange={handleCaloriesChange}
-                placeholder="Enter calories..."
-                className="w-full p-2 pr-12 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none">
-                kcal
-              </div>
-            </div>
-          </div>
-          
-          {/* Notes */}
-          <div>
-            <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">
-              Notes (optional)
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="How did the workout feel? Any achievements or challenges?"
-              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 h-20"
-            />
-          </div>
-        </div>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="How did the workout feel? Any achievements or challenges?"
+          className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 h-24"
+        />
       </div>
 
-      {/* Save Button */}
-      <div className="flex justify-end mt-6">
+      {/* Action Buttons */}
+      <div className="flex justify-between items-center mt-6">
+        <button
+          onClick={resetForm}
+          className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+        >
+          <RotateCcw size={18} />
+          Reset
+        </button>
+        
         <button
           onClick={handleSaveWorkout}
-          className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 flex items-center gap-2"
+          className="px-6 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 flex items-center gap-2"
         >
           <Save size={18} />
-          Log Completed Workout
+          {isEditing ? 'Update Workout' : 'Log Completed Workout'}
         </button>
       </div>
     </div>

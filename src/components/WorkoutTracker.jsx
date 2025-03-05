@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Dumbbell, Clock, Flame, BarChart, Plus, Trash2, Tag, List } from 'lucide-react';
+import { Minus,X, Save, Dumbbell, Clock, Flame, BarChart, Plus, Trash2, Tag, List, Edit, Calendar } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
 import WorkoutSelector from './Workout/WorkoutSelector';
 import WorkoutLogger from './Workout/WorkoutLogger';
@@ -99,6 +99,7 @@ export const WorkoutTracker = ({ date, onClose }) => {
   const [showWorkoutLogger, setShowWorkoutLogger] = useState(false);
   const [selectedWorkoutId, setSelectedWorkoutId] = useState(null);
   const [workoutMode, setWorkoutMode] = useState('manual'); // 'manual' or 'template'
+  const [existingWorkout, setExistingWorkout] = useState(null);
   
   // Load existing data
   useEffect(() => {
@@ -107,6 +108,10 @@ export const WorkoutTracker = ({ date, onClose }) => {
       const dayData = storage[date] || {};
       
       if (dayData.workout) {
+        // Save the existing workout data
+        setExistingWorkout(dayData.workout);
+        
+        // Set up the form with the existing data
         setWorkoutTypes(dayData.workout.types || []);
         setDuration(dayData.workout.duration || 30);
         setIntensity(dayData.workout.intensity || 3);
@@ -125,6 +130,7 @@ export const WorkoutTracker = ({ date, onClose }) => {
         setExercises([{ name: '', sets: '', reps: '', weight: '' }]);
         setAddExercises(false);
         setWorkoutSaved(false);
+        setExistingWorkout(null);
       }
     }
   }, [date]);
@@ -132,7 +138,13 @@ export const WorkoutTracker = ({ date, onClose }) => {
   // Handler for opening the workout selector
   const handleOpenWorkoutSelector = () => {
     setShowWorkoutSelector(true);
-    document.getElementById('workout-selector-modal').showModal();
+    // Fix: use setTimeout to ensure the modal element exists before trying to open it
+    setTimeout(() => {
+      const modal = document.getElementById('workout-selector-modal');
+      if (modal) {
+        modal.showModal();
+      }
+    }, 50);
   };
 
   // Handler for workout selection
@@ -147,6 +159,11 @@ export const WorkoutTracker = ({ date, onClose }) => {
   const handleWorkoutCompleted = (completedWorkout) => {
     setShowWorkoutLogger(false);
     onClose();
+  };
+
+  // Handler for editing an existing workout
+  const handleEditExistingWorkout = () => {
+    setShowWorkoutLogger(true);
   };
 
   const getFormattedDate = () => {
@@ -202,6 +219,14 @@ export const WorkoutTracker = ({ date, onClose }) => {
     setCalories(value);
   };
 
+  // Fix: Use parseInt to ensure duration is a number
+  const adjustDuration = (amount) => {
+    setDuration(prev => {
+      const newValue = parseInt(prev) + amount;
+      return Math.max(5, isNaN(newValue) ? 30 : newValue);
+    });
+  };
+
   const saveWorkout = () => {
     const storage = getStorage();
     const dayData = storage[date] || {};
@@ -215,7 +240,7 @@ export const WorkoutTracker = ({ date, onClose }) => {
       ...dayData,
       workout: {
         types: workoutTypes,
-        duration,
+        duration: parseInt(duration) || 30,
         intensity,
         calories: calories || null,
         notes,
@@ -252,6 +277,7 @@ export const WorkoutTracker = ({ date, onClose }) => {
       setExercises([{ name: '', sets: '', reps: '', weight: '' }]);
       setAddExercises(false);
       setWorkoutSaved(false);
+      setExistingWorkout(null);
       
       // Close the modal
       onClose();
@@ -265,7 +291,7 @@ export const WorkoutTracker = ({ date, onClose }) => {
   };
 
   // If showing workout logger, render it instead of the regular form
-  if (showWorkoutLogger && selectedWorkoutId) {
+  if (showWorkoutLogger) {
     return (
       <dialog 
         id="workout-modal" 
@@ -279,6 +305,7 @@ export const WorkoutTracker = ({ date, onClose }) => {
             onComplete={handleWorkoutCompleted}
             onCancel={() => {
               setShowWorkoutLogger(false);
+              setSelectedWorkoutId(null);
               onClose();
             }}
           />
@@ -312,6 +339,32 @@ export const WorkoutTracker = ({ date, onClose }) => {
               <X size={20} />
             </button>
           </div>
+
+          {/* Existing Workout Banner (shown when there's an existing workout) */}
+          {existingWorkout && (
+            <div className="mb-6 bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-100 dark:border-green-800">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <Calendar size={20} className="text-green-500 dark:text-green-400" />
+                  <div>
+                    <div className="font-medium text-slate-800 dark:text-slate-100">
+                      Workout Logged
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">
+                      {existingWorkout.duration} minutes | {existingWorkout.calories ? `${existingWorkout.calories} calories` : 'No calories logged'}
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={handleEditExistingWorkout}
+                  className="p-2 bg-white dark:bg-slate-700 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-1"
+                >
+                  <Edit size={16} />
+                  <span className="hidden sm:inline">Edit</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Workout Mode Selection */}
           <div className="flex mb-6 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
@@ -405,13 +458,36 @@ export const WorkoutTracker = ({ date, onClose }) => {
                   </label>
                   <span className="text-lg font-semibold text-blue-700 dark:text-blue-400 transition-colors">{duration} min</span>
                 </div>
+                {/* Duration Adjuster */}
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <button
+                    onClick={() => adjustDuration(-5)}
+                    className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                  >
+                    <Minus size={16} className="text-slate-600 dark:text-slate-300" />
+                  </button>
+                  <input
+                    type="number"
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    min="5"
+                    step="5"
+                    className="w-16 text-center font-semibold border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 p-1"
+                  />
+                  <button
+                    onClick={() => adjustDuration(5)}
+                    className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                  >
+                    <Plus size={16} className="text-slate-600 dark:text-slate-300" />
+                  </button>
+                </div>
                 <input
                   type="range"
                   min="5"
                   max="180"
                   step="5"
                   value={duration}
-                  onChange={(e) => setDuration(parseInt(e.target.value))}
+                  onChange={(e) => setDuration(e.target.value)}
                   className="w-full h-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg appearance-none cursor-pointer accent-blue-500 dark:accent-blue-600 transition-colors"
                 />
                 <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">
@@ -436,8 +512,11 @@ export const WorkoutTracker = ({ date, onClose }) => {
                     value={calories}
                     onChange={handleCaloriesChange}
                     placeholder="Enter calories..."
-                    className="input-field pr-14"
+                    className="input-field pr-14 pl-10"
                   />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500 dark:text-red-400">
+                    <Flame size={16} />
+                  </div>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none transition-colors">
                     kcal
                   </div>
@@ -589,20 +668,21 @@ export const WorkoutTracker = ({ date, onClose }) => {
         </div>
       </dialog>
 
-      {/* Workout Selector Modal */}
+      {/* Always render WorkoutSelector conditionally to avoid the null reference issue */}
       {showWorkoutSelector && (
         <WorkoutSelector
           date={date}
           onClose={() => {
             setShowWorkoutSelector(false);
-            document.getElementById('workout-selector-modal').close();
+            const modal = document.getElementById('workout-selector-modal');
+            if (modal) modal.close();
           }}
           onSelectWorkout={handleSelectWorkout}
           onCreateWorkout={() => {
             setShowWorkoutSelector(false);
-            document.getElementById('workout-selector-modal').close();
+            const modal = document.getElementById('workout-selector-modal');
+            if (modal) modal.close();
             // Redirect to the workout module section
-            // This might need more integration depending on your app structure
             window.location.hash = "#workout"; // For simple navigation
           }}
         />

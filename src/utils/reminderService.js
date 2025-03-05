@@ -91,17 +91,123 @@ class ReminderService {
   }
   
   loadReminders() {
-    const storage = getStorage();
-    
-    if (storage.reminderSettings && 
-        storage.reminderSettings.enabled && 
-        storage.reminderSettings.reminders) {
+    console.log('Loading reminders from storage');
+    try {
+      const storage = getStorage();
+      const settings = storage.reminderSettings || { enabled: false };
       
-      this.reminders = storage.reminderSettings.reminders.filter(r => r.enabled);
-      console.log('Loaded reminders:', this.reminders);
-    } else {
+      if (!settings.enabled) {
+        console.log('Reminders are disabled');
+        this.reminders = [];
+        return;
+      }
+      
+      let allReminders = [];
+      
+      // Add regular reminders
+      if (settings.reminders && Array.isArray(settings.reminders)) {
+        allReminders = [...settings.reminders.filter(r => r.enabled)];
+      }
+      
+      // Add habit reminders
+      if (settings.habitReminders && Array.isArray(settings.habitReminders)) {
+        allReminders = [...allReminders, ...settings.habitReminders.filter(r => r.enabled)];
+      }
+      
+      this.reminders = allReminders;
+      console.log(`Loaded ${this.reminders.length} reminders`);
+      
+      // Schedule the reminders
+      this.scheduleAllReminders();
+    } catch (error) {
+      console.error('Error loading reminders:', error);
       this.reminders = [];
     }
+  }
+
+  scheduleAllReminders() {
+    // Clear existing timers
+    this.clearAllTimers();
+    
+    // Get the current date/time
+    const now = new Date();
+    
+    this.reminders.forEach(reminder => {
+      try {
+        if (reminder.day) {
+          // This is a habit reminder (has day property)
+          this.scheduleHabitReminder(reminder);
+        } else {
+          // This is a regular reminder
+          // ...existing code for regular reminders...
+        }
+      } catch (error) {
+        console.error('Error scheduling reminder:', error);
+      }
+    });
+  }
+
+  scheduleHabitReminder(reminder) {
+    if (!reminder || !reminder.day || !reminder.time) return;
+    
+    try {
+      // Get the next occurrence of this day of the week
+      const nextOccurrence = this.getNextDayOfWeek(reminder.day, reminder.time);
+      
+      // Schedule the reminder
+      this.scheduleNotification(
+        reminder.id,
+        nextOccurrence,
+        reminder.label || 'Habit reminder',
+        {
+          isHabitReminder: true,
+          habitId: reminder.habit,
+          day: reminder.day
+        }
+      );
+      
+      console.log(`Scheduled habit reminder for ${reminder.day} at ${reminder.time}`);
+      return true;
+    } catch (error) {
+      console.error('Error scheduling habit reminder:', error);
+      return false;
+    }
+  }
+
+  getNextDayOfWeek(dayName, timeStr) {
+    // Map day name to day index (0 = Sunday, 1 = Monday, etc.)
+    const dayMap = {
+      'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6
+    };
+    
+    const dayIndex = dayMap[dayName.toLowerCase()];
+    if (dayIndex === undefined) return null;
+    
+    // Parse the time
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    
+    // Get the current date
+    const now = new Date();
+    
+    // Calculate days until the next occurrence
+    let daysUntilNext = (7 + dayIndex - now.getDay()) % 7;
+    if (daysUntilNext === 0) {
+      // If it's today, check if the time has already passed
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      
+      if (hours < currentHour || (hours === currentHour && minutes <= currentMinute)) {
+        // Time has passed, schedule for next week
+        daysUntilNext = 7;
+      }
+    }
+    
+    // Create the date for the next occurrence
+    const nextDate = new Date(now);
+    nextDate.setDate(now.getDate() + daysUntilNext);
+    nextDate.setHours(hours, minutes, 0, 0);
+    
+    return nextDate;
   }
   
   // New method to load task-specific reminders

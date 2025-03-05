@@ -1,0 +1,487 @@
+import React, { useState, useEffect } from 'react';
+import { Sparkles, CheckCircle, X, Brain, Lightbulb, MoreHorizontal, Loader } from 'lucide-react';
+
+// Mock AI service - this would connect to your actual AI service
+const mockAiSuggestHabit = async (input) => {
+  // Simulate API call delay
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  const suggestions = {
+    "meditation": {
+      name: "Daily Mindful Meditation",
+      description: "A regular meditation practice to reduce stress and improve focus",
+      steps: [
+        "Find a quiet space free from distractions",
+        "Sit comfortably with good posture",
+        "Set a timer for your session (start with 5 minutes)",
+        "Focus on your breath, noticing inhalations and exhalations",
+        "When your mind wanders, gently bring attention back to breath",
+        "After timer ends, slowly open your eyes and notice how you feel"
+      ],
+      frequency: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+      timeOfDay: "morning",
+      milestones: [
+        { name: "7-day streak", value: 7 },
+        { name: "21-day habit formation", value: 21 },
+        { name: "30-day consistency", value: 30 },
+        { name: "100-day mindfulness master", value: 100 }
+      ]
+    },
+    "exercise": {
+      name: "Regular Exercise Routine",
+      description: "Consistent physical activity to improve overall health",
+      steps: [
+        "Change into workout clothes",
+        "Do a 5-minute warm-up",
+        "Complete the day's exercise routine",
+        "Cool down with light stretching",
+        "Track your workout in the app",
+        "Drink water to rehydrate"
+      ],
+      frequency: ["mon", "wed", "fri"],
+      timeOfDay: "anytime",
+      milestones: [
+        { name: "First week complete", value: 7 },
+        { name: "First month milestone", value: 30 },
+        { name: "Three month consistency", value: 90 },
+        { name: "Six month transformation", value: 180 }
+      ]
+    },
+    "reading": {
+      name: "Daily Reading Habit",
+      description: "Read regularly to expand knowledge and improve focus",
+      steps: [
+        "Select your reading material",
+        "Find a comfortable, quiet place",
+        "Turn off notifications on your devices",
+        "Set a timer for at least 20 minutes",
+        "Take brief notes if desired",
+        "Mark your progress in your book"
+      ],
+      frequency: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+      timeOfDay: "evening",
+      milestones: [
+        { name: "7-day reading streak", value: 7 },
+        { name: "First book completed", value: 21 },
+        { name: "30-day consistent reader", value: 30 },
+        { name: "100-day literature lover", value: 100 }
+      ]
+    },
+    "journaling": {
+      name: "Daily Journaling Practice",
+      description: "Regular reflection through writing to process thoughts and emotions",
+      steps: [
+        "Find a quiet moment in your day",
+        "Open your journal or digital app",
+        "Take a deep breath and center yourself",
+        "Reflect on what you want to write about",
+        "Write freely for at least 10 minutes",
+        "Review what you've written if desired"
+      ],
+      frequency: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+      timeOfDay: "evening",
+      milestones: [
+        { name: "One week of insights", value: 7 },
+        { name: "21-day journaling habit", value: 21 },
+        { name: "Monthly reflection master", value: 30 },
+        { name: "100 entries milestone", value: 100 }
+      ]
+    }
+  };
+  
+  // Parse the input to find relevant suggestions
+  const inputLower = input.toLowerCase();
+  const relevantKeys = Object.keys(suggestions).filter(key => 
+    inputLower.includes(key) || key.includes(inputLower)
+  );
+  
+  if (relevantKeys.length > 0) {
+    return suggestions[relevantKeys[0]];
+  }
+  
+  // Default suggestion if no match found
+  return suggestions["meditation"];
+};
+
+const AiHabitGenerator = ({ onHabitGenerated, onCancel }) => {
+  const [habitInput, setHabitInput] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [suggestion, setSuggestion] = useState(null);
+  const [selectedTab, setSelectedTab] = useState('basic');
+  const [error, setError] = useState(null);
+  
+  const handleGenerate = async () => {
+    if (!habitInput.trim()) {
+      setError("Please enter a habit description first");
+      return;
+    }
+    
+    setError(null);
+    setGenerating(true);
+    
+    try {
+      const result = await mockAiSuggestHabit(habitInput);
+      setSuggestion(result);
+      setSelectedTab('steps');
+    } catch (err) {
+      setError("Failed to generate habit suggestion. Please try again.");
+      console.error(err);
+    } finally {
+      setGenerating(false);
+    }
+  };
+  
+  const handleAccept = () => {
+    if (suggestion) {
+      onHabitGenerated(suggestion);
+    }
+  };
+  
+  const handleChangeStep = (index, value) => {
+    if (!suggestion) return;
+    
+    const updatedSteps = [...suggestion.steps];
+    updatedSteps[index] = value;
+    
+    setSuggestion({
+      ...suggestion,
+      steps: updatedSteps
+    });
+  };
+  
+  const handleChangeMilestone = (index, field, value) => {
+    if (!suggestion) return;
+    
+    const updatedMilestones = [...suggestion.milestones];
+    updatedMilestones[index] = {
+      ...updatedMilestones[index],
+      [field]: value
+    };
+    
+    setSuggestion({
+      ...suggestion,
+      milestones: updatedMilestones
+    });
+  };
+  
+  const handleChangeFrequency = (day) => {
+    if (!suggestion) return;
+    
+    const updatedFrequency = [...suggestion.frequency];
+    
+    if (updatedFrequency.includes(day)) {
+      setSuggestion({
+        ...suggestion,
+        frequency: updatedFrequency.filter(d => d !== day)
+      });
+    } else {
+      setSuggestion({
+        ...suggestion,
+        frequency: [...updatedFrequency, day]
+      });
+    }
+  };
+  
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 w-full max-w-2xl">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <Sparkles className="text-amber-500" size={20} />
+          AI Habit Creator
+        </h2>
+        <button 
+          onClick={onCancel}
+          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+        >
+          <X size={20} className="text-slate-600 dark:text-slate-300" />
+        </button>
+      </div>
+      
+      {/* Input Section */}
+      {!suggestion && (
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            What habit would you like to build?
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={habitInput}
+              onChange={(e) => setHabitInput(e.target.value)}
+              placeholder="e.g., Daily meditation, Regular exercise, Reading books"
+              className="flex-1 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+              disabled={generating}
+            />
+            <button
+              onClick={handleGenerate}
+              disabled={generating || !habitInput.trim()}
+              className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${
+                generating || !habitInput.trim()
+                  ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
+                  : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
+              }`}
+            >
+              {generating ? (
+                <>
+                  <Loader size={18} className="animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Brain size={18} />
+                  Generate
+                </>
+              )}
+            </button>
+          </div>
+          
+          {error && (
+            <p className="text-red-500 dark:text-red-400 mt-2 text-sm">{error}</p>
+          )}
+          
+          <div className="mt-4 bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg flex items-start gap-3">
+            <Lightbulb className="text-amber-500 flex-shrink-0 mt-1" size={20} />
+            <div>
+              <p className="text-slate-700 dark:text-slate-300 text-sm">
+                Tell the AI what habit you'd like to build, and it will generate a complete habit template with steps, milestones, and a recommended schedule.
+              </p>
+              <p className="text-slate-600 dark:text-slate-400 text-sm mt-2">
+                <strong>Try:</strong> "Daily mindfulness meditation" or "Reading books before bed"
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Suggestion Result */}
+      {suggestion && (
+        <div className="mb-6">
+          {/* Tabs */}
+          <div className="flex border-b border-slate-200 dark:border-slate-700 mb-4">
+            <button
+              className={`px-4 py-2 text-sm font-medium ${
+                selectedTab === 'basic'
+                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 dark:border-blue-400'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+              onClick={() => setSelectedTab('basic')}
+            >
+              Basic Info
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium ${
+                selectedTab === 'steps'
+                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 dark:border-blue-400'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+              onClick={() => setSelectedTab('steps')}
+            >
+              Steps
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium ${
+                selectedTab === 'schedule'
+                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 dark:border-blue-400'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+              onClick={() => setSelectedTab('schedule')}
+            >
+              Schedule
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium ${
+                selectedTab === 'milestones'
+                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 dark:border-blue-400'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+              onClick={() => setSelectedTab('milestones')}
+            >
+              Milestones
+            </button>
+          </div>
+          
+          {/* Basic Info Tab */}
+          {selectedTab === 'basic' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Habit Name
+                </label>
+                <input
+                  type="text"
+                  value={suggestion.name}
+                  onChange={(e) => setSuggestion({...suggestion, name: e.target.value})}
+                  className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={suggestion.description}
+                  onChange={(e) => setSuggestion({...suggestion, description: e.target.value})}
+                  className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 h-24"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Time of Day
+                </label>
+                <div className="flex gap-2 flex-wrap">
+                  {['morning', 'afternoon', 'evening', 'anytime'].map(time => (
+                    <button
+                      key={time}
+                      onClick={() => setSuggestion({...suggestion, timeOfDay: time})}
+                      className={`px-3 py-1.5 rounded-full text-sm capitalize ${
+                        suggestion.timeOfDay === time
+                          ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                          : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                      }`}
+                    >
+                      {time}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Steps Tab */}
+          {selectedTab === 'steps' && (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                Edit the steps for your habit. These steps will appear as tasks in your daily checklist.
+              </p>
+              
+              {suggestion.steps.map((step, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div className="w-8 h-8 flex-shrink-0 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full flex items-center justify-center">
+                    {index + 1}
+                  </div>
+                  <input
+                    type="text"
+                    value={step}
+                    onChange={(e) => handleChangeStep(index, e.target.value)}
+                    className="flex-1 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Schedule Tab */}
+          {selectedTab === 'schedule' && (
+            <div>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                Select which days you want to practice this habit.
+              </p>
+              
+              <div className="flex flex-wrap gap-2 mb-4">
+                {['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map(day => (
+                  <button
+                    key={day}
+                    onClick={() => handleChangeFrequency(day)}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                      suggestion.frequency.includes(day)
+                        ? 'bg-blue-500 dark:bg-blue-600 text-white'
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {day.charAt(0).toUpperCase() + day.slice(1, 3)}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="flex flex-wrap gap-2 mt-4">
+                <button 
+                  onClick={() => setSuggestion({...suggestion, frequency: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']})}
+                  className="px-3 py-1.5 rounded-full text-sm bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
+                >
+                  Every Day
+                </button>
+                <button 
+                  onClick={() => setSuggestion({...suggestion, frequency: ['mon', 'tue', 'wed', 'thu', 'fri']})}
+                  className="px-3 py-1.5 rounded-full text-sm bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
+                >
+                  Weekdays Only
+                </button>
+                <button 
+                  onClick={() => setSuggestion({...suggestion, frequency: ['sat', 'sun']})}
+                  className="px-3 py-1.5 rounded-full text-sm bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
+                >
+                  Weekends Only
+                </button>
+                <button 
+                  onClick={() => setSuggestion({...suggestion, frequency: ['mon', 'wed', 'fri']})}
+                  className="px-3 py-1.5 rounded-full text-sm bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
+                >
+                  Every Other Day
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Milestones Tab */}
+          {selectedTab === 'milestones' && (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                These milestones will help you track your progress and celebrate achievements.
+              </p>
+              
+              {suggestion.milestones.map((milestone, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div className="w-8 h-8 flex-shrink-0 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full flex items-center justify-center">
+                    <CheckCircle size={16} />
+                  </div>
+                  <input
+                    type="text"
+                    value={milestone.name}
+                    onChange={(e) => handleChangeMilestone(index, 'name', e.target.value)}
+                    className="flex-1 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                  />
+                  <input
+                    type="number"
+                    value={milestone.value}
+                    onChange={(e) => handleChangeMilestone(index, 'value', parseInt(e.target.value) || 0)}
+                    className="w-20 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    min="1"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div className="flex justify-between mt-8 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <button 
+              onClick={onCancel}
+              className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              Cancel
+            </button>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSuggestion(null)}
+                className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                Back
+              </button>
+              <button 
+                onClick={handleAccept}
+                className="px-6 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 flex items-center gap-2"
+              >
+                <CheckCircle size={18} />
+                Create Habit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AiHabitGenerator;

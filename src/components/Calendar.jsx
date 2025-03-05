@@ -1,6 +1,7 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, Sparkles, PenTool, Dumbbell } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, PenTool, Dumbbell, Zap } from 'lucide-react';
 import { MOODS } from './MoodSelector';
+import { getHabitsForDate } from '../utils/habitTrackerUtils';
 
 export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange, storageData }) => {
   const weeks = getCalendarWeeks(currentMonth);
@@ -32,7 +33,9 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
       hasAITasks: false, 
       hasNotes: false,
       hasWorkout: false,
-      hasTaskList: false
+      hasTaskList: false,
+      habitCount: 0,
+      habitCompletedCount: 0 
     };
     
     let completionRate = 0;
@@ -55,6 +58,18 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
                         (dayData.customTasks && dayData.customTasks.length > 0) ||
                         (dayData.defaultTasks && dayData.defaultTasks.length > 0) ||
                         (dayData.checked && Object.keys(dayData.checked).length > 0);
+
+    // Get habit data for this date
+    const habits = getHabitsForDate(dateStr);
+    const habitCount = habits.length;
+
+    // Count completed habits
+    let habitCompletedCount = 0;
+    habits.forEach(habit => {
+      if (habit.completions && habit.completions[dateStr]) {
+        habitCompletedCount++;
+      }
+    });
     
     return {
       completionRate,
@@ -62,7 +77,9 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
       hasAITasks: !!dayData.aiTasks,
       hasNotes: !!dayData.notes,
       hasWorkout: !!dayData.workout,
-      hasTaskList
+      hasTaskList,
+      habitCount,
+      habitCompletedCount
     };
   };
 
@@ -107,7 +124,7 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
           {weeks.map((week, i) => 
             week.map((date, j) => {
               const dateStr = date.toISOString().split('T')[0];
-              const { completionRate, mood, hasAITasks, hasNotes, hasWorkout, hasTaskList } = getDayData(date);
+              const { completionRate, mood, hasAITasks, hasNotes, hasWorkout, hasTaskList, habitCount, habitCompletedCount } = getDayData(date);
               const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
               const isSelected = selectedDay === dateStr;
               
@@ -149,6 +166,22 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
                   {hasWorkout && (
                     <div className="absolute top-0.5 left-0.5">
                       <Dumbbell size={10} className="text-blue-500 dark:text-blue-400" />
+                    </div>
+                  )}
+
+                  {/* NEW: Habit indicator */}
+                  {habitCount > 0 && (
+                    <div className="absolute top-0.5 right-0.5 flex items-center">
+                      <Zap size={10} className={`
+                        ${habitCompletedCount > 0 ? 'text-amber-500 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}
+                      `} />
+                      {habitCount > 1 && (
+                        <span className={`text-[8px] font-bold ml-0.5 
+                          ${habitCompletedCount === habitCount ? 'text-amber-500 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'}
+                        `}>
+                          {habitCompletedCount}/{habitCount}
+                        </span>
+                      )}
                     </div>
                   )}
                   

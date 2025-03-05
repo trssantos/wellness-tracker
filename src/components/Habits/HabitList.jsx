@@ -1,8 +1,8 @@
 import React from 'react';
-import { Plus, Zap, TrendingUp, ChevronRight, BarChart } from 'lucide-react';
+import { Plus, Zap, TrendingUp, ChevronRight, BarChart, Sparkles, BarChart2 } from 'lucide-react';
 import { generateCompletionHistory } from '../../utils/habitTrackerUtils';
 
-const HabitList = ({ habits, onSelectHabit, onCreateHabit }) => {
+const HabitList = ({ habits, onSelectHabit, onCreateHabit, onCreateWithAI, onViewAnalytics }) => {
   // Render streak bubbles
   const renderStreakBubbles = (streak) => {
     const bubbles = [];
@@ -29,13 +29,31 @@ const HabitList = ({ habits, onSelectHabit, onCreateHabit }) => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">My Habits</h2>
-        <button 
-          onClick={onCreateHabit}
-          className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-1"
-        >
-          <Plus size={18} />
-          New Habit
-        </button>
+        <div className="flex gap-2">
+        {habits.length > 0 && (
+            <button 
+              onClick={onViewAnalytics}
+              className="bg-teal-500 hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700 text-white px-4 py-2 rounded-lg flex items-center gap-1"
+            >
+              <BarChart2 size={18} />
+              Analytics
+            </button>
+          )}
+          <button 
+            onClick={onCreateWithAI}
+            className="bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-1"
+          >
+            <Sparkles size={18} />
+            AI Suggest
+          </button>
+          <button 
+            onClick={onCreateHabit}
+            className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-1"
+          >
+            <Plus size={18} />
+            New Habit
+          </button>
+        </div>
       </div>
 
       {habits.length === 0 ? (
@@ -47,13 +65,22 @@ const HabitList = ({ habits, onSelectHabit, onCreateHabit }) => {
           <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
             Habits help you build consistent routines and reach your goals. Start by creating your first habit.
           </p>
-          <button 
-            onClick={onCreateHabit}
-            className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-6 py-2 rounded-lg inline-flex items-center gap-2"
-          >
-            <Plus size={18} />
-            Create Your First Habit
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button 
+              onClick={onCreateWithAI}
+              className="bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-white px-6 py-2 rounded-lg inline-flex items-center gap-2 justify-center"
+            >
+              <Sparkles size={18} />
+              AI Habit Suggestions
+            </button>
+            <button 
+              onClick={onCreateHabit}
+              className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-6 py-2 rounded-lg inline-flex items-center gap-2 justify-center"
+            >
+              <Plus size={18} />
+              Create Custom Habit
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">

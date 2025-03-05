@@ -643,3 +643,112 @@ export const injectHabitTasks = (date) => {
   setStorage(storage);
   return true;
 };
+
+// Add to habitTrackerUtils.js
+
+/**
+ * Schedule habit reminders based on user preferences
+ * @param {Object} habit - The habit to schedule reminders for
+ * @param {string} dayTime - The time in format "HH:MM" 
+ * @returns {boolean} Success status
+ */
+export const scheduleHabitReminders = (habit, dayTime) => {
+  if (!habit || !dayTime) return false;
+  
+  // Get user's reminder settings
+  const storage = getStorage();
+  const reminderSettings = storage.reminderSettings || { enabled: false };
+  
+  // Don't schedule if reminders are disabled globally
+  if (!reminderSettings.enabled) return false;
+  
+  // Parse time
+  const [hours, minutes] = dayTime.split(':').map(Number);
+  
+  // Create reminder for each day in the habit's frequency
+  habit.frequency.forEach(day => {
+    // Create a habit-specific reminder
+    const reminder = {
+      id: `habit-${habit.id}-${day}`,
+      habit: habit.id,
+      day: day, // day of week (mon, tue, etc.)
+      time: dayTime,
+      label: `Time for your habit: ${habit.name}`,
+      enabled: true,
+      created: Date.now()
+    };
+    
+    // Add to reminder settings
+    if (!reminderSettings.habitReminders) {
+      reminderSettings.habitReminders = [];
+    }
+    
+    // Check if reminder already exists
+    const existingIndex = reminderSettings.habitReminders.findIndex(r => 
+      r.id === reminder.id
+    );
+    
+    if (existingIndex >= 0) {
+      // Update existing reminder
+      reminderSettings.habitReminders[existingIndex] = reminder;
+    } else {
+      // Add new reminder
+      reminderSettings.habitReminders.push(reminder);
+    }
+  });
+  
+  // Save updated reminder settings
+  storage.reminderSettings = reminderSettings;
+  setStorage(storage);
+  
+  // Register with reminder service if available
+  if (window.reminderService) {
+    window.reminderService.loadReminders();
+  }
+  
+  return true;
+};
+
+/**
+ * Remove all reminders for a habit
+ * @param {string} habitId - The ID of the habit to remove reminders for
+ * @returns {boolean} Success status
+ */
+export const removeHabitReminders = (habitId) => {
+  const storage = getStorage();
+  const reminderSettings = storage.reminderSettings || { enabled: false };
+  
+  if (!reminderSettings.habitReminders) return true;
+  
+  // Filter out reminders for this habit
+  reminderSettings.habitReminders = reminderSettings.habitReminders.filter(
+    reminder => reminder.habit !== habitId
+  );
+  
+  // Save updated reminder settings
+  storage.reminderSettings = reminderSettings;
+  setStorage(storage);
+  
+  // Update reminder service if available
+  if (window.reminderService) {
+    window.reminderService.loadReminders();
+  }
+  
+  return true;
+};
+
+/**
+ * Get all reminders for a habit
+ * @param {string} habitId - The ID of the habit to get reminders for
+ * @returns {Array} Array of reminder objects
+ */
+export const getHabitReminders = (habitId) => {
+  const storage = getStorage();
+  const reminderSettings = storage.reminderSettings || {};
+  
+  if (!reminderSettings.habitReminders) return [];
+  
+  return reminderSettings.habitReminders.filter(
+    reminder => reminder.habit === habitId
+  );
+};

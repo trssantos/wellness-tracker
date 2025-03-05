@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Edit3, Trash2, Calendar, BarChart2, CheckCircle, Trophy, Zap, Target, Award, Plus } from 'lucide-react';
+import { ArrowLeft, Edit3, Trash2, Calendar, BarChart2, CheckCircle, Trophy, Zap, Target, Award, Plus, Bell } from 'lucide-react';
 import { trackHabitCompletion, generateCompletionHistory, updateHabitStats } from '../../utils/habitTrackerUtils';
 import DeleteHabitConfirmation from './DeleteHabitConfirmation';
+import HabitReminderSettings from './HabitReminderSettings';
+import StreakMilestoneCelebration from './StreakMilestoneCelebration';
 
 const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [completionHistory, setCompletionHistory] = useState([]);
   const [habitState, setHabit] = useState(habit);
+  const [showMilestoneCelebration, setShowMilestoneCelebration] = useState(false);
+  const [showReminderSettings, setShowReminderSettings] = useState(false);
 
   // Update completion history when habit changes
   useEffect(() => {
@@ -25,11 +29,27 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
     // Toggle completion status
     const updatedHabit = trackHabitCompletion(habit.id, today, !wasPreviouslyCompleted);
     
-    // Update the local state
     if (updatedHabit) {
-      // Create a copy to ensure React detects the state change
+      // Store previous streak for comparison
+      const previousStreak = habit.stats.streakCurrent;
+      const newStreak = updatedHabit.stats.streakCurrent;
+      
+      // Update the local state
       setHabit(updatedHabit);
       setCompletionHistory(generateCompletionHistory(updatedHabit, 28));
+      
+      // Check if streak increased and reached a milestone
+      if (!wasPreviouslyCompleted && newStreak > previousStreak) {
+        // Check for milestone streaks (7, 21, 30, 50, 100, etc.)
+        const milestoneStreaks = [7, 21, 30, 50, 66, 100, 365];
+        
+        if (milestoneStreaks.includes(newStreak) || newStreak % 100 === 0) {
+          setShowMilestoneCelebration(true);
+        } else if (newStreak % 10 === 0 && newStreak >= 10) {
+          // Also celebrate every 10 days after the first 10
+          setShowMilestoneCelebration(true);
+        }
+      }
     }
     
     // Call the existing onUpdate to refresh the parent component
@@ -391,21 +411,30 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
 
       {/* Edit / Delete buttons */}
       <div className="flex justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
-        <button 
-          onClick={onEdit}
-          className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-        >
-          <Edit3 size={16} />
-          Edit Habit
-        </button>
-        <button 
-          onClick={() => setShowConfirmDelete(true)}
-          className="flex items-center gap-2 px-4 py-2 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
-        >
-          <Trash2 size={16} />
-          Delete
-        </button>
-      </div>
+  <div className="flex gap-2">
+    <button 
+      onClick={() => setShowReminderSettings(true)}
+      className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/40"
+    >
+      <Bell size={16} />
+      Reminders
+    </button>
+    <button 
+      onClick={onEdit}
+      className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+    >
+      <Edit3 size={16} />
+      Edit Habit
+    </button>
+  </div>
+  <button 
+    onClick={() => setShowConfirmDelete(true)}
+    className="flex items-center gap-2 px-4 py-2 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+  >
+    <Trash2 size={16} />
+    Delete
+  </button>
+</div>
 
       {/* Delete confirmation modal */}
       {showConfirmDelete && (
@@ -415,6 +444,23 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
           onCancel={() => setShowConfirmDelete(false)}
         />
       )}
+
+{showMilestoneCelebration && (
+  <StreakMilestoneCelebration 
+    streak={habitState.stats.streakCurrent}
+    habitName={habitState.name}
+    onClose={() => setShowMilestoneCelebration(false)}
+  />
+)}
+
+{showReminderSettings && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <HabitReminderSettings 
+      habit={habitState}
+      onClose={() => setShowReminderSettings(false)}
+    />
+  </div>
+)}
     </div>
   );
 };

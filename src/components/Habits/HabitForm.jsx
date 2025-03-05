@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Calendar, Target, Sparkles, RotateCcw, Save, X } from 'lucide-react';
+import { Plus, Trash2, Calendar, Target, Sparkles, RotateCcw, Save, X, Loader } from 'lucide-react';
 import { createHabit, updateHabit } from '../../utils/habitTrackerUtils';
+import { generateStepsForHabit, generateMilestonesForHabit } from '../../utils/aiHabitService';
 
 const HabitForm = ({ habit, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -14,10 +15,12 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
     milestones: [{ name: '7-day streak', value: 7 }]
   });
   
+  const [isGeneratingSteps, setIsGeneratingSteps] = useState(false);
+  const [isGeneratingMilestones, setIsGeneratingMilestones] = useState(false);
   const [useAI, setUseAI] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [customFrequency, setCustomFrequency] = useState(false);
   const [errors, setErrors] = useState({});
+  const [aiError, setAiError] = useState(null);
   
   // If editing an existing habit, load its data
   useEffect(() => {
@@ -139,92 +142,80 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
     }
   };
   
-  const handleGenerateWithAI = () => {
-    if (!formData.name) {
-      setErrors(prev => ({ ...prev, name: 'Please enter a habit name before generating' }));
+  // New method to generate steps with AI
+  const handleGenerateStepsWithAI = async () => {
+    if (!formData.name || !formData.description) {
+      setErrors({
+        ...errors,
+        name: !formData.name ? "Name is required to generate steps" : null,
+        description: !formData.description ? "Description is required to generate steps" : null
+      });
       return;
     }
     
-    setIsGenerating(true);
+    setIsGeneratingSteps(true);
+    setAiError(null);
     
-    // Simulate AI generation (in a real implementation, this would call your AI service)
-    setTimeout(() => {
-      let generatedSteps = [];
-      let generatedMilestones = [];
+    try {
+      // Create a temporary habit object to pass to the AI service
+      const tempHabit = {
+        name: formData.name,
+        description: formData.description
+      };
       
-      // Generate steps based on habit name
-      if (formData.name.toLowerCase().includes('meditation')) {
-        generatedSteps = [
-          'Find a quiet space (2 minutes)',
-          'Sit comfortably with good posture',
-          'Close your eyes and focus on your breath',
-          'Notice thoughts without judgment',
-          'Return attention to breath when distracted',
-          'Gradually increase duration over time'
-        ];
-        
-        generatedMilestones = [
-          { name: '7-day streak', value: 7 },
-          { name: '21 days consistent', value: 21 },
-          { name: '5-minute to 10-minute sessions', value: 30 }
-        ];
-      } else if (formData.name.toLowerCase().includes('read')) {
-        generatedSteps = [
-          'Select a book or article',
-          'Find a comfortable, quiet place',
-          'Set a timer for your reading session',
-          'Put phone in do-not-disturb mode',
-          'Read mindfully for the set duration',
-          'Take brief notes if desired'
-        ];
-        
-        generatedMilestones = [
-          { name: '7-day reading streak', value: 7 },
-          { name: '1 book completed', value: 14 },
-          { name: '30 days of consistent reading', value: 30 }
-        ];
-      } else if (formData.name.toLowerCase().includes('exercise') || formData.name.toLowerCase().includes('workout')) {
-        generatedSteps = [
-          'Prepare workout clothes and equipment',
-          'Warm up for 5 minutes',
-          'Complete your main exercise routine',
-          'Cool down with light stretching',
-          'Drink water to rehydrate',
-          'Track your progress in a journal'
-        ];
-        
-        generatedMilestones = [
-          { name: '5 workout sessions', value: 5 },
-          { name: '15 workout sessions', value: 15 },
-          { name: '30-day exercise streak', value: 30 }
-        ];
-      } else {
-        // Default steps for any habit
-        generatedSteps = [
-          'Prepare your environment',
-          'Remove potential distractions',
-          'Set a specific time for your habit',
-          'Create a visual cue or reminder',
-          'Track completion in your journal',
-          'Celebrate small victories'
-        ];
-        
-        generatedMilestones = [
-          { name: '3-day streak', value: 3 },
-          { name: '7-day streak', value: 7 },
-          { name: '21 days (habit forming)', value: 21 },
-          { name: '66 days (habit solidified)', value: 66 }
-        ];
-      }
+      // Generate steps
+      const steps = await generateStepsForHabit(tempHabit);
       
+      // Update form data with the generated steps
       setFormData(prev => ({
         ...prev,
-        steps: generatedSteps,
-        milestones: generatedMilestones
+        steps: steps
       }));
       
-      setIsGenerating(false);
-    }, 1500);
+      setUseAI(false); // Switch back to normal step view
+    } catch (error) {
+      console.error("Error generating steps:", error);
+      setAiError(error.message || "Failed to generate steps");
+    } finally {
+      setIsGeneratingSteps(false);
+    }
+  };
+  
+  // New method to generate milestones with AI
+  const handleGenerateMilestonesWithAI = async () => {
+    if (!formData.name || !formData.description) {
+      setErrors({
+        ...errors,
+        name: !formData.name ? "Name is required to generate milestones" : null,
+        description: !formData.description ? "Description is required to generate milestones" : null
+      });
+      return;
+    }
+    
+    setIsGeneratingMilestones(true);
+    setAiError(null);
+    
+    try {
+      // Create a temporary habit object to pass to the AI service
+      const tempHabit = {
+        name: formData.name,
+        description: formData.description
+      };
+      
+      // Generate milestones
+      const milestones = await generateMilestonesForHabit(tempHabit);
+      
+      // Update form data with the generated milestones
+      setFormData(prev => ({
+        ...prev,
+        milestones: milestones
+      }));
+    } catch (error) {
+      console.error("Error generating milestones:", error);
+      setAiError(error.message || "Failed to generate milestones");
+    } finally {
+      setIsGeneratingMilestones(false);
+    }
   };
   
   const validateForm = () => {
@@ -293,6 +284,13 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
           <X size={20} className="text-slate-600 dark:text-slate-300" />
         </button>
       </div>
+      
+      {/* Display AI error if any */}
+      {aiError && (
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400">
+          <p>{aiError}</p>
+        </div>
+      )}
       
       <div className="space-y-6">
         {/* Basic Information */}
@@ -472,26 +470,43 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
               </p>
               <button 
                 type="button"
-                onClick={handleGenerateWithAI}
-                disabled={isGenerating || !formData.name}
+                onClick={handleGenerateStepsWithAI}
+                disabled={isGeneratingSteps || !formData.name}
                 className={`w-full py-2 rounded-lg flex items-center justify-center gap-2 ${
-                  isGenerating || !formData.name
+                  isGeneratingSteps || !formData.name
                     ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
                     : 'bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700'
                 }`}
               >
-                {isGenerating ? (
+                {isGeneratingSteps ? (
                   <>
-                    <RotateCcw size={16} className="animate-spin" />
+                    <Loader size={16} className="animate-spin" />
                     Generating...
                   </>
                 ) : (
                   <>
                     <Sparkles size={16} />
-                    Generate Steps & Milestones
+                    Generate Steps
                   </>
                 )}
               </button>
+
+              {/* Display AI-generated steps after generation */}
+              {!isGeneratingSteps && formData.steps.length > 0 && formData.steps[0] !== '' && (
+                <div className="mt-4 pt-4 border-t border-purple-200 dark:border-purple-800">
+                  <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-2">Generated Steps:</h4>
+                  <div className="space-y-2">
+                    {formData.steps.map((step, index) => (
+                      <div key={index} className="flex items-start gap-2 bg-white dark:bg-slate-800 p-3 rounded-lg">
+                        <div className="w-6 h-6 flex-shrink-0 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full flex items-center justify-center">
+                          {index + 1}
+                        </div>
+                        <span className="text-slate-700 dark:text-slate-300">{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-2 mb-2">
@@ -537,9 +552,33 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
         
         {/* Milestones */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Milestones
-          </label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Milestones
+            </label>
+            <button
+              type="button"
+              onClick={handleGenerateMilestonesWithAI}
+              disabled={isGeneratingMilestones || !formData.name}
+              className={`flex items-center gap-1 text-sm px-3 py-1 rounded-full ${
+                isGeneratingMilestones || !formData.name
+                  ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
+                  : 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
+              }`}
+            >
+              {isGeneratingMilestones ? (
+                <>
+                  <Loader size={14} className="animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={14} />
+                  Generate with AI
+                </>
+              )}
+            </button>
+          </div>
           <div className="space-y-2 mb-2">
             {formData.milestones.map((milestone, index) => (
               <div key={index} className="flex items-center gap-2">

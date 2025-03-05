@@ -3,7 +3,7 @@ import { Sidebar } from './components/Navigation/Sidebar';
 import { SectionContainer } from './components/Navigation/SectionContainer';
 import { Overview } from './components/Sections/Overview';
 import { Stats } from './components/Sections/Stats';
-import { MeditationSection, WorkoutSection, DayCoachSection, TemplatesSection } from './components/Sections/Placeholders';
+import { MeditationSection, DayCoachSection, TemplatesSection } from './components/Sections/Placeholders';
 import HabitsPlaceholder from './components/Sections/HabitsPlaceholder';
 import { FlowGuide } from './components/FlowGuide';
 import { FloatingMenu } from './components/FloatingMenu';
@@ -30,6 +30,7 @@ import PendingTasksModal from './components/PendingTasksModal';
 import HabitSection from './components/Sections/HabitSection';
 import HabitTaskIntegration from './components/HabitTaskIntegration';
 import { injectHabitTasks } from './utils/habitTrackerUtils';
+import WorkoutSection from './components/Sections/WorkoutSection';
 
 
 const App = () => {
@@ -388,8 +389,8 @@ const handlePendingTasksAction = (action, tasks = []) => {
               </SectionContainer>
 
               <SectionContainer id="workout" isActive={activeSection === 'workout'}>
-                <WorkoutSection />
-              </SectionContainer>
+  <WorkoutSection />
+</SectionContainer>
 
               <SectionContainer id="coach" isActive={activeSection === 'coach'}>
                 <DayCoachSection />

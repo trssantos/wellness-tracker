@@ -4,6 +4,7 @@ import { SectionContainer } from './components/Navigation/SectionContainer';
 import { Overview } from './components/Sections/Overview';
 import { Stats } from './components/Sections/Stats';
 import { MeditationSection, WorkoutSection, DayCoachSection, TemplatesSection } from './components/Sections/Placeholders';
+import HabitsPlaceholder from './components/Sections/HabitsPlaceholder';
 import { FlowGuide } from './components/FlowGuide';
 import { FloatingMenu } from './components/FloatingMenu';
 import { DayChecklist } from './components/DayChecklist';
@@ -397,6 +398,13 @@ const handlePendingTasksAction = (action, tasks = []) => {
               <SectionContainer id="templates" isActive={activeSection === 'templates'}>
                 <TemplatesSection />
               </SectionContainer>
+
+
+
+              <SectionContainer id="habitsShowcase" isActive={activeSection === 'habitsShowcase'}>
+  <HabitsPlaceholder />
+</SectionContainer>
+              
             </div>
           </div>
         </div>

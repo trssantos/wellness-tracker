@@ -31,7 +31,8 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
       mood: null, 
       hasAITasks: false, 
       hasNotes: false,
-      hasWorkout: false 
+      hasWorkout: false,
+      hasTaskList: false
     };
     
     let completionRate = 0;
@@ -49,12 +50,19 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
       mood = dayData.aiContext.mood;
     }
     
+    // Check if the day has any task list (AI, custom, or default)
+    const hasTaskList = (dayData.aiTasks && dayData.aiTasks.length > 0) || 
+                        (dayData.customTasks && dayData.customTasks.length > 0) ||
+                        (dayData.defaultTasks && dayData.defaultTasks.length > 0) ||
+                        (dayData.checked && Object.keys(dayData.checked).length > 0);
+    
     return {
       completionRate,
       mood,
       hasAITasks: !!dayData.aiTasks,
       hasNotes: !!dayData.notes,
-      hasWorkout: !!dayData.workout
+      hasWorkout: !!dayData.workout,
+      hasTaskList
     };
   };
 
@@ -99,7 +107,7 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
           {weeks.map((week, i) => 
             week.map((date, j) => {
               const dateStr = date.toISOString().split('T')[0];
-              const { completionRate, mood, hasAITasks, hasNotes, hasWorkout } = getDayData(date);
+              const { completionRate, mood, hasAITasks, hasNotes, hasWorkout, hasTaskList } = getDayData(date);
               const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
               const isSelected = selectedDay === dateStr;
               
@@ -110,6 +118,7 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
                   className={`
                     aspect-square rounded-lg relative p-1 sm:p-2
                     ${isCurrentMonth ? getProgressColorClass(completionRate) : 'bg-slate-50 dark:bg-slate-700 opacity-50'}
+                    ${hasTaskList && isCurrentMonth ? 'border border-slate-300 dark:border-slate-600' : ''}
                     ${isSelected ? 'ring-2 ring-blue-500' : ''}
                     ${isToday(date) ? 'ring-2 ring-amber-500' : ''}
                     hover:ring-2 hover:ring-blue-200 dark:hover:ring-blue-700 transition-all

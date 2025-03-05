@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle, Clock, Calendar, 
          Save, Plus, Minus, Info, AlertTriangle,
          Flame, Award, Trash2, RotateCcw, Dumbbell } from 'lucide-react';
-import { getWorkoutById, logWorkout } from '../../utils/workoutUtils';
+import { getWorkoutById, logWorkout, getCompletedWorkoutById } from '../../utils/workoutUtils';
 import { getStorage } from '../../utils/storage';
 
-const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
+const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCancel }) => {
   const [workout, setWorkout] = useState(null);
   const [completedExercises, setCompletedExercises] = useState([]);
   const [duration, setDuration] = useState(0);
@@ -25,44 +25,49 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
     }
     
     try {
-      // Check if there's an existing workout logged for this date
-      const storage = getStorage();
-      const dayData = storage[date] || {};
-      
-      if (dayData.workout) {
-        // Found an existing workout log
+      // Check if we're editing an existing workout
+      if (existingWorkoutId) {
         setIsEditing(true);
         
-        // If a specific workout ID was provided, still load that instead
-        if (workoutId) {
-          loadWorkoutTemplate(workoutId);
-        } else {
-          // Otherwise, load the existing logged workout data
-          const existingLog = dayData.workout;
-          setDuration(existingLog.duration || 45);
-          setCalories(existingLog.calories || '');
-          setNotes(existingLog.notes || '');
+        // Load the existing workout data
+        const existingWorkout = getCompletedWorkoutById(existingWorkoutId);
+        
+        if (existingWorkout) {
+          // First set the basic details from the completed workout
+          setDuration(existingWorkout.duration || 45);
+          setCalories(existingWorkout.calories || '');
+          setNotes(existingWorkout.notes || '');
+          setCompletedWorkoutId(existingWorkout.id);
           
-          if (existingLog.exercises) {
+          // If this is a template-based workout, also load the template
+          if (existingWorkout.workoutId) {
+            // Load the workout template to get the structure
+            const templateWorkout = getWorkoutById(existingWorkout.workoutId);
+            if (templateWorkout) {
+              setWorkout(templateWorkout);
+            }
+          }
+          
+          // Set the completed exercises
+          if (existingWorkout.exercises) {
             setCompletedExercises(
-              existingLog.exercises.map(ex => ({
+              existingWorkout.exercises.map(ex => ({
                 ...ex,
-                completed: true,
-                actualSets: ex.sets || ex.actualSets,
-                actualReps: ex.reps || ex.actualReps,
-                actualWeight: ex.weight || ex.actualWeight || ''
+                completed: ex.completed !== undefined ? ex.completed : true,
+                actualSets: ex.actualSets || ex.sets,
+                actualReps: ex.actualReps || ex.reps,
+                actualWeight: ex.actualWeight || ex.weight || ''
               }))
             );
           }
           
-          if (existingLog.id) {
-            setCompletedWorkoutId(existingLog.id);
-          }
-          
+          setLoading(false);
+        } else {
+          setError("Workout not found");
           setLoading(false);
         }
       } else if (workoutId) {
-        // No existing log, load the template
+        // Load a workout template
         loadWorkoutTemplate(workoutId);
       } else {
         setError("No workout selected");
@@ -73,7 +78,7 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
       setError("Failed to load workout data");
       setLoading(false);
     }
-  }, [workoutId, date]);
+  }, [workoutId, date, existingWorkoutId]);
   
   // Helper function to load a workout template
   const loadWorkoutTemplate = (id) => {
@@ -202,13 +207,8 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
         notes
       };
       
-      // If we're editing, preserve the original ID
-      if (isEditing && completedWorkoutId) {
-        workoutData.id = completedWorkoutId;
-      }
-      
-      // Save to storage
-      const completedWorkout = logWorkout(date, workoutData);
+      // Log workout, passing the existing ID if editing
+      const completedWorkout = logWorkout(date, workoutData, isEditing ? completedWorkoutId : null);
       
       // Call onComplete with the saved workout
       onComplete(completedWorkout);
@@ -382,9 +382,6 @@ const WorkoutLogger = ({ workoutId, date, onComplete, onCancel }) => {
             placeholder="Enter calories burned..."
             className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 pl-10"
           />
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500 dark:text-red-400">
-            <Flame size={18} />
-          </div>
           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none">
             kcal
           </div>

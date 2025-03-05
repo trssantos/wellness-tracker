@@ -46,49 +46,83 @@ export const getWorkoutById = (workoutId) => {
 };
 
 /**
- * Create a new workout template
- * @param {Object} workoutData - The workout data
- * @returns {Object} The created workout
+ * Get all workouts for a specific date
+ * @param {string} date - The date in YYYY-MM-DD format
+ * @returns {Array} Array of workout objects for that date
  */
-export const createWorkout = (workoutData) => {
-  const storage = getStorage();
-  
-  // Initialize workouts array if it doesn't exist
-  if (!storage.workouts) {
-    storage.workouts = [];
-  }
-  
-  // Generate a unique ID for the workout
-  const id = `workout-${Date.now()}`;
-  
-  // Create the new workout object with defaults
-  const newWorkout = {
-    id,
-    name: workoutData.name,
-    type: workoutData.type || 'strength',
-    location: workoutData.location || 'gym',
-    equipment: workoutData.equipment || [],
-    limitations: workoutData.limitations || '',
-    duration: workoutData.duration || 45,
-    calories: workoutData.calories || null,
-    frequency: workoutData.frequency || ['mon', 'wed', 'fri'],
-    timeOfDay: workoutData.timeOfDay || 'anytime',
-    exercises: workoutData.exercises || [],
-    waterBreaks: workoutData.waterBreaks || [15, 30],
-    notes: workoutData.notes || '',
-    isTemplate: true,
-    createdAt: new Date().toISOString(),
-    lastUpdated: new Date().toISOString()
+export const getWorkoutsForDate = (date) => {
+    const storage = getStorage();
+    const dayData = storage[date] || {};
+    
+    // Check for new array-based format
+    if (Array.isArray(dayData.workouts)) {
+      return dayData.workouts;
+    }
+    
+    // Check for legacy format (single workout object)
+    if (dayData.workout) {
+      return [dayData.workout];
+    }
+    
+    return [];
+  };
+
+  /**
+ * Get a specific completed workout by ID
+ * @param {string} workoutId - The ID of the completed workout
+ * @returns {Object|null} The completed workout or null if not found
+ */
+export const getCompletedWorkoutById = (workoutId) => {
+    const storage = getStorage();
+    const completedWorkouts = storage.completedWorkouts || [];
+    return completedWorkouts.find(workout => workout.id === workoutId) || null;
   };
   
-  // Add the workout to storage
-  storage.workouts.push(newWorkout);
-  setStorage(storage);
-  
-  return newWorkout;
-};
 
-/**
+  /**
+  * Create a new workout template
+  * @param {Object} workoutData - The workout data
+  * @returns {Object} The created workout
+  */
+ export const createWorkout = (workoutData) => {
+   const storage = getStorage();
+   
+   // Initialize workouts array if it doesn't exist
+   if (!storage.workouts) {
+     storage.workouts = [];
+   }
+   
+   // Generate a unique ID for the workout
+   const id = `workout-${Date.now()}`;
+   
+   // Create the new workout object with defaults
+   const newWorkout = {
+     id,
+     name: workoutData.name,
+     type: workoutData.type || 'strength',
+     location: workoutData.location || 'gym',
+     equipment: workoutData.equipment || [],
+     limitations: workoutData.limitations || '',
+     duration: workoutData.duration || 45,
+     calories: workoutData.calories || null,
+     frequency: workoutData.frequency || ['mon', 'wed', 'fri'],
+     timeOfDay: workoutData.timeOfDay || 'anytime',
+     exercises: workoutData.exercises || [],
+     waterBreaks: workoutData.waterBreaks || [15, 30],
+     notes: workoutData.notes || '',
+     isTemplate: true,
+     createdAt: new Date().toISOString(),
+     lastUpdated: new Date().toISOString()
+   };
+   
+   // Add the workout to storage
+   storage.workouts.push(newWorkout);
+   setStorage(storage);
+   
+   return newWorkout;
+ };
+
+ /**
  * Update an existing workout template
  * @param {string} workoutId - The ID of the workout to update
  * @param {Object} updates - The updates to apply
@@ -122,80 +156,205 @@ export const updateWorkout = (workoutId, updates) => {
   return updatedWorkout;
 };
 
+
 /**
  * Delete a workout template
  * @param {string} workoutId - The ID of the workout to delete
  * @returns {boolean} True if deleted, false if not found
  */
 export const deleteWorkout = (workoutId) => {
-  const storage = getStorage();
-  
-  if (!storage.workouts) {
-    return false;
-  }
-  
-  // Find the workout index
-  const workoutIndex = storage.workouts.findIndex(w => w.id === workoutId);
-  
-  if (workoutIndex === -1) {
-    return false;
-  }
-  
-  // Remove the workout from storage
-  storage.workouts.splice(workoutIndex, 1);
-  setStorage(storage);
-  
-  return true;
-};
+    const storage = getStorage();
+    
+    if (!storage.workouts) {
+      return false;
+    }
+    
+    // Find the workout index
+    const workoutIndex = storage.workouts.findIndex(w => w.id === workoutId);
+    
+    if (workoutIndex === -1) {
+      return false;
+    }
+    
+    // Remove the workout from storage
+    storage.workouts.splice(workoutIndex, 1);
+    setStorage(storage);
+    
+    return true;
+  };
 
 /**
  * Log a completed workout
  * @param {string} date - The date in YYYY-MM-DD format
  * @param {Object} workoutData - The completed workout data
+ * @param {string|null} existingWorkoutId - ID of existing workout to update (or null for new)
  * @returns {Object} The logged workout
  */
-export const logWorkout = (date, workoutData) => {
-  const storage = getStorage();
-  
-  // Initialize completedWorkouts array if it doesn't exist
-  if (!storage.completedWorkouts) {
-    storage.completedWorkouts = [];
-  }
-  
-  // Create the completed workout entry
-  const completedWorkout = {
-    id: `completed-${Date.now()}`,
-    date,
-    workoutId: workoutData.workoutId, // Original template ID if applicable
-    name: workoutData.name,
-    type: workoutData.type,
-    duration: workoutData.duration,
-    calories: workoutData.calories,
-    exercises: workoutData.exercises,
-    notes: workoutData.notes,
-    completedAt: new Date().toISOString()
-  };
-  
-  // Add to completedWorkouts array
-  storage.completedWorkouts.push(completedWorkout);
-  
-  // Also update the day data to show a workout was completed
-  const dayData = storage[date] || {};
-  storage[date] = {
-    ...dayData,
-    workout: {
-      id: completedWorkout.id,
-      name: completedWorkout.name,
-      type: completedWorkout.type,
-      duration: completedWorkout.duration,
-      calories: completedWorkout.calories,
-      timestamp: completedWorkout.completedAt
+export const logWorkout = (date, workoutData, existingWorkoutId = null) => {
+    const storage = getStorage();
+    const dayData = storage[date] || {};
+    
+    // Initialize necessary arrays
+    if (!storage.completedWorkouts) {
+      storage.completedWorkouts = [];
     }
+    
+    // Prepare the workout entry
+    let workoutToLog;
+    
+    if (existingWorkoutId) {
+      // Update existing workout
+      // First, check in the completedWorkouts array
+      const completedIndex = storage.completedWorkouts.findIndex(w => w.id === existingWorkoutId);
+      
+      // Then check in the day's workouts array
+      const dayWorkouts = Array.isArray(dayData.workouts) ? dayData.workouts : [];
+      const dayWorkoutIndex = dayWorkouts.findIndex(w => w.id === existingWorkoutId);
+      
+      workoutToLog = {
+        id: existingWorkoutId,
+        date,
+        workoutId: workoutData.workoutId, // Original template ID if applicable
+        name: workoutData.name,
+        type: workoutData.type,
+        duration: workoutData.duration,
+        calories: workoutData.calories,
+        exercises: workoutData.exercises,
+        notes: workoutData.notes,
+        intensity: workoutData.intensity,
+        types: workoutData.types,
+        updatedAt: new Date().toISOString(),
+        completedAt: workoutData.completedAt || new Date().toISOString()
+      };
+      
+      // Update the entry in completedWorkouts if it exists
+      if (completedIndex !== -1) {
+        storage.completedWorkouts[completedIndex] = workoutToLog;
+      } else {
+        // Otherwise add it
+        storage.completedWorkouts.push(workoutToLog);
+      }
+      
+      // Update the entry in day's workouts if it exists
+      if (dayWorkoutIndex !== -1) {
+        dayWorkouts[dayWorkoutIndex] = workoutToLog;
+      } else {
+        // Otherwise add it
+        dayWorkouts.push(workoutToLog);
+      }
+      
+      // Update the day's workouts array
+      dayData.workouts = dayWorkouts;
+      
+      // Handle legacy format - remove individual workout property if it exists
+      if (dayData.workout && dayData.workout.id === existingWorkoutId) {
+        delete dayData.workout;
+      }
+    } else {
+      // Create new completed workout
+      workoutToLog = {
+        id: `completed-${Date.now()}`,
+        date,
+        workoutId: workoutData.workoutId, // Original template ID if applicable
+        name: workoutData.name || "Workout",
+        type: workoutData.type,
+        duration: workoutData.duration,
+        calories: workoutData.calories,
+        exercises: workoutData.exercises,
+        notes: workoutData.notes,
+        intensity: workoutData.intensity,
+        types: workoutData.types,
+        completedAt: new Date().toISOString()
+      };
+      
+      // Add to completedWorkouts array
+      storage.completedWorkouts.push(workoutToLog);
+      
+      // Add to the day's workouts array - create if it doesn't exist
+      if (!Array.isArray(dayData.workouts)) {
+        dayData.workouts = [];
+      }
+      
+      dayData.workouts.push(workoutToLog);
+      
+      // Handle legacy format - if single workout exists, migrate it to the array
+      if (dayData.workout && !dayData.workout.id) {
+        const legacyWorkout = {
+          ...dayData.workout,
+          id: `legacy-${Date.now()}`,
+          date,
+          completedAt: dayData.workout.timestamp || new Date().toISOString()
+        };
+        
+        // Add legacy workout to both arrays if it's not already the one we're adding
+        if (legacyWorkout.id !== workoutToLog.id) {
+          dayData.workouts.push(legacyWorkout);
+          storage.completedWorkouts.push(legacyWorkout);
+        }
+        
+        // Remove the legacy workout property
+        delete dayData.workout;
+      }
+    }
+    
+    // Save the updated day data
+    storage[date] = dayData;
+    setStorage(storage);
+    
+    return workoutToLog;
   };
   
-  setStorage(storage);
-  return completedWorkout;
-};
+  /**
+ * Delete a specific completed workout
+ * @param {string} date - The date in YYYY-MM-DD format
+ * @param {string} workoutId - The ID of the workout to delete
+ * @returns {boolean} True if deleted, false if not found
+ */
+export const deleteCompletedWorkout = (date, workoutId) => {
+    const storage = getStorage();
+    const dayData = storage[date] || {};
+    
+    // Check if workout exists in the day data
+    if (!dayData.workouts && !dayData.workout) {
+      return false;
+    }
+    
+    let deleted = false;
+    
+    // Handle new array format
+    if (Array.isArray(dayData.workouts)) {
+      const workoutIndex = dayData.workouts.findIndex(w => w.id === workoutId);
+      
+      if (workoutIndex !== -1) {
+        dayData.workouts.splice(workoutIndex, 1);
+        deleted = true;
+      }
+    }
+    
+    // Handle legacy single workout format
+    if (dayData.workout && dayData.workout.id === workoutId) {
+      delete dayData.workout;
+      deleted = true;
+    }
+    
+    // Also remove from completedWorkouts array
+    if (storage.completedWorkouts) {
+      const completedIndex = storage.completedWorkouts.findIndex(w => w.id === workoutId);
+      
+      if (completedIndex !== -1) {
+        storage.completedWorkouts.splice(completedIndex, 1);
+        deleted = true;
+      }
+    }
+    
+    // Update storage if changes were made
+    if (deleted) {
+      storage[date] = dayData;
+      setStorage(storage);
+    }
+    
+    return deleted;
+  };
 
 /**
  * Get completed workouts for a specific date range

@@ -63,8 +63,10 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
     const habits = getHabitsForDate(dateStr);
     const habitCount = habits.length;
 
-    // Check for workout data - this is the critical part for Phase 3
-  const hasWorkout = !!dayData.workout;
+    // Check for workout data in both formats:
+    // 1. New format: Array of workouts
+    // 2. Legacy format: Single workout object
+    const hasWorkout = Array.isArray(dayData.workouts) && dayData.workouts.length > 0 || !!dayData.workout;
 
     // Count completed habits
     let habitCompletedCount = 0;
@@ -172,7 +174,7 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
                     </div>
                   )}
 
-                  {/* NEW: Habit indicator */}
+                  {/* Habit indicator */}
                   {habitCount > 0 && (
                     <div className="absolute top-0.5 right-0.5 flex items-center">
                       <Zap size={10} className={`

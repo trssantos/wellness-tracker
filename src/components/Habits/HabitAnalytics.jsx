@@ -151,21 +151,21 @@ const HabitAnalytics = ({ onBack }) => {
   const stats = calculateStats();
   
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 w-full transition-colors">
-      <div className="flex items-center gap-2 mb-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-3 sm:p-6 w-full transition-colors">
+      <div className="flex items-center gap-2 mb-4 sm:mb-6">
         <button 
           onClick={onBack}
           className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
         >
-          <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
+          <ArrowLeft size={18} className="text-slate-600 dark:text-slate-300" />
         </button>
-        <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Habit Analytics</h2>
+        <h2 className="text-base sm:text-xl font-semibold text-slate-800 dark:text-slate-100">Habit Analytics</h2>
       </div>
       
       {/* Habit Selector and Time Range */}
-      <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-        <div className="w-full md:w-1/2">
-          <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
+      <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="w-full">
+          <label className="block text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 sm:mb-2">
             Select Habit
           </label>
           <select 
@@ -174,7 +174,7 @@ const HabitAnalytics = ({ onBack }) => {
               const habit = habits.find(h => h.id === e.target.value);
               setSelectedHabit(habit);
             }}
-            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs sm:text-sm"
           >
             {habits.map(habit => (
               <option key={habit.id} value={habit.id}>
@@ -184,15 +184,15 @@ const HabitAnalytics = ({ onBack }) => {
           </select>
         </div>
         
-        <div className="w-full md:w-1/2">
-          <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2 flex items-center gap-1">
-            <Filter size={14} />
+        <div className="w-full">
+          <label className="block text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 sm:mb-2 flex items-center gap-1">
+            <Filter size={12} className="sm:w-4 sm:h-4" />
             Time Range
           </label>
           <div className="flex border border-slate-300 dark:border-slate-600 rounded-lg overflow-hidden">
             <button
               onClick={() => setTimeRange('week')}
-              className={`flex-1 py-2 text-center text-sm ${
+              className={`flex-1 py-1.5 sm:py-2 text-center text-xs sm:text-sm ${
                 timeRange === 'week' 
                   ? 'bg-blue-500 dark:bg-blue-600 text-white' 
                   : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
@@ -202,7 +202,7 @@ const HabitAnalytics = ({ onBack }) => {
             </button>
             <button
               onClick={() => setTimeRange('month')}
-              className={`flex-1 py-2 text-center text-sm ${
+              className={`flex-1 py-1.5 sm:py-2 text-center text-xs sm:text-sm ${
                 timeRange === 'month' 
                   ? 'bg-blue-500 dark:bg-blue-600 text-white' 
                   : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
@@ -212,7 +212,7 @@ const HabitAnalytics = ({ onBack }) => {
             </button>
             <button
               onClick={() => setTimeRange('year')}
-              className={`flex-1 py-2 text-center text-sm ${
+              className={`flex-1 py-1.5 sm:py-2 text-center text-xs sm:text-sm ${
                 timeRange === 'year' 
                   ? 'bg-blue-500 dark:bg-blue-600 text-white' 
                   : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
@@ -225,64 +225,64 @@ const HabitAnalytics = ({ onBack }) => {
       </div>
       
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg transition-colors">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp size={18} className="text-blue-500 dark:text-blue-400" />
-            <div className="text-sm text-slate-600 dark:text-slate-400">Current Streak</div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-4 mb-4 sm:mb-6">
+        <div className="bg-blue-50 dark:bg-blue-900/30 p-2 sm:p-3 rounded-lg transition-colors">
+          <div className="flex items-center gap-1 sm:gap-2 mb-1">
+            <TrendingUp size={14} className="sm:w-5 sm:h-5 text-blue-500 dark:text-blue-400" />
+            <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Current Streak</div>
           </div>
-          <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+          <div className="text-base sm:text-2xl font-bold text-blue-700 dark:text-blue-300">
             {stats.currentStreak} days
           </div>
         </div>
         
-        <div className="bg-purple-50 dark:bg-purple-900/30 p-3 rounded-lg transition-colors">
-          <div className="flex items-center gap-2 mb-1">
-            <Award size={18} className="text-purple-500 dark:text-purple-400" />
-            <div className="text-sm text-slate-600 dark:text-slate-400">Longest Streak</div>
+        <div className="bg-purple-50 dark:bg-purple-900/30 p-2 sm:p-3 rounded-lg transition-colors">
+          <div className="flex items-center gap-1 sm:gap-2 mb-1">
+            <Award size={14} className="sm:w-5 sm:h-5 text-purple-500 dark:text-purple-400" />
+            <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Longest</div>
           </div>
-          <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+          <div className="text-base sm:text-2xl font-bold text-purple-700 dark:text-purple-300">
             {stats.longestStreak} days
           </div>
         </div>
         
-        <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-lg transition-colors">
-          <div className="flex items-center gap-2 mb-1">
-            <Activity size={18} className="text-green-500 dark:text-green-400" />
-            <div className="text-sm text-slate-600 dark:text-slate-400">Completion Rate</div>
+        <div className="bg-green-50 dark:bg-green-900/30 p-2 sm:p-3 rounded-lg transition-colors">
+          <div className="flex items-center gap-1 sm:gap-2 mb-1">
+            <Activity size={14} className="sm:w-5 sm:h-5 text-green-500 dark:text-green-400" />
+            <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Completion</div>
           </div>
-          <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+          <div className="text-base sm:text-2xl font-bold text-green-700 dark:text-green-300">
             {Math.round(stats.completionRate)}%
           </div>
         </div>
         
-        <div className="bg-amber-50 dark:bg-amber-900/30 p-3 rounded-lg transition-colors">
-          <div className="flex items-center gap-2 mb-1">
-            <Calendar size={18} className="text-amber-500 dark:text-amber-400" />
-            <div className="text-sm text-slate-600 dark:text-slate-400">
-              {timeRange === 'week' ? '7-day' : timeRange === 'month' ? '30-day' : 'Year'} Rate
+        <div className="bg-amber-50 dark:bg-amber-900/30 p-2 sm:p-3 rounded-lg transition-colors">
+          <div className="flex items-center gap-1 sm:gap-2 mb-1">
+            <Calendar size={14} className="sm:w-5 sm:h-5 text-amber-500 dark:text-amber-400" />
+            <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+              {timeRange === 'week' ? '7-day' : timeRange === 'month' ? '30-day' : 'Year'}
             </div>
           </div>
-          <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+          <div className="text-base sm:text-2xl font-bold text-amber-700 dark:text-amber-300">
             {stats.recentCompletionRate}%
           </div>
         </div>
         
-        <div className="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg transition-colors">
-          <div className="flex items-center gap-2 mb-1">
-            <BarChart2 size={18} className="text-teal-500 dark:text-teal-400" />
-            <div className="text-sm text-slate-600 dark:text-slate-400">Total Completions</div>
+        <div className="bg-teal-50 dark:bg-teal-900/30 p-2 sm:p-3 rounded-lg transition-colors col-span-2 sm:col-span-1">
+          <div className="flex items-center gap-1 sm:gap-2 mb-1">
+            <BarChart2 size={14} className="sm:w-5 sm:h-5 text-teal-500 dark:text-teal-400" />
+            <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Total</div>
           </div>
-          <div className="text-2xl font-bold text-teal-700 dark:text-teal-300">
+          <div className="text-base sm:text-2xl font-bold text-teal-700 dark:text-teal-300">
             {stats.totalCompletions}
           </div>
         </div>
       </div>
       
       {/* Main Chart - Habit Completion Timeline */}
-      <div className="mb-6">
-        <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3">Habit Completion Timeline</h3>
-        <div className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-4 h-64">
+      <div className="mb-4 sm:mb-6 overflow-hidden">
+        <h3 className="text-sm sm:text-md font-medium text-slate-700 dark:text-slate-300 mb-2 sm:mb-3">Habit Completion Timeline</h3>
+        <div className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-2 sm:p-4 h-56 sm:h-64 overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={chartData}
@@ -291,7 +291,7 @@ const HabitAnalytics = ({ onBack }) => {
               <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.2} />
               <XAxis 
                 dataKey="formattedDate"
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 10 }}
                 tickFormatter={(value, index) => {
                   // Only show every nth label depending on the time range
                   const interval = timeRange === 'week' ? 1 : timeRange === 'month' ? 6 : 30;
@@ -304,10 +304,10 @@ const HabitAnalytics = ({ onBack }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
                     return (
-                      <div className="bg-white dark:bg-slate-800 p-2 border border-slate-200 dark:border-slate-700 rounded shadow-lg">
+                      <div className="bg-white dark:bg-slate-800 p-2 border border-slate-200 dark:border-slate-700 rounded shadow-lg text-xs">
                         <p className="font-medium text-slate-800 dark:text-slate-200">{data.formattedDate}</p>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">{data.dayName}</p>
-                        <p className={`text-sm font-medium ${
+                        <p className="text-slate-600 dark:text-slate-400">{data.dayName}</p>
+                        <p className={`font-medium ${
                           data.status === 1 
                             ? 'text-green-600 dark:text-green-400' 
                             : data.status === -1 
@@ -334,32 +334,32 @@ const HabitAnalytics = ({ onBack }) => {
         </div>
       </div>
       
-      {/* Secondary Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Secondary Charts Row - Modified for mobile */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
         {/* Day of Week Performance */}
-        <div>
-          <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3">Day of Week Performance</h3>
-          <div className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-4 h-56">
+        <div className="overflow-hidden">
+          <h3 className="text-sm sm:text-md font-medium text-slate-700 dark:text-slate-300 mb-2 sm:mb-3">Day of Week Performance</h3>
+          <div className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-2 sm:p-4 h-48 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={dayOfWeekData}
                 margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.2} />
-                <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} width={40} />
+                <XAxis dataKey="day" tick={{ fontSize: 10 }} />
+                <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} width={30} tick={{ fontSize: 10 }} />
                 <Tooltip
                   formatter={(value) => [`${value}%`, 'Completion Rate']}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload;
                       return (
-                        <div className="bg-white dark:bg-slate-800 p-2 border border-slate-200 dark:border-slate-700 rounded shadow-lg">
+                        <div className="bg-white dark:bg-slate-800 p-2 border border-slate-200 dark:border-slate-700 rounded shadow-lg text-xs">
                           <p className="font-medium text-slate-800 dark:text-slate-200">{data.day}</p>
-                          <p className="text-sm text-green-600 dark:text-green-400">
+                          <p className="text-green-600 dark:text-green-400">
                             Completed: {data.completions} of {data.total}
                           </p>
-                          <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                          <p className="font-medium text-blue-600 dark:text-blue-400">
                             {data.value}% success rate
                           </p>
                         </div>
@@ -375,9 +375,9 @@ const HabitAnalytics = ({ onBack }) => {
         </div>
         
         {/* Time of Day Distribution */}
-        <div>
-          <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3">Preferred Time</h3>
-          <div className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-4 h-56">
+        <div className="overflow-hidden">
+          <h3 className="text-sm sm:text-md font-medium text-slate-700 dark:text-slate-300 mb-2 sm:mb-3">Preferred Time</h3>
+          <div className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-2 sm:p-4 h-48 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={timeOfDayData}
@@ -385,8 +385,8 @@ const HabitAnalytics = ({ onBack }) => {
                 layout="vertical"
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.2} />
-                <XAxis type="number" domain={[0, 100]} hide />
-                <YAxis dataKey="name" type="category" width={80} />
+                <XAxis type="number" domain={[0, 100]} hide tick={{ fontSize: 10 }} />
+                <YAxis dataKey="name" type="category" width={70} tick={{ fontSize: 10 }} />
                 <Tooltip />
                 <Bar dataKey="value" fill="#a78bfa">
                   {timeOfDayData.map((entry, index) => (
@@ -399,9 +399,9 @@ const HabitAnalytics = ({ onBack }) => {
         </div>
         
         {/* Streak Progress */}
-        <div>
-          <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3">Streak Progress</h3>
-          <div className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-4 h-56">
+        <div className="overflow-hidden">
+          <h3 className="text-sm sm:text-md font-medium text-slate-700 dark:text-slate-300 mb-2 sm:mb-3">Streak Progress</h3>
+          <div className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-2 sm:p-4 h-48 sm:h-56">
             {streakData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -409,21 +409,21 @@ const HabitAnalytics = ({ onBack }) => {
                   margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.2} />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                  <YAxis />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip />
                   <Line
                     type="monotone"
                     dataKey="streak"
                     stroke="#f59e0b"
                     strokeWidth={2}
-                    dot={{ stroke: '#f59e0b', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: '#f59e0b', strokeWidth: 2 }}
+                    dot={{ stroke: '#f59e0b', strokeWidth: 2, r: 3 }}
+                    activeDot={{ r: 5, stroke: '#f59e0b', strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-full text-slate-500 dark:text-slate-400">
+              <div className="flex items-center justify-center h-full text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                 No streak data available yet.
               </div>
             )}

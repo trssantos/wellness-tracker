@@ -5,7 +5,7 @@ import DeleteHabitConfirmation from './DeleteHabitConfirmation';
 import HabitReminderSettings from './HabitReminderSettings';
 import StreakMilestoneCelebration from './StreakMilestoneCelebration';
 
-const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
+const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate, onStreakMilestone }) => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [completionHistory, setCompletionHistory] = useState([]);
   const [habitState, setHabit] = useState(habit);
@@ -18,8 +18,6 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
     const history = generateCompletionHistory(habit, 28);
     setCompletionHistory(history);
   }, [habit]);
-  
-  
   
   // Mark habit as completed for today
   const handleMarkCompleted = () => {
@@ -57,8 +55,6 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
   };
   
   // Render completion history
-  // Replace the renderCompletionHistory function with this corrected version:
-
   const renderCompletionHistory = (history) => {
     // Handle empty history case
     if (!history || history.length === 0) {
@@ -216,27 +212,25 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
     const today = new Date().toISOString().split('T')[0];
     return habitState.completions && habitState.completions[today] === true;
   };
-  
-  // Generate completion history for the habit
-  
+
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-6">
+    <div className="px-2 sm:px-0 w-full overflow-hidden">
+      <div className="flex items-center gap-2 mb-4 sm:mb-6">
         <button 
           onClick={onBack}
           className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
         >
-          <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
+          <ArrowLeft size={18} className="text-slate-600 dark:text-slate-300" />
         </button>
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{habitState.name}</h2>
+        <h2 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100 truncate">{habit.name}</h2>
       </div>
 
       {/* Quick Actions */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         {isScheduledForToday() && (
           <button
             onClick={handleMarkCompleted}
-            className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+            className={`w-full py-2 sm:py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
               isCompletedToday()
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
                 : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
@@ -244,12 +238,12 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
           >
             {isCompletedToday() ? (
               <>
-                <CheckCircle size={20} />
+                <CheckCircle size={18} />
                 Completed Today!
               </>
             ) : (
               <>
-                <Plus size={20} />
+                <Plus size={18} />
                 Mark Completed Today
               </>
             )}
@@ -258,42 +252,42 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
-          <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Current Streak</div>
-          <div className="text-xl font-bold text-blue-700 dark:text-blue-300 flex items-center gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="bg-blue-50 dark:bg-blue-900/30 p-2 sm:p-3 rounded-lg">
+          <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-1">Current Streak</div>
+          <div className="text-base sm:text-xl font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1 sm:gap-2">
             {habit.stats.streakCurrent} days
-            {habit.stats.streakCurrent > 0 && <Zap className="text-amber-500" size={16} />}
+            {habit.stats.streakCurrent > 0 && <Zap className="text-amber-500" size={14} />}
           </div>
         </div>
         
-        <div className="bg-purple-50 dark:bg-purple-900/30 p-3 rounded-lg">
-          <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Best Streak</div>
-          <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
+        <div className="bg-purple-50 dark:bg-purple-900/30 p-2 sm:p-3 rounded-lg">
+          <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-1">Best Streak</div>
+          <div className="text-base sm:text-xl font-bold text-purple-700 dark:text-purple-300">
             {habit.stats.streakLongest} days
           </div>
         </div>
         
-        <div className="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg">
-          <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Completion Rate</div>
-          <div className="text-xl font-bold text-teal-700 dark:text-teal-300">
+        <div className="bg-teal-50 dark:bg-teal-900/30 p-2 sm:p-3 rounded-lg">
+          <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-1">Completion</div>
+          <div className="text-base sm:text-xl font-bold text-teal-700 dark:text-teal-300">
             {Math.round(habit.stats.completionRate * 100)}%
           </div>
         </div>
         
-        <div className="bg-amber-50 dark:bg-amber-900/30 p-3 rounded-lg">
-          <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">Total</div>
-          <div className="text-xl font-bold text-amber-700 dark:text-amber-300">
-            {habit.stats.totalCompletions} times
+        <div className="bg-amber-50 dark:bg-amber-900/30 p-2 sm:p-3 rounded-lg">
+          <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-1">Total</div>
+          <div className="text-base sm:text-xl font-bold text-amber-700 dark:text-amber-300">
+            {habit.stats.totalCompletions}
           </div>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <div className="flex justify-between mb-2">
-          <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Overall Progress</div>
-          <div className="text-sm font-medium text-blue-600 dark:text-blue-400">{habit.stats.progress}%</div>
+          <div className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">Overall Progress</div>
+          <div className="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400">{habit.stats.progress}%</div>
         </div>
         <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
           <div 
@@ -305,25 +299,25 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
 
       {/* Description */}
       {habit.description && (
-        <div className="mb-6 bg-slate-50 dark:bg-slate-800/60 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-          <h3 className="text-md font-medium mb-2 text-slate-700 dark:text-slate-200">Description</h3>
-          <p className="text-slate-600 dark:text-slate-400">{habit.description}</p>
+        <div className="mb-4 sm:mb-6 bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3 sm:p-4 border border-slate-200 dark:border-slate-700">
+          <h3 className="text-sm sm:text-md font-medium mb-2 text-slate-700 dark:text-slate-200">Description</h3>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{habit.description}</p>
         </div>
       )}
 
       {/* Habit Frequency */}
-      <div className="mb-6">
-        <h3 className="text-md font-medium mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
-          <Calendar size={18} className="text-slate-500 dark:text-slate-400" />
+      <div className="mb-4 sm:mb-6">
+        <h3 className="text-sm sm:text-md font-medium mb-2 sm:mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
+          <Calendar size={16} className="text-slate-500 dark:text-slate-400" />
           Schedule
         </h3>
-        <div className="flex flex-wrap gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+        <div className="flex flex-wrap gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 sm:p-4">
           {['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map(day => {
             const isActive = habit.frequency.includes(day);
             return (
               <div
                 key={day}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors ${
                   isActive
                     ? 'bg-blue-500 dark:bg-blue-600 text-white'
                     : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
@@ -338,30 +332,30 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
 
       {/* Milestones */}
       {habit.milestones && habit.milestones.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-md font-medium mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
-            <Trophy size={18} className="text-amber-500" />
+        <div className="mb-4 sm:mb-6">
+          <h3 className="text-sm sm:text-md font-medium mb-2 sm:mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
+            <Trophy size={16} className="text-amber-500" />
             Milestones
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {habit.milestones.map((milestone, index) => (
-              <div key={index} className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center
+              <div key={index} className="flex items-center gap-2 sm:gap-3">
+                <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0
                   ${milestone.achieved ? 
                     'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 
                     'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                   }`}
                 >
-                  {milestone.achieved ? <Trophy size={16} /> : <Target size={16} />}
+                  {milestone.achieved ? <Trophy size={14} /> : <Target size={14} />}
                 </div>
-                <div className="flex-1">
-                  <div className={`font-medium ${milestone.achieved ? 
+                <div className="flex-1 min-w-0">
+                  <div className={`font-medium text-xs sm:text-sm truncate ${milestone.achieved ? 
                     'text-amber-700 dark:text-amber-300' : 
                     'text-slate-700 dark:text-slate-300'
                   }`}>
                     {milestone.name}
                   </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
                     {milestone.achieved ? (
                       `Achieved on ${new Date(milestone.achievedDate).toLocaleDateString()}`
                     ) : (
@@ -370,7 +364,7 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
                   </div>
                 </div>
                 {milestone.achieved && (
-                  <Award size={18} className="text-amber-500" />
+                  <Award size={16} className="text-amber-500 flex-shrink-0" />
                 )}
               </div>
             ))}
@@ -380,61 +374,61 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
 
       {/* Habit Steps */}
       {habit.steps && habit.steps.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-md font-medium mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
-            <CheckCircle size={18} className="text-teal-500" />
+        <div className="mb-4 sm:mb-6">
+          <h3 className="text-sm sm:text-md font-medium mb-2 sm:mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
+            <CheckCircle size={16} className="text-teal-500" />
             Daily Steps
           </h3>
           <ul className="space-y-2">
             {habit.steps.map((step, index) => (
               <li key={index} className="flex items-start gap-2 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
-                <div className="w-6 h-6 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-full flex items-center justify-center flex-shrink-0">
                   {index + 1}
                 </div>
-                <span className="text-slate-700 dark:text-slate-300">{step}</span>
+                <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300">{step}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      {/* Completion History */}
-      <div className="mb-6">
-      <h3 className="text-md font-medium mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
-          <Calendar size={18} className="text-blue-500" />
+      {/* Completion History - Mobile friendly version */}
+      <div className="mb-4 sm:mb-6 overflow-x-auto">
+        <h3 className="text-sm sm:text-md font-medium mb-2 sm:mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
+          <Calendar size={16} className="text-blue-500" />
           Completion History
         </h3>
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-    {renderCompletionHistory(completionHistory)}
-  </div>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 sm:p-4 w-full min-w-[300px] overflow-x-auto">
+          {renderCompletionHistory(completionHistory)}
+        </div>
       </div>
 
       {/* Edit / Delete buttons */}
-      <div className="flex justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
-  <div className="flex gap-2">
-    <button 
-      onClick={() => setShowReminderSettings(true)}
-      className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/40"
-    >
-      <Bell size={16} />
-      Reminders
-    </button>
-    <button 
-      onClick={onEdit}
-      className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-    >
-      <Edit3 size={16} />
-      Edit Habit
-    </button>
-  </div>
-  <button 
-    onClick={() => setShowConfirmDelete(true)}
-    className="flex items-center gap-2 px-4 py-2 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
-  >
-    <Trash2 size={16} />
-    Delete
-  </button>
-</div>
+      <div className="flex flex-wrap justify-between gap-2 pt-3 sm:pt-4 border-t border-slate-200 dark:border-slate-700">
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={() => setShowReminderSettings(true)}
+            className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/40 text-xs sm:text-sm"
+          >
+            <Bell size={14} />
+            Reminders
+          </button>
+          <button 
+            onClick={onEdit}
+            className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs sm:text-sm"
+          >
+            <Edit3 size={14} />
+            Edit
+          </button>
+        </div>
+        <button 
+          onClick={() => setShowConfirmDelete(true)}
+          className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm"
+        >
+          <Trash2 size={14} />
+          Delete
+        </button>
+      </div>
 
       {/* Delete confirmation modal */}
       {showConfirmDelete && (
@@ -445,22 +439,22 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
         />
       )}
 
-{showMilestoneCelebration && (
-  <StreakMilestoneCelebration 
-    streak={habitState.stats.streakCurrent}
-    habitName={habitState.name}
-    onClose={() => setShowMilestoneCelebration(false)}
-  />
-)}
+      {showMilestoneCelebration && (
+        <StreakMilestoneCelebration 
+          streak={habitState.stats.streakCurrent}
+          habitName={habitState.name}
+          onClose={() => setShowMilestoneCelebration(false)}
+        />
+      )}
 
-{showReminderSettings && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <HabitReminderSettings 
-      habit={habitState}
-      onClose={() => setShowReminderSettings(false)}
-    />
-  </div>
-)}
+      {showReminderSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <HabitReminderSettings 
+            habit={habitState}
+            onClose={() => setShowReminderSettings(false)}
+          />
+        </div>
+      )}
     </div>
   );
 };

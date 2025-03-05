@@ -272,30 +272,30 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
   };
   
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-6 w-full overflow-hidden">
+      <div className="flex justify-between items-center mb-4 sm:mb-6">
+        <h2 className="text-base sm:text-xl font-semibold text-slate-800 dark:text-slate-100">
           {habit ? 'Edit Habit' : 'Create New Habit'}
         </h2>
         <button 
           onClick={onCancel}
           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
         >
-          <X size={20} className="text-slate-600 dark:text-slate-300" />
+          <X size={18} className="text-slate-600 dark:text-slate-300" />
         </button>
       </div>
       
       {/* Display AI error if any */}
       {aiError && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400">
+        <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-xs sm:text-sm">
           <p>{aiError}</p>
         </div>
       )}
       
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Basic Information */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 sm:mb-2">
             Habit Name*
           </label>
           <input 
@@ -304,19 +304,19 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             value={formData.name}
             onChange={handleInputChange}
             placeholder="e.g., Morning Meditation"
-            className={`w-full p-3 border rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 ${
+            className={`w-full p-2 sm:p-3 border rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm ${
               errors.name 
                 ? 'border-red-500 dark:border-red-600' 
                 : 'border-slate-300 dark:border-slate-600'
             }`}
           />
           {errors.name && (
-            <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.name}</p>
+            <p className="text-red-500 dark:text-red-400 text-xs sm:text-sm mt-1">{errors.name}</p>
           )}
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 sm:mb-2">
             Description
           </label>
           <textarea
@@ -324,22 +324,22 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             value={formData.description}
             onChange={handleInputChange}
             placeholder="Describe your habit and why it's important to you"
-            className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 h-24"
+            className="w-full p-2 sm:p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 h-16 sm:h-24 text-sm"
           ></textarea>
         </div>
         
         {/* Frequency Selection */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 sm:mb-2">
             Frequency*
           </label>
           
           {/* Preset buttons */}
-          <div className="flex flex-wrap gap-2 mb-3">
+          <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
             <button 
               type="button"
               onClick={() => handleFrequencyPreset('daily')}
-              className={`px-3 py-1.5 rounded-full text-sm ${
+              className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm ${
                 formData.frequency.length === 7 
                   ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' 
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -350,7 +350,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             <button 
               type="button"
               onClick={() => handleFrequencyPreset('weekdays')}
-              className={`px-3 py-1.5 rounded-full text-sm ${
+              className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm ${
                 formData.frequency.length === 5 && !formData.frequency.includes('sat') 
                   ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' 
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -361,7 +361,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             <button 
               type="button"
               onClick={() => handleFrequencyPreset('weekends')}
-              className={`px-3 py-1.5 rounded-full text-sm ${
+              className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm ${
                 formData.frequency.length === 2 && formData.frequency.includes('sat') 
                   ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' 
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -372,7 +372,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             <button 
               type="button"
               onClick={() => handleFrequencyPreset('alternate')}
-              className={`px-3 py-1.5 rounded-full text-sm ${
+              className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm ${
                 formData.frequency.length === 4 && formData.frequency.includes('mon') && formData.frequency.includes('wed')
                   ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' 
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -383,7 +383,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             <button 
               type="button"
               onClick={() => handleFrequencyPreset('custom')}
-              className={`px-3 py-1.5 rounded-full text-sm ${
+              className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm ${
                 customFrequency
                   ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' 
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -395,13 +395,13 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
           
           {/* Day selector */}
           {(customFrequency || errors.frequency) && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1 sm:gap-2">
               {['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map(day => (
                 <button
                   key={day}
                   type="button"
                   onClick={() => handleFrequencyToggle(day)}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors ${
                     formData.frequency.includes(day)
                       ? 'bg-blue-500 dark:bg-blue-600 text-white'
                       : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
@@ -414,22 +414,22 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
           )}
           
           {errors.frequency && (
-            <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.frequency}</p>
+            <p className="text-red-500 dark:text-red-400 text-xs sm:text-sm mt-1">{errors.frequency}</p>
           )}
         </div>
         
         {/* Time of Day Selector */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 sm:mb-2">
             Time of Day (Optional)
           </label>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-wrap gap-1 sm:gap-2">
             {['morning', 'afternoon', 'evening', 'anytime'].map(time => (
               <button
                 key={time}
                 type="button"
                 onClick={() => handleTimeOfDayChange(time)}
-                className={`px-3 py-1.5 rounded-full text-sm capitalize ${
+                className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm capitalize ${
                   formData.timeOfDay === time
                     ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
                     : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20'
@@ -443,36 +443,36 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
         
         {/* Steps Section */}
         <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <div className="flex justify-between items-center mb-1 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
               Habit Steps
             </label>
-            <div className="flex items-center gap-2">
+            <div>
               <button
                 type="button"
                 onClick={() => setUseAI(!useAI)}
-                className={`flex items-center gap-1 text-sm px-3 py-1 rounded-full ${
+                className={`flex items-center gap-1 text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1 rounded-full ${
                   useAI 
                     ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' 
                     : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                 }`}
               >
-                <Sparkles size={14} />
-                Generate with AI
+                <Sparkles size={12} className="sm:w-4 sm:h-4" />
+                AI
               </button>
             </div>
           </div>
           
           {useAI ? (
-            <div className="border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 mb-4">
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+            <div className="border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-2 sm:mb-3">
                 Our AI can help create personalized habit steps based on your goal. Enter a habit name and description above.
               </p>
               <button 
                 type="button"
                 onClick={handleGenerateStepsWithAI}
                 disabled={isGeneratingSteps || !formData.name}
-                className={`w-full py-2 rounded-lg flex items-center justify-center gap-2 ${
+                className={`w-full py-1.5 sm:py-2 rounded-lg flex items-center justify-center gap-2 text-xs sm:text-sm ${
                   isGeneratingSteps || !formData.name
                     ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
                     : 'bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700'
@@ -480,12 +480,12 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
               >
                 {isGeneratingSteps ? (
                   <>
-                    <Loader size={16} className="animate-spin" />
+                    <Loader size={14} className="animate-spin" />
                     Generating...
                   </>
                 ) : (
                   <>
-                    <Sparkles size={16} />
+                    <Sparkles size={14} />
                     Generate Steps
                   </>
                 )}
@@ -493,15 +493,15 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
 
               {/* Display AI-generated steps after generation */}
               {!isGeneratingSteps && formData.steps.length > 0 && formData.steps[0] !== '' && (
-                <div className="mt-4 pt-4 border-t border-purple-200 dark:border-purple-800">
-                  <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-2">Generated Steps:</h4>
+                <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-purple-200 dark:border-purple-800">
+                  <h4 className="font-medium text-xs sm:text-sm text-slate-700 dark:text-slate-300 mb-2">Generated Steps:</h4>
                   <div className="space-y-2">
                     {formData.steps.map((step, index) => (
-                      <div key={index} className="flex items-start gap-2 bg-white dark:bg-slate-800 p-3 rounded-lg">
-                        <div className="w-6 h-6 flex-shrink-0 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full flex items-center justify-center">
+                      <div key={index} className="flex items-start gap-2 bg-white dark:bg-slate-800 p-2 sm:p-3 rounded-lg">
+                        <div className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full flex items-center justify-center">
                           {index + 1}
                         </div>
-                        <span className="text-slate-700 dark:text-slate-300">{step}</span>
+                        <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300">{step}</span>
                       </div>
                     ))}
                   </div>
@@ -512,7 +512,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             <div className="space-y-2 mb-2">
               {formData.steps.map((step, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <div className="w-8 h-8 flex-shrink-0 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full flex items-center justify-center">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full flex items-center justify-center">
                     {index + 1}
                   </div>
                   <input
@@ -520,14 +520,14 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
                     value={step}
                     onChange={(e) => handleStepChange(index, e.target.value)}
                     placeholder={`Step ${index + 1}`}
-                    className="flex-1 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    className="flex-1 p-1.5 sm:p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs sm:text-sm"
                   />
                   <button 
                     type="button"
                     onClick={() => handleRemoveStep(index)}
-                    className="p-2 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400"
+                    className="p-1.5 sm:p-2 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={14} className="sm:w-4 sm:h-4" />
                   </button>
                 </div>
               ))}
@@ -535,16 +535,16 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
           )}
           
           {errors.steps && (
-            <p className="text-red-500 dark:text-red-400 text-sm mb-2">{errors.steps}</p>
+            <p className="text-red-500 dark:text-red-400 text-xs sm:text-sm mb-2">{errors.steps}</p>
           )}
           
           {!useAI && (
             <button
               type="button"
               onClick={handleAddStep}
-              className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-sm"
+              className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-xs sm:text-sm"
             >
-              <Plus size={16} />
+              <Plus size={14} />
               Add Step
             </button>
           )}
@@ -552,15 +552,15 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
         
         {/* Milestones */}
         <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <div className="flex justify-between items-center mb-1 sm:mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
               Milestones
             </label>
             <button
               type="button"
               onClick={handleGenerateMilestonesWithAI}
               disabled={isGeneratingMilestones || !formData.name}
-              className={`flex items-center gap-1 text-sm px-3 py-1 rounded-full ${
+              className={`flex items-center gap-1 text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1 rounded-full ${
                 isGeneratingMilestones || !formData.name
                   ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
                   : 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
@@ -568,13 +568,13 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             >
               {isGeneratingMilestones ? (
                 <>
-                  <Loader size={14} className="animate-spin" />
+                  <Loader size={12} className="animate-spin" />
                   Generating...
                 </>
               ) : (
                 <>
-                  <Sparkles size={14} />
-                  Generate with AI
+                  <Sparkles size={12} />
+                  AI Generate
                 </>
               )}
             </button>
@@ -582,81 +582,81 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
           <div className="space-y-2 mb-2">
             {formData.milestones.map((milestone, index) => (
               <div key={index} className="flex items-center gap-2">
-                <div className="w-8 h-8 flex-shrink-0 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full flex items-center justify-center">
-                  <Target size={16} />
+                <div className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full flex items-center justify-center">
+                  <Target size={14} className="sm:w-4 sm:h-4" />
                 </div>
                 <input
                   type="text"
                   value={milestone.name}
                   onChange={(e) => handleMilestoneChange(index, 'name', e.target.value)}
                   placeholder="Milestone name"
-                  className="flex-1 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                  className="flex-1 p-1.5 sm:p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs sm:text-sm"
                 />
                 <input
                   type="number"
                   value={milestone.value}
                   onChange={(e) => handleMilestoneChange(index, 'value', parseInt(e.target.value) || 0)}
                   placeholder="Value"
-                  className="w-20 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                  className="w-14 sm:w-20 p-1.5 sm:p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs sm:text-sm"
                 />
                 <button 
                   type="button"
                   onClick={() => handleRemoveMilestone(index)}
-                  className="p-2 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400"
+                  className="p-1.5 sm:p-2 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={14} className="sm:w-4 sm:h-4" />
                 </button>
               </div>
             ))}
           </div>
           
           {errors.milestones && (
-            <p className="text-red-500 dark:text-red-400 text-sm mb-2">{errors.milestones}</p>
+            <p className="text-red-500 dark:text-red-400 text-xs sm:text-sm mb-2">{errors.milestones}</p>
           )}
           
           <button
             type="button"
             onClick={handleAddMilestone}
-            className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-sm"
+            className="flex items-center gap-1 text-blue-600 dark:text-blue-400 text-xs sm:text-sm"
           >
-            <Plus size={16} />
+            <Plus size={14} />
             Add Milestone
           </button>
         </div>
         
         {/* Date Selection */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 sm:mb-2">
               Start Date
             </label>
             <div className="relative">
-              <div className="absolute left-3 top-3 text-slate-400 dark:text-slate-500">
-                <Calendar size={16} />
+              <div className="absolute left-2 sm:left-3 top-1.5 sm:top-3 text-slate-400 dark:text-slate-500">
+                <Calendar size={14} className="sm:w-4 sm:h-4" />
               </div>
               <input
                 type="date"
                 name="startDate"
                 value={formData.startDate}
                 onChange={handleInputChange}
-                className="w-full p-3 pl-10 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                className="w-full p-1.5 sm:p-3 pl-7 sm:pl-10 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs sm:text-sm"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 sm:mb-2">
               Target Date (Optional)
             </label>
             <div className="relative">
-              <div className="absolute left-3 top-3 text-slate-400 dark:text-slate-500">
-                <Target size={16} />
+              <div className="absolute left-2 sm:left-3 top-1.5 sm:top-3 text-slate-400 dark:text-slate-500">
+                <Target size={14} className="sm:w-4 sm:h-4" />
               </div>
               <input
                 type="date"
                 name="targetDate"
                 value={formData.targetDate}
                 onChange={handleInputChange}
-                className="w-full p-3 pl-10 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                className="w-full p-1.5 sm:p-3 pl-7 sm:pl-10 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs sm:text-sm"
               />
             </div>
           </div>
@@ -664,20 +664,20 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
       </div>
       
       {/* Form Actions */}
-      <div className="flex justify-between mt-8 pt-4 border-t border-slate-200 dark:border-slate-700">
+      <div className="flex justify-between mt-6 sm:mt-8 pt-3 sm:pt-4 border-t border-slate-200 dark:border-slate-700">
         <button 
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300"
+          className="px-3 sm:px-4 py-1.5 sm:py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 text-xs sm:text-sm"
         >
           Cancel
         </button>
         <button 
           type="button"
           onClick={handleSubmit}
-          className="px-6 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 flex items-center gap-2"
+          className="px-4 sm:px-6 py-1.5 sm:py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
         >
-          <Save size={18} />
+          <Save size={14} className="sm:w-5 sm:h-5" />
           {habit ? 'Update Habit' : 'Save Habit'}
         </button>
       </div>

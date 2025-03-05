@@ -6,14 +6,15 @@ import DeleteHabitConfirmation from './DeleteHabitConfirmation';
 const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [completionHistory, setCompletionHistory] = useState([]);
+  const [habitState, setHabit] = useState(habit);
 
   // Update completion history when habit changes
   useEffect(() => {
-    if (habit) {
-      const history = generateCompletionHistory(habit, 28);
-      setCompletionHistory(history);
-    }
+    setHabit(habit);
+    const history = generateCompletionHistory(habit, 28);
+    setCompletionHistory(history);
   }, [habit]);
+  
   
   
   // Mark habit as completed for today
@@ -22,11 +23,17 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
     const wasPreviouslyCompleted = habit.completions && habit.completions[today];
     
     // Toggle completion status
-    trackHabitCompletion(habit.id, today, !wasPreviouslyCompleted);
+    const updatedHabit = trackHabitCompletion(habit.id, today, !wasPreviouslyCompleted);
     
-    // Update the habit list
+    // Update the local state
+    if (updatedHabit) {
+      // Create a copy to ensure React detects the state change
+      setHabit(updatedHabit);
+      setCompletionHistory(generateCompletionHistory(updatedHabit, 28));
+    }
+    
+    // Call the existing onUpdate to refresh the parent component
     onUpdate();
-    setCompletionHistory(generateCompletionHistory(habit, 28));
   };
   
   // Render completion history
@@ -37,24 +44,77 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
       weeks.push(history.slice(i, i + 7));
     }
     
+    // Calculate dates for the history (working backwards from today)
+    const today = new Date();
+    const dates = [];
+    for (let i = history.length - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - (history.length - 1 - i));
+      dates.push(date);
+    }
+    
     return (
-      <div className="flex flex-col gap-1">
-        {weeks.map((week, weekIndex) => (
-          <div key={weekIndex} className="flex gap-1">
-            {week.map((day, dayIndex) => (
-              <div 
-                key={dayIndex}
-                className={`w-6 h-6 rounded-sm flex items-center justify-center text-xs font-medium
-                  ${day === 1 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 
-                    day === 0 ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400' :
-                    'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                  }`}
-              >
-                {day === 1 ? '✓' : day === 0 ? '-' : '✗'}
+      <div className="flex flex-col gap-2">
+        {/* Day of week headers */}
+        <div className="flex">
+          <div className="w-10 flex-shrink-0"></div> {/* Empty cell for offset */}
+          <div className="grid grid-cols-7 gap-1 flex-1">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="text-xs text-center text-slate-500 dark:text-slate-400">
+                {day}
               </div>
             ))}
           </div>
-        ))}
+        </div>
+        
+        {weeks.map((week, weekIndex) => {
+          // Calculate the week date range for the label
+          const weekStart = dates[weekIndex * 7];
+          const weekLabel = weekIndex === 0 ? 'This week' : 
+                            weekIndex === 1 ? 'Last week' : 
+                            `${weekIndex} weeks ago`;
+          
+          return (
+            <div key={weekIndex} className="flex items-center">
+              <div className="w-10 text-xs text-slate-500 dark:text-slate-400 text-right pr-2">
+                {weekLabel}
+              </div>
+              <div className="grid grid-cols-7 gap-1 flex-1">
+                {week.map((day, dayIndex) => {
+                  const date = dates[(weekIndex * 7) + dayIndex];
+                  const dateStr = date.getDate().toString();
+                  
+                  return (
+                    <div
+                      key={dayIndex}
+                      className={`
+                        aspect-square rounded-md flex flex-col items-center justify-center relative
+                        ${day === 1 
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' 
+                          : day === 0 
+                            ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600' 
+                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+                        }
+                        hover:opacity-80 transition-opacity
+                      `}
+                      title={date.toLocaleDateString()}
+                    >
+                      <span className="text-xs opacity-70">{dateStr}</span>
+                      <span className="text-xs font-bold">
+                        {day === 1 ? '✓' : day === 0 ? '·' : '✗'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+        
+        <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1 px-10">
+          <span>4 weeks ago</span>
+          <span>Today</span>
+        </div>
       </div>
     );
   };
@@ -69,7 +129,7 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
   // Check if habit is already completed today
   const isCompletedToday = () => {
     const today = new Date().toISOString().split('T')[0];
-    return habit.completions && habit.completions[today] === true;
+    return habitState.completions && habitState.completions[today] === true;
   };
   
   // Generate completion history for the habit
@@ -83,7 +143,7 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
         >
           <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
         </button>
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{habit.name}</h2>
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{habitState.name}</h2>
       </div>
 
       {/* Quick Actions */}
@@ -194,7 +254,7 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
       {/* Milestones */}
       {habit.milestones && habit.milestones.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-md font-medium mb-3 flex items-center gap-2">
+          <h3 className="text-md font-medium mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
             <Trophy size={18} className="text-amber-500" />
             Milestones
           </h3>
@@ -236,7 +296,7 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
       {/* Habit Steps */}
       {habit.steps && habit.steps.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-md font-medium mb-3 flex items-center gap-2">
+          <h3 className="text-md font-medium mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
             <CheckCircle size={18} className="text-teal-500" />
             Daily Steps
           </h3>
@@ -255,17 +315,13 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate }) => {
 
       {/* Completion History */}
       <div className="mb-6">
-        <h3 className="text-md font-medium mb-3 flex items-center gap-2">
+      <h3 className="text-md font-medium mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
           <Calendar size={18} className="text-blue-500" />
           Completion History
         </h3>
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-          {renderCompletionHistory(completionHistory)}
-          <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
-            <span>4 weeks ago</span>
-            <span>Today</span>
-          </div>
-        </div>
+    {renderCompletionHistory(completionHistory)}
+  </div>
       </div>
 
       {/* Edit / Delete buttons */}

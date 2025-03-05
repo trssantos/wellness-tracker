@@ -167,9 +167,44 @@ export const trackHabitCompletion = (habitId, date, completed) => {
   
   // Save the updated habit
   storage.habits[habitIndex] = habit;
+  
+  // IMPORTANT ADDITION: Update all habit tasks in any daily task list for this date
+  if (storage[date]) {
+    const dayData = storage[date];
+    let updated = false;
+    
+    // Check if there's a checked state to update
+    if (dayData.checked) {
+      // Find all tasks for this habit
+      const habitTasks = [];
+      habit.steps.forEach(step => {
+        const taskName = `[${habit.name}] ${step}`;
+        if (dayData.checked.hasOwnProperty(taskName)) {
+          habitTasks.push(taskName);
+          // Update the checked state to match the habit completion state
+          dayData.checked[taskName] = completed;
+          updated = true;
+        }
+      });
+    }
+    
+    if (updated) {
+      // Save any updates to the checked state
+      storage[date] = dayData;
+    }
+  }
+  
+  // Save the updated habit
+  storage.habits[habitIndex] = habit;
   setStorage(storage);
   
+  // Return the updated habit
   return habit;
+};
+
+// New helper function to get task names for a habit
+export const getHabitTaskNames = (habit) => {
+  return habit.steps.map(step => `[${habit.name}] ${step}`);
 };
 
 /**

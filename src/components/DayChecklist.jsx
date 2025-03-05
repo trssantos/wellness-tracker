@@ -9,7 +9,7 @@ import TaskList from './DayChecklist/TaskList';
 import EditTaskPanel from './DayChecklist/EditTaskPanel';
 import { TaskReminder } from './TaskReminder';
 import HabitTaskIntegration from './HabitTaskIntegration';
-import { getHabitsForDate, trackHabitCompletion } from '../utils/habitTrackerUtils';
+import { getHabitsForDate, trackHabitCompletion,getHabitTaskNames } from '../utils/habitTrackerUtils';
 
 // Default categories from separate file
 import { DEFAULT_CATEGORIES } from '../utils/defaultTasks';
@@ -39,6 +39,9 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   const [quickAddCategory, setQuickAddCategory] = useState(null);
   const [quickAddText, setQuickAddText] = useState('');
 
+  const [habitUpdateTrigger, setHabitUpdateTrigger] = useState(0);
+
+
   useEffect(() => {
     setActiveCategory(0);
   }, [categories]);
@@ -61,13 +64,12 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   }, [date, storageVersion]);
 
   const updateHabitCompletions = (newChecked) => {
-    // Import the needed functions if not already imported
-    // import { getHabitsForDate, trackHabitCompletion } from '../utils/habitTrackerUtils';
-    
     // Get habits for this day
     const habits = getHabitsForDate(date);
     
     if (!habits || habits.length === 0) return;
+    
+    let anyUpdates = false; // Track if any habits were updated
     
     // For each habit, check if all its tasks are completed
     habits.forEach(habit => {
@@ -79,16 +81,24 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
       
       // Check if all habit tasks exist and are checked
       const allTasksExist = habitTasks.every(task => newChecked.hasOwnProperty(task));
-      const allTasksCompleted = habitTasks.every(task => newChecked[task] === true);
       
-      // Only mark habit as complete if all tasks exist and are completed
-      if (allTasksExist && allTasksCompleted) {
-        trackHabitCompletion(habit.id, date, true);
-      } else if (allTasksExist) {
-        // If not all tasks are completed, mark habit as not complete
-        trackHabitCompletion(habit.id, date, false);
+      if (allTasksExist) {
+        const allTasksCompleted = habitTasks.every(task => newChecked[task] === true);
+        
+        // Only update if the completion status has changed
+        const currentStatus = habit.completions && habit.completions[date] === true;
+        
+        if (allTasksCompleted !== currentStatus) {
+          trackHabitCompletion(habit.id, date, allTasksCompleted);
+          anyUpdates = true;
+        }
       }
     });
+    
+    // If any habits were updated, increment the update trigger to force re-render
+    if (anyUpdates) {
+      setHabitUpdateTrigger(prev => prev + 1);
+    }
   };
   
   // Helper function to load tasks from storage
@@ -565,7 +575,7 @@ const loadTasksFromStorage = (savedData) => {
             onUpdate={handleContextUpdate} 
           />
 
-<HabitTaskIntegration date={date} />
+<HabitTaskIntegration date={date} checked={checked} />
 
           
           {!isEditing && (

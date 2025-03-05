@@ -82,7 +82,7 @@ const AiHabitGenerator = ({ onHabitGenerated, onCancel }) => {
   };
   
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 w-full max-w-2xl">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md w-full max-w-md mx-auto overflow-hidden p-4">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
           <Sparkles className="text-amber-500" size={20} />
@@ -102,19 +102,19 @@ const AiHabitGenerator = ({ onHabitGenerated, onCancel }) => {
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             What habit would you like to build?
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={habitInput}
               onChange={(e) => setHabitInput(e.target.value)}
-              placeholder="e.g., Daily meditation, Regular exercise, Reading books"
-              className="flex-1 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+              placeholder="e.g., Daily meditation, Regular exercise"
+              className="flex-1 p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 w-full"
               disabled={generating}
             />
             <button
               onClick={handleGenerate}
               disabled={generating || !habitInput.trim()}
-              className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 mt-2 sm:mt-0 ${
                 generating || !habitInput.trim()
                   ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
                   : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
@@ -123,12 +123,12 @@ const AiHabitGenerator = ({ onHabitGenerated, onCancel }) => {
               {generating ? (
                 <>
                   <Loader size={18} className="animate-spin" />
-                  Generating...
+                  <span>Generating...</span>
                 </>
               ) : (
                 <>
                   <Brain size={18} />
-                  Generate
+                  <span>Generate</span>
                 </>
               )}
             </button>

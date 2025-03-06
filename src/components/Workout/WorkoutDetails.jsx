@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { ArrowLeft, Edit3, Trash2, Play, Clock, Calendar, 
          MapPin, DollarSign, Dumbbell, Activity, AlertTriangle } from 'lucide-react';
 import { getWorkoutTypes, getWorkoutLocations } from '../../utils/workoutUtils';
+import WorkoutPlayerModal from './WorkoutPlayerModal';
 
 const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Helper function to get workout type label
   const getWorkoutTypeLabel = (type) => {
@@ -43,6 +46,18 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   // Format the frequency days
   const frequencyText = workout.frequency.map(day => getDayName(day)).join(', ');
 
+  // Start workout - simply show the modal
+  const startWorkout = () => {
+    setShowPlayer(true);
+  };
+
+  // Handle workout completion
+  const handleWorkoutComplete = (completedWorkout) => {
+    setShowPlayer(false);
+    // You might want to refresh the list of completed workouts here
+    // or show a success message
+  };
+
   return (
     <div className="px-2 sm:px-0 w-full overflow-hidden">
       <div className="flex items-center gap-2 mb-4 sm:mb-6">
@@ -60,7 +75,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
       {/* Quick Action Buttons */}
       <div className="flex gap-2 mb-6">
         <button
-          onClick={() => {/* Will implement in workout player phase */}}
+          onClick={startWorkout}
           className="flex-1 py-2 sm:py-3 rounded-lg bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 font-medium flex items-center justify-center gap-2 transition-colors"
         >
           <Play size={18} />
@@ -280,6 +295,16 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Enhanced Workout Player Modal - Only render when showPlayer is true */}
+      {showPlayer && (
+        <WorkoutPlayerModal
+          workoutId={workout.id}
+          date={currentDate}
+          onComplete={handleWorkoutComplete}
+          onClose={() => setShowPlayer(false)}
+        />
       )}
     </div>
   );

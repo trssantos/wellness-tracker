@@ -18,9 +18,20 @@ const WaterBreakReminder = ({
     return (
       <div className="vintage-water-break">
         <div className="water-break-header">
-          <Droplet size={30} />
-          <h3>Water Break</h3>
-        </div>
+  <div className="water-animation-container">
+    <Droplet size={30} />
+    <div className="ripple-circle ripple-1"></div>
+    <div className="ripple-circle ripple-2"></div>
+    <div className="ripple-circle ripple-3"></div>
+  </div>
+  <h3>Water Break</h3>
+  <div className="water-droplets">
+    <div className="droplet"></div>
+    <div className="droplet"></div>
+    <div className="droplet"></div>
+    <div className="droplet"></div>
+  </div>
+</div>
         
         <div className="water-countdown">
           <div className="water-countdown-display">

@@ -23,6 +23,11 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const [nextWaterBreak, setNextWaterBreak] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
   const [notes, setNotes] = useState('');
+
+  const [achievements, setAchievements] = useState([]);
+const [showAchievement, setShowAchievement] = useState(false);
+const [currentAchievement, setCurrentAchievement] = useState(null);
+
   
   // Set tracking
   const [currentSetNumber, setCurrentSetNumber] = useState(1);
@@ -43,6 +48,11 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const waterBreakSound = useRef(new Audio('https://freesound.org/data/previews/341/341695_5858296-lq.mp3'));
   const clickSound = useRef(new Audio('https://freesound.org/data/previews/573/573588_13006337-lq.mp3'));
   
+  const setCompleteSound = useRef(new Audio('https://freesound.org/data/previews/413/413749_4284968-lq.mp3')); // Ding sound
+  const exerciseCompleteSound = useRef(new Audio('https://freesound.org/data/previews/270/270402_5123851-lq.mp3')); // Triumph sound
+  const motivationSound = useRef(new Audio('https://freesound.org/data/previews/448/448268_7343324-lq.mp3')); // "You can do it!"
+  
+
   // Exercise-specific state
   const [currentExercise, setCurrentExercise] = useState(null);
   const [currentSets, setCurrentSets] = useState(3);
@@ -97,6 +107,9 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
     completeSound.current.preload = 'auto';
     waterBreakSound.current.preload = 'auto';
     clickSound.current.preload = 'auto';
+    setCompleteSound.current.preload = 'auto';
+exerciseCompleteSound.current.preload = 'auto';
+motivationSound.current.preload = 'auto';
     
     // Set up touch event handlers for swipe gestures
     let touchStartX = 0;
@@ -153,6 +166,26 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
     }
   }, [currentExerciseIndex, workout]);
 
+  // Call this function in useEffect to check achievements periodically
+useEffect(() => {
+    // Check for achievements every minute or when exercise changes
+    const achievementCheckInterval = setInterval(() => {
+      if (isPlaying && currentState !== 'ready' && currentState !== 'summary') {
+        checkAchievements();
+      }
+    }, 60000);
+    
+    return () => clearInterval(achievementCheckInterval);
+  }, [isPlaying, currentState]);
+  
+  // Also check achievements when completing an exercise
+  useEffect(() => {
+    if (currentExerciseIndex > 0) {
+      checkAchievements();
+    }
+  }, [currentExerciseIndex]);
+  
+
   // Handle fullscreen toggle
   const toggleFullscreen = () => {
     if (!playerRef.current) return;
@@ -188,6 +221,62 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       sound.current.play().catch(err => console.log('Audio error:', err));
     }
   };
+
+  // Create a function to check for and grant achievements
+const checkAchievements = () => {
+    const newAchievements = [];
+    
+    // Check various achievement conditions
+    
+    // Achievement: First Set - Triggered when the first set is completed
+    if (setsCompleted === 1 && !achievements.some(a => a.id === 'first_set')) {
+      newAchievements.push({
+        id: 'first_set',
+        title: 'First Step',
+        description: 'Completed your first set of the workout',
+        icon: '🎯'
+      });
+    }
+    
+    // Achievement: Half Way There - Triggered when half of exercises are completed
+    if (currentExerciseIndex === Math.floor(workout.exercises.length / 2) && 
+        !achievements.some(a => a.id === 'half_way')) {
+      newAchievements.push({
+        id: 'half_way',
+        title: 'Half Way There',
+        description: 'Completed half of your workout exercises',
+        icon: '🔥'
+      });
+    }
+    
+    // Achievement: 10 Minute Milestone - Triggered after 10 minutes of workout
+    if (Math.floor(totalTimeElapsed / 60) === 10 && 
+        !achievements.some(a => a.id === 'ten_minutes')) {
+      newAchievements.push({
+        id: 'ten_minutes',
+        title: 'Endurance Builder',
+        description: '10 minutes of active workout completed',
+        icon: '⏱️'
+      });
+    }
+    
+    // If we have new achievements, update state and show the first one
+    if (newAchievements.length > 0) {
+      setAchievements(prev => [...prev, ...newAchievements]);
+      setCurrentAchievement(newAchievements[0]);
+      setShowAchievement(true);
+      
+      // Hide after a few seconds
+      setTimeout(() => {
+        setShowAchievement(false);
+      }, 3000);
+      
+      // Play achievement sound
+      playSound(exerciseCompleteSound);
+      triggerHapticFeedback('medium');
+    }
+  };
+  
 
   // Start the workout
   const startWorkout = () => {
@@ -225,7 +314,12 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
 
   // Complete current set
   const completeSet = () => {
-    playSound(clickSound);
+    // Play the set complete sound instead of click sound
+    playSound(setCompleteSound);
+    triggerHapticFeedback('light');
+    
+    // Show set completion effect
+    showSetCompletionEffect();
     
     // Check if we've completed all sets
     if (currentSetNumber >= currentSets) {
@@ -237,19 +331,152 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       setSetsCompleted(prev => prev + 1);
       setTimeElapsed(0); // Reset timer for new set
     }
+
+    // Check for achievements after completing sets
+  setTimeout(() => {
+    checkAchievements();
+  }, 500);
   };
+
+  const showSetCompletionEffect = () => {
+    // Create the effect element
+    const effectContainer = document.createElement('div');
+    effectContainer.className = 'set-completion-effect';
+    
+    // Create the inner content
+    const innerContent = document.createElement('div');
+    innerContent.className = 'effect-content';
+    
+    // Create main text
+    const completionText = document.createElement('div');
+    completionText.className = 'completion-text';
+    completionText.textContent = 'SET COMPLETE!';
+    
+    // Create energy burst element
+    const energyBurst = document.createElement('div');
+    energyBurst.className = 'energy-burst';
+    
+    // Append elements
+    innerContent.appendChild(completionText);
+    innerContent.appendChild(energyBurst);
+    effectContainer.appendChild(innerContent);
+    
+    // Add to the DOM - find the workout container
+    const container = playerRef.current;
+    if (container) {
+      container.appendChild(effectContainer);
+      
+      // Remove after animation completes
+      setTimeout(() => {
+        if (container.contains(effectContainer)) {
+          container.removeChild(effectContainer);
+        }
+      }, 1500);
+    }
+  };
+  
 
   // Complete the current exercise
   const completeExercise = () => {
     // Mark current exercise as completed
     markCurrentExerciseCompleted();
     
+    // Show exercise completion effect
+    showExerciseCompletionEffect();
+
+    triggerHapticFeedback('strong');
+    
     // Move to rest period
     setCurrentState('rest');
     setTimeElapsed(0); // Reset timer for rest period
     
-    // Play complete sound
-    playSound(completeSound);
+    // Play exercise complete sound instead of the regular complete sound
+    //playSound(exerciseCompleteSound);
+    
+    // Play a random motivational sound 50% of the time
+    if (Math.random() > 0.5) {
+      setTimeout(() => {
+        playSound(motivationSound);
+      }, 1000);
+    }
+  };
+
+  const triggerHapticFeedback = (intensity = 'medium') => {
+    if (!window.navigator.vibrate) return;
+    
+    switch(intensity) {
+      case 'light':
+        window.navigator.vibrate(50);
+        break;
+      case 'medium':
+        window.navigator.vibrate(100);
+        break;
+      case 'strong':
+        window.navigator.vibrate([100, 50, 100]);
+        break;
+      default:
+        window.navigator.vibrate(100);
+    }
+  };
+  
+  // Add this function to create the exercise completion effect
+  const showExerciseCompletionEffect = () => {
+    // Create the effect container
+    const effectContainer = document.createElement('div');
+    effectContainer.className = 'exercise-completion-effect';
+    
+    // Create the inner content
+    const innerContent = document.createElement('div');
+    innerContent.className = 'effect-content';
+    
+    // Create main text
+    const completionText = document.createElement('div');
+    completionText.className = 'completion-text';
+    completionText.textContent = 'EXERCISE COMPLETE!';
+    
+    // Create motivational text
+    const motivationalPhrases = [
+      "Great work! Keep pushing!",
+      "You're crushing it!",
+      "Beast mode activated!",
+      "One step closer to your goals!",
+      "That's how champions train!",
+      "Feeling stronger already!",
+      "No pain, no gain!",
+      "You've got this!"
+    ];
+    
+    const motivationalText = document.createElement('div');
+    motivationalText.className = 'motivational-text';
+    motivationalText.textContent = motivationalPhrases[Math.floor(Math.random() * motivationalPhrases.length)];
+    
+    // Create confetti bursts
+    for (let i = 0; i < 20; i++) {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = `${Math.random() * 100}%`;
+      confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+      confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 80%, 60%)`;
+      effectContainer.appendChild(confetti);
+    }
+    
+    // Append elements
+    innerContent.appendChild(completionText);
+    innerContent.appendChild(motivationalText);
+    effectContainer.appendChild(innerContent);
+    
+    // Add to the DOM
+    const container = playerRef.current;
+    if (container) {
+      container.appendChild(effectContainer);
+      
+      // Remove after animation completes
+      setTimeout(() => {
+        if (container.contains(effectContainer)) {
+          container.removeChild(effectContainer);
+        }
+      }, 2500);
+    }
   };
 
   // Handle rest period completion
@@ -284,10 +511,85 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       setCurrentState('exercise');
       setTimeElapsed(0); // Reset timer for new exercise
     } else {
-      // All exercises completed
+      // All exercises completed - go directly to summary instead of rest
+      showWorkoutCompletionEffect(); // Add special completion effect
       endWorkout();
     }
   };
+
+  // Add this new function for the workout completion effect:
+const showWorkoutCompletionEffect = () => {
+    // Create the effect container
+    const effectContainer = document.createElement('div');
+    effectContainer.className = 'workout-completion-effect';
+    
+    // Create inner content
+    const innerContent = document.createElement('div');
+    innerContent.className = 'completion-content';
+    
+    // Trophy icon
+    const trophyIcon = document.createElement('div');
+    trophyIcon.className = 'trophy-icon';
+    trophyIcon.innerHTML = '🏆';
+    
+    // Completion text
+    const completionText = document.createElement('div');
+    completionText.className = 'workout-completion-text';
+    completionText.textContent = 'WORKOUT COMPLETE!';
+    
+    // Stats
+    const statsText = document.createElement('div');
+    statsText.className = 'completion-stats';
+    
+    // Format total time
+    const mins = Math.floor(totalTimeElapsed / 60);
+    const secs = totalTimeElapsed % 60;
+    const timeStr = `${mins}m ${secs}s`;
+    
+    statsText.textContent = `${workout.exercises.length} exercises • ${timeStr}`;
+    
+    // Add celebration particles
+    for (let i = 0; i < 50; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'celebration-particle';
+      
+      // Randomize particle appearance
+      particle.style.left = `${Math.random() * 100}%`;
+      particle.style.top = `${Math.random() * 100}%`;
+      particle.style.animationDelay = `${Math.random() * 0.5}s`;
+      particle.style.backgroundColor = `hsl(${Math.random() * 360}, 80%, 60%)`;
+      
+      effectContainer.appendChild(particle);
+    }
+    
+    // Append all elements
+    innerContent.appendChild(trophyIcon);
+    innerContent.appendChild(completionText);
+    innerContent.appendChild(statsText);
+    effectContainer.appendChild(innerContent);
+    
+    // Add to DOM
+    const container = playerRef.current;
+    if (container) {
+      container.appendChild(effectContainer);
+      
+      // Play triumphant sound
+      playSound(exerciseCompleteSound);
+      
+      // Add extra haptic feedback for completion
+      if (window.navigator.vibrate) {
+        window.navigator.vibrate([100, 50, 100, 50, 200]);
+      }
+      
+      // Remove after animation completes
+      setTimeout(() => {
+        if (container.contains(effectContainer)) {
+          container.removeChild(effectContainer);
+        }
+      }, 3000); // Longer duration for final celebration
+    }
+  };
+  
 
   // Trigger water break
   const triggerWaterBreak = () => {
@@ -399,20 +701,9 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
 
   // Auto-hide controls after a period of inactivity
   useEffect(() => {
-    if (currentState !== 'ready' && currentState !== 'summary') {
-      // Show controls when state changes
-      setShowControls(true);
-      
-      // Set up a timer to hide controls after 5 seconds
-      const hideControlsTimer = setTimeout(() => {
-        if (isPlaying) { // Only hide if playing
-          setShowControls(false);
-        }
-      }, 5000);
-      
-      return () => clearTimeout(hideControlsTimer);
-    }
-  }, [currentState, isPlaying]);
+    // Always ensure controls are visible
+    setShowControls(true);
+  }, []);
 
   // Save workout results
   const saveWorkoutResults = () => {
@@ -611,6 +902,17 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
               vintageMode={true}
             />
           )}
+          {/* Achievement Popup */}
+{showAchievement && currentAchievement && (
+  <div className="achievement-popup">
+    <div className="achievement-icon">{currentAchievement.icon}</div>
+    <div className="achievement-content">
+      <div className="achievement-title">Achievement Unlocked!</div>
+      <div className="achievement-name">{currentAchievement.title}</div>
+      <div className="achievement-description">{currentAchievement.description}</div>
+    </div>
+  </div>
+)}
         </div>
         
         {/* Cassette View */}
@@ -687,6 +989,122 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
 // Add enhanced vintage styling with fixed issues
 const style = document.createElement('style');
 style.innerHTML = `
+
+/* Workout Completion Effect */
+.workout-completion-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 200;
+  animation: fadeInOut 3s ease-in-out forwards;
+  background: rgba(201, 182, 144, 0.6);
+}
+
+.completion-content {
+  text-align: center;
+  padding: 40px;
+  background: rgba(245, 234, 213, 0.95);
+  border: 5px solid #8A7B59;
+  border-radius: 20px;
+  transform: scale(0) rotate(-5deg);
+  animation: bigPopIn 0.7s 0.2s forwards cubic-bezier(0.2, 0.8, 0.2, 1.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.trophy-icon {
+  font-size: 5rem;
+  margin-bottom: 15px;
+  animation: trophyBounce 1s 0.7s infinite alternate;
+}
+
+.workout-completion-text {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #5C4E33;
+  margin-bottom: 15px;
+  font-family: 'VT323', monospace;
+  text-shadow: 3px 3px 0 #C9B690;
+}
+
+.completion-stats {
+  font-size: 1.3rem;
+  color: #8A7B59;
+  font-family: 'VT323', monospace;
+}
+
+.celebration-particle {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: particleBurst 2s ease-out forwards;
+}
+
+@keyframes bigPopIn {
+  0% { transform: scale(0) rotate(-5deg); }
+  70% { transform: scale(1.1) rotate(3deg); }
+  85% { transform: scale(0.95) rotate(0deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes trophyBounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-15px); }
+}
+
+@keyframes particleBurst {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(3) translateY(100px);
+    opacity: 0;
+  }
+}
+
+/* Ensure controls are always visible */
+.vintage-controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: #E5D8B9;
+  border-top: 2px solid #C9B690;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 50;
+  /* Remove the transform-related transitions that hide the controls */
+  transform: none !important; /* Force showing */
+}
+
+/* Remove any hidden class behaviors */
+.vintage-controls.hidden {
+  transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Update the tap-hint to never show since controls are always visible */
+.tap-hint {
+  display: none;
+}
+
   /* Vintage styling for workout player */
   @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
   
@@ -700,6 +1118,7 @@ style.innerHTML = `
     color: #8A7B59;
     font-family: 'VT323', monospace;
   }
+  
   
   /* Vintage loader */
   .vintage-loader {
@@ -873,6 +1292,187 @@ style.innerHTML = `
     transform: translateX(0);
     opacity: 1;
   }
+
+  /* Set Completion Effect */
+.set-completion-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 100;
+  animation: fadeInOut 1.5s ease-in-out forwards;
+  background: rgba(201, 182, 144, 0.3);
+}
+
+.set-completion-effect .effect-content {
+  text-align: center;
+  transform: scale(0);
+  animation: popIn 0.3s 0.1s forwards cubic-bezier(0.2, 0.8, 0.2, 1.2);
+}
+
+.set-completion-effect .completion-text {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #5C4E33;
+  text-shadow: 2px 2px 0 #F5EAD5;
+  margin-bottom: 10px;
+  font-family: 'VT323', monospace;
+}
+
+.energy-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, #F5EAD5 0%, rgba(201, 182, 144, 0) 70%);
+  border-radius: 50%;
+  z-index: -1;
+  animation: burst 0.6s ease-out forwards;
+}
+
+@keyframes burst {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(15);
+    opacity: 0;
+  }
+}
+
+/* Exercise Completion Effect */
+.exercise-completion-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 100;
+  animation: fadeInOut 2.5s ease-in-out forwards;
+  background: rgba(138, 123, 89, 0.4);
+}
+
+.exercise-completion-effect .effect-content {
+  text-align: center;
+  padding: 30px;
+  background: rgba(245, 234, 213, 0.9);
+  border: 3px solid #C9B690;
+  border-radius: 15px;
+  transform: scale(0) rotate(-5deg);
+  animation: popInRotate 0.5s 0.1s forwards cubic-bezier(0.2, 0.8, 0.2, 1.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.exercise-completion-effect .completion-text {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #5C4E33;
+  margin-bottom: 15px;
+  font-family: 'VT323', monospace;
+  text-shadow: 3px 3px 0 #C9B690;
+}
+
+.exercise-completion-effect .motivational-text {
+  font-size: 1.5rem;
+  color: #8A7B59;
+  font-family: 'VT323', monospace;
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 20px;
+  top: -20px;
+  opacity: 0;
+  animation: confettiFall 2s ease-in-out forwards;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes popIn {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+
+@keyframes popInRotate {
+  0% { transform: scale(0) rotate(-5deg); }
+  70% { transform: scale(1.1) rotate(2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(1000px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Add pixel movement to confetti */
+.confetti:nth-child(odd) {
+  animation-name: confettiFallLeft;
+}
+
+.confetti:nth-child(even) {
+  animation-name: confettiFallRight;
+}
+
+@keyframes confettiFallLeft {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(1000px) translateX(-100px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes confettiFallRight {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(1000px) translateX(100px) rotate(-720deg);
+    opacity: 0;
+  }
+}
+
+/* Shake Effect for Completion */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Screen Flash Effect */
+@keyframes screenFlash {
+  0%, 100% { background-color: rgba(245, 234, 213, 0); }
+  50% { background-color: rgba(245, 234, 213, 0.3); }
+}
   
   /* Progress bar */
   .vintage-progress {
@@ -1001,24 +1601,36 @@ style.innerHTML = `
   }
   
   /* Controls */
+.vintage-controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: #E5D8B9;
+  border-top: 2px solid #C9B690;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.3s ease;
+  z-index: 5;
+}
+
+.vintage-controls.hidden {
+  transform: translateY(100%);
+}
+
+/* Make sure controls are always visible on non-fullscreen mode */
+@media (max-height: 600px) {
   .vintage-controls {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 16px;
-    background: #E5D8B9;
-    border-top: 2px solid #C9B690;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: transform 0.3s ease;
-    z-index: 5;
+    /* Make controls smaller on smaller screens */
+    padding: 10px;
   }
   
-  .vintage-controls.hidden {
-    transform: translateY(100%);
+  .vintage-control-button, .vintage-play-button {
+    transform: scale(0.9);
   }
+}
   
   .vintage-main-controls {
     display: flex;
@@ -1153,5 +1765,273 @@ style.innerHTML = `
   }
 `;
 document.head.appendChild(style);
+
+const addCassettePlayerStyles = () => {
+    const styleElement = document.createElement('style');
+    styleElement.innerHTML = `
+      /* Make the cassette view take up proper space */
+      .vintage-workout-player .vintage-view.cassette-view {
+        padding: 0 !important;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      /* Give the cassette player more space */
+      .vintage-workout-player .cassette-view .vintage-player {
+        transform: scale(1);
+        max-width: 100%;
+        padding: 10px;
+      }
+      
+      /* Make cassette window taller */
+      .vintage-workout-player .cassette-view .cassette-window {
+        height: 240px;
+      }
+      
+      /* Ensure playlist has enough space */
+      .vintage-workout-player .cassette-view .playlist-container {
+        min-height: 100px;
+        max-height: 120px;
+      }
+      
+      /* Fix modal styling in WorkoutPlayer context */
+      .vintage-workout-player .add-mixtape-modal {
+        background: #F5EAD5;
+        border: 2px solid #C9B690;
+        color: #5C4E33;
+      }
+      
+      .vintage-workout-player .modal-header {
+        background: #E5D8B9;
+        border-bottom: 1px solid #C9B690;
+      }
+      
+      .vintage-workout-player .form-input {
+        border: 1px solid #C9B690;
+        background: white;
+        color: #5C4E33;
+      }
+      
+      .vintage-workout-player .modal-add-btn {
+        background: #C9B690;
+        color: #5C4E33;
+        border: 1px solid #8A7B59;
+      }
+      
+      .vintage-workout-player .modal-cancel-btn {
+        background: #E5D8B9;
+        color: #8A7B59;
+        border: 1px solid #C9B690;
+      }
+    `;
+    document.head.appendChild(styleElement);
+  };
+  
+
+// Add the following CSS to fix the water break animations:
+const waterBreakAnimations = document.createElement('style');
+waterBreakAnimations.innerHTML = `
+  /* Water Break Animations */
+  @keyframes dropletFall {
+    0% { transform: translateY(-20px); opacity: 0; }
+    10% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(80px); opacity: 0; }
+  }
+  
+  @keyframes ripple {
+    0% { transform: scale(0); opacity: 1; }
+    100% { transform: scale(3); opacity: 0; }
+  }
+  
+  @keyframes waterPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+  }
+  
+  /* Add these animations to WaterBreakReminder.jsx */
+  .vintage-water-break {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .water-break-header svg {
+    animation: waterPulse 2s infinite ease-in-out;
+  }
+  
+  /* Animated water droplets */
+  .water-break-header::before,
+  .water-break-header::after {
+    content: '';
+    position: absolute;
+    background: #8A7B59;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    opacity: 0;
+  }
+  
+  .water-break-header::before {
+    top: 10px;
+    left: 25%;
+    animation: dropletFall 3s infinite ease-in-out;
+  }
+  
+  .water-break-header::after {
+    top: 15px;
+    right: 25%;
+    animation: dropletFall 3.5s 0.5s infinite ease-in-out;
+  }
+  
+  /* Ripple effect under the water drop icon */
+  .water-animation-container {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    margin: 0 auto;
+  }
+  
+  .ripple-circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid #8A7B59;
+    opacity: 0;
+  }
+  
+  .ripple-1 {
+    animation: ripple 2s infinite;
+  }
+  
+  .ripple-2 {
+    animation: ripple 2s 0.5s infinite;
+  }
+  
+  .ripple-3 {
+    animation: ripple 2s 1s infinite;
+  }
+  
+  /* Additional water droplets around the container */
+  .water-droplets {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+  }
+  
+  .droplet {
+    position: absolute;
+    width: 6px;
+    height: 10px;
+    border-radius: 50%;
+    background: #8A7B59;
+    opacity: 0;
+  }
+  
+  .droplet:nth-child(1) {
+    top: 20%;
+    left: 20%;
+    animation: dropletFall 2.5s infinite;
+  }
+  
+  .droplet:nth-child(2) {
+    top: 10%;
+    left: 60%;
+    animation: dropletFall 3s 0.7s infinite;
+  }
+  
+  .droplet:nth-child(3) {
+    top: 15%;
+    left: 80%;
+    animation: dropletFall 3.2s 1.2s infinite;
+  }
+  
+  .droplet:nth-child(4) {
+    top: 5%;
+    left: 40%;
+    animation: dropletFall 2.8s 0.3s infinite;
+  }
+`;
+document.head.appendChild(waterBreakAnimations);
+
+// Add the CSS for the achievement popup
+const achievementStyles = `
+  /* Achievement Popup */
+  .achievement-popup {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background: #F5EAD5;
+    border: 3px solid #8A7B59;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    animation: achievementSlideIn 0.5s ease-out forwards, achievementSlideOut 0.5s 2.5s ease-in forwards;
+    max-width: 80%;
+  }
+  
+  .achievement-icon {
+    font-size: 2.5rem;
+    margin-right: 15px;
+    animation: achievementPulse 0.5s infinite alternate;
+  }
+  
+  .achievement-content {
+    flex: 1;
+  }
+  
+  .achievement-title {
+    font-family: 'VT323', monospace;
+    color: #8A7B59;
+    font-size: 0.9rem;
+    margin-bottom: 3px;
+  }
+  
+  .achievement-name {
+    font-family: 'VT323', monospace;
+    color: #5C4E33;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 3px;
+  }
+  
+  .achievement-description {
+    font-family: 'VT323', monospace;
+    color: #8A7B59;
+    font-size: 0.9rem;
+  }
+  
+  @keyframes achievementPulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.1); }
+  }
+  
+  @keyframes achievementSlideIn {
+    0% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+    100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  }
+  
+  @keyframes achievementSlideOut {
+    0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+    100% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+  }
+`;
+
+// Add the achievement styles to the document
+const achievementStyleElement = document.createElement('style');
+achievementStyleElement.innerHTML = achievementStyles;
+document.head.appendChild(achievementStyleElement);
 
 export default WorkoutPlayer;

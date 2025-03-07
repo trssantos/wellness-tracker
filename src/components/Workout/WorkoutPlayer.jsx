@@ -341,20 +341,20 @@ const checkAchievements = () => {
   const showSetCompletionEffect = () => {
     // Create the effect element
     const effectContainer = document.createElement('div');
-    effectContainer.className = 'set-completion-effect';
+    effectContainer.className = 'set-completion-effect-wplayer';
     
     // Create the inner content
     const innerContent = document.createElement('div');
-    innerContent.className = 'effect-content';
+    innerContent.className = 'effect-content-wplayer';
     
     // Create main text
     const completionText = document.createElement('div');
-    completionText.className = 'completion-text';
+    completionText.className = 'completion-text-wplayer';
     completionText.textContent = 'SET COMPLETE!';
     
     // Create energy burst element
     const energyBurst = document.createElement('div');
-    energyBurst.className = 'energy-burst';
+    energyBurst.className = 'energy-burst-wplayer';
     
     // Append elements
     innerContent.appendChild(completionText);
@@ -423,15 +423,15 @@ const checkAchievements = () => {
   const showExerciseCompletionEffect = () => {
     // Create the effect container
     const effectContainer = document.createElement('div');
-    effectContainer.className = 'exercise-completion-effect';
+    effectContainer.className = 'exercise-completion-effect-wplayer';
     
     // Create the inner content
     const innerContent = document.createElement('div');
-    innerContent.className = 'effect-content';
+    innerContent.className = 'effect-content-wplayer';
     
     // Create main text
     const completionText = document.createElement('div');
-    completionText.className = 'completion-text';
+    completionText.className = 'completion-text-wplayer';
     completionText.textContent = 'EXERCISE COMPLETE!';
     
     // Create motivational text
@@ -447,13 +447,13 @@ const checkAchievements = () => {
     ];
     
     const motivationalText = document.createElement('div');
-    motivationalText.className = 'motivational-text';
+    motivationalText.className = 'motivational-text-wplayer';
     motivationalText.textContent = motivationalPhrases[Math.floor(Math.random() * motivationalPhrases.length)];
     
     // Create confetti bursts
     for (let i = 0; i < 20; i++) {
       const confetti = document.createElement('div');
-      confetti.className = 'confetti';
+      confetti.className = 'confetti-wplayer';
       confetti.style.left = `${Math.random() * 100}%`;
       confetti.style.animationDelay = `${Math.random() * 0.5}s`;
       confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 80%, 60%)`;
@@ -521,25 +521,25 @@ const checkAchievements = () => {
 const showWorkoutCompletionEffect = () => {
     // Create the effect container
     const effectContainer = document.createElement('div');
-    effectContainer.className = 'workout-completion-effect';
+    effectContainer.className = 'workout-completion-effect-wplayer';
     
     // Create inner content
     const innerContent = document.createElement('div');
-    innerContent.className = 'completion-content';
+    innerContent.className = 'completion-content-wplayer';
     
     // Trophy icon
     const trophyIcon = document.createElement('div');
-    trophyIcon.className = 'trophy-icon';
+    trophyIcon.className = 'trophy-icon-wplayer';
     trophyIcon.innerHTML = '🏆';
     
     // Completion text
     const completionText = document.createElement('div');
-    completionText.className = 'workout-completion-text';
+    completionText.className = 'workout-completion-text-wplayer';
     completionText.textContent = 'WORKOUT COMPLETE!';
     
     // Stats
     const statsText = document.createElement('div');
-    statsText.className = 'completion-stats';
+    statsText.className = 'completion-stats-wplayer';
     
     // Format total time
     const mins = Math.floor(totalTimeElapsed / 60);
@@ -551,7 +551,7 @@ const showWorkoutCompletionEffect = () => {
     // Add celebration particles
     for (let i = 0; i < 50; i++) {
       const particle = document.createElement('div');
-      particle.className = 'celebration-particle';
+      particle.className = 'celebration-particle-wplayer';
       
       // Randomize particle appearance
       particle.style.left = `${Math.random() * 100}%`;
@@ -730,8 +730,8 @@ const showWorkoutCompletionEffect = () => {
   if (!workout) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="vintage-loader">
-          <div className="loader-inner"></div>
+        <div className="vintage-loader-wplayer">
+          <div className="loader-inner-wplayer"></div>
         </div>
       </div>
     );
@@ -747,20 +747,20 @@ const showWorkoutCompletionEffect = () => {
   return (
     <div 
       ref={playerRef} 
-      className={`vintage-workout-player ${activeView === 'cassette' ? 'cassette-mode' : 'workout-mode'}`}
+      className={`vintage-workout-player-wplayer ${activeView === 'cassette' ? 'cassette-mode-wplayer' : 'workout-mode-wplayer'}`}
       onClick={() => setShowControls(true)}
     >
       {/* View switcher tabs */}
-      <div className="vintage-view-tabs">
+      <div className="vintage-view-tabs-wplayer">
         <button 
-          className={`vintage-tab ${activeView === 'workout' ? 'active' : ''}`}
+          className={`vintage-tab-wplayer ${activeView === 'workout' ? 'active-wplayer' : ''}`}
           onClick={() => setActiveView('workout')}
         >
           <Zap size={18} />
           <span>Workout</span>
         </button>
         <button 
-          className={`vintage-tab ${activeView === 'cassette' ? 'active' : ''}`}
+          className={`vintage-tab-wplayer ${activeView === 'cassette' ? 'active-wplayer' : ''}`}
           onClick={() => setActiveView('cassette')}
         >
           <Music size={18} />
@@ -769,39 +769,39 @@ const showWorkoutCompletionEffect = () => {
       </div>
       
       {/* Header with title and controls */}
-      <div className={`vintage-header ${showControls ? 'visible' : 'hidden'}`}>
+      <div className={`vintage-header-wplayer ${showControls ? 'visible-wplayer' : 'hidden-wplayer'}`}>
         <button 
           onClick={onClose}
-          className="vintage-button"
+          className="vintage-button-wplayer"
         >
           <X size={20} />
         </button>
-        <div className="vintage-title">
+        <div className="vintage-title-wplayer">
           <h2>{workout.name}</h2>
-          <div className="vintage-timer">{formatTime(totalTimeElapsed)}</div>
+          <div className="vintage-timer-wplayer">{formatTime(totalTimeElapsed)}</div>
         </div>
         <button 
           onClick={toggleFullscreen}
-          className="vintage-button"
+          className="vintage-button-wplayer"
         >
           {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
         </button>
       </div>
       
       {/* View container */}
-      <div className={`vintage-view-container ${showControls ? 'controls-visible' : 'controls-hidden'}`}>
+      <div className={`vintage-view-container-wplayer ${showControls ? 'controls-visible-wplayer' : 'controls-hidden-wplayer'}`}>
         {/* Workout View */}
-        <div className={`vintage-view workout-view ${activeView === 'workout' ? 'active' : ''}`}>
+        <div className={`vintage-view-wplayer workout-view-wplayer ${activeView === 'workout' ? 'active-wplayer' : ''}`}>
           {/* Progress bar */}
           {currentState !== 'ready' && currentState !== 'summary' && (
-            <div className="vintage-progress">
-              <div className="progress-text">
+            <div className="vintage-progress-wplayer">
+              <div className="progress-text-wplayer">
                 Exercise {currentExerciseIndex + 1} of {workout.exercises.length}
                 {currentState === 'exercise' && ` • Set ${currentSetNumber} of ${currentSets}`}
               </div>
-              <div className="progress-bar">
+              <div className="progress-bar-wplayer">
                 <div 
-                  className="progress-fill"
+                  className="progress-fill-wplayer"
                   style={{ 
                     width: `${((currentExerciseIndex + (currentState === 'rest' ? 0.5 : 0)) / workout.exercises.length) * 100}%` 
                   }}
@@ -812,8 +812,8 @@ const showWorkoutCompletionEffect = () => {
           
           {/* Ready state */}
           {currentState === 'ready' && (
-            <div className="vintage-ready-state">
-              <div className="ready-icon">
+            <div className="vintage-ready-state-wplayer">
+              <div className="ready-icon-wplayer">
                 <Play size={40} />
               </div>
               <h3>Ready to start your workout?</h3>
@@ -822,7 +822,7 @@ const showWorkoutCompletionEffect = () => {
               </p>
               <button 
                 onClick={startWorkout}
-                className="vintage-start-button"
+                className="vintage-start-button-wplayer"
               >
                 <Play size={20} />
                 Start Workout
@@ -832,7 +832,7 @@ const showWorkoutCompletionEffect = () => {
           
           {/* Exercise state */}
           {currentState === 'exercise' && currentExercise && (
-            <div className="vintage-exercise-container">
+            <div className="vintage-exercise-container-wplayer">
               <ExerciseView 
                 exercise={currentExercise}
                 index={currentExerciseIndex + 1}
@@ -852,7 +852,7 @@ const showWorkoutCompletionEffect = () => {
               {/* Set completion button */}
               <button
                 onClick={completeSet}
-                className="vintage-complete-set-button"
+                className="vintage-complete-set-button-wplayer"
               >
                 Complete Set {currentSetNumber}
               </button>
@@ -861,7 +861,7 @@ const showWorkoutCompletionEffect = () => {
           
           {/* Rest state */}
           {currentState === 'rest' && (
-            <div className="vintage-rest-container">
+            <div className="vintage-rest-container-wplayer">
               <RestPeriod 
                 timeElapsed={timeElapsed} // Now passing timeElapsed
                 nextExercise={workout.exercises[currentExerciseIndex + 1]}
@@ -871,7 +871,7 @@ const showWorkoutCompletionEffect = () => {
               {/* Rest completion button */}
               <button
                 onClick={completeRest}
-                className="vintage-complete-rest-button"
+                className="vintage-complete-rest-button-wplayer"
               >
                 End Rest Period
               </button>
@@ -880,7 +880,7 @@ const showWorkoutCompletionEffect = () => {
           
           {/* Water break state */}
           {currentState === 'waterBreak' && (
-            <div className="vintage-waterbreak-container">
+            <div className="vintage-waterbreak-container-wplayer">
               <WaterBreakReminder 
                 timeElapsed={timeElapsed} // Now passing timeElapsed
                 onSkip={completeWaterBreak}
@@ -904,38 +904,38 @@ const showWorkoutCompletionEffect = () => {
           )}
           {/* Achievement Popup */}
 {showAchievement && currentAchievement && (
-  <div className="achievement-popup">
-    <div className="achievement-icon">{currentAchievement.icon}</div>
-    <div className="achievement-content">
-      <div className="achievement-title">Achievement Unlocked!</div>
-      <div className="achievement-name">{currentAchievement.title}</div>
-      <div className="achievement-description">{currentAchievement.description}</div>
+  <div className="achievement-popup-wplayer">
+    <div className="achievement-icon-wplayer">{currentAchievement.icon}</div>
+    <div className="achievement-content-wplayer">
+      <div className="achievement-title-wplayer">Achievement Unlocked!</div>
+      <div className="achievement-name-wplayer">{currentAchievement.title}</div>
+      <div className="achievement-description-wplayer">{currentAchievement.description}</div>
     </div>
   </div>
 )}
         </div>
         
         {/* Cassette View */}
-        <div className={`vintage-view cassette-view ${activeView === 'cassette' ? 'active' : ''}`}>
+        <div className={`vintage-view-wplayer cassette-view-wplayer ${activeView === 'cassette' ? 'active-wplayer' : ''}`}>
           <RetroTapePlayer isMuted={isMuted} />
         </div>
       </div>
       
       {/* Controls */}
       {currentState !== 'summary' && (
-        <div className={`vintage-controls ${showControls ? 'visible' : 'hidden'}`}>
+        <div className={`vintage-controls-wplayer ${showControls ? 'visible-wplayer' : 'hidden-wplayer'}`}>
           <button 
             onClick={toggleMute}
-            className="vintage-control-button"
+            className="vintage-control-button-wplayer"
           >
             {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
           </button>
           
-          <div className="vintage-main-controls">
+          <div className="vintage-main-controls-wplayer">
             {currentState !== 'ready' && currentExerciseIndex > 0 && (
               <button 
                 onClick={goToPrevious}
-                className="vintage-control-button"
+                className="vintage-control-button-wplayer"
                 disabled={currentExerciseIndex === 0}
               >
                 <Rewind size={24} />
@@ -944,7 +944,7 @@ const showWorkoutCompletionEffect = () => {
             
             <button 
               onClick={togglePlayPause}
-              className={`vintage-play-button ${isPlaying ? 'playing' : ''}`}
+              className={`vintage-play-button-wplayer ${isPlaying ? 'playing-wplayer' : ''}`}
             >
               {isPlaying ? <Pause size={24} /> : <Play size={24} className="ml-1" />}
             </button>
@@ -952,7 +952,7 @@ const showWorkoutCompletionEffect = () => {
             {currentState !== 'ready' && currentExerciseIndex < workout.exercises.length && (
               <button 
                 onClick={skipToNext}
-                className="vintage-control-button"
+                className="vintage-control-button-wplayer"
               >
                 <SkipForward size={24} />
               </button>
@@ -961,7 +961,7 @@ const showWorkoutCompletionEffect = () => {
           
           <button 
             onClick={triggerWaterBreak}
-            className="vintage-control-button water-button"
+            className="vintage-control-button-wplayer water-button-wplayer"
           >
             <Droplet size={24} />
           </button>
@@ -970,7 +970,7 @@ const showWorkoutCompletionEffect = () => {
       
       {/* Next water break indicator */}
       {nextWaterBreak && showControls && currentState !== 'ready' && currentState !== 'summary' && (
-        <div className="vintage-water-indicator">
+        <div className="vintage-water-indicator-wplayer">
           <Droplet size={14} />
           <span>Next break: {nextWaterBreak}min</span>
         </div>
@@ -978,7 +978,7 @@ const showWorkoutCompletionEffect = () => {
       
       {/* Tap to show controls hint - shows briefly when controls are hidden */}
       {!showControls && (
-        <div className="tap-hint">
+        <div className="tap-hint-wplayer">
           Tap to show controls
         </div>
       )}
@@ -991,7 +991,7 @@ const style = document.createElement('style');
 style.innerHTML = `
 
 /* Workout Completion Effect */
-.workout-completion-effect {
+.workout-completion-effect-wplayer {
   position: absolute;
   top: 0;
   left: 0;
@@ -1002,31 +1002,31 @@ style.innerHTML = `
   justify-content: center;
   pointer-events: none;
   z-index: 200;
-  animation: fadeInOut 3s ease-in-out forwards;
+  animation: fadeInOut-wplayer 3s ease-in-out forwards;
   background: rgba(201, 182, 144, 0.6);
 }
 
-.completion-content {
+.completion-content-wplayer {
   text-align: center;
   padding: 40px;
   background: rgba(245, 234, 213, 0.95);
   border: 5px solid #8A7B59;
   border-radius: 20px;
   transform: scale(0) rotate(-5deg);
-  animation: bigPopIn 0.7s 0.2s forwards cubic-bezier(0.2, 0.8, 0.2, 1.2);
+  animation: bigPopIn-wplayer 0.7s 0.2s forwards cubic-bezier(0.2, 0.8, 0.2, 1.2);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
   position: relative;
   overflow: hidden;
   z-index: 10;
 }
 
-.trophy-icon {
+.trophy-icon-wplayer {
   font-size: 5rem;
   margin-bottom: 15px;
-  animation: trophyBounce 1s 0.7s infinite alternate;
+  animation: trophyBounce-wplayer 1s 0.7s infinite alternate;
 }
 
-.workout-completion-text {
+.workout-completion-text-wplayer {
   font-size: 2.5rem;
   font-weight: bold;
   color: #5C4E33;
@@ -1035,34 +1035,34 @@ style.innerHTML = `
   text-shadow: 3px 3px 0 #C9B690;
 }
 
-.completion-stats {
+.completion-stats-wplayer {
   font-size: 1.3rem;
   color: #8A7B59;
   font-family: 'VT323', monospace;
 }
 
-.celebration-particle {
+.celebration-particle-wplayer {
   position: absolute;
   width: 15px;
   height: 15px;
   border-radius: 50%;
   opacity: 0;
-  animation: particleBurst 2s ease-out forwards;
+  animation: particleBurst-wplayer 2s ease-out forwards;
 }
 
-@keyframes bigPopIn {
+@keyframes bigPopIn-wplayer {
   0% { transform: scale(0) rotate(-5deg); }
   70% { transform: scale(1.1) rotate(3deg); }
   85% { transform: scale(0.95) rotate(0deg); }
   100% { transform: scale(1) rotate(0deg); }
 }
 
-@keyframes trophyBounce {
+@keyframes trophyBounce-wplayer {
   0% { transform: translateY(0); }
   100% { transform: translateY(-15px); }
 }
 
-@keyframes particleBurst {
+@keyframes particleBurst-wplayer {
   0% {
     transform: scale(0);
     opacity: 1;
@@ -1077,7 +1077,7 @@ style.innerHTML = `
 }
 
 /* Ensure controls are always visible */
-.vintage-controls {
+.vintage-controls-wplayer {
   position: fixed;
   bottom: 0;
   left: 0;
@@ -1094,21 +1094,21 @@ style.innerHTML = `
 }
 
 /* Remove any hidden class behaviors */
-.vintage-controls.hidden {
+.vintage-controls-wplayer.hidden-wplayer {
   transform: none !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
 
 /* Update the tap-hint to never show since controls are always visible */
-.tap-hint {
+.tap-hint-wplayer {
   display: none;
 }
 
   /* Vintage styling for workout player */
   @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
   
-  .vintage-workout-player {
+  .vintage-workout-player-wplayer {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -1121,7 +1121,7 @@ style.innerHTML = `
   
   
   /* Vintage loader */
-  .vintage-loader {
+  .vintage-loader-wplayer {
     width: 50px;
     height: 50px;
     background: #E5D8B9;
@@ -1131,30 +1131,30 @@ style.innerHTML = `
     align-items: center;
     justify-content: center;
     position: relative;
-    animation: loaderPulse 1.5s infinite ease-in-out;
+    animation: loaderPulse-wplayer 1.5s infinite ease-in-out;
   }
   
-  .loader-inner {
+  .loader-inner-wplayer {
     width: 30px;
     height: 30px;
     border-radius: 50%;
     border: 3px solid #8A7B59;
     border-top-color: transparent;
-    animation: loaderSpin 1s infinite linear;
+    animation: loaderSpin-wplayer 1s infinite linear;
   }
   
-  @keyframes loaderPulse {
+  @keyframes loaderPulse-wplayer {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.1); }
   }
   
-  @keyframes loaderSpin {
+  @keyframes loaderSpin-wplayer {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
   
   /* View tabs */
-  .vintage-view-tabs {
+  .vintage-view-tabs-wplayer {
     display: flex;
     background: #E5D8B9;
     padding: 4px;
@@ -1162,7 +1162,7 @@ style.innerHTML = `
     z-index: 5;
   }
   
-  .vintage-tab {
+  .vintage-tab-wplayer {
     flex: 1;
     display: flex;
     align-items: center;
@@ -1177,14 +1177,14 @@ style.innerHTML = `
     font-family: 'VT323', monospace;
   }
   
-  .vintage-tab.active {
+  .vintage-tab-wplayer.active-wplayer {
     background: #C9B690;
     color: #5C4E33;
     font-weight: bold;
   }
   
   /* Header styling */
-  .vintage-header {
+  .vintage-header-wplayer {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1195,11 +1195,11 @@ style.innerHTML = `
     z-index: 5;
   }
   
-  .vintage-header.hidden {
+  .vintage-header-wplayer.hidden-wplayer {
     transform: translateY(-100%);
   }
   
-  .vintage-button {
+  .vintage-button-wplayer {
     width: 36px;
     height: 36px;
     display: flex;
@@ -1212,47 +1212,47 @@ style.innerHTML = `
     transition: all 0.2s ease;
   }
   
-  .vintage-button:active {
+  .vintage-button-wplayer:active {
     transform: scale(0.95);
     background: #8A7B59;
     color: #F5EAD5;
   }
   
-  .vintage-title {
+  .vintage-title-wplayer {
     display: flex;
     flex-direction: column;
     align-items: center;
   }
   
-  .vintage-title h2 {
+  .vintage-title-wplayer h2 {
     font-size: 1.2rem;
     margin: 0;
     color: #5C4E33;
   }
   
-  .vintage-timer {
+  .vintage-timer-wplayer {
     font-size: 1rem;
     color: #8A7B59;
   }
   
   /* Main content container */
-  .vintage-view-container {
+  .vintage-view-container-wplayer {
     flex: 1;
     position: relative;
     overflow: hidden;
     transition: padding 0.3s ease;
   }
   
-  .vintage-view-container.controls-hidden {
+  .vintage-view-container-wplayer.controls-hidden-wplayer {
     padding-bottom: 0;
   }
   
-  .vintage-view-container.controls-visible {
+  .vintage-view-container-wplayer.controls-visible-wplayer {
     padding-bottom: 80px;
   }
   
   /* Fixed view styling to prevent overlap */
-  .vintage-view {
+  .vintage-view-wplayer {
     position: absolute;
     top: 0;
     left: 0;
@@ -1263,38 +1263,38 @@ style.innerHTML = `
     padding: 20px;
   }
   
-  .workout-view {
+  .workout-view-wplayer {
     transform: translateX(-100%);
     opacity: 0;
   }
   
-  .cassette-view {
+  .cassette-view-wplayer {
     transform: translateX(100%);
     opacity: 0;
   }
   
-  .workout-mode .workout-view {
+  .workout-mode-wplayer .workout-view-wplayer {
     transform: translateX(0);
     opacity: 1;
   }
   
-  .workout-mode .cassette-view {
+  .workout-mode-wplayer .cassette-view-wplayer {
     transform: translateX(100%);
     opacity: 0;
   }
   
-  .cassette-mode .workout-view {
+  .cassette-mode-wplayer .workout-view-wplayer {
     transform: translateX(-100%);
     opacity: 0;
   }
   
-  .cassette-mode .cassette-view {
+  .cassette-mode-wplayer .cassette-view-wplayer {
     transform: translateX(0);
     opacity: 1;
   }
 
   /* Set Completion Effect */
-.set-completion-effect {
+.set-completion-effect-wplayer {
   position: absolute;
   top: 0;
   left: 0;
@@ -1305,17 +1305,17 @@ style.innerHTML = `
   justify-content: center;
   pointer-events: none;
   z-index: 100;
-  animation: fadeInOut 1.5s ease-in-out forwards;
+  animation: fadeInOut-wplayer 1.5s ease-in-out forwards;
   background: rgba(201, 182, 144, 0.3);
 }
 
-.set-completion-effect .effect-content {
+.set-completion-effect-wplayer .effect-content-wplayer {
   text-align: center;
   transform: scale(0);
-  animation: popIn 0.3s 0.1s forwards cubic-bezier(0.2, 0.8, 0.2, 1.2);
+  animation: popIn-wplayer 0.3s 0.1s forwards cubic-bezier(0.2, 0.8, 0.2, 1.2);
 }
 
-.set-completion-effect .completion-text {
+.set-completion-effect-wplayer .completion-text-wplayer {
   font-size: 2rem;
   font-weight: bold;
   color: #5C4E33;
@@ -1324,7 +1324,7 @@ style.innerHTML = `
   font-family: 'VT323', monospace;
 }
 
-.energy-burst {
+.energy-burst-wplayer {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -1334,10 +1334,10 @@ style.innerHTML = `
   background: radial-gradient(circle, #F5EAD5 0%, rgba(201, 182, 144, 0) 70%);
   border-radius: 50%;
   z-index: -1;
-  animation: burst 0.6s ease-out forwards;
+  animation: burst-wplayer 0.6s ease-out forwards;
 }
 
-@keyframes burst {
+@keyframes burst-wplayer {
   0% {
     transform: translate(-50%, -50%) scale(0);
     opacity: 1;
@@ -1349,7 +1349,7 @@ style.innerHTML = `
 }
 
 /* Exercise Completion Effect */
-.exercise-completion-effect {
+.exercise-completion-effect-wplayer {
   position: absolute;
   top: 0;
   left: 0;
@@ -1360,24 +1360,24 @@ style.innerHTML = `
   justify-content: center;
   pointer-events: none;
   z-index: 100;
-  animation: fadeInOut 2.5s ease-in-out forwards;
+  animation: fadeInOut-wplayer 2.5s ease-in-out forwards;
   background: rgba(138, 123, 89, 0.4);
 }
 
-.exercise-completion-effect .effect-content {
+.exercise-completion-effect-wplayer .effect-content-wplayer {
   text-align: center;
   padding: 30px;
   background: rgba(245, 234, 213, 0.9);
   border: 3px solid #C9B690;
   border-radius: 15px;
   transform: scale(0) rotate(-5deg);
-  animation: popInRotate 0.5s 0.1s forwards cubic-bezier(0.2, 0.8, 0.2, 1.2);
+  animation: popInRotate-wplayer 0.5s 0.1s forwards cubic-bezier(0.2, 0.8, 0.2, 1.2);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   position: relative;
   overflow: hidden;
 }
 
-.exercise-completion-effect .completion-text {
+.exercise-completion-effect-wplayer .completion-text-wplayer {
   font-size: 2.5rem;
   font-weight: bold;
   color: #5C4E33;
@@ -1386,40 +1386,40 @@ style.innerHTML = `
   text-shadow: 3px 3px 0 #C9B690;
 }
 
-.exercise-completion-effect .motivational-text {
+.exercise-completion-effect-wplayer .motivational-text-wplayer {
   font-size: 1.5rem;
   color: #8A7B59;
   font-family: 'VT323', monospace;
 }
 
-.confetti {
+.confetti-wplayer {
   position: absolute;
   width: 10px;
   height: 20px;
   top: -20px;
   opacity: 0;
-  animation: confettiFall 2s ease-in-out forwards;
+  animation: confettiFall-wplayer 2s ease-in-out forwards;
 }
 
-@keyframes fadeInOut {
+@keyframes fadeInOut-wplayer {
   0% { opacity: 0; }
   10% { opacity: 1; }
   90% { opacity: 1; }
   100% { opacity: 0; }
 }
 
-@keyframes popIn {
+@keyframes popIn-wplayer {
   0% { transform: scale(0); }
   100% { transform: scale(1); }
 }
 
-@keyframes popInRotate {
+@keyframes popInRotate-wplayer {
   0% { transform: scale(0) rotate(-5deg); }
   70% { transform: scale(1.1) rotate(2deg); }
   100% { transform: scale(1) rotate(0deg); }
 }
 
-@keyframes confettiFall {
+@keyframes confettiFall-wplayer {
   0% {
     transform: translateY(0) rotate(0deg);
     opacity: 1;
@@ -1431,15 +1431,15 @@ style.innerHTML = `
 }
 
 /* Add pixel movement to confetti */
-.confetti:nth-child(odd) {
-  animation-name: confettiFallLeft;
+.confetti-wplayer:nth-child(odd) {
+  animation-name: confettiFallLeft-wplayer;
 }
 
-.confetti:nth-child(even) {
-  animation-name: confettiFallRight;
+.confetti-wplayer:nth-child(even) {
+  animation-name: confettiFallRight-wplayer;
 }
 
-@keyframes confettiFallLeft {
+@keyframes confettiFallLeft-wplayer {
   0% {
     transform: translateY(0) translateX(0) rotate(0deg);
     opacity: 1;
@@ -1450,7 +1450,7 @@ style.innerHTML = `
   }
 }
 
-@keyframes confettiFallRight {
+@keyframes confettiFallRight-wplayer {
   0% {
     transform: translateY(0) translateX(0) rotate(0deg);
     opacity: 1;
@@ -1462,31 +1462,31 @@ style.innerHTML = `
 }
 
 /* Shake Effect for Completion */
-@keyframes shake {
+@keyframes shake-wplayer {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
   20%, 40%, 60%, 80% { transform: translateX(5px); }
 }
 
 /* Screen Flash Effect */
-@keyframes screenFlash {
+@keyframes screenFlash-wplayer {
   0%, 100% { background-color: rgba(245, 234, 213, 0); }
   50% { background-color: rgba(245, 234, 213, 0.3); }
 }
   
   /* Progress bar */
-  .vintage-progress {
+  .vintage-progress-wplayer {
     margin-bottom: 20px;
   }
   
-  .progress-text {
+  .progress-text-wplayer {
     font-size: 0.9rem;
     margin-bottom: 4px;
     color: #8A7B59;
     text-align: center;
   }
   
-  .progress-bar {
+  .progress-bar-wplayer {
     height: 8px;
     background: #E5D8B9;
     border: 1px solid #C9B690;
@@ -1494,14 +1494,14 @@ style.innerHTML = `
     overflow: hidden;
   }
   
-  .progress-fill {
+  .progress-fill-wplayer {
     height: 100%;
     background: #C9B690;
     transition: width 0.3s ease;
   }
   
   /* Ready state */
-  .vintage-ready-state {
+  .vintage-ready-state-wplayer {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1514,7 +1514,7 @@ style.innerHTML = `
     border-radius: 8px;
   }
   
-  .ready-icon {
+  .ready-icon-wplayer {
     width: 80px;
     height: 80px;
     background: #E5D8B9;
@@ -1527,18 +1527,18 @@ style.innerHTML = `
     color: #8A7B59;
   }
   
-  .vintage-ready-state h3 {
+  .vintage-ready-state-wplayer h3 {
     font-size: 1.5rem;
     margin-bottom: 10px;
     color: #5C4E33;
   }
   
-  .vintage-ready-state p {
+  .vintage-ready-state-wplayer p {
     margin-bottom: 30px;
     color: #8A7B59;
   }
   
-  .vintage-start-button {
+  .vintage-start-button-wplayer {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -1552,14 +1552,14 @@ style.innerHTML = `
     transition: all 0.2s ease;
   }
   
-  .vintage-start-button:active {
+  .vintage-start-button-wplayer:active {
     transform: scale(0.95);
     background: #8A7B59;
     color: #F5EAD5;
   }
   
   /* Complete Set Button */
-  .vintage-complete-set-button {
+  .vintage-complete-set-button-wplayer {
     display: block;
     width: 100%;
     padding: 12px;
@@ -1573,14 +1573,14 @@ style.innerHTML = `
     transition: all 0.2s ease;
   }
   
-  .vintage-complete-set-button:active {
+  .vintage-complete-set-button-wplayer:active {
     transform: scale(0.98);
     background: #8A7B59;
     color: #F5EAD5;
   }
   
   /* Rest completion button */
-  .vintage-complete-rest-button {
+  .vintage-complete-rest-button-wplayer {
     display: block;
     width: 100%;
     padding: 12px;
@@ -1594,14 +1594,14 @@ style.innerHTML = `
     transition: all 0.2s ease;
   }
   
-  .vintage-complete-rest-button:active {
+  .vintage-complete-rest-button-wplayer:active {
     transform: scale(0.98);
     background: #8A7B59;
     color: #F5EAD5;
   }
   
   /* Controls */
-.vintage-controls {
+.vintage-controls-wplayer {
   position: fixed;
   bottom: 0;
   left: 0;
@@ -1616,29 +1616,29 @@ style.innerHTML = `
   z-index: 5;
 }
 
-.vintage-controls.hidden {
+.vintage-controls-wplayer.hidden-wplayer {
   transform: translateY(100%);
 }
 
 /* Make sure controls are always visible on non-fullscreen mode */
 @media (max-height: 600px) {
-  .vintage-controls {
+  .vintage-controls-wplayer {
     /* Make controls smaller on smaller screens */
     padding: 10px;
   }
   
-  .vintage-control-button, .vintage-play-button {
+  .vintage-control-button-wplayer, .vintage-play-button-wplayer {
     transform: scale(0.9);
   }
 }
   
-  .vintage-main-controls {
+  .vintage-main-controls-wplayer {
     display: flex;
     align-items: center;
     gap: 16px;
   }
   
-  .vintage-control-button {
+  .vintage-control-button-wplayer {
     width: 40px;
     height: 40px;
     display: flex;
@@ -1652,28 +1652,28 @@ style.innerHTML = `
   }
   
   /* Highlight the water button */
-  .water-button {
+  .water-button-wplayer {
     background: #C9B690;
     color: #5C4E33;
   }
   
-  .water-button:active {
+  .water-button-wplayer:active {
     background: #8A7B59;
     color: #F5EAD5;
   }
   
-  .vintage-control-button:active {
+  .vintage-control-button-wplayer:active {
     transform: scale(0.95);
     background: #C9B690;
     color: #5C4E33;
   }
   
-  .vintage-control-button:disabled {
+  .vintage-control-button-wplayer:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
   
-  .vintage-play-button {
+  .vintage-play-button-wplayer {
     width: 60px;
     height: 60px;
     display: flex;
@@ -1686,17 +1686,17 @@ style.innerHTML = `
     transition: all 0.2s ease;
   }
   
-  .vintage-play-button.playing {
+  .vintage-play-button-wplayer.playing-wplayer {
     background: #8A7B59;
     color: #F5EAD5;
   }
   
-  .vintage-play-button:active {
+  .vintage-play-button-wplayer:active {
     transform: scale(0.95);
   }
   
   /* Water break indicator */
-  .vintage-water-indicator {
+  .vintage-water-indicator-wplayer {
     position: absolute;
     bottom: 80px;
     left: 50%;
@@ -1714,7 +1714,7 @@ style.innerHTML = `
   }
   
   /* Tap to show controls hint */
-  .tap-hint {
+  .tap-hint-wplayer {
     position: absolute;
     bottom: 20px;
     left: 50%;
@@ -1726,12 +1726,12 @@ style.innerHTML = `
     font-size: 0.8rem;
     color: #8A7B59;
     opacity: 0;
-    animation: fadeInOut 3s forwards;
+    animation: fadeInOut-wplayer 3s forwards;
     z-index: 5;
     pointer-events: none;
   }
   
-  @keyframes fadeInOut {
+  @keyframes fadeInOut-wplayer {
     0% { opacity: 0; }
     20% { opacity: 1; }
     80% { opacity: 1; }
@@ -1740,26 +1740,27 @@ style.innerHTML = `
   
   /* Responsive adjustments */
   @media (max-width: 768px) {
-    .vintage-title h2 {
+    .vintage-title-wplayer h2 {
       font-size: 1rem;
     }
     
-    .vintage-timer {
+    .vintage-timer-wplayer {
       font-size: 0.8rem;
     }
     
-    .vintage-play-button {
+    .vintage-play-button-wplayer {
       width: 50px;
       height: 50px;
     }
     
-    .vintage-control-button {
+    .vintage-control-button-wplayer {
       width: 36px;
       height: 36px;
     }
     
-    .vintage-start-button {
+    .vintage-start-button-wplayer {
       padding: 10px 20px;
+
       font-size: 1rem;
     }
   }
@@ -1770,7 +1771,7 @@ const addCassettePlayerStyles = () => {
     const styleElement = document.createElement('style');
     styleElement.innerHTML = `
       /* Make the cassette view take up proper space */
-      .vintage-workout-player .vintage-view.cassette-view {
+      .vintage-workout-player-wplayer .vintage-view-wplayer.cassette-view-wplayer {
         padding: 0 !important;
         height: 100%;
         display: flex;
@@ -1779,48 +1780,48 @@ const addCassettePlayerStyles = () => {
       }
       
       /* Give the cassette player more space */
-      .vintage-workout-player .cassette-view .vintage-player {
+      .vintage-workout-player-wplayer .cassette-view-wplayer .vintage-player-wplayer {
         transform: scale(1);
         max-width: 100%;
         padding: 10px;
       }
       
       /* Make cassette window taller */
-      .vintage-workout-player .cassette-view .cassette-window {
+      .vintage-workout-player-wplayer .cassette-view-wplayer .cassette-window-wplayer {
         height: 240px;
       }
       
       /* Ensure playlist has enough space */
-      .vintage-workout-player .cassette-view .playlist-container {
+      .vintage-workout-player-wplayer .cassette-view-wplayer .playlist-container-wplayer {
         min-height: 100px;
         max-height: 120px;
       }
       
       /* Fix modal styling in WorkoutPlayer context */
-      .vintage-workout-player .add-mixtape-modal {
+      .vintage-workout-player-wplayer .add-mixtape-modal-wplayer {
         background: #F5EAD5;
         border: 2px solid #C9B690;
         color: #5C4E33;
       }
       
-      .vintage-workout-player .modal-header {
+      .vintage-workout-player-wplayer .modal-header-wplayer {
         background: #E5D8B9;
         border-bottom: 1px solid #C9B690;
       }
       
-      .vintage-workout-player .form-input {
+      .vintage-workout-player-wplayer .form-input-wplayer {
         border: 1px solid #C9B690;
         background: white;
         color: #5C4E33;
       }
       
-      .vintage-workout-player .modal-add-btn {
+      .vintage-workout-player-wplayer .modal-add-btn-wplayer {
         background: #C9B690;
         color: #5C4E33;
         border: 1px solid #8A7B59;
       }
       
-      .vintage-workout-player .modal-cancel-btn {
+      .vintage-workout-player-wplayer .modal-cancel-btn-wplayer {
         background: #E5D8B9;
         color: #8A7B59;
         border: 1px solid #C9B690;
@@ -1834,36 +1835,36 @@ const addCassettePlayerStyles = () => {
 const waterBreakAnimations = document.createElement('style');
 waterBreakAnimations.innerHTML = `
   /* Water Break Animations */
-  @keyframes dropletFall {
+  @keyframes dropletFall-wplayer {
     0% { transform: translateY(-20px); opacity: 0; }
     10% { opacity: 1; }
     80% { opacity: 1; }
     100% { transform: translateY(80px); opacity: 0; }
   }
   
-  @keyframes ripple {
+  @keyframes ripple-wplayer {
     0% { transform: scale(0); opacity: 1; }
     100% { transform: scale(3); opacity: 0; }
   }
   
-  @keyframes waterPulse {
+  @keyframes waterPulse-wplayer {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.2); }
   }
   
   /* Add these animations to WaterBreakReminder.jsx */
-  .vintage-water-break {
+  .vintage-water-break-wplayer {
     position: relative;
     overflow: hidden;
   }
   
-  .water-break-header svg {
-    animation: waterPulse 2s infinite ease-in-out;
+  .water-break-header-wplayer svg {
+    animation: waterPulse-wplayer 2s infinite ease-in-out;
   }
   
   /* Animated water droplets */
-  .water-break-header::before,
-  .water-break-header::after {
+  .water-break-header-wplayer::before,
+  .water-break-header-wplayer::after {
     content: '';
     position: absolute;
     background: #8A7B59;
@@ -1873,27 +1874,27 @@ waterBreakAnimations.innerHTML = `
     opacity: 0;
   }
   
-  .water-break-header::before {
+  .water-break-header-wplayer::before {
     top: 10px;
     left: 25%;
-    animation: dropletFall 3s infinite ease-in-out;
+    animation: dropletFall-wplayer 3s infinite ease-in-out;
   }
   
-  .water-break-header::after {
+  .water-break-header-wplayer::after {
     top: 15px;
     right: 25%;
-    animation: dropletFall 3.5s 0.5s infinite ease-in-out;
+    animation: dropletFall-wplayer 3.5s 0.5s infinite ease-in-out;
   }
   
   /* Ripple effect under the water drop icon */
-  .water-animation-container {
+  .water-animation-container-wplayer {
     position: relative;
     width: 40px;
     height: 40px;
     margin: 0 auto;
   }
   
-  .ripple-circle {
+  .ripple-circle-wplayer {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -1905,20 +1906,20 @@ waterBreakAnimations.innerHTML = `
     opacity: 0;
   }
   
-  .ripple-1 {
-    animation: ripple 2s infinite;
+  .ripple-1-wplayer {
+    animation: ripple-wplayer 2s infinite;
   }
   
-  .ripple-2 {
-    animation: ripple 2s 0.5s infinite;
+  .ripple-2-wplayer {
+    animation: ripple-wplayer 2s 0.5s infinite;
   }
   
-  .ripple-3 {
-    animation: ripple 2s 1s infinite;
+  .ripple-3-wplayer {
+    animation: ripple-wplayer 2s 1s infinite;
   }
   
   /* Additional water droplets around the container */
-  .water-droplets {
+  .water-droplets-wplayer {
     position: absolute;
     top: 0;
     left: 0;
@@ -1927,7 +1928,7 @@ waterBreakAnimations.innerHTML = `
     pointer-events: none;
   }
   
-  .droplet {
+  .droplet-wplayer {
     position: absolute;
     width: 6px;
     height: 10px;
@@ -1936,28 +1937,28 @@ waterBreakAnimations.innerHTML = `
     opacity: 0;
   }
   
-  .droplet:nth-child(1) {
+  .droplet-wplayer:nth-child(1) {
     top: 20%;
     left: 20%;
-    animation: dropletFall 2.5s infinite;
+    animation: dropletFall-wplayer 2.5s infinite;
   }
   
-  .droplet:nth-child(2) {
+  .droplet-wplayer:nth-child(2) {
     top: 10%;
     left: 60%;
-    animation: dropletFall 3s 0.7s infinite;
+    animation: dropletFall-wplayer 3s 0.7s infinite;
   }
   
-  .droplet:nth-child(3) {
+  .droplet-wplayer:nth-child(3) {
     top: 15%;
     left: 80%;
-    animation: dropletFall 3.2s 1.2s infinite;
+    animation: dropletFall-wplayer 3.2s 1.2s infinite;
   }
   
-  .droplet:nth-child(4) {
+  .droplet-wplayer:nth-child(4) {
     top: 5%;
     left: 40%;
-    animation: dropletFall 2.8s 0.3s infinite;
+    animation: dropletFall-wplayer 2.8s 0.3s infinite;
   }
 `;
 document.head.appendChild(waterBreakAnimations);
@@ -1965,7 +1966,7 @@ document.head.appendChild(waterBreakAnimations);
 // Add the CSS for the achievement popup
 const achievementStyles = `
   /* Achievement Popup */
-  .achievement-popup {
+  .achievement-popup-wplayer {
     position: absolute;
     top: 20px;
     left: 50%;
@@ -1978,28 +1979,28 @@ const achievementStyles = `
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     z-index: 1000;
-    animation: achievementSlideIn 0.5s ease-out forwards, achievementSlideOut 0.5s 2.5s ease-in forwards;
+    animation: achievementSlideIn-wplayer 0.5s ease-out forwards, achievementSlideOut-wplayer 0.5s 2.5s ease-in forwards;
     max-width: 80%;
   }
   
-  .achievement-icon {
+  .achievement-icon-wplayer {
     font-size: 2.5rem;
     margin-right: 15px;
-    animation: achievementPulse 0.5s infinite alternate;
+    animation: achievementPulse-wplayer 0.5s infinite alternate;
   }
   
-  .achievement-content {
+  .achievement-content-wplayer {
     flex: 1;
   }
   
-  .achievement-title {
+  .achievement-title-wplayer {
     font-family: 'VT323', monospace;
     color: #8A7B59;
     font-size: 0.9rem;
     margin-bottom: 3px;
   }
   
-  .achievement-name {
+  .achievement-name-wplayer {
     font-family: 'VT323', monospace;
     color: #5C4E33;
     font-size: 1.2rem;
@@ -2007,23 +2008,23 @@ const achievementStyles = `
     margin-bottom: 3px;
   }
   
-  .achievement-description {
+  .achievement-description-wplayer {
     font-family: 'VT323', monospace;
     color: #8A7B59;
     font-size: 0.9rem;
   }
   
-  @keyframes achievementPulse {
+  @keyframes achievementPulse-wplayer {
     0% { transform: scale(1); }
     100% { transform: scale(1.1); }
   }
   
-  @keyframes achievementSlideIn {
+  @keyframes achievementSlideIn-wplayer {
     0% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
     100% { transform: translateX(-50%) translateY(0); opacity: 1; }
   }
   
-  @keyframes achievementSlideOut {
+  @keyframes achievementSlideOut-wplayer {
     0% { transform: translateX(-50%) translateY(0); opacity: 1; }
     100% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
   }

@@ -543,3 +543,220 @@ export const getEquipmentOptions = () => {
     { value: 'other', label: 'Other' }
   ];
 };
+
+/**
+ * Calculate workout statistics based on completed workouts
+ * @param {Array} workouts - Array of completed workouts
+ * @returns {Object} Statistics object
+ */
+export const calculateWorkoutStats = (workouts) => {
+  if (!workouts || workouts.length === 0) {
+    return {
+      totalWorkouts: 0,
+      totalMinutes: 0,
+      totalCalories: 0,
+      avgDuration: 0,
+      avgIntensity: 0,
+      consistency: 0,
+      completionRate: 0,
+      longestStreak: 0,
+      currentStreak: 0
+    };
+  }
+  
+  // Calculate basic stats
+  const totalWorkouts = workouts.length;
+  const totalMinutes = workouts.reduce((sum, workout) => sum + (workout.duration || 0), 0);
+  const totalCalories = workouts.reduce((sum, workout) => sum + (workout.calories || 0), 0);
+  const avgDuration = Math.round(totalMinutes / totalWorkouts);
+  
+  // Calculate average intensity (if available)
+  const workoutsWithIntensity = workouts.filter(w => w.intensity);
+  const avgIntensity = workoutsWithIntensity.length > 0 
+    ? workoutsWithIntensity.reduce((sum, w) => sum + w.intensity, 0) / workoutsWithIntensity.length
+    : null;
+  
+  // Calculate consistency (workouts completed / days in period)
+  const dates = new Set();
+  workouts.forEach(workout => {
+    const date = new Date(workout.date || workout.completedAt || workout.timestamp);
+    dates.add(date.toISOString().split('T')[0]);
+  });
+  
+  // Find earliest and latest workout dates
+  const workoutDates = Array.from(dates).map(d => new Date(d));
+  const earliestDate = new Date(Math.min(...workoutDates));
+  const latestDate = new Date(Math.max(...workoutDates));
+  
+  // Calculate total days in period
+  const daysDiff = Math.ceil((latestDate - earliestDate) / (1000 * 60 * 60 * 24)) + 1;
+  const consistency = Math.round((dates.size / daysDiff) * 100);
+  
+  // Calculate completion rate (completed exercises / total exercises)
+  let totalExercises = 0;
+  let completedExercises = 0;
+  
+  workouts.forEach(workout => {
+    if (workout.exercises && workout.exercises.length > 0) {
+      totalExercises += workout.exercises.length;
+      completedExercises += workout.exercises.filter(ex => ex.completed !== false).length;
+    }
+  });
+  
+  const completionRate = totalExercises > 0 ? Math.round((completedExercises / totalExercises) * 100) : 100;
+  
+  // Calculate streaks
+  const sortedDates = Array.from(dates).sort();
+  
+  // Current streak
+  let currentStreak = 0;
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Check if worked out today
+  const hasWorkoutToday = sortedDates.includes(today);
+  
+  if (hasWorkoutToday) {
+    currentStreak = 1;
+    let checkDate = new Date(today);
+    
+    while (true) {
+      checkDate.setDate(checkDate.getDate() - 1);
+      const dateStr = checkDate.toISOString().split('T')[0];
+      if (sortedDates.includes(dateStr)) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+  } else if (sortedDates.length > 0) {
+    // Check if worked out yesterday
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    if (sortedDates.includes(yesterdayStr)) {
+      currentStreak = 1;
+      let checkDate = new Date(yesterdayStr);
+      
+      while (true) {
+        checkDate.setDate(checkDate.getDate() - 1);
+        const dateStr = checkDate.toISOString().split('T')[0];
+        if (sortedDates.includes(dateStr)) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+  
+  // Longest streak
+  let longestStreak = 0;
+  let currentLongest = 0;
+  
+  for (let i = 0; i < sortedDates.length; i++) {
+    const currentDate = new Date(sortedDates[i]);
+    
+    if (i === 0) {
+      currentLongest = 1;
+    } else {
+      const prevDate = new Date(sortedDates[i - 1]);
+      const dayDiff = Math.round((currentDate - prevDate) / (1000 * 60 * 60 * 24));
+      
+      if (dayDiff === 1) {
+        currentLongest++;
+      } else {
+        currentLongest = 1;
+      }
+    }
+    
+    if (currentLongest > longestStreak) {
+      longestStreak = currentLongest;
+    }
+  }
+  
+  return {
+    totalWorkouts,
+    totalMinutes,
+    totalCalories,
+    avgDuration,
+    avgIntensity,
+    consistency,
+    completionRate,
+    longestStreak,
+    currentStreak
+  };
+};
+
+/**
+ * Get all completed workouts from storage
+ * @returns {Array} Array of completed workouts
+ */
+export const getAllCompletedWorkouts = () => {
+  const storage = getStorage();
+  const workouts = [];
+  
+  // Iterate through all dates in storage
+  Object.entries(storage).forEach(([date, dayData]) => {
+    if (dayData.workout) {
+      // Add legacy workout format (single workout per day)
+      workouts.push({
+        ...dayData.workout,
+        date: date,
+        id: `workout-${date}`
+      });
+    }
+    
+    // Add new format workouts (multiple per day)
+    if (dayData.workouts && Array.isArray(dayData.workouts)) {
+      dayData.workouts.forEach(workout => {
+        workouts.push({
+          ...workout,
+          date: date
+        });
+      });
+    }
+  });
+  
+  return workouts.sort((a, b) => {
+    const dateA = new Date(a.date || a.completedAt || a.timestamp);
+    const dateB = new Date(b.date || b.completedAt || b.timestamp);
+    return dateB - dateA; // Sort from newest to oldest
+  });
+};
+
+/**
+ * Get workout types with colors for charts
+ * @returns {Array} Array of workout types
+ */
+export const getWorkoutTypesWithColors = () => {
+  return [
+    { value: 'WEIGHTLIFTING', label: 'Weightlifting', color: '#3B82F6' },
+    { value: 'CARDIO', label: 'Cardio', color: '#EF4444' },
+    { value: 'YOGA', label: 'Yoga', color: '#8B5CF6' },
+    { value: 'SWIMMING', label: 'Swimming', color: '#06B6D4' },
+    { value: 'CYCLING', label: 'Cycling', color: '#10B981' },
+    { value: 'HIIT', label: 'HIIT', color: '#F59E0B' },
+    { value: 'PILATES', label: 'Pilates', color: '#EC4899' },
+    { value: 'BOXING', label: 'Boxing', color: '#DC2626' },
+    { value: 'CALISTHENICS', label: 'Calisthenics', color: '#F97316' },
+    { value: 'STRETCHING', label: 'Stretching', color: '#14B8A6' },
+    { value: 'WALKING', label: 'Walking', color: '#84cc16' },
+    { value: 'OTHER', label: 'Other', color: '#6B7280' },
+    { value: 'strength', label: 'Strength', color: '#3B82F6' },
+    { value: 'cardio', label: 'Cardio', color: '#EF4444' },
+    { value: 'running', label: 'Running', color: '#F59E0B' },
+    { value: 'cycling', label: 'Cycling', color: '#10B981' },
+    { value: 'yoga', label: 'Yoga', color: '#8B5CF6' },
+    { value: 'pilates', label: 'Pilates', color: '#EC4899' },
+    { value: 'swimming', label: 'Swimming', color: '#06B6D4' },
+    { value: 'hiit', label: 'HIIT', color: '#F97316' },
+    { value: 'sports', label: 'Sports', color: '#84cc16' },
+    { value: 'flexibility', label: 'Flexibility', color: '#14B8A6' },
+    { value: 'walking', label: 'Walking', color: '#0EA5E9' },
+    { value: 'boxing', label: 'Boxing', color: '#DC2626' },
+    { value: 'bodyweight', label: 'Bodyweight', color: '#6366F1' },
+    { value: 'crossfit', label: 'CrossFit', color: '#7C3AED' },
+    { value: 'martial_arts', label: 'Martial Arts', color: '#D946EF' }
+  ];
+};

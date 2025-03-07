@@ -1,13 +1,26 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Edit3, Trash2, Play, Clock, Calendar, 
+import React, { useState, useEffect } from 'react';
+import { BarChart2,ArrowLeft, Edit3, Trash2, Play, Clock, Calendar, 
          MapPin, DollarSign, Dumbbell, Activity, AlertTriangle } from 'lucide-react';
-import { getWorkoutTypes, getWorkoutLocations } from '../../utils/workoutUtils';
+import { getWorkoutTypes, getWorkoutLocations, getAllCompletedWorkouts } from '../../utils/workoutUtils';
 import WorkoutPlayerModal from './WorkoutPlayerModal';
+import WorkoutCalendar from './WorkoutCalendar';
 
 const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [completedWorkouts, setCompletedWorkouts] = useState([]);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' or 'calendar'
+
+  // Load completed instances of this workout
+  useEffect(() => {
+    if (workout && workout.id) {
+      const allWorkouts = getAllCompletedWorkouts();
+      // Filter for this specific workout template
+      const filtered = allWorkouts.filter(w => w.workoutId === workout.id);
+      setCompletedWorkouts(filtered);
+    }
+  }, [workout]);
 
   // Helper function to get workout type label
   const getWorkoutTypeLabel = (type) => {
@@ -58,31 +71,75 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
     // or show a success message
   };
 
-  return (
-    <div className="px-2 sm:px-0 w-full overflow-hidden">
-      <div className="flex items-center gap-2 mb-4 sm:mb-6">
-        <button 
-          onClick={onBack}
-          className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
-        >
-          <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
-        </button>
-        <h2 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100 truncate">
-          {workout.name}
-        </h2>
-      </div>
+  // Handle date click on calendar
+  const handleCalendarDateClick = (date, workouts) => {
+    if (workouts && workouts.length > 0) {
+      // Could show details of the completed workout on this date
+      console.log('Completed workouts on', date, workouts);
+    }
+  };
 
-      {/* Quick Action Buttons */}
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={startWorkout}
-          className="flex-1 py-2 sm:py-3 rounded-lg bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 font-medium flex items-center justify-center gap-2 transition-colors"
-        >
-          <Play size={18} />
-          Start Workout
-        </button>
+  // Render calendar content
+  const renderCalendarTab = () => (
+    <div className="space-y-4">
+      <WorkoutCalendar 
+        workoutData={completedWorkouts}
+        workoutId={workout.id}
+        onDateClick={handleCalendarDateClick}
+      />
+      
+      <div className="text-sm text-slate-600 dark:text-slate-400 text-center">
+        {completedWorkouts.length > 0 
+          ? `Completed ${completedWorkouts.length} times`
+          : 'No workout completions yet. Start this workout to track your progress!'}
       </div>
+      
+      {completedWorkouts.length > 0 && (
+        <div className="mt-6 bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+            Recent Completions
+          </h3>
+          <div className="space-y-2 max-h-56 overflow-y-auto">
+            {completedWorkouts.slice(0, 5).map((workout, index) => (
+              <div 
+                key={index}
+                className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-600"
+              >
+                <div className="flex justify-between items-center">
+                  <div className="font-medium text-sm text-slate-700 dark:text-slate-300">
+                    {new Date(workout.completedAt || workout.timestamp).toLocaleDateString('default', {
+                      month: 'short', day: 'numeric', year: 'numeric'
+                    })}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    {new Date(workout.completedAt || workout.timestamp).toLocaleTimeString('default', {
+                      hour: '2-digit', minute: '2-digit'
+                    })}
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 mt-1">
+                  <span className="text-xs px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                    {workout.duration} min
+                  </span>
+                  
+                  {workout.calories && (
+                    <span className="text-xs px-2 py-0.5 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full">
+                      {workout.calories} kcal
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
+  // Render overview content
+  const renderOverviewTab = () => (
+    <>
       {/* Workout Overview */}
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-6">
         <h3 className="font-medium text-slate-800 dark:text-slate-100 mb-4">Overview</h3>
@@ -247,8 +304,87 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
         )}
       </div>
 
+      {/* Completion Stats */}
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-6">
+        <h3 className="font-medium text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+          <BarChart2 size={16} className="text-slate-500 dark:text-slate-400" />
+          Completion Stats
+        </h3>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
+            <div className="text-xs text-slate-500 dark:text-slate-400">Completions</div>
+            <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{completedWorkouts.length}</div>
+          </div>
+          
+          <div className="flex flex-col bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
+            <div className="text-xs text-slate-500 dark:text-slate-400">Last Completed</div>
+            <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              {completedWorkouts.length > 0 
+                ? new Date(completedWorkouts[0].completedAt || completedWorkouts[0].timestamp)
+                    .toLocaleDateString('default', { month: 'short', day: 'numeric' })
+                : 'Never'}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="px-2 sm:px-0 w-full overflow-hidden">
+      <div className="flex items-center gap-2 mb-4 sm:mb-6">
+        <button 
+          onClick={onBack}
+          className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
+        >
+          <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
+        </button>
+        <h2 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100 truncate">
+          {workout.name}
+        </h2>
+      </div>
+
+      {/* Quick Action Buttons */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={startWorkout}
+          className="flex-1 py-2 sm:py-3 rounded-lg bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 font-medium flex items-center justify-center gap-2 transition-colors"
+        >
+          <Play size={18} />
+          Start Workout
+        </button>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`px-4 py-2 text-sm font-medium ${
+            activeTab === 'overview'
+              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 dark:border-blue-400'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+          }`}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setActiveTab('calendar')}
+          className={`px-4 py-2 text-sm font-medium ${
+            activeTab === 'calendar'
+              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 dark:border-blue-400'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+          }`}
+        >
+          Calendar
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'overview' ? renderOverviewTab() : renderCalendarTab()}
+
       {/* Edit / Delete Buttons */}
-      <div className="flex justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
+      <div className="flex justify-between pt-4 border-t border-slate-200 dark:border-slate-700 mt-6">
         <button 
           onClick={onEdit}
           className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
@@ -297,7 +433,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
         </div>
       )}
       
-      {/* Enhanced Workout Player Modal - Only render when showPlayer is true */}
+      {/* Workout Player Modal */}
       {showPlayer && (
         <WorkoutPlayerModal
           workoutId={workout.id}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { initWorkoutData, getWorkouts, getWorkoutById, deleteWorkout } from '../../utils/workoutUtils';
+import { getWorkouts, createWorkout, deleteWorkout } from '../../utils/workoutUtils';
 import WorkoutList from '../Workout/WorkoutList';
 import WorkoutDetails from '../Workout/WorkoutDetails';
 import WorkoutForm from '../Workout/WorkoutForm';
@@ -7,19 +7,13 @@ import WorkoutAnalytics from '../Workout/WorkoutAnalytics';
 import AiWorkoutGenerator from '../Workout/AiWorkoutGenerator';
 
 const WorkoutSection = () => {
-  // Main view states
+  // Main view state
   const [workouts, setWorkouts] = useState([]);
   const [activeWorkout, setActiveWorkout] = useState(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
-  const [viewingAnalytics, setViewingAnalytics] = useState(false);
-
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'detail', 'create', 'edit', 'ai', 'analytics'
+  
   // Initialize and load workouts
   useEffect(() => {
-    // Initialize workout data structure if needed
-    initWorkoutData();
-    // Load workouts
     loadWorkouts();
   }, []);
 
@@ -30,119 +24,125 @@ const WorkoutSection = () => {
 
   // Handle viewing analytics dashboard
   const handleViewAnalytics = () => {
-    setViewingAnalytics(true);
+    setViewMode('analytics');
     setActiveWorkout(null);
-    setIsCreating(false);
-    setIsEditing(false);
-    setIsGeneratingWithAI(false);
   };
 
   // Handle selecting a workout to view details
   const handleSelectWorkout = (workoutId) => {
-    const workout = getWorkoutById(workoutId);
+    const workout = workouts.find(w => w.id === workoutId);
     setActiveWorkout(workout);
-    setIsEditing(false);
-    setViewingAnalytics(false);
-    setIsGeneratingWithAI(false);
+    setViewMode('detail');
   };
 
   // Handle creating a new workout manually
   const handleCreateWorkout = () => {
     setActiveWorkout(null);
-    setIsCreating(true);
-    setIsEditing(false);
-    setViewingAnalytics(false);
-    setIsGeneratingWithAI(false);
+    setViewMode('create');
   };
 
   // Handle creating a workout with AI
   const handleCreateWithAI = () => {
     setActiveWorkout(null);
-    setIsCreating(false);
-    setIsEditing(false);
-    setViewingAnalytics(false);
-    setIsGeneratingWithAI(true);
+    setViewMode('ai');
+  };
+
+  // Handle when AI generates a workout
+  const handleAIWorkoutGenerated = (workoutData) => {
+    const newWorkout = createWorkout(workoutData);
+    loadWorkouts();
+    setViewMode('list');
   };
 
   // Handle editing an existing workout
   const handleEditWorkout = () => {
-    setIsEditing(true);
+    setViewMode('edit');
   };
 
   // Handle saving a new workout
   const handleWorkoutSaved = (newWorkout) => {
     loadWorkouts();
-    setIsCreating(false);
-    setIsEditing(false);
-    setIsGeneratingWithAI(false);
-    setActiveWorkout(newWorkout);
+    setViewMode('list');
   };
 
   // Handle updating an existing workout
   const handleWorkoutUpdated = (updatedWorkout) => {
     loadWorkouts();
     setActiveWorkout(updatedWorkout);
-    setIsEditing(false);
+    setViewMode('detail');
   };
 
   // Handle going back to the workout list
   const handleBackToList = () => {
     setActiveWorkout(null);
-    setIsCreating(false);
-    setIsEditing(false);
-    setViewingAnalytics(false);
-    setIsGeneratingWithAI(false);
+    setViewMode('list');
   };
 
   // Handle deleting a workout
   const handleWorkoutDeleted = () => {
-    if (activeWorkout) {
-      deleteWorkout(activeWorkout.id);
-      loadWorkouts();
-      setActiveWorkout(null);
+    deleteWorkout(activeWorkout.id);
+    loadWorkouts();
+    setActiveWorkout(null);
+    setViewMode('list');
+  };
+
+  // Render current view based on state
+  const renderCurrentView = () => {
+    switch (viewMode) {
+      case 'detail':
+        return (
+          <WorkoutDetails 
+            workout={activeWorkout}
+            onEdit={handleEditWorkout}
+            onBack={handleBackToList}
+            onDelete={handleWorkoutDeleted}
+          />
+        );
+      case 'create':
+        return (
+          <WorkoutForm 
+            onSave={handleWorkoutSaved}
+            onCancel={handleBackToList}
+          />
+        );
+      case 'edit':
+        return (
+          <WorkoutForm 
+            workout={activeWorkout}
+            onSave={handleWorkoutUpdated}
+            onCancel={() => setViewMode('detail')}
+          />
+        );
+      case 'ai':
+        return (
+          <AiWorkoutGenerator 
+            onWorkoutGenerated={handleAIWorkoutGenerated}
+            onCancel={handleBackToList}
+          />
+        );
+      case 'analytics':
+        return (
+          <WorkoutAnalytics 
+            onBack={handleBackToList}
+          />
+        );
+      case 'list':
+      default:
+        return (
+          <WorkoutList 
+            workouts={workouts}
+            onSelectWorkout={handleSelectWorkout}
+            onCreateWorkout={handleCreateWorkout}
+            onCreateWithAI={handleCreateWithAI}
+            onViewAnalytics={handleViewAnalytics}
+          />
+        );
     }
   };
 
   return (
     <div className="space-y-6">
-      {viewingAnalytics ? (
-        <WorkoutAnalytics 
-          onBack={handleBackToList}
-        />
-      ) : isGeneratingWithAI ? (
-        <AiWorkoutGenerator
-          onWorkoutGenerated={handleWorkoutSaved}
-          onCancel={handleBackToList}
-        />
-      ) : isCreating ? (
-        <WorkoutForm 
-          onSave={handleWorkoutSaved} 
-          onCancel={handleBackToList}
-        />
-      ) : activeWorkout ? (
-        isEditing ? (
-          <WorkoutForm 
-            workout={activeWorkout}
-            onSave={handleWorkoutUpdated}
-            onCancel={() => setIsEditing(false)}
-          />
-        ) : (
-          <WorkoutDetails 
-            workout={activeWorkout} 
-            onEdit={handleEditWorkout}
-            onBack={handleBackToList}
-            onDelete={handleWorkoutDeleted}
-          />
-        )
-      ) : (
-        <WorkoutList 
-          workouts={workouts} 
-          onSelectWorkout={handleSelectWorkout}
-          onCreateWorkout={handleCreateWorkout}
-          onCreateWithAI={handleCreateWithAI}
-          onViewAnalytics={handleViewAnalytics}
-        />
-      )}
+      {renderCurrentView()}
     </div>
   );
 };

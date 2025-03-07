@@ -1,0 +1,93 @@
+:root {
+    /* Default theme (modern) */
+    --wp-background: white;
+    --wp-text-color: #64748b;
+    --wp-text-color-dark: #334155;
+    --wp-text-color-light: #94a3b8;
+    --wp-primary-color: #3b82f6;
+    --wp-secondary-color: #f8fafc;
+    --wp-accent-color: #0ea5e9;
+    --wp-success-color: #10b981;
+    --wp-danger-color: #ef4444;
+    --wp-warning-color: #f59e0b;
+    --wp-border-color: #e2e8f0;
+    --wp-border-color-dark: #cbd5e1;
+    --wp-button-color: #3b82f6;
+    --wp-button-hover: #2563eb;
+    --wp-button-text: white;
+    --wp-card-background: white;
+    --wp-card-border: #e2e8f0;
+    --wp-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+    --wp-border-radius: 0.5rem;
+    --wp-transition-speed: 0.3s;
+    --wp-shadow-color: rgba(0, 0, 0, 0.1);
+    --wp-shadow: 0 4px 6px -1px var(--wp-shadow-color), 0 2px 4px -2px var(--wp-shadow-color);
+  }
+  
+  .theme-vintage {
+    /* Updated Vintage theme with lighter colors */
+    --wp-background: #F5EAD5;
+    --wp-text-color: #8A7B59;
+    --wp-text-color-dark: #5C4E33;
+    --wp-text-color-light: #C9B690;
+    --wp-primary-color: #C9B690;
+    --wp-secondary-color: #E5D8B9;
+    --wp-accent-color: #C13628;
+    --wp-success-color: #6B8E23;
+    --wp-danger-color: #C13628;
+    --wp-warning-color: #DAA520;
+    --wp-border-color: #C9B690;
+    --wp-border-color-dark: #8A7B59;
+    --wp-button-color: #D4C59A; /* Lighter button color */
+    --wp-button-hover: #C9B690;
+    --wp-button-text: #5C4E33;
+    --wp-card-background: #F5EAD5;
+    --wp-card-border: #C9B690;
+    --wp-font-family: 'VT323', monospace;
+    --wp-border-radius: 4px;
+    --wp-transition-speed: 0.2s;
+    --wp-shadow-color: rgba(138, 123, 89, 0.3);
+    --wp-shadow: 0 4px 8px var(--wp-shadow-color);
+    
+    /* Water button color - should not be red */
+    --wp-water-button-color: #D4C59A;
+    --wp-water-button-text: #5C4E33;
+  }
+  
+  /* Font loading for vintage theme */
+  @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+  
+  /* Dark mode adjustments (to match your existing dark mode) */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --wp-background: #1e293b;
+      --wp-text-color: #94a3b8;
+      --wp-text-color-dark: #e2e8f0;
+      --wp-text-color-light: #64748b;
+      --wp-secondary-color: #334155;
+      --wp-border-color: #475569;
+      --wp-card-background: #334155;
+      --wp-card-border: #475569;
+      --wp-shadow-color: rgba(0, 0, 0, 0.3);
+    }
+    
+    .theme-vintage {
+      /* Lighter vintage dark mode */
+      --wp-background: #6B5D3E;
+      --wp-text-color: #E5D8B9;
+      --wp-text-color-dark: #F5EAD5;
+      --wp-text-color-light: #C9B690;
+      --wp-secondary-color: #8A7B59;
+      --wp-primary-color: #D4C59A;
+      --wp-border-color: #C9B690;
+      --wp-button-color: #D4C59A;
+      --wp-button-text: #5C4E33;
+      --wp-card-background: #8A7B59;
+      --wp-card-border: #C9B690;
+      --wp-shadow-color: rgba(0, 0, 0, 0.4);
+      
+      /* Water button color - should not be red */
+      --wp-water-button-color: #D4C59A;
+      --wp-water-button-text: #5C4E33;
+    }
+  }

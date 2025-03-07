@@ -31,7 +31,8 @@ import HabitSection from './components/Sections/HabitSection';
 import HabitTaskIntegration from './components/HabitTaskIntegration';
 import { injectHabitTasks } from './utils/habitTrackerUtils';
 import WorkoutSection from './components/Sections/WorkoutSection';
-
+// Import the WorkoutThemeProvider
+import { WorkoutThemeProvider } from './context/ThemeContext';
 
 const App = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -349,6 +350,7 @@ const handlePendingTasksAction = (action, tasks = []) => {
 
   return (
     <ThemeProvider>
+      <WorkoutThemeProvider>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
         <div className="flex">
           {/* Sidebar Navigation */}
@@ -562,6 +564,7 @@ const handlePendingTasksAction = (action, tasks = []) => {
           }}
         />
       </div>
+      </WorkoutThemeProvider>
     </ThemeProvider>
   );
 };

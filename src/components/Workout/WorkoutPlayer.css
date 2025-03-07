@@ -1,0 +1,571 @@
+@import '../../styles/themes/variables.css';
+
+/* Prefix all classes with wp- to avoid collisions */
+.wp-player {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--wp-background);
+  color: var(--wp-text-color);
+  font-family: var(--wp-font-family);
+  transition: background-color var(--wp-transition-speed) ease, 
+              color var(--wp-transition-speed) ease;
+  padding-bottom: 70px; /* Add padding to make room for controls */
+}
+
+/* View Tabs */
+.wp-view-tabs {
+  display: flex;
+  background: var(--wp-secondary-color);
+  padding: 4px;
+  border-bottom: 1px solid var(--wp-border-color);
+  z-index: 5;
+}
+
+.wp-view-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  background: transparent;
+  color: var(--wp-text-color);
+  border: none;
+  border-radius: var(--wp-border-radius) var(--wp-border-radius) 0 0;
+  transition: all var(--wp-transition-speed) ease;
+  font-family: var(--wp-font-family);
+}
+
+.wp-view-tab.wp-active {
+  background: var(--wp-primary-color);
+  color: var(--wp-button-text);
+  font-weight: bold;
+}
+
+/* Header */
+.wp-player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--wp-secondary-color);
+  border-bottom: 1px solid var(--wp-border-color);
+  transition: transform var(--wp-transition-speed) ease;
+  z-index: 5;
+}
+
+.wp-player-header.wp-hidden {
+  transform: translateY(-100%);
+}
+
+.wp-player-button {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wp-button-color);
+  border: 1px solid var(--wp-border-color);
+  border-radius: var(--wp-border-radius);
+  color: var(--wp-button-text);
+  transition: all var(--wp-transition-speed) ease;
+  cursor: pointer;
+}
+
+.wp-player-button:active {
+  transform: scale(0.95);
+}
+
+.wp-player-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wp-player-title h2 {
+  font-size: 1.2rem;
+  margin: 0;
+  color: var(--wp-text-color-dark);
+}
+
+.wp-player-timer {
+  font-size: 1rem;
+  color: var(--wp-text-color);
+}
+
+/* Main Content Container */
+.wp-view-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 20px;
+}
+
+/* View Styles */
+.wp-player-view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition: transform var(--wp-transition-speed) ease, 
+              opacity var(--wp-transition-speed) ease;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.wp-workout-view {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.wp-cassette-view {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.wp-workout-mode .wp-workout-view {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.wp-workout-mode .wp-cassette-view {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.wp-cassette-mode .wp-workout-view {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.wp-cassette-mode .wp-cassette-view {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* Progress Bar */
+.wp-progress-container {
+  margin-bottom: 20px;
+}
+
+.wp-progress-text {
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+  color: var(--wp-text-color);
+  text-align: center;
+}
+
+.wp-progress-bar {
+  height: 8px;
+  background: var(--wp-secondary-color);
+  border: 1px solid var(--wp-border-color);
+  border-radius: var(--wp-border-radius);
+  overflow: hidden;
+}
+
+.wp-progress-fill {
+  height: 100%;
+  background: var(--wp-primary-color);
+  transition: width var(--wp-transition-speed) ease;
+}
+
+/* Ready State */
+.wp-ready-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 100%;
+  padding: 20px;
+  background: var(--wp-card-background);
+  border: 1px solid var(--wp-card-border);
+  border-radius: var(--wp-border-radius);
+  box-shadow: var(--wp-shadow);
+}
+
+.wp-ready-icon {
+  width: 80px;
+  height: 80px;
+  background: var(--wp-secondary-color);
+  border: 2px solid var(--wp-border-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  color: var(--wp-primary-color);
+}
+
+.wp-ready-state h3 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  color: var(--wp-text-color-dark);
+}
+
+.wp-ready-state p {
+  margin-bottom: 30px;
+  color: var(--wp-text-color);
+}
+
+.wp-start-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 25px;
+  background: var(--wp-button-color);
+  border: 1px solid var(--wp-border-color);
+  border-radius: var(--wp-border-radius);
+  color: var(--wp-button-text);
+  font-size: 1.1rem;
+  font-family: var(--wp-font-family);
+  transition: all var(--wp-transition-speed) ease;
+  cursor: pointer;
+}
+
+.wp-start-button:hover {
+  background: var(--wp-button-hover);
+}
+
+/* Complete Button */
+.wp-complete-set-button, 
+.wp-complete-rest-button {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  background: var(--wp-button-color);
+  border: 1px solid var(--wp-border-color);
+  border-radius: var(--wp-border-radius);
+  color: var(--wp-button-text);
+  font-size: 1.1rem;
+  font-family: var(--wp-font-family);
+  transition: all var(--wp-transition-speed) ease;
+  cursor: pointer;
+}
+
+.wp-complete-set-button:hover, 
+.wp-complete-rest-button:hover {
+  background: var(--wp-button-hover);
+}
+
+/* Controls */
+.wp-player-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: var(--wp-secondary-color);
+  border-top: 1px solid var(--wp-border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 100;
+}
+
+.wp-player-controls.wp-hidden {
+  opacity: 0.8;
+  pointer-events: auto;
+}
+
+.wp-main-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.wp-control-button {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wp-secondary-color);
+  border: 1px solid var(--wp-border-color);
+  border-radius: var(--wp-border-radius);
+  color: var(--wp-text-color);
+  transition: all var(--wp-transition-speed) ease;
+  cursor: pointer;
+}
+
+/* Specifically style the water button */
+.wp-water-button {
+  background: var(--wp-water-button-color) !important;
+  color: var(--wp-water-button-text) !important;
+}
+
+.wp-water-button:hover {
+  background: var(--wp-button-hover) !important;
+}
+
+.wp-control-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wp-play-button {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wp-button-color);
+  border: 1px solid var(--wp-border-color);
+  border-radius: 50%;
+  color: var(--wp-button-text);
+  transition: all var(--wp-transition-speed) ease;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.wp-play-button.wp-playing {
+  background: var(--wp-button-hover);
+}
+
+.wp-play-button:hover {
+  transform: scale(1.05);
+  background: var(--wp-button-hover);
+}
+
+/* Water Break Indicator */
+.wp-water-indicator {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--wp-secondary-color);
+  padding: 5px 12px;
+  border: 1px solid var(--wp-border-color);
+  border-radius: var(--wp-border-radius);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--wp-text-color);
+  z-index: 5;
+}
+
+/* Achievement Popup */
+.wp-achievement-popup {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background: var(--wp-card-background);
+  border: 2px solid var(--wp-primary-color);
+  border-radius: var(--wp-border-radius);
+  box-shadow: var(--wp-shadow);
+  z-index: 1000;
+  animation: wp-achievementSlideIn 0.5s ease-out forwards, 
+             wp-achievementSlideOut 0.5s 2.5s ease-in forwards;
+  max-width: 80%;
+}
+
+.wp-achievement-icon {
+  font-size: 2.5rem;
+  margin-right: 15px;
+  animation: wp-achievementPulse 0.5s infinite alternate;
+}
+
+.wp-achievement-content {
+  flex: 1;
+}
+
+.wp-achievement-title {
+  font-family: var(--wp-font-family);
+  color: var(--wp-text-color);
+  font-size: 0.9rem;
+  margin-bottom: 3px;
+}
+
+.wp-achievement-name {
+  font-family: var(--wp-font-family);
+  color: var(--wp-text-color-dark);
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 3px;
+}
+
+.wp-achievement-description {
+  font-family: var(--wp-font-family);
+  color: var(--wp-text-color);
+  font-size: 0.9rem;
+}
+
+/* Animations */
+@keyframes wp-achievementPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+
+@keyframes wp-achievementSlideIn {
+  0% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+  100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+@keyframes wp-achievementSlideOut {
+  0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+}
+
+/* Completion Effects */
+.wp-set-completion-effect,
+.wp-exercise-completion-effect,
+.wp-workout-completion-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 100;
+  animation: wp-fadeInOut 1.5s ease-in-out forwards;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.wp-workout-completion-effect {
+  z-index: 200;
+  animation-duration: 3s;
+}
+
+.wp-effect-content {
+  text-align: center;
+  padding: 20px;
+  background: var(--wp-card-background);
+  border: 2px solid var(--wp-primary-color);
+  border-radius: var(--wp-border-radius);
+  transform: scale(0);
+  animation: wp-popIn 0.3s 0.1s forwards cubic-bezier(0.2, 0.8, 0.2, 1.2);
+  box-shadow: var(--wp-shadow);
+}
+
+.wp-workout-completion-effect .wp-effect-content {
+  padding: 40px;
+  border-width: 3px;
+}
+
+.wp-completion-text {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--wp-text-color-dark);
+  margin-bottom: 10px;
+}
+
+.wp-workout-completion-effect .wp-completion-text {
+  font-size: 2.5rem;
+}
+
+.wp-motivational-text {
+  font-size: 1.5rem;
+  color: var(--wp-text-color);
+}
+
+.wp-trophy-icon {
+  font-size: 5rem;
+  margin-bottom: 15px;
+  animation: wp-trophyBounce 1s 0.7s infinite alternate;
+}
+
+.wp-completion-stats {
+  font-size: 1.3rem;
+  color: var(--wp-text-color);
+  margin-top: 10px;
+}
+
+@keyframes wp-fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes wp-popIn {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+
+@keyframes wp-trophyBounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-15px); }
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .wp-player-title h2 {
+    font-size: 1rem;
+  }
+  
+  .wp-player-timer {
+    font-size: 0.8rem;
+  }
+  
+  .wp-play-button {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .wp-control-button {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .wp-start-button {
+    padding: 10px 20px;
+    font-size: 1rem;
+  }
+}
+
+/* Add webkit-specific styles */
+@supports (-webkit-touch-callout: none) {
+  .wp-play-button {
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .wp-control-button {
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .wp-view-tab {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .wp-player-button {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* iOS text input fixes */
+  .wp-text-input,
+  .wp-form-input {
+    -webkit-appearance: none;
+    -webkit-border-radius: var(--wp-border-radius);
+  }
+  
+  /* iOS scroll fix */
+  .wp-player-view {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Adjust for fullscreen mode */
+:fullscreen .wp-player {
+  height: 100vh;
+  padding-bottom: 0;
+}
+
+:fullscreen .wp-player-controls {
+  position: fixed;
+  bottom: 16px;
+}

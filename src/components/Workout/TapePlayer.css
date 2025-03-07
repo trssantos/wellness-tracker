@@ -1,0 +1,700 @@
+@import '../../styles/themes/variables.css';
+
+/* Add a prefix to all tape player elements */
+.tape-player {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  font-family: var(--wp-font-family);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.tape-cassette-container {
+  background: var(--wp-card-background);
+  border-radius: var(--wp-border-radius);
+  padding: 15px;
+  box-shadow: var(--wp-shadow);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--wp-card-border);
+}
+
+/* Radio tuner */
+.tape-radio-tuner {
+  height: 30px;
+  background: var(--wp-secondary-color);
+  border-radius: var(--wp-border-radius);
+  margin-bottom: 15px;
+  position: relative;
+  border: 1px solid var(--wp-border-color);
+}
+
+.tape-tuner-line {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  background: var(--wp-border-color);
+  transform: translateY(-50%);
+}
+
+.tape-frequency-scale {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10px;
+  position: relative;
+  z-index: 1;
+  font-size: 12px;
+  color: var(--wp-text-color);
+}
+
+.tape-tuner-indicator {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  width: 2px;
+  height: calc(100% - 6px);
+  background: var(--wp-accent-color);
+  transform: translateX(-50%);
+  border-radius: 1px;
+}
+
+/* Cassette window */
+.tape-cassette-window {
+  background: var(--wp-secondary-color);
+  border-radius: var(--wp-border-radius);
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--wp-border-color);
+  margin-bottom: 15px;
+}
+
+/* Cassette */
+.tape-cassette {
+  width: 80%;
+  height: 75%;
+  background: #222;
+  border-radius: var(--wp-border-radius);
+  position: relative;
+}
+
+.tape-cassette.tape-inserted {
+  transform: translateY(0);
+}
+
+.tape-cassette.tape-ejecting {
+  animation: tape-ejectAnimation 1s ease-in-out forwards;
+}
+
+.tape-cassette.tape-inserting {
+  animation: tape-insertAnimation 1s ease-in-out forwards;
+}
+
+@keyframes tape-ejectAnimation {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-150%); }
+}
+
+@keyframes tape-insertAnimation {
+  0% { transform: translateY(-150%); }
+  100% { transform: translateY(0); }
+}
+
+.tape-cassette-body {
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  position: relative;
+}
+
+.tape-cassette-inner {
+  display: flex;
+  justify-content: space-between;
+  height: 50%;
+  margin-bottom: 5px;
+}
+
+.tape-cassette-reel {
+  width: 40px;
+  height: 40px;
+  background: #333;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tape-reel-spokes {
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  background: #555;
+  position: relative;
+}
+
+.tape-reel-spokes::before, .tape-reel-spokes::after {
+  content: '';
+  position: absolute;
+  background: #333;
+}
+
+.tape-reel-spokes::before {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+}
+
+.tape-reel-spokes::after {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+}
+
+.tape-reel-spokes.tape-spinning {
+  animation: tape-spinReel 2s linear infinite;
+}
+
+@keyframes tape-spinReel {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.tape-cassette-label {
+  height: 30%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa, #93c5fd, #38bdf8, #0ea5e9);
+  border-radius: var(--wp-border-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 5px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid white;
+}
+
+.tape-label-content {
+  background: white;
+  padding: 2px 8px;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: black;
+}
+
+.tape-cassette-window-film {
+  height: 20%;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.tape-film {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(100, 100, 100, 0.5);
+  transform: translateY(-50%);
+}
+
+.tape-film.tape-moving {
+  background: linear-gradient(90deg, 
+    rgba(100, 100, 100, 0.5) 0%, 
+    rgba(150, 150, 150, 0.7) 20%, 
+    rgba(100, 100, 100, 0.5) 40%
+  );
+  background-size: 200% 100%;
+  animation: tape-filmMoving 2s linear infinite;
+}
+
+@keyframes tape-filmMoving {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* Eject button */
+.tape-eject-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 6px 10px;
+  background: var(--wp-button-color);
+  border: none;
+  border-radius: var(--wp-border-radius);
+  font-family: var(--wp-font-family);
+  font-size: 16px;
+  color: var(--wp-button-text);
+  cursor: pointer;
+  transition: all var(--wp-transition-speed) ease;
+  z-index: 20;
+  animation: tape-pulseButton 2s infinite;
+}
+
+@keyframes tape-pulseButton {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); box-shadow: 0 0 10px var(--wp-shadow-color); }
+}
+
+.tape-eject-button:hover {
+  background: var(--wp-button-hover);
+}
+
+.tape-eject-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  animation: none;
+}
+
+/* Track display */
+.tape-track-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--wp-secondary-color);
+  padding: 8px 12px;
+  border-radius: var(--wp-border-radius);
+  margin-bottom: 15px;
+  border: 1px solid var(--wp-border-color);
+}
+
+.tape-track-label {
+  font-size: 16px;
+  color: var(--wp-text-color-dark);
+  font-weight: bold;
+}
+
+.tape-playing-indicator {
+  width: 10px;
+  height: 10px;
+}
+
+.tape-blink {
+  animation: tape-blink 1s step-end infinite;
+  color: var(--wp-accent-color);
+  font-size: 16px;
+}
+
+@keyframes tape-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Player controls */
+.tape-player-controls {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.tape-control-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--wp-secondary-color);
+  border: 1px solid var(--wp-border-color);
+  color: var(--wp-text-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--wp-transition-speed) ease;
+}
+
+.tape-control-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tape-play-button {
+  width: 50px;
+  height: 50px;
+  background: var(--wp-button-color);
+  color: var(--wp-button-text);
+}
+
+.tape-play-button.tape-active {
+  background: var(--wp-button-hover);
+}
+
+.tape-player-error {
+  margin-top: 10px;
+  padding: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--wp-danger-color);
+  border-radius: var(--wp-border-radius);
+  color: var(--wp-danger-color);
+  text-align: center;
+  font-size: 14px;
+}
+
+.tape-mobile-note {
+  margin-top: 15px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--wp-text-color-light);
+  font-style: italic;
+}
+
+/* Add visible track info section */
+.tape-track-info {
+  text-align: center;
+  margin: 15px 0;
+  color: var(--wp-text-color);
+  font-size: 14px;
+}
+
+/* Modal styling */
+.tape-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.tape-modal-content {
+  width: 90%;
+  max-width: 350px;
+  background: var(--wp-card-background);
+  border-radius: var(--wp-border-radius);
+  box-shadow: var(--wp-shadow);
+  overflow: hidden;
+}
+
+.tape-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 15px;
+  background: var(--wp-secondary-color);
+  border-bottom: 1px solid var(--wp-border-color);
+}
+
+.tape-modal-header h3 {
+  margin: 0;
+  color: var(--wp-text-color-dark);
+  font-size: 18px;
+}
+
+.tape-modal-close {
+  background: none;
+  border: none;
+  color: var(--wp-text-color);
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tape-modal-close:hover {
+  color: var(--wp-danger-color);
+}
+
+.tape-modal-body {
+  padding: 15px;
+}
+
+.tape-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.tape-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tape-form-group label {
+  font-size: 14px;
+  color: var(--wp-text-color-dark);
+  font-weight: bold;
+}
+
+.tape-form-input {
+  padding: 8px 10px;
+  border: 1px solid var(--wp-border-color);
+  border-radius: var(--wp-border-radius);
+  background: white;
+  font-family: var(--wp-font-family);
+  font-size: 16px;
+  color: var(--wp-text-color-dark);
+}
+
+.tape-modal-footer {
+  padding: 10px 15px 15px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.tape-modal-add-btn, .tape-modal-cancel-btn {
+  padding: 8px 15px;
+  border-radius: var(--wp-border-radius);
+  font-family: var(--wp-font-family);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all var(--wp-transition-speed) ease;
+}
+
+.tape-modal-add-btn {
+  background: var(--wp-button-color);
+  color: var(--wp-button-text);
+  border: none;
+}
+
+.tape-modal-add-btn:hover {
+  background: var(--wp-button-hover);
+}
+
+.tape-modal-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tape-modal-cancel-btn {
+  background: var(--wp-secondary-color);
+  color: var(--wp-text-color);
+  border: 1px solid var(--wp-border-color);
+}
+
+.tape-modal-cancel-btn:hover {
+  background: var(--wp-border-color);
+}
+
+/* Playlist styles */
+.tape-playlist-modal {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.tape-playlist-instruction {
+  text-align: center;
+  margin-bottom: 10px;
+  color: var(--wp-text-color);
+  font-style: italic;
+}
+
+.tape-playlist-container {
+  overflow-y: auto;
+  max-height: 50vh;
+  border: 1px solid var(--wp-border-color);
+  border-radius: var(--wp-border-radius);
+  background: var(--wp-card-background);
+  margin-bottom: 15px;
+  padding: 5px;
+}
+
+.tape-playlist-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--wp-card-background);
+  border: 1px solid var(--wp-border-color);
+  border-radius: var(--wp-border-radius);
+  margin-bottom: 5px;
+  cursor: pointer;
+  transition: background-color var(--wp-transition-speed);
+}
+
+.tape-playlist-item:last-child {
+  margin-bottom: 0;
+}
+
+.tape-playlist-item:hover {
+  background: var(--wp-secondary-color);
+}
+
+.tape-playlist-item.tape-selected {
+  background: var(--wp-primary-color);
+  border-color: var(--wp-button-hover);
+  color: var(--wp-button-text);
+}
+
+.tape-playlist-item-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--wp-text-color-dark);
+  font-size: 14px;
+}
+
+.tape-delete-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wp-secondary-color);
+  border: 1px solid var(--wp-border-color);
+  border-radius: var(--wp-border-radius);
+  color: var(--wp-danger-color);
+  margin-left: 5px;
+  cursor: pointer;
+}
+
+.tape-delete-btn:hover {
+  background: var(--wp-border-color);
+}
+
+.tape-empty-playlist {
+  text-align: center;
+  padding: 20px 0;
+  color: var(--wp-text-color);
+  font-style: italic;
+}
+
+.tape-modal-footer {
+  padding: 10px 15px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tape-new-mixtape-btn {
+  font-size: 14px;
+  padding: 8px 12px;
+  background: var(--wp-secondary-color);
+  border: 1px solid var(--wp-border-color);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--wp-text-color);
+  border-radius: var(--wp-border-radius);
+  font-family: var(--wp-font-family);
+  cursor: pointer;
+}
+
+.tape-new-mixtape-btn:hover {
+  background: var(--wp-border-color);
+}
+
+.tape-modal-insert-btn {
+  padding: 8px 15px;
+  background: var(--wp-button-color);
+  color: var(--wp-button-text);
+  border: none;
+  border-radius: var(--wp-border-radius);
+  font-family: var(--wp-font-family);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.tape-modal-insert-btn:hover {
+  background: var(--wp-button-hover);
+}
+
+.tape-modal-insert-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Theme-specific styles */
+.theme-vintage .tape-cassette-container {
+  background: #F5EAD5;
+  border: 1px solid #C9B690;
+}
+
+.theme-vintage .tape-radio-tuner {
+  background: #E5D8B9;
+  border: 2px solid #C9B690;
+}
+
+.theme-vintage .tape-tuner-line {
+  background: #C9B690;
+}
+
+.theme-vintage .tape-frequency-scale {
+  color: #8A7B59;
+}
+
+.theme-vintage .tape-tuner-indicator {
+  background: #C13628;
+}
+
+.theme-vintage .tape-cassette-window {
+  background: #E5D8B9;
+  border: 2px solid #C9B690;
+}
+
+.theme-vintage .tape-eject-button {
+  background: #C9B690;
+  color: #5C4E33;
+  border: none;
+}
+
+.theme-vintage .tape-eject-button:hover {
+  background: #8A7B59;
+  color: #F5EAD5;
+}
+
+.theme-vintage .tape-track-display {
+  background: #E5D8B9;
+  border: 1px solid #C9B690;
+}
+
+.theme-vintage .tape-track-label {
+  color: #5C4E33;
+}
+
+.theme-vintage .tape-blink {
+  color: #C13628;
+}
+
+.theme-vintage .tape-control-button {
+  background: #E5D8B9;
+  border: 1px solid #C9B690;
+  color: #8A7B59;
+}
+
+.theme-vintage .tape-play-button {
+  background: #C9B690;
+  color: #5C4E33;
+}
+
+.theme-vintage .tape-play-button.tape-active {
+  background: #8A7B59;
+  color: #F5EAD5;
+}
+
+.theme-vintage .tape-player-error {
+  background: #FFE6E6;
+  border: 1px solid #C13628;
+  color: #C13628;
+}
+
+.theme-vintage .tape-mobile-note {
+  color: #8A7B59;
+}
+
+.theme-vintage .tape-track-info {
+  color: #8A7B59;
+  font-family: 'VT323', monospace;
+}

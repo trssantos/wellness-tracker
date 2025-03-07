@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Trash, Plus, X } from 'lucide-react';
+import './TapePlayer.css';
 
-const RetroTapePlayer = ({ isMuted }) => {
+const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
   // Core player states
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(0);
@@ -68,7 +69,7 @@ const RetroTapePlayer = ({ isMuted }) => {
       if (
         playlistRef.current && 
         !playlistRef.current.contains(event.target) &&
-        !event.target.classList.contains('eject-button-mixtape')
+        !event.target.classList.contains('tape-eject-button')
       ) {
         setShowPlaylistModal(false);
         setSelectedMixtapeIndex(null);
@@ -102,7 +103,7 @@ const RetroTapePlayer = ({ isMuted }) => {
         youtubePlayerRef.current.destroy();
       }
       
-      youtubePlayerRef.current = new window.YT.Player('youtube-player-mixtape', {
+      youtubePlayerRef.current = new window.YT.Player('youtube-player', {
         height: '0',
         width: '0',
         videoId: id,
@@ -418,12 +419,12 @@ const RetroTapePlayer = ({ isMuted }) => {
   };
 
   return (
-    <div className="vintage-player-mixtape" ref={playerContainerRef}>
+    <div className={`tape-player theme-${theme}`} ref={playerContainerRef}>
       {/* Cassette UI */}
-      <div className="cassette-container-mixtape">
-        <div className="radio-tuner-mixtape">
-          <div className="tuner-line-mixtape"></div>
-          <div className="frequency-scale-mixtape">
+      <div className="tape-cassette-container">
+        <div className="tape-radio-tuner">
+          <div className="tape-tuner-line"></div>
+          <div className="tape-frequency-scale">
             <span>88</span>
             <span>92</span>
             <span>96</span>
@@ -432,29 +433,29 @@ const RetroTapePlayer = ({ isMuted }) => {
             <span>108</span>
             <span>MHz</span>
           </div>
-          <div className="tuner-indicator-mixtape"></div>
+          <div className="tape-tuner-indicator"></div>
         </div>
         
-        <div className="cassette-window-mixtape">
+        <div className="tape-cassette-window">
           {/* Cassette visualization */}
           {(isInserted || isInserting || isEjecting) && (
-            <div className={`cassette-mixtape ${isEjecting ? 'ejecting-mixtape' : isInserting ? 'inserting-mixtape' : 'inserted-mixtape'}`}>
-              <div className="cassette-body-mixtape">
-                <div className="cassette-inner-mixtape">
-                  <div className="cassette-reel-mixtape left-reel-mixtape">
-                    <div className={`reel-spokes-mixtape ${isPlaying ? 'spinning-mixtape' : ''}`}></div>
+            <div className={`tape-cassette ${isEjecting ? 'tape-ejecting' : isInserting ? 'tape-inserting' : 'tape-inserted'}`}>
+              <div className="tape-cassette-body">
+                <div className="tape-cassette-inner">
+                  <div className="tape-cassette-reel left-reel">
+                    <div className={`tape-reel-spokes ${isPlaying ? 'tape-spinning' : ''}`}></div>
                   </div>
-                  <div className="cassette-reel-mixtape right-reel-mixtape">
-                    <div className={`reel-spokes-mixtape ${isPlaying ? 'spinning-mixtape' : ''}`}></div>
+                  <div className="tape-cassette-reel right-reel">
+                    <div className={`tape-reel-spokes ${isPlaying ? 'tape-spinning' : ''}`}></div>
                   </div>
                 </div>
-                <div className="cassette-label-mixtape">
-                  <div className="label-content-mixtape">
+                <div className="tape-cassette-label">
+                  <div className="tape-label-content">
                     {getCurrentTrack()?.name || 'Workout Mix'}
                   </div>
                 </div>
-                <div className="cassette-window-film-mixtape">
-                  <div className={`film-mixtape ${isPlaying ? 'moving-mixtape' : ''}`}></div>
+                <div className="tape-cassette-window-film">
+                  <div className={`tape-film ${isPlaying ? 'tape-moving' : ''}`}></div>
                 </div>
               </div>
             </div>
@@ -463,7 +464,7 @@ const RetroTapePlayer = ({ isMuted }) => {
           {/* Insert/Eject button */}
           <button 
             onClick={handleInsertButton}
-            className="eject-button-mixtape"
+            className="tape-eject-button"
             disabled={isEjecting || isInserting}
           >
             {isInserted ? 'EJECT' : 'INSERT'}
@@ -471,21 +472,30 @@ const RetroTapePlayer = ({ isMuted }) => {
         </div>
         
         {/* Track display */}
-        <div className="track-display-mixtape">
-          <span className="track-label-mixtape">
+        <div className="tape-track-display">
+          <span className="tape-track-label">
             {playlist.length > 0 
               ? `TRACK ${currentTrack + 1}/${playlist.length}` 
               : 'NO TRACKS'}
           </span>
-          <div className="playing-indicator-mixtape">{isPlaying && <span className="blink-mixtape">►</span>}</div>
+          <div className="tape-playing-indicator">
+            {isPlaying && <span className="tape-blink">►</span>}
+          </div>
+        </div>
+        
+        {/* Track info */}
+        <div className="tape-track-info">
+          {isInserted && getCurrentTrack() && 
+            `Now playing: ${getCurrentTrack().name}`
+          }
         </div>
         
         {/* Player controls */}
-        <div className="player-controls-mixtape">
+        <div className="tape-player-controls">
           <button 
             onClick={handlePrevTrack}
             disabled={!isInserted || playlist.length <= 1}
-            className="control-button-mixtape prev-button-mixtape"
+            className="tape-control-button tape-prev-button"
           >
             <SkipBack size={18} />
           </button>
@@ -493,7 +503,7 @@ const RetroTapePlayer = ({ isMuted }) => {
           <button 
             onClick={togglePlay}
             disabled={!isInserted || playlist.length === 0}
-            className={`control-button-mixtape play-button-mixtape ${isPlaying ? 'active-mixtape' : ''}`}
+            className={`tape-control-button tape-play-button ${isPlaying ? 'tape-active' : ''}`}
           >
             {isPlaying ? <Pause size={18} /> : <Play size={18} />}
           </button>
@@ -501,48 +511,48 @@ const RetroTapePlayer = ({ isMuted }) => {
           <button 
             onClick={handleNextTrack}
             disabled={!isInserted || playlist.length <= 1}
-            className="control-button-mixtape next-button-mixtape"
+            className="tape-control-button tape-next-button"
           >
             <SkipForward size={18} />
           </button>
         </div>
         
         {playerError && (
-          <div className="player-error-mixtape">Error: {playerError}</div>
+          <div className="tape-player-error">Error: {playerError}</div>
         )}
         
-        <div className="mobile-note-mixtape">
+        <div className="tape-mobile-note">
           Note: On mobile devices, you may need to press pause and play when skipping tracks.
         </div>
       </div>
       
       {/* Playlist Selection Modal */}
       {showPlaylistModal && (
-        <div className="modal-overlay-mixtape">
-          <div className="modal-content-mixtape playlist-modal-mixtape">
-            <div className="modal-header-mixtape">
-              <h3>Select Mixtape</h3>
-              <button className="modal-close-mixtape" onClick={() => setShowPlaylistModal(false)}>
+        <div className="tape-modal-overlay">
+          <div className="tape-modal-content tape-playlist-modal" ref={playlistRef}>
+            <div className="tape-modal-header">
+              <h3>Select Music</h3>
+              <button className="tape-modal-close" onClick={() => setShowPlaylistModal(false)}>
                 <X size={18} />
               </button>
             </div>
             
-            <div className="modal-body-mixtape">
-              <p className="playlist-instruction-mixtape">Choose a mixtape, then press INSERT</p>
+            <div className="tape-modal-body">
+              <p className="tape-playlist-instruction">Choose a track, then press Insert</p>
               
-              <div className="playlist-container-modal-mixtape">
+              <div className="tape-playlist-container">
                 {playlist.length === 0 ? (
-                  <div className="empty-playlist-mixtape">No mixtapes available</div>
+                  <div className="tape-empty-playlist">No tracks available</div>
                 ) : (
-                  playlist.map((tape, index) => (
+                  playlist.map((track, index) => (
                     <div 
                       key={index} 
-                      className={`playlist-item-mixtape ${selectedMixtapeIndex === index ? 'selected-mixtape' : ''}`}
+                      className={`tape-playlist-item ${selectedMixtapeIndex === index ? 'tape-selected' : ''}`}
                       onClick={() => handleMixtapeSelect(index)}
                     >
-                      <div className="playlist-item-name-mixtape">{tape.name}</div>
+                      <div className="tape-playlist-item-name">{track.name}</div>
                       <button 
-                        className="delete-btn-mixtape" 
+                        className="tape-delete-btn" 
                         onClick={(e) => removeTrack(index, e)}
                       >
                         <Trash size={14} />
@@ -553,72 +563,72 @@ const RetroTapePlayer = ({ isMuted }) => {
               </div>
             </div>
             
-            <div className="modal-footer-mixtape">
+            <div className="tape-modal-footer">
               <button 
                 onClick={openAddMixtapeModal}
-                className="new-mixtape-btn-mixtape"
+                className="tape-new-mixtape-btn"
               >
                 <Plus size={14} />
-                <span>Create a new mixtape</span>
+                <span>Add new track</span>
               </button>
               
               <button 
                 onClick={insertSelectedTape}
                 disabled={selectedMixtapeIndex === null}
-                className="modal-insert-btn-mixtape"
+                className="tape-modal-insert-btn"
               >
-                Insert Mixtape
+                Insert Track
               </button>
             </div>
           </div>
         </div>
       )}
       
-      {/* Add New Mixtape Modal */}
+      {/* Add New Track Modal */}
       {showAddModal && (
-        <div className="modal-overlay-mixtape">
-          <div className="modal-content-mixtape">
-            <div className="modal-header-mixtape">
-              <h3>Add New Mixtape</h3>
-              <button className="modal-close-mixtape" onClick={closeAddMixtapeModal}>
+        <div className="tape-modal-overlay">
+          <div className="tape-modal-content">
+            <div className="tape-modal-header">
+              <h3>Add New Track</h3>
+              <button className="tape-modal-close" onClick={closeAddMixtapeModal}>
                 <X size={18} />
               </button>
             </div>
-            <div className="modal-body-mixtape">
-              <div className="modal-form-mixtape">
-                <div className="form-group-mixtape">
-                  <label>Mixtape Name</label>
+            <div className="tape-modal-body">
+              <div className="tape-modal-form">
+                <div className="tape-form-group">
+                  <label>Track Name</label>
                   <input
                     type="text"
                     value={newTrackName}
                     onChange={(e) => setNewTrackName(e.target.value)}
-                    placeholder="Enter a name for your mixtape"
-                    className="form-input-mixtape"
+                    placeholder="Enter a name for your track"
+                    className="tape-form-input"
                   />
                 </div>
-                <div className="form-group-mixtape">
+                <div className="tape-form-group">
                   <label>YouTube URL</label>
                   <input
                     type="text"
                     value={newTrackUrl}
                     onChange={(e) => setNewTrackUrl(e.target.value)}
                     placeholder="Enter a YouTube video URL"
-                    className="form-input-mixtape"
+                    className="tape-form-input"
                   />
                 </div>
               </div>
             </div>
-            <div className="modal-footer-mixtape">
+            <div className="tape-modal-footer">
               <button 
                 onClick={addTrack}
                 disabled={!newTrackUrl}
-                className="modal-add-btn-mixtape"
+                className="tape-modal-add-btn"
               >
-                Add Mixtape
+                Add Track
               </button>
               <button 
                 onClick={closeAddMixtapeModal}
-                className="modal-cancel-btn-mixtape"
+                className="tape-modal-cancel-btn"
               >
                 Cancel
               </button>
@@ -628,629 +638,9 @@ const RetroTapePlayer = ({ isMuted }) => {
       )}
       
       {/* Hidden YouTube player div */}
-      <div id="youtube-player-mixtape" style={{ display: 'none' }}></div>
+      <div id="youtube-player" style={{ display: 'none' }}></div>
     </div>
   );
 };
-
-// Add vintage player styles
-const style = document.createElement('style');
-style.innerHTML = `
-  /* Vintage Cassette Player Styling */
-  @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-  
-  .vintage-player-mixtape {
-    width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
-    font-family: 'VT323', monospace;
-    position: relative;
-  }
-  
-  .cassette-container-mixtape {
-    background: #F5EAD5;
-    border-radius: 12px;
-    padding: 15px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-    position: relative;
-    overflow: hidden;
-  }
-  
-  /* Radio tuner */
-  .radio-tuner-mixtape {
-    height: 30px;
-    background: #E5D8B9;
-    border-radius: 15px;
-    margin-bottom: 15px;
-    position: relative;
-    border: 2px solid #C9B690;
-  }
-  
-  .tuner-line-mixtape {
-    position: absolute;
-    top: 50%;
-    left: 10px;
-    right: 10px;
-    height: 2px;
-    background: #C9B690;
-    transform: translateY(-50%);
-  }
-  
-  .frequency-scale-mixtape {
-    display: flex;
-    justify-content: space-between;
-    padding: 0 10px;
-    position: relative;
-    z-index: 1;
-    font-size: 12px;
-    color: #8A7B59;
-  }
-  
-  .tuner-indicator-mixtape {
-    position: absolute;
-    top: 3px;
-    left: 50%;
-    width: 2px;
-    height: calc(100% - 6px);
-    background: #C13628;
-    transform: translateX(-50%);
-    border-radius: 1px;
-  }
-  
-  /* Cassette window */
-  .cassette-window-mixtape {
-    background: #E5D8B9;
-    border-radius: 8px;
-    height: 200px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-    border: 2px solid #C9B690;
-    margin-bottom: 15px;
-  }
-  
-  /* Cassette */
-  .cassette-mixtape {
-    width: 80%;
-    height: 75%;
-    background: black;
-    border-radius: 8px;
-    position: relative;
-  }
-  
-  .cassette-mixtape.inserted-mixtape {
-    transform: translateY(0);
-  }
-  
-  .cassette-mixtape.ejecting-mixtape {
-    animation: ejectAnimation-mixtape 1s ease-in-out forwards;
-  }
-  
-  .cassette-mixtape.inserting-mixtape {
-    animation: insertAnimation-mixtape 1s ease-in-out forwards;
-  }
-  
-  @keyframes ejectAnimation-mixtape {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(-150%); }
-  }
-  
-  @keyframes insertAnimation-mixtape {
-    0% { transform: translateY(-150%); }
-    100% { transform: translateY(0); }
-  }
-  
-  .cassette-body-mixtape {
-    width: 100%;
-    height: 100%;
-    padding: 10px;
-    position: relative;
-  }
-  
-  .cassette-inner-mixtape {
-    display: flex;
-    justify-content: space-between;
-    height: 50%;
-    margin-bottom: 5px;
-  }
-  
-  .cassette-reel-mixtape {
-    width: 40px;
-    height: 40px;
-    background: #333;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .reel-spokes-mixtape {
-    width: 80%;
-    height: 80%;
-    border-radius: 50%;
-    background: #555;
-    position: relative;
-  }
-  
-  .reel-spokes-mixtape::before, .reel-spokes-mixtape::after {
-    content: '';
-    position: absolute;
-    background: #333;
-  }
-  
-  .reel-spokes-mixtape::before {
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    width: 2px;
-    transform: translateX(-50%);
-  }
-  
-  .reel-spokes-mixtape::after {
-    left: 0;
-    right: 0;
-    top: 50%;
-    height: 2px;
-    transform: translateY(-50%);
-  }
-  
-  .reel-spokes-mixtape.spinning-mixtape {
-    animation: spinReel-mixtape 2s linear infinite;
-  }
-  
-  @keyframes spinReel-mixtape {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  
-  .cassette-label-mixtape {
-    height: 30%;
-    background: linear-gradient(90deg, #FF5F6D, #FFC371, #FFE066, #4ECDC4, #88D3FF);
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 5px;
-    position: relative;
-    overflow: hidden;
-    border: 1px solid white;
-  }
-  
-  .label-content-mixtape {
-    background: white;
-    padding: 2px 8px;
-    font-size: 14px;
-    font-weight: bold;
-    text-align: center;
-    max-width: 90%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: black;
-  }
-  
-  .cassette-window-film-mixtape {
-    height: 20%;
-    background: rgba(0, 0, 0, 0.7);
-    border-radius: 3px;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .film-mixtape {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: rgba(100, 100, 100, 0.5);
-    transform: translateY(-50%);
-  }
-  
-  .film-mixtape.moving-mixtape {
-    background: linear-gradient(90deg, 
-      rgba(100, 100, 100, 0.5) 0%, 
-      rgba(150, 150, 150, 0.7) 20%, 
-      rgba(100, 100, 100, 0.5) 40%
-    );
-    background-size: 200% 100%;
-    animation: filmMoving-mixtape 2s linear infinite;
-  }
-  
-  @keyframes filmMoving-mixtape {
-    0% { background-position: 100% 0; }
-    100% { background-position: -100% 0; }
-  }
-  
-  /* Eject button */
-  .eject-button-mixtape {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    padding: 6px 10px;
-    background: #C9B690;
-    border: none;
-    border-radius: 4px;
-    font-family: 'VT323', monospace;
-    font-size: 16px;
-    color: #5C4E33;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    z-index: 20;
-    animation: pulseButton-mixtape 2s infinite;
-  }
-  
-  @keyframes pulseButton-mixtape {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); box-shadow: 0 0 10px rgba(138, 123, 89, 0.3); }
-  }
-
-  .eject-button-mixtape.can-insert-mixtape {
-    background: #8A7B59;
-    color: #F5EAD5;
-    border: 1px solid #F5EAD5;
-    box-shadow: 0 0 10px rgba(245, 234, 213, 0.5);
-  }
-  
-  .eject-button-mixtape:hover {
-    background: #8A7B59;
-    color: #F5EAD5;
-  }
-  
-  .eject-button-mixtape:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    animation: none;
-  }
-
-  /* Track display */
-  .track-display-mixtape {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #E5D8B9;
-    padding: 8px 12px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-    border: 1px solid #C9B690;
-  }
-  
-  .track-label-mixtape {
-    font-size: 16px;
-    color: #5C4E33;
-    font-weight: bold;
-  }
-  
-  .playing-indicator-mixtape {
-    width: 10px;
-    height: 10px;
-  }
-  
-  .blink-mixtape {
-    animation: blink-mixtape 1s step-end infinite;
-    color: #C13628;
-    font-size: 16px;
-  }
-  
-  @keyframes blink-mixtape {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-  }
-  
-  /* Player controls */
-  .player-controls-mixtape {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-  }
-  
-  .control-button-mixtape {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #E5D8B9;
-    border: 1px solid #C9B690;
-    color: #8A7B59;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-  }
-  
-  .control-button-mixtape:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .play-button-mixtape {
-    width: 50px;
-    height: 50px;
-  }
-  
-  .play-button-mixtape.active-mixtape {
-    background: #C9B690;
-    color: #F5EAD5;
-  }
-  
-  .player-error-mixtape {
-    margin-top: 10px;
-    padding: 8px;
-    background: #FFE6E6;
-    border: 1px solid #C13628;
-    border-radius: 4px;
-    color: #C13628;
-    text-align: center;
-    font-size: 14px;
-  }
-  
-  .mobile-note-mixtape {
-    margin-top: 15px;
-    text-align: center;
-    font-size: 12px;
-    color: #8A7B59;
-    font-style: italic;
-  }
-  
-  /* Modal styling */
-  .modal-overlay-mixtape {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-  
-  .modal-content-mixtape {
-    width: 90%;
-    max-width: 350px;
-    background: #F5EAD5;
-    border-radius: 8px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-    overflow: hidden;
-  }
-  
-  .modal-header-mixtape {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 15px;
-    background: #E5D8B9;
-    border-bottom: 1px solid #C9B690;
-  }
-  
-  .modal-header-mixtape h3 {
-    margin: 0;
-    color: #5C4E33;
-    font-size: 18px;
-  }
-  
-  .modal-close-mixtape {
-    background: none;
-    border: none;
-    color: #8A7B59;
-    cursor: pointer;
-    padding: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .modal-close-mixtape:hover {
-    color: #C13628;
-  }
-  
-  .modal-body-mixtape {
-    padding: 15px;
-  }
-  
-  .modal-form-mixtape {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .form-group-mixtape {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-  
-  .form-group-mixtape label {
-    font-size: 14px;
-    color: #5C4E33;
-    font-weight: bold;
-  }
-  
-  .form-input-mixtape {
-    padding: 8px 10px;
-    border: 1px solid #C9B690;
-    border-radius: 4px;
-    background: white;
-    font-family: 'VT323', monospace;
-    font-size: 16px;
-    color: #5C4E33;
-  }
-  
-  .modal-footer-mixtape {
-    padding: 10px 15px 15px;
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-  }
-  
-  .modal-add-btn-mixtape, .modal-cancel-btn-mixtape {
-    padding: 8px 15px;
-    border-radius: 4px;
-    font-family: 'VT323', monospace;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  
-  .modal-add-btn-mixtape {
-    background: #8A7B59;
-    color: #F5EAD5;
-    border: none;
-  }
-  
-  .modal-add-btn-mixtape:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .modal-cancel-btn-mixtape {
-    background: #E5D8B9;
-    color: #8A7B59;
-    border: 1px solid #C9B690;
-  }
-  
-  /* Responsive styling */
-  @media (max-width: 480px) {
-    .control-button-mixtape {
-      width: 36px;
-      height: 36px;
-    }
-    
-    .play-button-mixtape {
-      width: 46px;
-      height: 46px;
-    }
-    
-    .cassette-window-mixtape {
-      height: 180px;
-    }
-  }
-  
-  /* Enhanced Modal Styling for Playlists */
-  .playlist-modal-mixtape {
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .playlist-instruction-mixtape {
-    text-align: center;
-    margin-bottom: 10px;
-    color: #8A7B59;
-    font-style: italic;
-  }
-  
-  .playlist-container-modal-mixtape {
-    overflow-y: auto;
-    max-height: 50vh;
-    border: 1px solid #C9B690;
-    border-radius: 4px;
-    background: #F5EAD5;
-    margin-bottom: 15px;
-    padding: 5px;
-  }
-  
-  .playlist-item-mixtape {
-    display: flex;
-    align-items: center;
-    padding: 6px 8px;
-    background: #F5EAD5;
-    border: 1px solid #C9B690;
-    border-radius: 4px;
-    margin-bottom: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  .playlist-item-mixtape:last-child {
-    margin-bottom: 0;
-  }
-  
-  .playlist-item-mixtape:hover {
-    background: #E5D8B9;
-  }
-  
-  .playlist-item-mixtape.selected-mixtape {
-    background: #C9B690;
-    border-color: #8A7B59;
-  }
-  
-  .playlist-item-name-mixtape {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: #5C4E33;
-    font-size: 14px;
-  }
-  
-  .delete-btn-mixtape {
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #E5D8B9;
-    border: 1px solid #C9B690;
-    border-radius: 4px;
-    color: #C13628;
-    margin-left: 5px;
-    cursor: pointer;
-  }
-  
-  .delete-btn-mixtape:hover {
-    background: #C9B690;
-  }
-  
-  .empty-playlist-mixtape {
-    text-align: center;
-    padding: 20px 0;
-    color: #8A7B59;
-    font-style: italic;
-  }
-  
-  .modal-footer-mixtape {
-    padding: 10px 15px 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .new-mixtape-btn-mixtape {
-    font-size: 14px;
-    padding: 8px 12px;
-    background: #E5D8B9;
-    border: 1px solid #C9B690;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: #5C4E33;
-    border-radius: 4px;
-    font-family: 'VT323', monospace;
-    cursor: pointer;
-  }
-  
-  .new-mixtape-btn-mixtape:hover {
-    background: #C9B690;
-  }
-  
-  .modal-insert-btn-mixtape {
-    padding: 8px 15px;
-    background: #8A7B59;
-    color: #F5EAD5;
-    border: none;
-    border-radius: 4px;
-    font-family: 'VT323', monospace;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  
-  .modal-insert-btn-mixtape:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-document.head.appendChild(style);
 
 export default RetroTapePlayer;

@@ -1,0 +1,149 @@
+@import '../../styles/themes/variables.css';
+
+.rest-period {
+  background: var(--wp-card-background);
+  border-radius: var(--wp-border-radius);
+  padding: 20px;
+  text-align: center;
+  color: var(--wp-text-color);
+  margin-bottom: 20px;
+  border: 1px solid var(--wp-border-color);
+  box-shadow: var(--wp-shadow);
+}
+
+/* Rest header */
+.rest-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  color: var(--wp-text-color-dark);
+}
+
+.rest-header h3 {
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.rest-clock-icon {
+  color: var(--wp-primary-color);
+}
+
+/* Countdown display */
+.rest-countdown {
+  margin-bottom: 20px;
+}
+
+.countdown-number {
+  font-size: 3rem;
+  color: var(--wp-text-color-dark);
+  font-weight: bold;
+}
+
+.countdown-unit {
+  font-size: 1rem;
+  color: var(--wp-text-color);
+}
+
+/* Rest message */
+.rest-message {
+  margin-bottom: 20px;
+  color: var(--wp-text-color);
+  font-size: 1.1rem;
+}
+
+/* Next exercise */
+.next-exercise {
+  text-align: left;
+}
+
+.next-label {
+  margin-bottom: 5px;
+  color: var(--wp-text-color);
+  font-size: 0.9rem;
+}
+
+.next-exercise-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--wp-secondary-color);
+  border: 1px solid var(--wp-border-color);
+  border-radius: var(--wp-border-radius);
+  padding: 10px;
+}
+
+.next-exercise-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--wp-card-background);
+  border: 1px solid var(--wp-border-color);
+  border-radius: var(--wp-border-radius);
+  color: var(--wp-primary-color);
+}
+
+.next-exercise-name {
+  flex: 1;
+  font-size: 1.1rem;
+  color: var(--wp-text-color-dark);
+  font-weight: bold;
+}
+
+.next-arrow {
+  color: var(--wp-text-color);
+}
+
+/* Vintage theme styles */
+.theme-vintage {
+  background: #F5EAD5;
+  border: 1px solid #C9B690;
+  color: #8A7B59;
+  font-family: 'VT323', monospace;
+}
+
+.theme-vintage .rest-header {
+  color: #5C4E33;
+}
+
+.theme-vintage .rest-clock-icon {
+  color: #C9B690;
+}
+
+.theme-vintage .countdown-number {
+  color: #8A7B59;
+}
+
+.theme-vintage .countdown-unit {
+  color: #8A7B59;
+}
+
+.theme-vintage .rest-message {
+  color: #8A7B59;
+}
+
+.theme-vintage .next-label {
+  color: #8A7B59;
+}
+
+.theme-vintage .next-exercise-container {
+  background: #E5D8B9;
+  border: 1px solid #C9B690;
+}
+
+.theme-vintage .next-exercise-icon {
+  background: #F5EAD5;
+  border: 1px solid #C9B690;
+  color: #8A7B59;
+}
+
+.theme-vintage .next-exercise-name {
+  color: #5C4E33;
+}
+
+.theme-vintage .next-arrow {
+  color: #8A7B59;
+}

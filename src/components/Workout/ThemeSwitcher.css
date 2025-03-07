@@ -1,0 +1,28 @@
+@import '../../styles/themes/variables.css';
+
+.theme-switcher {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--wp-border-radius);
+  background-color: var(--wp-button-color);
+  color: var(--wp-button-text);
+  border: 1px solid var(--wp-border-color);
+  cursor: pointer;
+  transition: all var(--wp-transition-speed) ease;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+}
+
+.theme-switcher:hover {
+  background-color: var(--wp-button-hover);
+  transform: scale(1.05);
+}
+
+.theme-switcher.vintage {
+  border: 2px solid var(--wp-border-color-dark);
+}

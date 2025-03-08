@@ -5,6 +5,8 @@ import { Overview } from './components/Sections/Overview';
 import { Stats } from './components/Sections/Stats';
 import { MeditationSection, DayCoachSection, TemplatesSection } from './components/Sections/Placeholders';
 import HabitsPlaceholder from './components/Sections/HabitsPlaceholder';
+import FocusPlaceholder from './components/Sections/FocusPlaceholder';
+import FocusSection from './components/Sections/FocusSection';
 import { FlowGuide } from './components/FlowGuide';
 import { FloatingMenu } from './components/FloatingMenu';
 import { DayChecklist } from './components/DayChecklist';
@@ -398,6 +400,10 @@ const handlePendingTasksAction = (action, tasks = []) => {
                 <DayCoachSection />
               </SectionContainer>
 
+              <SectionContainer id="focus" isActive={activeSection === 'focus'}>
+  <FocusSection />
+</SectionContainer>
+
               <SectionContainer id="templates" isActive={activeSection === 'templates'}>
                 <TemplatesSection />
               </SectionContainer>
@@ -406,6 +412,9 @@ const handlePendingTasksAction = (action, tasks = []) => {
 
               <SectionContainer id="habitsShowcase" isActive={activeSection === 'habitsShowcase'}>
   <HabitsPlaceholder />
+</SectionContainer>
+<SectionContainer id="focusShowcase" isActive={activeSection === 'focusShowcase'}>
+  <FocusPlaceholder />
 </SectionContainer>
               
             </div>

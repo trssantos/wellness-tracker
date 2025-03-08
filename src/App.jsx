@@ -43,6 +43,7 @@ const App = () => {
   const [storageData, setStorageData] = useState(getStorage());
   const [storageVersion, setStorageVersion] = useState(0);
   const [voiceInputDate, setVoiceInputDate] = useState(null);
+  const [isFullscreenActive, setIsFullscreenActive] = useState(false);
   
   // Add new state for mood time tracker
   const [moodTimeDate, setMoodTimeDate] = useState(null);
@@ -353,7 +354,7 @@ const handlePendingTasksAction = (action, tasks = []) => {
   return (
     <ThemeProvider>
       <WorkoutThemeProvider>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
+      <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors ${isFullscreenActive ? 'fullscreen-app-mode' : ''}`}>
         <div className="flex">
           {/* Sidebar Navigation */}
           <Sidebar 
@@ -401,7 +402,9 @@ const handlePendingTasksAction = (action, tasks = []) => {
               </SectionContainer>
 
               <SectionContainer id="focus" isActive={activeSection === 'focus'}>
-  <FocusSection />
+  <FocusSection 
+    onFullscreenChange={setIsFullscreenActive} 
+  />
 </SectionContainer>
 
               <SectionContainer id="templates" isActive={activeSection === 'templates'}>

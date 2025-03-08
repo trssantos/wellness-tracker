@@ -1,0 +1,244 @@
+/* Complete replacement for focusNature.css */
+
+/* App-level fullscreen mode */
+.fullscreen-app-mode {
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+.fullscreen-app-mode .sidebar,
+.fullscreen-app-mode header,
+.fullscreen-app-mode nav,
+.fullscreen-app-mode footer {
+  display: none !important;
+}
+
+/* Main fullscreen container using fixed positioning */
+.focus-fullscreen-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(to bottom, #0f172a, #1e293b);
+  z-index: 9999;
+  overflow: hidden;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Nature elements container */
+.nature-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Sky elements */
+.stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px);
+  background-size: 100px 100px;
+  opacity: 0.3;
+}
+
+.cloud {
+  position: absolute;
+  background: rgba(255,255,255,0.03);
+  border-radius: 50%;
+  filter: blur(20px);
+  animation: driftCloud linear infinite;
+}
+
+/* Tree and foliage */
+.tree {
+  position: absolute;
+  bottom: 0;
+  right: 5%;
+  width: 250px;
+  height: 500px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 200' fill='rgba(255,255,255,0.05)'%3E%3Cpath d='M50,0C40,40 20,50 20,80C20,110 40,120 40,160C40,180 30,190 30,200L70,200C70,190 60,180 60,160C60,120 80,110 80,80C80,50 60,40 50,0Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: bottom;
+  opacity: 0.3;
+}
+
+.leaf {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='rgba(255,255,255,0.2)'%3E%3Cpath d='M50,0 C30,25 0,50 50,100 C100,50 70,25 50,0Z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.4;
+  animation: floatDown linear infinite;
+}
+
+/* Grass at bottom */
+.grass-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+}
+
+.grass-blade {
+  position: absolute;
+  bottom: 0;
+  width: 8px;
+  background: linear-gradient(to top, rgba(255,255,255,0.15), rgba(255,255,255,0.03));
+  border-radius: 100% 100% 0 0;
+  transform-origin: bottom center;
+  animation: sway 3s ease-in-out infinite alternate;
+}
+
+/* Fireflies effect */
+.firefly {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.7);
+  filter: blur(1px);
+  animation: flicker 4s ease-in-out infinite, float 20s linear infinite;
+}
+
+/* Water ripple effect for bottom of screen */
+.water-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  overflow: hidden;
+  opacity: 0.1;
+}
+
+.water-ripple {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.3);
+  transform: scale(0);
+  animation: ripple 7s linear infinite;
+}
+
+/* Main content container for fullscreen */
+.focus-fullscreen-content {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Animations */
+@keyframes flicker {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes float {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(10px, -10px); }
+  50% { transform: translate(0, -20px); }
+  75% { transform: translate(-10px, -10px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes floatDown {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.4;
+  }
+  90% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes driftCloud {
+  from { transform: translateX(-50px); }
+  to { transform: translateX(calc(100vw + 100px)); }
+}
+
+@keyframes sway {
+  0% { transform: rotate(-5deg); }
+  100% { transform: rotate(5deg); }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(6);
+    opacity: 0;
+  }
+}
+
+/* Text elements for fullscreen mode */
+.focus-fullscreen-container input,
+.focus-fullscreen-container textarea {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.focus-fullscreen-container input::placeholder,
+.focus-fullscreen-container textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Session complete in fullscreen */
+.fullscreen-session-complete {
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  color: white;
+  max-width: 500px;
+  width: 90%;
+  margin: 0 auto;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+  .focus-fullscreen-content {
+    padding: 0.5rem;
+  }
+  
+  .task-display {
+    display: none; /* Hide task display on small screens */
+  }
+  
+  .timer-display {
+    transform: scale(0.85);
+  }
+}

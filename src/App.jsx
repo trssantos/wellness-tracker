@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sidebar } from './components/Navigation/Sidebar';
 import { SectionContainer } from './components/Navigation/SectionContainer';
 import { Overview } from './components/Sections/Overview';
@@ -35,6 +35,7 @@ import { injectHabitTasks } from './utils/habitTrackerUtils';
 import WorkoutSection from './components/Sections/WorkoutSection';
 // Import the WorkoutThemeProvider
 import { WorkoutThemeProvider } from './context/ThemeContext';
+import { saveFocusSessionState } from './utils/FocusSessionState';
 
 const App = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -50,6 +51,10 @@ const App = () => {
   const [moodTimeDefaultTime, setMoodTimeDefaultTime] = useState('morning');
   const [pendingTasksDate, setPendingTasksDate] = useState(null);
 const [pendingTasksForDate, setPendingTasksForDate] = useState(null);
+
+// Track if Focus section has an active session
+const hasFocusSession = useRef(false);
+const preventNavigationAway = useRef(false);
 
 
   // Initialize reminder service on app start and run data migration
@@ -97,6 +102,27 @@ const [pendingTasksForDate, setPendingTasksForDate] = useState(null);
         }
       });
     }
+  }, []);
+
+  // Update event listeners to handle the page unload event
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      // If there's an active focus session, save it before page unload
+      if (window.currentFocusState?.focusActive && !window.currentFocusState?.sessionComplete) {
+        saveFocusSessionState(window.currentFocusState);
+        
+        // Modern browsers require returnValue to be set
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   // This function checks for pending tasks and shows the modal if needed
@@ -351,6 +377,24 @@ const handlePendingTasksAction = (action, tasks = []) => {
     document.getElementById('guide-modal').showModal();
   };
 
+  const handleSectionChange = (newSection) => {
+    // If leaving the focus section and there's an active session
+    if (activeSection === 'focus' && newSection !== 'focus' && window.currentFocusState?.focusActive) {
+      console.log('Attempting to navigate away from active focus session...');
+      
+      // Save the focus state
+      saveFocusSessionState(window.currentFocusState);
+      
+      // Set the new section
+      setActiveSection(newSection);
+      
+      console.log('Saved focus state and navigated to:', newSection);
+    } else {
+      // Normal navigation
+      setActiveSection(newSection);
+    }
+  };
+
   return (
     <ThemeProvider>
       <WorkoutThemeProvider>
@@ -359,7 +403,7 @@ const handlePendingTasksAction = (action, tasks = []) => {
           {/* Sidebar Navigation */}
           <Sidebar 
             activeSection={activeSection} 
-            onSectionChange={setActiveSection}
+            onSectionChange={handleSectionChange}
             onReminderSettingsOpen={handleReminderSettingsOpen}
             onSettingsOpen={handleSettingsOpen}
             onHelpOpen={handleHelpOpen}

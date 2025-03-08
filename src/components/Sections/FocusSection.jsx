@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Play, Pause, X, AlertTriangle, Clock, Target, ListChecks, Maximize, 
   Minimize, CheckSquare, Calendar, BarChart2, History, 
-  Award, SaveAll, Sparkles, Moon, Sun, Star
+  Award, SaveAll, Sparkles, Moon, Sun, Star, Flag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSpring, animated } from 'react-spring';
@@ -13,6 +13,7 @@ import FocusHistory from '../Focus/FocusHistory';
 import FocusSessionComplete from '../Focus/FocusSessionComplete';
 import FocusNatureBackground from '../Focus/FocusNatureBackground';
 import { getStorage, setStorage } from '../../utils/storage';
+import { loadFocusSessionState, saveFocusSessionState, clearFocusSessionState} from '../../utils/FocusSessionState';
 
 // Import the CSS file for nature animations
 import '../Focus/focusNature.css';
@@ -91,6 +92,7 @@ const FocusSection = ({ onFullscreenChange }) => {
   // Modal states
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
+  const [showFinishConfirmModal, setShowFinishConfirmModal] = useState(false);
   const [showTaskCompleteModal, setShowTaskCompleteModal] = useState(false);
   const [selectedTaskToComplete, setSelectedTaskToComplete] = useState(null);
   const [tasksTimingData, setTasksTimingData] = useState({});
@@ -101,6 +103,9 @@ const FocusSection = ({ onFullscreenChange }) => {
   // Refs
   const timerRef = useRef(null);
   const audioRef = useRef(null);
+
+   // Create a ref to check if this is the first render
+   const isFirstRender = useRef(true);
   
   // Timer progress circle animation
   const progressAnimation = useSpring({
@@ -109,6 +114,80 @@ const FocusSection = ({ onFullscreenChange }) => {
       : 283 - (283 * Math.min(elapsedTime / (2 * 60 * 60), 1)), // Cap at 2 hours for countup
     config: { tension: 280, friction: 120 }
   });
+
+   // Use this to expose the current focus state to the parent component
+   useEffect(() => {
+    // Only update window.currentFocusState if we have an active session
+    if (focusActive) {
+      window.currentFocusState = {
+        focusActive,
+        sessionComplete,
+        isPaused,
+        timeRemaining,
+        elapsedTime,
+        timerType,
+        selectedPreset,
+        objective,
+        selectedTasks,
+        completedTaskIds,
+        tasksTimingData,
+        timerStartTime: timerStartTime?.toISOString(),
+        untilTime
+      };
+      
+      console.log('Updated window.currentFocusState with active session data');
+    }
+  }, [
+    focusActive, sessionComplete, isPaused, timeRemaining, elapsedTime, 
+    timerType, selectedPreset, objective, selectedTasks, completedTaskIds, 
+    tasksTimingData, timerStartTime, untilTime
+  ]);
+  
+  // Load saved session on first render
+  useEffect(() => {
+    if (isFirstRender.current) {
+      console.log('First render, checking for saved session state');
+      const savedState = loadFocusSessionState();
+      
+      if (savedState && savedState.focusActive) {
+        console.log('Found saved session state, restoring...');
+        
+        // Restore all session state
+        setFocusActive(savedState.focusActive);
+        setSessionComplete(savedState.sessionComplete);
+        setIsPaused(savedState.isPaused);
+        setTimeRemaining(savedState.timeRemaining);
+        setElapsedTime(savedState.elapsedTime);
+        setTimerType(savedState.timerType);
+        setSelectedPreset(savedState.selectedPreset);
+        setObjective(savedState.objective);
+        setSelectedTasks(savedState.selectedTasks || []);
+        setCompletedTaskIds(savedState.completedTaskIds || []);
+        setTasksTimingData(savedState.tasksTimingData || {});
+        
+        if (savedState.timerStartTime) {
+          setTimerStartTime(new Date(savedState.timerStartTime));
+        }
+        
+        if (savedState.untilTime) {
+          setUntilTime(savedState.untilTime);
+        }
+        
+        // Show pause modal if the session was active
+        if (savedState.focusActive && !savedState.sessionComplete) {
+          setTimeout(() => {
+            setShowPauseModal(true);
+          }, 300);
+        }
+        
+        console.log('Session state restored successfully');
+      } else {
+        console.log('No saved session state found or session was not active');
+      }
+      
+      isFirstRender.current = false;
+    }
+  }, []);
   
   // Load session history on mount
   useEffect(() => {
@@ -199,6 +278,94 @@ const FocusSection = ({ onFullscreenChange }) => {
     };
   }, [focusActive, isPaused, timerType, untilTime]);
 
+
+  // Add this useEffect hook to the FocusSection component to save and restore session state
+useEffect(() => {
+  // Save focus session state when component unmounts or when state changes
+  const saveSessionState = () => {
+    if (focusActive) {
+      const sessionState = {
+        focusActive,
+        sessionComplete,
+        isPaused: true, // Always pause when saving state
+        timeRemaining,
+        elapsedTime,
+        timerType,
+        selectedPreset,
+        objective,
+        selectedTasks,
+        completedTaskIds,
+        tasksTimingData,
+        timerStartTime: timerStartTime?.toISOString(),
+        untilTime
+      };
+      localStorage.setItem('focusSessionState', JSON.stringify(sessionState));
+      console.log('Saved focus session state');
+    }
+  };
+
+  // Handle page visibility change
+  const handleVisibilityChange = () => {
+    if (document.hidden && focusActive && !sessionComplete && !isPaused) {
+      // Pause the timer and save state
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      setIsPaused(true);
+      saveSessionState();
+    }
+  };
+
+  // Add event listener for page visibility
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  // Load saved session state
+  const loadSavedSession = () => {
+    const savedState = localStorage.getItem('focusSessionState');
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        setFocusActive(state.focusActive);
+        setSessionComplete(state.sessionComplete);
+        setIsPaused(state.isPaused);
+        setTimeRemaining(state.timeRemaining);
+        setElapsedTime(state.elapsedTime);
+        setTimerType(state.timerType);
+        setSelectedPreset(state.selectedPreset);
+        setObjective(state.objective);
+        setSelectedTasks(state.selectedTasks);
+        setCompletedTaskIds(state.completedTaskIds || []);
+        setTasksTimingData(state.tasksTimingData || {});
+        setTimerStartTime(state.timerStartTime ? new Date(state.timerStartTime) : null);
+        setUntilTime(state.untilTime || getCurrentTimeRounded());
+        
+        // Show pause modal if the session was active
+        if (state.focusActive && !state.sessionComplete) {
+          setShowPauseModal(true);
+        }
+        
+        console.log('Restored focus session state');
+      } catch (e) {
+        console.error('Error restoring focus session state:', e);
+      }
+    }
+  };
+
+  // Load saved session on mount
+  loadSavedSession();
+
+  // Clean up
+  return () => {
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Save state on unmount if session is active
+    if (focusActive) {
+      saveSessionState();
+    }
+  };
+}, []);
+
+
   // Add fullscreen change event listener to keep our state in sync with browser
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -238,8 +405,32 @@ const FocusSection = ({ onFullscreenChange }) => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
+      
+      // Update state
       setIsPaused(true);
+      
+      // Show modal
       setShowPauseModal(true);
+      
+      // Save state to localStorage
+      const sessionState = {
+        focusActive,
+        sessionComplete,
+        isPaused: true, // Force paused state when saving
+        timeRemaining,
+        elapsedTime,
+        timerType,
+        selectedPreset,
+        objective,
+        selectedTasks,
+        completedTaskIds,
+        tasksTimingData,
+        timerStartTime: timerStartTime?.toISOString(),
+        untilTime
+      };
+      
+      saveFocusSessionState(sessionState);
+      console.log('Session state saved due to navigation away');
     }
   };
 
@@ -383,6 +574,30 @@ const FocusSection = ({ onFullscreenChange }) => {
     setIsPaused(!isPaused);
   };
   
+  // End focus session early
+  const finishFocusSession = () => {
+    // Close the confirmation modal
+    setShowFinishConfirmModal(false);
+    
+    // End the session
+    setSessionComplete(true);
+    
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    // Safely exit fullscreen if active
+    if (isFullscreen) {
+      try {
+        exitFullscreen();
+      } catch (err) {
+        console.error('Error exiting fullscreen:', err);
+        // Just update the state even if the API fails
+        setIsFullscreen(false);
+      }
+    }
+  };
+  
   // End focus session
   const endFocusSession = () => {
     setSessionComplete(true);
@@ -403,79 +618,89 @@ const FocusSection = ({ onFullscreenChange }) => {
     }
   };
   
-  // Handle session submission
-  const handleSessionSubmit = (completedData) => {
-    // Calculate duration
-    const duration = timerType === 'countdown' 
-      ? selectedPreset.duration - timeRemaining
-      : elapsedTime;
-    
-    // Get completed tasks
-    const completedTasks = selectedTasks.filter(task => 
+  // Update the handleSessionSubmit function to clear localStorage
+const handleSessionSubmit = (completedData) => {
+  // Calculate duration
+  const duration = timerType === 'countdown' 
+    ? selectedPreset.duration - timeRemaining
+    : elapsedTime;
+  
+  // Get completed tasks
+  const completedTasks = selectedTasks.filter(task => 
+    completedData.tasks && completedData.tasks.some(t => t.id === task.id)
+  );
+  
+  // Create session record with ALL tasks, not just completed ones
+  const sessionData = {
+    id: `focus-${Date.now()}`,
+    startTime: timerStartTime?.toISOString() || new Date().toISOString(),
+    endTime: new Date().toISOString(),
+    technique: selectedPreset.id,
+    duration: timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime,
+    objective,
+    allTasks: selectedTasks, // Store ALL tasks
+    tasks: selectedTasks.filter(task => 
       completedData.tasks && completedData.tasks.some(t => t.id === task.id)
-    );
-    
-    // Create session record
-    const sessionData = {
-      id: `focus-${Date.now()}`,
-      startTime: timerStartTime?.toISOString() || new Date().toISOString(),
-      endTime: new Date().toISOString(),
-      technique: selectedPreset.id,
-      duration,
-      objective,
-      tasks: completedTasks,
-      notes: completedData.notes,
-      taskTimeData: selectedTasks.map(task => ({
-        id: task.id,
-        text: task.text,
-        completed: completedData.tasks && completedData.tasks.some(t => t.id === task.id),
-        timeSpent: tasksTimingData[task.id] || duration / selectedTasks.length // Use recorded timing or divide equally
-      }))
-    };
-    
-    // Update tasks in storage
-    const storage = getStorage();
-    
-    // Group tasks by date
-    const tasksByDate = {};
-    completedTasks.forEach(task => {
-      if (!tasksByDate[task.date]) {
-        tasksByDate[task.date] = [];
-      }
-      tasksByDate[task.date].push(task.text);
-    });
-    
-    // Update checked status
-    Object.entries(tasksByDate).forEach(([date, tasks]) => {
-      if (!storage[date]) {
-        storage[date] = {};
-      }
-      
-      if (!storage[date].checked) {
-        storage[date].checked = {};
-      }
-      
-      tasks.forEach(task => {
-        storage[date].checked[task] = true;
-      });
-    });
-    
-    // Save session to history
-    if (!storage.focusSessions) {
-      storage.focusSessions = [];
-    }
-    
-    storage.focusSessions.push(sessionData);
-    setStorage(storage);
-    
-    // Update local session history
-    setSessionHistory([...sessionHistory, sessionData]);
-    
-    // Reset all states
-    resetStates();
+    ), // Completed tasks
+    notes: completedData.notes,
+    taskTimeData: selectedTasks.map(task => ({
+      id: task.id,
+      text: task.text,
+      completed: completedData.tasks && completedData.tasks.some(t => t.id === task.id),
+      timeSpent: tasksTimingData[task.id] || 0
+    }))
   };
   
+  // Update tasks in storage
+  const storage = getStorage();
+  
+  // Group tasks by date
+  const tasksByDate = {};
+  completedTasks.forEach(task => {
+    if (!tasksByDate[task.date]) {
+      tasksByDate[task.date] = [];
+    }
+    tasksByDate[task.date].push(task.text);
+  });
+  
+  // Update checked status
+  Object.entries(tasksByDate).forEach(([date, tasks]) => {
+    if (!storage[date]) {
+      storage[date] = {};
+    }
+    
+    if (!storage[date].checked) {
+      storage[date].checked = {};
+    }
+    
+    tasks.forEach(task => {
+      storage[date].checked[task] = true;
+    });
+  });
+  
+  // Save session to history
+  if (!storage.focusSessions) {
+    storage.focusSessions = [];
+  }
+  
+  storage.focusSessions.push(sessionData);
+  setStorage(storage);
+  
+  // Update local session history
+  setSessionHistory([...sessionHistory, sessionData]);
+  
+  // Clear saved session state
+  localStorage.removeItem('focusSessionState');
+
+  // Clear saved session state
+  clearFocusSessionState();
+  console.log('Session completed, cleared saved state');
+  
   // Reset all states
+  resetStates();
+};
+  
+  // Update the resetStates function to clear localStorage
   const resetStates = () => {
     setFocusActive(false);
     setSessionComplete(false);
@@ -488,6 +713,14 @@ const FocusSection = ({ onFullscreenChange }) => {
     setObjective('');
     setSelectedTasks([]);
     setTasksTimingData({});
+    
+    // Clear saved session state
+    clearFocusSessionState();
+    
+    // Also clear the window reference
+    if (window.currentFocusState) {
+      window.currentFocusState = null;
+    }
   };
   
   // Enter fullscreen
@@ -706,6 +939,43 @@ const FocusSection = ({ onFullscreenChange }) => {
           </div>
         )}
         
+        {/* Finish Early Confirmation Modal */}
+        {showFinishConfirmModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
+                  <Flag size={24} />
+                </div>
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+                  Finish Focus Session Early?
+                </h3>
+              </div>
+              
+              <p className="text-slate-600 dark:text-slate-400 mb-6">
+                Are you sure you want to end your focus session early? Your progress will be saved and you can review your completed tasks.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-3 justify-end">
+                <button
+                  onClick={() => setShowFinishConfirmModal(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors order-1 sm:order-none"
+                >
+                  Continue Session
+                </button>
+                
+                <button
+                  onClick={finishFocusSession}
+                  className="px-4 py-2 rounded-lg bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Flag size={20} />
+                  Yes, Finish Now
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Task Completion Modal */}
         {showTaskCompleteModal && selectedTaskToComplete && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
@@ -755,194 +1025,329 @@ const FocusSection = ({ onFullscreenChange }) => {
   // Render fullscreen mode
   if (isFullscreen) {
     return ReactDOM.createPortal(
-      <div className="focus-fullscreen-container">
-        <FocusNatureBackground />
-        
-        <div className="focus-fullscreen-content">
-          {/* Current session content */}
-          {sessionComplete ? (
-            <div className="h-full w-full flex items-center justify-center">
-              <FocusSessionComplete
-                duration={timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime}
-                tasks={selectedTasks}
-                onSubmit={handleSessionSubmit}
-                onCancel={() => setSessionComplete(false)}
-                isFullscreen={true}
-                tasksTimingData={tasksTimingData}
-              />
-            </div>
-          ) : (
-            <>
-              {/* Timer Display */}
-              <div className="flex flex-col items-center justify-center mb-8 timer-display">
-                {objective && (
-                  <div className="mb-4 text-center">
-                    <h3 className="text-white text-xl mb-2 font-medium">
-                      {objective}
+      <>
+        <div className="focus-fullscreen-container">
+          <FocusNatureBackground />
+          
+          <div className="focus-fullscreen-content">
+            {/* Current session content */}
+            {sessionComplete ? (
+              <div className="h-full w-full flex items-center justify-center">
+                <FocusSessionComplete
+  duration={timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime}
+  tasks={selectedTasks}
+  onSubmit={handleSessionSubmit}
+  onCancel={() => setSessionComplete(false)}
+  isFullscreen={true}
+  tasksTimingData={tasksTimingData}
+  completedTaskIds={completedTaskIds}
+/>
+              </div>
+            ) : (
+              <>
+                {/* Timer Display */}
+                <div className="flex flex-col items-center justify-center mb-8 timer-display">
+                  {objective && (
+                    <div className="mb-4 text-center">
+                      <h3 className="text-white text-xl mb-2 font-medium">
+                        {objective}
+                      </h3>
+                      <div className="text-white/80 text-sm">
+                        {selectedPreset.name}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="relative w-64 h-64 sm:w-80 sm:h-80">
+                    {/* Background circle */}
+                    <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                      <circle 
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        stroke="rgba(255,255,255,0.2)"
+                        strokeWidth="6"
+                      />
+                      <animated.circle 
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="6"
+                        strokeLinecap="round"
+                        strokeDasharray="283"
+                        strokeDashoffset={progressAnimation.strokeDashoffset}
+                      />
+                    </svg>
+                    
+                    {/* Time display */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <motion.div 
+                        className="text-6xl sm:text-7xl font-bold text-white"
+                        key={isPaused ? 'paused' : 'running'}
+                        animate={isPaused ? { scale: [1, 1.05, 1] } : {}}
+                        transition={{ duration: 2, repeat: isPaused ? Infinity : 0, ease: "easeInOut" }}
+                      >
+                        {timerType === 'countdown' || timerType === 'until' 
+                          ? formatTime(timeRemaining) 
+                          : formatTime(elapsedTime)}
+                      </motion.div>
+                      
+                      {sessionComplete && (
+                        <motion.div 
+                          className="mt-4 px-4 py-2 bg-green-500 text-white rounded-full font-medium"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                        >
+                          Session Complete!
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Timer Controls - REORDERED AND ADDED FINISH BUTTON */}
+                <div className="flex items-center justify-center gap-4 mb-8">
+                  {!sessionComplete && (
+                    <>
+                      {/* Cancel Button - Now First */}
+                      <motion.button
+                        onClick={() => setShowCancelConfirmModal(true)}
+                        className="p-4 rounded-full bg-red-600 text-white shadow-lg"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <X size={24} />
+                      </motion.button>
+
+                      {/* Play/Pause Button - Now Middle */}
+                      {isPaused ? (
+                        <motion.button
+                          onClick={togglePause}
+                          className="p-4 rounded-full bg-blue-600 text-white shadow-lg"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <Play size={24} fill="currentColor" />
+                        </motion.button>
+                      ) : (
+                        <motion.button
+                          onClick={togglePause}
+                          className="p-4 rounded-full bg-blue-600 text-white shadow-lg"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <Pause size={24} />
+                        </motion.button>
+                      )}
+
+                      {/* Finish Button - New Addition */}
+                      <motion.button
+                        onClick={() => setShowFinishConfirmModal(true)}
+                        className="p-4 rounded-full bg-amber-600 text-white shadow-lg"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <Flag size={24} />
+                      </motion.button>
+                    </>
+                  )}
+                  
+                  {sessionComplete && (
+                    <motion.button
+                      onClick={endFocusSession}
+                      className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium shadow-lg flex items-center gap-2"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      initial={{ scale: 0.9 }}
+                      animate={{ scale: 1 }}
+                    >
+                      <CheckSquare size={20} />
+                      <span>Complete Session</span>
+                    </motion.button>
+                  )}
+                </div>
+                
+                {/* Fullscreen Exit Button */}
+                <div className="absolute top-4 right-4">
+                  <motion.button
+                    onClick={exitFullscreen}
+                    className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <Minimize size={20} />
+                  </motion.button>
+                </div>
+                
+                {/* Selected Tasks */}
+                {selectedTasks.length > 0 && (
+                  <div className="absolute left-10 top-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-md rounded-xl p-4 max-w-xs task-display">
+                    <h3 className="text-white font-medium mb-3 flex items-center gap-2">
+                      <ListChecks size={18} />
+                      <span>Focus Tasks</span>
                     </h3>
-                    <div className="text-white/80 text-sm">
-                      {selectedPreset.name}
+                    <div className="space-y-3">
+                      {selectedTasks.map(task => (
+                        <div 
+                          key={task.id}
+                          onClick={() => handleTaskClick(task.id)}
+                          className={`flex items-center text-white/90 p-2 rounded hover:bg-white/10 cursor-pointer`}
+                        >
+                          <div className={`
+                            w-5 h-5 rounded flex items-center justify-center mr-3
+                            ${completedTaskIds.includes(task.id) 
+                              ? 'bg-green-500 text-white' 
+                              : 'border border-white/50'}
+                          `}>
+                            {completedTaskIds.includes(task.id) && <CheckSquare size={12} />}
+                          </div>
+                          <span className={`text-sm ${completedTaskIds.includes(task.id) ? 'line-through opacity-70' : ''}`}>
+                            {task.text}
+                          </span>
+                          {completedTaskIds.includes(task.id) && tasksTimingData[task.id] && (
+                            <span className="text-xs text-white/60 ml-auto">
+                              {formatTime(tasksTimingData[task.id])}
+                            </span>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
                 
-                <div className="relative w-64 h-64 sm:w-80 sm:h-80">
-                  {/* Background circle */}
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                    <circle 
-                      cx="50"
-                      cy="50"
-                      r="45"
-                      fill="none"
-                      stroke="rgba(255,255,255,0.2)"
-                      strokeWidth="6"
-                    />
-                    <animated.circle 
-                      cx="50"
-                      cy="50"
-                      r="45"
-                      fill="none"
-                      stroke="white"
-                      strokeWidth="6"
-                      strokeLinecap="round"
-                      strokeDasharray="283"
-                      strokeDashoffset={progressAnimation.strokeDashoffset}
-                    />
-                  </svg>
-                  
-                  {/* Time display */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <motion.div 
-                      className="text-6xl sm:text-7xl font-bold text-white"
-                      key={isPaused ? 'paused' : 'running'}
-                      animate={isPaused ? { scale: [1, 1.05, 1] } : {}}
-                      transition={{ duration: 2, repeat: isPaused ? Infinity : 0, ease: "easeInOut" }}
-                    >
-                      {timerType === 'countdown' || timerType === 'until' 
-                        ? formatTime(timeRemaining) 
-                        : formatTime(elapsedTime)}
-                    </motion.div>
-                    
-                    {sessionComplete && (
-                      <motion.div 
-                        className="mt-4 px-4 py-2 bg-green-500 text-white rounded-full font-medium"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-                      >
-                        Session Complete!
-                      </motion.div>
-                    )}
-                  </div>
+                {/* ESC to exit fullscreen notice */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-white/70">
+                  Press <kbd className="bg-white/20 px-2 py-0.5 rounded mx-1 font-mono">Esc</kbd> to exit full screen
                 </div>
-              </div>
-              
-              {/* Timer Controls */}
-              <div className="flex items-center justify-center gap-4 mb-8">
-                {!sessionComplete && (
-                  <>
-                    {isPaused ? (
-                      <motion.button
-                        onClick={togglePause}
-                        className="p-4 rounded-full bg-blue-600 text-white shadow-lg"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Play size={24} fill="currentColor" />
-                      </motion.button>
-                    ) : (
-                      <motion.button
-                        onClick={togglePause}
-                        className="p-4 rounded-full bg-blue-600 text-white shadow-lg"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Pause size={24} />
-                      </motion.button>
-                    )}
-                    
-                    <motion.button
-                      onClick={() => setShowCancelConfirmModal(true)}
-                      className="p-4 rounded-full bg-red-600 text-white shadow-lg"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                    >
-                      <X size={24} />
-                    </motion.button>
-                  </>
-                )}
-                
-                {sessionComplete && (
-                  <motion.button
-                    onClick={endFocusSession}
-                    className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium shadow-lg flex items-center gap-2"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    initial={{ scale: 0.9 }}
-                    animate={{ scale: 1 }}
-                  >
-                    <CheckSquare size={20} />
-                    <span>Complete Session</span>
-                  </motion.button>
-                )}
-              </div>
-              
-              {/* Fullscreen Exit Button */}
-              <div className="absolute top-4 right-4">
-                <motion.button
-                  onClick={exitFullscreen}
-                  className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <Minimize size={20} />
-                </motion.button>
-              </div>
-              
-              {/* Selected Tasks */}
-              {selectedTasks.length > 0 && (
-                <div className="absolute left-10 top-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-md rounded-xl p-4 max-w-xs task-display">
-                  <h3 className="text-white font-medium mb-3 flex items-center gap-2">
-                    <ListChecks size={18} />
-                    <span>Focus Tasks</span>
-                  </h3>
-                  <div className="space-y-3">
-                    {selectedTasks.map(task => (
-                      <div 
-                        key={task.id}
-                        onClick={() => handleTaskClick(task.id)}
-                        className={`flex items-center text-white/90 p-2 rounded hover:bg-white/10 cursor-pointer`}
-                      >
-                        <div className={`
-                          w-5 h-5 rounded flex items-center justify-center mr-3
-                          ${completedTaskIds.includes(task.id) 
-                            ? 'bg-green-500 text-white' 
-                            : 'border border-white/50'}
-                        `}>
-                          {completedTaskIds.includes(task.id) && <CheckSquare size={12} />}
-                        </div>
-                        <span className={`text-sm ${completedTaskIds.includes(task.id) ? 'line-through opacity-70' : ''}`}>
-                          {task.text}
-                        </span>
-                        {completedTaskIds.includes(task.id) && tasksTimingData[task.id] && (
-                          <span className="text-xs text-white/60 ml-auto">
-                            {formatTime(tasksTimingData[task.id])}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* ESC to exit fullscreen notice */}
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-white/70">
-                Press <kbd className="bg-white/20 px-2 py-0.5 rounded mx-1 font-mono">Esc</kbd> to exit full screen
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
-      </div>,
+
+        {/* Task Completion Modal - Render outside the container to ensure proper z-index */}
+        {showTaskCompleteModal && selectedTaskToComplete && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+            <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400">
+                  <CheckSquare size={24} />
+                </div>
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+                  Complete Task?
+                </h3>
+              </div>
+              
+              <div className="bg-white/60 dark:bg-slate-800/60 p-3 rounded-lg mb-6">
+                <p className="text-slate-700 dark:text-slate-300">
+                  {selectedTasks.find(task => task.id === selectedTaskToComplete)?.text}
+                </p>
+              </div>
+              
+              <p className="text-slate-600 dark:text-slate-400 mb-6">
+                Mark this task as completed? The time spent will be recorded for your analytics.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-3 justify-end">
+                <button
+                  onClick={() => setShowTaskCompleteModal(false)}
+                  className="px-4 py-2 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-300/80 dark:hover:bg-slate-600/80 transition-colors order-1 sm:order-none"
+                >
+                  Cancel
+                </button>
+                
+                <button
+                  onClick={() => markTaskAsCompleted(selectedTaskToComplete)}
+                  className="px-4 py-2 rounded-lg bg-green-500/90 dark:bg-green-600/90 text-white hover:bg-green-600/90 dark:hover:bg-green-700/90 transition-colors flex items-center justify-center gap-2"
+                >
+                  <CheckSquare size={20} />
+                  Complete Task
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Other Modals */}
+        {showCancelConfirmModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+            <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">
+                  <AlertTriangle size={24} />
+                </div>
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+                  Cancel Focus Session?
+                </h3>
+              </div>
+              
+              <p className="text-slate-600 dark:text-slate-400 mb-6">
+                Are you sure you want to cancel this focus session? All progress will be lost and the session won't be saved to your history.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-3 justify-end">
+                <button
+                  onClick={() => setShowCancelConfirmModal(false)}
+                  className="px-4 py-2 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-300/80 dark:hover:bg-slate-600/80 transition-colors order-1 sm:order-none"
+                >
+                  Keep Session
+                </button>
+                
+                <button
+                  onClick={() => {
+                    resetStates();
+                    setShowCancelConfirmModal(false);
+                    setShowPauseModal(false);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-red-500/90 dark:bg-red-600/90 text-white hover:bg-red-600/90 dark:hover:bg-red-700/90 transition-colors flex items-center justify-center gap-2"
+                >
+                  <X size={20} />
+                  Yes, Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showFinishConfirmModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+            <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
+                  <Flag size={24} />
+                </div>
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+                  Finish Focus Session Early?
+                </h3>
+              </div>
+              
+              <p className="text-slate-600 dark:text-slate-400 mb-6">
+                Are you sure you want to end your focus session early? Your progress will be saved and you can review your completed tasks.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-3 justify-end">
+                <button
+                  onClick={() => setShowFinishConfirmModal(false)}
+                  className="px-4 py-2 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-300/80 dark:hover:bg-slate-600/80 transition-colors order-1 sm:order-none"
+                >
+                  Continue Session
+                </button>
+                
+                <button
+                  onClick={finishFocusSession}
+                  className="px-4 py-2 rounded-lg bg-amber-500/90 dark:bg-amber-600/90 text-white hover:bg-amber-600/90 dark:hover:bg-amber-700/90 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Flag size={20} />
+                  Yes, Finish Now
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>,
       document.body
     );
   }
@@ -1073,10 +1478,22 @@ const FocusSection = ({ onFullscreenChange }) => {
             </div>
           </div>
           
-          {/* Timer Controls with enhanced styling */}
+          {/* Timer Controls with enhanced styling - REORDERED and ADDED FINISH BUTTON */}
           <div className="flex items-center justify-center gap-4 mb-8">
             {!sessionComplete && (
               <>
+                {/* Cancel Button - Now First */}
+                <motion.button
+                  onClick={() => setShowCancelConfirmModal(true)}
+                  className="p-4 rounded-full bg-gradient-to-br from-red-500 to-red-600 dark:from-red-600 dark:to-red-700 text-white shadow-lg shadow-red-500/20 hover:shadow-red-500/30 transition-all flex items-center justify-center"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Cancel session"
+                >
+                  <X size={24} />
+                </motion.button>
+
+                {/* Play/Pause Button - Now Middle */}
                 {isPaused ? (
                   <motion.button
                     onClick={togglePause}
@@ -1098,15 +1515,16 @@ const FocusSection = ({ onFullscreenChange }) => {
                     <Pause size={24} />
                   </motion.button>
                 )}
-                
+
+                {/* Finish Button - New Addition */}
                 <motion.button
-                  onClick={() => setShowCancelConfirmModal(true)}
-                  className="p-4 rounded-full bg-gradient-to-br from-red-500 to-red-600 dark:from-red-600 dark:to-red-700 text-white shadow-lg shadow-red-500/20 hover:shadow-red-500/30 transition-all flex items-center justify-center"
+                  onClick={() => setShowFinishConfirmModal(true)}
+                  className="p-4 rounded-full bg-gradient-to-br from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 text-white shadow-lg shadow-green-500/20 hover:shadow-green-500/30 transition-all flex items-center justify-center"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  title="End focus session"
+                  title="Finish session early"
                 >
-                  <X size={24} />
+                  <Flag size={24} />
                 </motion.button>
               </>
             )}
@@ -1202,6 +1620,7 @@ const FocusSection = ({ onFullscreenChange }) => {
           onCancel={() => setSessionComplete(false)}
           isFullscreen={isFullscreen}
           tasksTimingData={tasksTimingData}
+          completedTaskIds={completedTaskIds}
         />
       </div>
     );

@@ -17,6 +17,63 @@ export const getFocusSessions = () => {
 };
 
 /**
+ * Get timer presets from storage
+ * @returns {Array} Array of timer presets
+ */
+export const getTimerPresets = () => {
+  return [
+    {
+      key: 'pomodoro',
+      name: 'Pomodoro',
+      duration: 25 * 60,
+      mode: 'countdown',
+      description: 'Focus for 25 minutes'
+    },
+    {
+      key: 'shortBreak',
+      name: 'Short Break',
+      duration: 5 * 60,
+      mode: 'countdown',
+      description: 'Take a quick 5-minute break'
+    },
+    {
+      key: 'longBreak',
+      name: 'Long Break',
+      duration: 15 * 60,
+      mode: 'countdown',
+      description: 'Take a longer 15-minute break'
+    },
+    {
+      key: 'custom',
+      name: 'Custom Timer',
+      duration: 30 * 60,
+      mode: 'countdown',
+      description: 'Set your own duration'
+    },
+    {
+      key: 'stopwatch',
+      name: 'Stopwatch',
+      duration: 0,
+      mode: 'countup',
+      description: 'Count up from zero'
+    }
+  ];
+};
+
+/**
+ * Update a timer preset
+ * @param {string} presetKey - Key of the preset to update
+ * @param {Object} presetData - New preset data
+ * @returns {boolean} Success indicator
+ */
+export const updateTimerPreset = (presetKey, presetData) => {
+  // For now, we'll keep this as a placeholder since presets are hardcoded
+  // In a future version, you could store custom presets in local storage
+  console.log(`Updated preset ${presetKey} with data:`, presetData);
+  return true;
+};
+
+/**
  * Save a new focus session to storage
  * @param {Object} sessionData - Session data to save
  * @returns {Object} Saved session with ID
@@ -165,7 +222,7 @@ export const getFocusStats = (period = 'week') => {
     dayCounts[day] += session.duration || 0;
     
     // Count technique usage
-    const technique = session.technique || 'unknown';
+    const technique = session.technique || 'custom';
     if (!techniqueCounts[technique]) {
       techniqueCounts[technique] = {
         name: technique,
@@ -243,7 +300,6 @@ export const getFocusStreak = () => {
     if (!sessionsByDay[dateStr]) {
       sessionsByDay[dateStr] = [];
     }
-    
     sessionsByDay[dateStr].push(session);
   });
   
@@ -374,11 +430,28 @@ export const getTopFocusTasks = () => {
   return tasksArray.sort((a, b) => b.timeSpent - a.timeSpent);
 };
 
+// Helper function to get a readable name for a technique
+export const getTechniqueName = (techniqueId) => {
+  const techniqueMap = {
+    'pomodoro': 'Pomodoro Technique',
+    'flowtime': 'Flowtime Method',
+    '5217': '52/17 Method',
+    'desktime': '90-Minute Focus',
+    'custom': 'Custom Timer'
+  };
+  
+  return techniqueMap[techniqueId] || techniqueId;
+};
+
+// Export all the functions
 export default {
   getFocusSessions,
   saveFocusSession,
   deleteFocusSession,
   getFocusStats,
   getFocusStreak,
-  getTopFocusTasks
+  getTopFocusTasks,
+  getTimerPresets,
+  updateTimerPreset,
+  getTechniqueName
 };

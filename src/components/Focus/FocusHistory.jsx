@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, Clock, CheckSquare, Trash2, Info, Search, X, Download, MessageSquare, AlertCircle, BarChart2 } from 'lucide-react';
-import { deleteFocusSession } from '../../utils/focusUtils';
+import { deleteFocusSession, getTechniqueName } from '../../utils/focusUtils';
 
 const FocusHistory = ({ sessions }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,8 +26,8 @@ const FocusHistory = ({ sessions }) => {
       session.notes.toLowerCase().includes(searchQuery.toLowerCase());
     
     // Search in preset name
-    const presetMatch = session.preset && 
-      session.preset.toLowerCase().includes(searchQuery.toLowerCase());
+    const presetMatch = session.technique && 
+      getTechniqueName(session.technique).toLowerCase().includes(searchQuery.toLowerCase());
     
     return taskMatch || notesMatch || presetMatch || !searchQuery;
   });
@@ -127,6 +127,11 @@ const FocusHistory = ({ sessions }) => {
   const getAverageSessionDuration = () => {
     if (sessions.length === 0) return 0;
     return getTotalFocusTime() / sessions.length;
+  };
+  
+  // Get a proper technique name display
+  const getFormattedTechnique = (techniqueId) => {
+    return getTechniqueName(techniqueId);
   };
   
   // If no sessions, show empty state
@@ -237,9 +242,9 @@ const FocusHistory = ({ sessions }) => {
                 <div className="flex justify-between items-start">
                   <div className="flex items-start gap-3">
                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      session.preset === 'pomodoro'
+                      session.technique === 'pomodoro'
                         ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                        : session.preset === 'short-break' || session.preset === 'long-break'
+                        : session.technique === 'shortBreak' || session.technique === 'longBreak'
                           ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                           : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
                     } transition-colors`}>
@@ -251,9 +256,9 @@ const FocusHistory = ({ sessions }) => {
                         <h4 className="font-medium text-slate-800 dark:text-slate-200 transition-colors">
                           {formatDuration(session.duration)}
                         </h4>
-                        {session.preset && (
+                        {session.technique && (
                           <span className="ml-2 px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded text-xs transition-colors">
-                            {session.preset}
+                            {getFormattedTechnique(session.technique)}
                           </span>
                         )}
                       </div>
@@ -347,7 +352,7 @@ const FocusHistory = ({ sessions }) => {
                     <tbody>
                       <tr>
                         <td className="py-1 pr-4 text-slate-500 dark:text-slate-400 transition-colors">Session Type:</td>
-                        <td className="py-1 font-medium text-slate-700 dark:text-slate-300 transition-colors">{selectedSession.preset || 'Custom'}</td>
+                        <td className="py-1 font-medium text-slate-700 dark:text-slate-300 transition-colors">{getFormattedTechnique(selectedSession.technique || 'custom')}</td>
                       </tr>
                       <tr>
                         <td className="py-1 pr-4 text-slate-500 dark:text-slate-400 transition-colors">Duration:</td>
@@ -371,49 +376,80 @@ const FocusHistory = ({ sessions }) => {
               </div>
               
               {/* Tasks */}
-              <div>
-                <h4 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2 transition-colors">
-                  <CheckSquare size={16} className="text-green-500 dark:text-green-400" />
-                  Completed Tasks
-                </h4>
-                
-                {selectedSession.tasks && selectedSession.tasks.length > 0 ? (
-                  <div className="max-h-60 overflow-y-auto pr-1">
-                    <div className="divide-y divide-slate-200 dark:divide-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden transition-colors">
-                      {selectedSession.tasks.map((task, index) => (
-                        <div 
-                          key={index}
-                          className="flex items-center justify-between p-3 bg-white dark:bg-slate-700 transition-colors"
-                        >
-                          <div className="flex items-center">
-                            <div className="w-5 h-5 rounded-full bg-green-500 dark:bg-green-600 text-white flex items-center justify-center mr-3 transition-colors">
-                              <CheckSquare size={12} />
-                            </div>
-                            <span className="text-sm text-slate-700 dark:text-slate-300 transition-colors">
-                              {task.text}
-                            </span>
-                          </div>
-                          
-                          {/* Show time spent if available */}
-                          {selectedSession.taskTimeData && selectedSession.taskTimeData.length > 0 && (
-                            <span className="text-xs px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded transition-colors">
-                              {formatDuration(selectedSession.taskTimeData.find(t => t.id === task.id)?.timeSpent || 
-                                selectedSession.duration / selectedSession.tasks.length)}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 text-center transition-colors">
-                    <Info size={24} className="mx-auto mb-2 text-slate-400 dark:text-slate-500" />
-                    <p className="text-slate-600 dark:text-slate-400 transition-colors">
-                      No tasks were completed during this focus session.
-                    </p>
-                  </div>
-                )}
+<div>
+  <h4 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2 transition-colors">
+    <CheckSquare size={16} className="text-green-500 dark:text-green-400" />
+    Session Tasks
+  </h4>
+  
+  {/* Check for allTasks first (from newer sessions), fall back to tasks */}
+  {((selectedSession.allTasks && selectedSession.allTasks.length > 0) || 
+    (selectedSession.tasks && selectedSession.tasks.length > 0)) ? (
+    <div className="max-h-60 overflow-y-auto pr-1">
+      <div className="divide-y divide-slate-200 dark:divide-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden transition-colors">
+        {/* Use allTasks if available, otherwise use tasks */}
+        {(selectedSession.allTasks || selectedSession.tasks).map((task, index) => {
+          // Check if this task was completed
+          const isCompleted = selectedSession.tasks.some(t => 
+            (t.id && t.id === task.id) || 
+            (t.text && t.text === task.text)
+          );
+          
+          // Find task time data if available
+          const timeData = selectedSession.taskTimeData?.find(t => t.id === task.id || t.text === task.text);
+          const timeSpent = timeData?.timeSpent || 
+                           (isCompleted ? selectedSession.duration / selectedSession.tasks.length : 0);
+          
+          return (
+            <div 
+              key={index}
+              className={`flex items-center justify-between p-3 ${
+                isCompleted 
+                  ? 'bg-green-50 dark:bg-green-900/20' 
+                  : 'bg-white dark:bg-slate-700'
+              } transition-colors`}
+            >
+              <div className="flex items-center">
+                <div className={`w-5 h-5 rounded-full ${
+                  isCompleted 
+                    ? 'bg-green-500 dark:bg-green-600 text-white' 
+                    : 'bg-slate-200 dark:bg-slate-600 text-slate-400 dark:text-slate-500'
+                } flex items-center justify-center mr-3 transition-colors`}>
+                  {isCompleted ? <CheckSquare size={12} /> : null}
+                </div>
+                <span className={`text-sm ${
+                  isCompleted 
+                    ? 'text-green-700 dark:text-green-300' 
+                    : 'text-slate-700 dark:text-slate-300'
+                } transition-colors`}>
+                  {task.text}
+                </span>
               </div>
+              
+              {/* Show time spent if available */}
+              {timeSpent > 0 && (
+                <span className={`text-xs px-2 py-1 ${
+                  isCompleted 
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+                    : 'bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-400'
+                } rounded transition-colors`}>
+                  {formatDuration(timeSpent)}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  ) : (
+    <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 text-center transition-colors">
+      <Info size={24} className="mx-auto mb-2 text-slate-400 dark:text-slate-500" />
+      <p className="text-slate-600 dark:text-slate-400 transition-colors">
+        No tasks were added to this focus session.
+      </p>
+    </div>
+  )}
+</div>
             </div>
             
             {/* Notes */}

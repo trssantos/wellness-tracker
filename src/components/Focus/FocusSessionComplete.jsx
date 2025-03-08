@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckSquare, Clock, Save, X, Award, MessageSquare, Star, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getStorage, setStorage } from '../../utils/storage';
@@ -10,13 +10,20 @@ const FocusSessionComplete = ({
   onSubmit, 
   onCancel, 
   isFullscreen,
-  tasksTimingData = {} // Default to empty object if not provided
+  tasksTimingData = {}, // Default to empty object if not provided
+  completedTaskIds = [] // Pass in already completed task IDs
 }) => {
-  const [completedTaskIds, setCompletedTaskIds] = useState([]);
+  // Initialize completedTaskIds with tasks that were already completed during the session
+  const [completedTasksState, setCompletedTasksState] = useState([]);
   const [notes, setNotes] = useState('');
   const [productivityRating, setProductivityRating] = useState(3);
   const [energyLevel, setEnergyLevel] = useState(3);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  
+  // Initialize completed tasks state from props on component mount
+  useEffect(() => {
+    setCompletedTasksState(completedTaskIds || []);
+  }, [completedTaskIds]);
   
   // Format duration from seconds to readable time
   const formatTime = (seconds) => {
@@ -35,10 +42,10 @@ const FocusSessionComplete = ({
   
   // Toggle task completion
   const toggleTaskCompletion = (taskId) => {
-    if (completedTaskIds.includes(taskId)) {
-      setCompletedTaskIds(completedTaskIds.filter(id => id !== taskId));
+    if (completedTasksState.includes(taskId)) {
+      setCompletedTasksState(completedTasksState.filter(id => id !== taskId));
     } else {
-      setCompletedTaskIds([...completedTaskIds, taskId]);
+      setCompletedTasksState([...completedTasksState, taskId]);
     }
   };
   
@@ -47,7 +54,7 @@ const FocusSessionComplete = ({
     const storage = getStorage();
     
     // Get list of tasks to mark as completed
-    const tasksToComplete = tasks.filter(task => completedTaskIds.includes(task.id));
+    const tasksToComplete = tasks.filter(task => completedTasksState.includes(task.id));
     
     // Group tasks by date
     const tasksByDate = {};
@@ -198,7 +205,7 @@ const FocusSessionComplete = ({
                 onClick={() => toggleTaskCompletion(task.id)}
                 className={`
                   flex items-center p-3 rounded-lg cursor-pointer transition-colors
-                  ${completedTaskIds.includes(task.id) 
+                  ${completedTasksState.includes(task.id) 
                     ? isFullscreen 
                       ? 'bg-green-900/30 border border-green-800/50' 
                       : 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800'
@@ -210,16 +217,16 @@ const FocusSessionComplete = ({
               >
                 <div className={`
                   w-5 h-5 rounded flex items-center justify-center mr-3 transition-colors
-                  ${completedTaskIds.includes(task.id) 
+                  ${completedTasksState.includes(task.id) 
                     ? 'bg-green-500 dark:bg-green-600 text-white' 
                     : 'border border-slate-300 dark:border-slate-500'}
                 `}>
-                  {completedTaskIds.includes(task.id) && <CheckSquare size={12} />}
+                  {completedTasksState.includes(task.id) && <CheckSquare size={12} />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`
                     text-sm transition-colors
-                    ${completedTaskIds.includes(task.id) 
+                    ${completedTasksState.includes(task.id) 
                       ? isFullscreen
                         ? 'text-green-300'
                         : 'text-green-700 dark:text-green-300'

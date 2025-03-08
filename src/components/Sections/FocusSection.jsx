@@ -104,8 +104,8 @@ const FocusSection = ({ onFullscreenChange }) => {
   const timerRef = useRef(null);
   const audioRef = useRef(null);
 
-   // Create a ref to check if this is the first render
-   const isFirstRender = useRef(true);
+  // Create a ref to check if this is the first render
+  const isFirstRender = useRef(true);
   
   // Timer progress circle animation
   const progressAnimation = useSpring({
@@ -115,8 +115,8 @@ const FocusSection = ({ onFullscreenChange }) => {
     config: { tension: 280, friction: 120 }
   });
 
-   // Use this to expose the current focus state to the parent component
-   useEffect(() => {
+  // Use this to expose the current focus state to the parent component
+  useEffect(() => {
     // Only update window.currentFocusState if we have an active session
     if (focusActive) {
       window.currentFocusState = {
@@ -280,90 +280,90 @@ const FocusSection = ({ onFullscreenChange }) => {
 
 
   // Add this useEffect hook to the FocusSection component to save and restore session state
-useEffect(() => {
-  // Save focus session state when component unmounts or when state changes
-  const saveSessionState = () => {
-    if (focusActive) {
-      const sessionState = {
-        focusActive,
-        sessionComplete,
-        isPaused: true, // Always pause when saving state
-        timeRemaining,
-        elapsedTime,
-        timerType,
-        selectedPreset,
-        objective,
-        selectedTasks,
-        completedTaskIds,
-        tasksTimingData,
-        timerStartTime: timerStartTime?.toISOString(),
-        untilTime
-      };
-      localStorage.setItem('focusSessionState', JSON.stringify(sessionState));
-      console.log('Saved focus session state');
-    }
-  };
-
-  // Handle page visibility change
-  const handleVisibilityChange = () => {
-    if (document.hidden && focusActive && !sessionComplete && !isPaused) {
-      // Pause the timer and save state
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
+  useEffect(() => {
+    // Save focus session state when component unmounts or when state changes
+    const saveSessionState = () => {
+      if (focusActive) {
+        const sessionState = {
+          focusActive,
+          sessionComplete,
+          isPaused: true, // Always pause when saving state
+          timeRemaining,
+          elapsedTime,
+          timerType,
+          selectedPreset,
+          objective,
+          selectedTasks,
+          completedTaskIds,
+          tasksTimingData,
+          timerStartTime: timerStartTime?.toISOString(),
+          untilTime
+        };
+        localStorage.setItem('focusSessionState', JSON.stringify(sessionState));
+        console.log('Saved focus session state');
       }
-      setIsPaused(true);
-      saveSessionState();
-    }
-  };
+    };
 
-  // Add event listener for page visibility
-  document.addEventListener('visibilitychange', handleVisibilityChange);
-
-  // Load saved session state
-  const loadSavedSession = () => {
-    const savedState = localStorage.getItem('focusSessionState');
-    if (savedState) {
-      try {
-        const state = JSON.parse(savedState);
-        setFocusActive(state.focusActive);
-        setSessionComplete(state.sessionComplete);
-        setIsPaused(state.isPaused);
-        setTimeRemaining(state.timeRemaining);
-        setElapsedTime(state.elapsedTime);
-        setTimerType(state.timerType);
-        setSelectedPreset(state.selectedPreset);
-        setObjective(state.objective);
-        setSelectedTasks(state.selectedTasks);
-        setCompletedTaskIds(state.completedTaskIds || []);
-        setTasksTimingData(state.tasksTimingData || {});
-        setTimerStartTime(state.timerStartTime ? new Date(state.timerStartTime) : null);
-        setUntilTime(state.untilTime || getCurrentTimeRounded());
-        
-        // Show pause modal if the session was active
-        if (state.focusActive && !state.sessionComplete) {
-          setShowPauseModal(true);
+    // Handle page visibility change
+    const handleVisibilityChange = () => {
+      if (document.hidden && focusActive && !sessionComplete && !isPaused) {
+        // Pause the timer and save state
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
         }
-        
-        console.log('Restored focus session state');
-      } catch (e) {
-        console.error('Error restoring focus session state:', e);
+        setIsPaused(true);
+        saveSessionState();
       }
-    }
-  };
+    };
 
-  // Load saved session on mount
-  loadSavedSession();
+    // Add event listener for page visibility
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
-  // Clean up
-  return () => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Save state on unmount if session is active
-    if (focusActive) {
-      saveSessionState();
-    }
-  };
-}, []);
+    // Load saved session state
+    const loadSavedSession = () => {
+      const savedState = localStorage.getItem('focusSessionState');
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState);
+          setFocusActive(state.focusActive);
+          setSessionComplete(state.sessionComplete);
+          setIsPaused(state.isPaused);
+          setTimeRemaining(state.timeRemaining);
+          setElapsedTime(state.elapsedTime);
+          setTimerType(state.timerType);
+          setSelectedPreset(state.selectedPreset);
+          setObjective(state.objective);
+          setSelectedTasks(state.selectedTasks);
+          setCompletedTaskIds(state.completedTaskIds || []);
+          setTasksTimingData(state.tasksTimingData || {});
+          setTimerStartTime(state.timerStartTime ? new Date(state.timerStartTime) : null);
+          setUntilTime(state.untilTime || getCurrentTimeRounded());
+          
+          // Show pause modal if the session was active
+          if (state.focusActive && !state.sessionComplete) {
+            setShowPauseModal(true);
+          }
+          
+          console.log('Restored focus session state');
+        } catch (e) {
+          console.error('Error restoring focus session state:', e);
+        }
+      }
+    };
+
+    // Load saved session on mount
+    loadSavedSession();
+
+    // Clean up
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Save state on unmount if session is active
+      if (focusActive) {
+        saveSessionState();
+      }
+    };
+  }, []);
 
 
   // Add fullscreen change event listener to keep our state in sync with browser
@@ -619,86 +619,86 @@ useEffect(() => {
   };
   
   // Update the handleSessionSubmit function to clear localStorage
-const handleSessionSubmit = (completedData) => {
-  // Calculate duration
-  const duration = timerType === 'countdown' 
-    ? selectedPreset.duration - timeRemaining
-    : elapsedTime;
-  
-  // Get completed tasks
-  const completedTasks = selectedTasks.filter(task => 
-    completedData.tasks && completedData.tasks.some(t => t.id === task.id)
-  );
-  
-  // Create session record with ALL tasks, not just completed ones
-  const sessionData = {
-    id: `focus-${Date.now()}`,
-    startTime: timerStartTime?.toISOString() || new Date().toISOString(),
-    endTime: new Date().toISOString(),
-    technique: selectedPreset.id,
-    duration: timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime,
-    objective,
-    allTasks: selectedTasks, // Store ALL tasks
-    tasks: selectedTasks.filter(task => 
+  const handleSessionSubmit = (completedData) => {
+    // Calculate duration
+    const duration = timerType === 'countdown' 
+      ? selectedPreset.duration - timeRemaining
+      : elapsedTime;
+    
+    // Get completed tasks
+    const completedTasks = selectedTasks.filter(task => 
       completedData.tasks && completedData.tasks.some(t => t.id === task.id)
-    ), // Completed tasks
-    notes: completedData.notes,
-    taskTimeData: selectedTasks.map(task => ({
-      id: task.id,
-      text: task.text,
-      completed: completedData.tasks && completedData.tasks.some(t => t.id === task.id),
-      timeSpent: tasksTimingData[task.id] || 0
-    }))
-  };
-  
-  // Update tasks in storage
-  const storage = getStorage();
-  
-  // Group tasks by date
-  const tasksByDate = {};
-  completedTasks.forEach(task => {
-    if (!tasksByDate[task.date]) {
-      tasksByDate[task.date] = [];
-    }
-    tasksByDate[task.date].push(task.text);
-  });
-  
-  // Update checked status
-  Object.entries(tasksByDate).forEach(([date, tasks]) => {
-    if (!storage[date]) {
-      storage[date] = {};
-    }
+    );
     
-    if (!storage[date].checked) {
-      storage[date].checked = {};
-    }
+    // Create session record with ALL tasks, not just completed ones
+    const sessionData = {
+      id: `focus-${Date.now()}`,
+      startTime: timerStartTime?.toISOString() || new Date().toISOString(),
+      endTime: new Date().toISOString(),
+      technique: selectedPreset.id,
+      duration: timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime,
+      objective,
+      allTasks: selectedTasks, // Store ALL tasks
+      tasks: selectedTasks.filter(task => 
+        completedData.tasks && completedData.tasks.some(t => t.id === task.id)
+      ), // Completed tasks
+      notes: completedData.notes,
+      taskTimeData: selectedTasks.map(task => ({
+        id: task.id,
+        text: task.text,
+        completed: completedData.tasks && completedData.tasks.some(t => t.id === task.id),
+        timeSpent: tasksTimingData[task.id] || 0
+      }))
+    };
     
-    tasks.forEach(task => {
-      storage[date].checked[task] = true;
+    // Update tasks in storage
+    const storage = getStorage();
+    
+    // Group tasks by date
+    const tasksByDate = {};
+    completedTasks.forEach(task => {
+      if (!tasksByDate[task.date]) {
+        tasksByDate[task.date] = [];
+      }
+      tasksByDate[task.date].push(task.text);
     });
-  });
-  
-  // Save session to history
-  if (!storage.focusSessions) {
-    storage.focusSessions = [];
-  }
-  
-  storage.focusSessions.push(sessionData);
-  setStorage(storage);
-  
-  // Update local session history
-  setSessionHistory([...sessionHistory, sessionData]);
-  
-  // Clear saved session state
-  localStorage.removeItem('focusSessionState');
+    
+    // Update checked status
+    Object.entries(tasksByDate).forEach(([date, tasks]) => {
+      if (!storage[date]) {
+        storage[date] = {};
+      }
+      
+      if (!storage[date].checked) {
+        storage[date].checked = {};
+      }
+      
+      tasks.forEach(task => {
+        storage[date].checked[task] = true;
+      });
+    });
+    
+    // Save session to history
+    if (!storage.focusSessions) {
+      storage.focusSessions = [];
+    }
+    
+    storage.focusSessions.push(sessionData);
+    setStorage(storage);
+    
+    // Update local session history
+    setSessionHistory([...sessionHistory, sessionData]);
+    
+    // Clear saved session state
+    localStorage.removeItem('focusSessionState');
 
-  // Clear saved session state
-  clearFocusSessionState();
-  console.log('Session completed, cleared saved state');
-  
-  // Reset all states
-  resetStates();
-};
+    // Clear saved session state
+    clearFocusSessionState();
+    console.log('Session completed, cleared saved state');
+    
+    // Reset all states
+    resetStates();
+  };
   
   // Update the resetStates function to clear localStorage
   const resetStates = () => {
@@ -1034,14 +1034,14 @@ const handleSessionSubmit = (completedData) => {
             {sessionComplete ? (
               <div className="h-full w-full flex items-center justify-center">
                 <FocusSessionComplete
-  duration={timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime}
-  tasks={selectedTasks}
-  onSubmit={handleSessionSubmit}
-  onCancel={() => setSessionComplete(false)}
-  isFullscreen={true}
-  tasksTimingData={tasksTimingData}
-  completedTaskIds={completedTaskIds}
-/>
+                  duration={timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime}
+                  tasks={selectedTasks}
+                  onSubmit={handleSessionSubmit}
+                  onCancel={() => setSessionComplete(false)}
+                  isFullscreen={true}
+                  tasksTimingData={tasksTimingData}
+                  completedTaskIds={completedTaskIds}
+                />
               </div>
             ) : (
               <>
@@ -1897,51 +1897,66 @@ const handleSessionSubmit = (completedData) => {
     }
   };
   
-  // Main component render
+  // Main component render with new header style matching habits and workouts
   return (
     <div className="focus-section w-full h-full flex flex-col">
-      {/* Navigation tabs - hidden during active session or completion */}
+      {/* New header style to match Habits and Workout sections - only show if not in active session */}
       {!focusActive && !sessionComplete && (
-        <div className="bg-white dark:bg-slate-800 rounded-t-xl shadow-sm border-x border-t border-slate-200 dark:border-slate-700 transition-colors w-full">
-          <div className="flex border-b border-slate-200 dark:border-slate-700 transition-colors">
-            <button
-              onClick={() => setActiveTab('focus')}
-              className={`px-6 py-3 font-medium transition-colors ${
-                activeTab === 'focus'
-                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 dark:border-blue-400'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              Focus
-            </button>
-            
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100 transition-colors">
+            My Focus
+          </h1>
+          
+          <div className="flex gap-3">
             <button
               onClick={() => setActiveTab('analytics')}
-              className={`px-6 py-3 font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
                 activeTab === 'analytics'
-                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 dark:border-blue-400'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  ? 'bg-teal-500 dark:bg-teal-600 text-white'
+                  : 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 hover:bg-teal-200 dark:hover:bg-teal-900/50'
               }`}
             >
+              <BarChart2 size={18} />
               Analytics
             </button>
             
             <button
               onClick={() => setActiveTab('history')}
-              className={`px-6 py-3 font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
                 activeTab === 'history'
-                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 dark:border-blue-400'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  ? 'bg-purple-500 dark:bg-purple-600 text-white'
+                  : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50'
               }`}
             >
+              <History size={18} />
               History
             </button>
+            
+            {activeTab !== 'focus' && (
+              <button
+                onClick={() => setActiveTab('focus')}
+                className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
+              >
+                <Clock size={18} />
+                Focus
+              </button>
+            )}
+            
+            {activeTab === 'focus' && (
+              <button
+                onClick={() => setSetupMode(true)}
+                className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
+              >
+                <Play size={18} />
+                Start Session
+              </button>
+            )}
           </div>
         </div>
       )}
       
       {/* Content area - make it flex-grow to fill available space */}
-      <div className={`flex-grow bg-white dark:bg-slate-800 ${!focusActive && !sessionComplete ? 'rounded-b-xl' : 'rounded-xl'} shadow-sm border-x border-b border-slate-200 dark:border-slate-700 p-6 transition-colors overflow-auto`}>
+      <div className="flex-grow bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors overflow-auto">
         {renderTabContent()}
       </div>
       

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Calendar, BarChart2, Zap, CheckSquare, Award, Target, ArrowUp, ArrowDown } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts';
 
 const FocusAnalytics = ({ sessions }) => {
   const [timeframe, setTimeframe] = useState('week'); // 'day', 'week', 'month', 'year'
@@ -106,9 +106,9 @@ const FocusAnalytics = ({ sessions }) => {
       weeklyMap[weekKey].duration += session.duration;
       
       // Add to preset distribution
-      const preset = session.preset || 'custom';
+      const preset = session.preset || session.technique || 'custom';
       if (!presetMap[preset]) {
-        presetMap[preset] = { name: preset, value: 0 };
+        presetMap[preset] = { name: getTechniqueName(preset), value: 0, id: preset };
       }
       presetMap[preset].value += session.duration;
     });
@@ -137,6 +137,22 @@ const FocusAnalytics = ({ sessions }) => {
       hourlyData,
       presetDistribution
     });
+  };
+  
+  // Helper function to get a readable name for a technique
+  const getTechniqueName = (techniqueId) => {
+    const techniqueMap = {
+      'pomodoro': 'Pomodoro Technique',
+      'flowtime': 'Flowtime Method',
+      '5217': '52/17 Method',
+      'desktime': '90-Minute Focus',
+      'custom': 'Custom Timer',
+      'shortBreak': 'Short Break',
+      'longBreak': 'Long Break',
+      'stopwatch': 'Stopwatch'
+    };
+    
+    return techniqueMap[techniqueId] || techniqueId;
   };
   
   // Format seconds to readable time
@@ -169,7 +185,23 @@ const FocusAnalytics = ({ sessions }) => {
     shortBreak: '#3b82f6', // blue
     longBreak: '#8b5cf6', // purple
     stopwatch: '#f59e0b', // amber
-    custom: '#10b981' // emerald
+    custom: '#10b981', // emerald
+    flowtime: '#0ea5e9', // sky
+    '5217': '#ec4899', // pink
+    desktime: '#14b8a6' // teal
+  };
+  
+  // Get color for a technique
+  const getPresetColor = (techniqueId) => {
+    return PRESET_COLORS[techniqueId] || '#9ca3af'; // Default gray
+  };
+  
+  // Format tooltip value
+  const formatTooltipValue = (value, name) => {
+    if (name.includes('Duration') || name.includes('Focus') || name.includes('Time')) {
+      return formatDuration(value);
+    }
+    return value;
   };
   
   // If no sessions, show empty state
@@ -361,9 +393,9 @@ const FocusAnalytics = ({ sessions }) => {
         </div>
       </div>
       
-      {/* Secondary charts */}
+      {/* Secondary charts - IMPROVED PIE CHART */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {/* Focus Session Technique Distribution */}
+        {/* Focus Session Technique Distribution - IMPROVED */}
         <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
           <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
             <Target size={16} className="text-red-500 dark:text-red-400" />
@@ -378,21 +410,29 @@ const FocusAnalytics = ({ sessions }) => {
                     data={statsData.presetDistribution}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    innerRadius={40}
                     outerRadius={80}
-                    fill="#8884d8"
+                    paddingAngle={2}
                     dataKey="value"
                   >
-                    {statsData.presetDistribution.map((entry, index) => (
+                    {statsData.presetDistribution.map((entry) => (
                       <Cell 
-                        key={`cell-${index}`} 
-                        fill={PRESET_COLORS[entry.name] || '#9ca3af'} 
+                        key={`cell-${entry.id}`} 
+                        fill={getPresetColor(entry.id)} 
+                        stroke="none"
                       />
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value) => [`${formatDuration(value)}`, 'Focus Time']}
+                    formatter={(value, name, props) => [`${formatDuration(value)}`, props.payload.name]}
+                  />
+                  <Legend 
+                    layout="vertical" 
+                    verticalAlign="middle" 
+                    align="right"
+                    formatter={(value, entry) => (
+                      <span style={{ color: entry.color }}>{entry.payload.name}</span>
+                    )}
                   />
                 </PieChart>
               </ResponsiveContainer>

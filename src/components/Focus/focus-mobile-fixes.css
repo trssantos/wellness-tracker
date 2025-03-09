@@ -82,3 +82,69 @@
       min-height: 44px; /* Apple's recommended minimum touch target size */
     }
   }
+
+  /* Make container use full width */
+@media (max-width: 640px) {
+    /* Fix overall container */
+    .focus-section {
+      padding: 0 !important;
+      overflow-x: hidden !important;
+      width: 100% !important;
+    }
+  
+    /* Fix content container */
+    .focus-section > div {
+      width: 100% !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      border-left: none !important;
+      border-right: none !important;
+    }
+  
+    /* Adjust the setup form */
+    .focus-section .w-full.flex.flex-col.h-full {
+      width: 100vw !important;
+      max-width: 100vw !important;
+      padding: 0 16px !important;
+      box-sizing: border-box !important;
+    }
+  
+    /* Fix header */
+    .focus-section .flex.items-center.border-b {
+      padding: 16px 0 !important;
+      margin-bottom: 16px !important;
+    }
+  
+    /* Make technique cards full width */
+    .focus-section .grid.grid-cols-1.sm\:grid-cols-2.gap-4 {
+      grid-template-columns: 1fr !important;
+      gap: 12px !important;
+    }
+  
+    /* Adjust technique card padding */
+    .focus-section .grid.grid-cols-1.sm\:grid-cols-2.gap-4 button {
+      padding: 12px !important;
+    }
+  
+    /* Make start button stick to bottom */
+    .focus-section .border-t.border-slate-200.dark\:border-slate-700.pt-4.mt-4 {
+      position: sticky !important;
+      bottom: 0 !important;
+      background-color: var(--bg-color, #1e293b) !important;
+      padding: 16px 0 !important;
+      margin-top: 20px !important;
+      width: 100% !important;
+    }
+  
+    /* Make start button full width */
+    .focus-section .border-t button {
+      width: 100% !important;
+      justify-content: center !important;
+    }
+  
+    /* Ensure description text wraps properly */
+    .focus-section .text-xs {
+      white-space: normal !important;
+      overflow: visible !important;
+    }
+  }

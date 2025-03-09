@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  ArrowLeft,Play, Pause, X, AlertTriangle, Clock, Target, ListChecks, Maximize, 
+  Play, Pause, X, AlertTriangle, Clock, Target, ListChecks, Maximize, 
   Minimize, CheckSquare, Calendar, BarChart2, History, 
-  Award, SaveAll, Sparkles, Moon, Sun, Star, Flag, Lightbulb
+  Award, SaveAll, Sparkles, Moon, Sun, Star, Flag, Lightbulb, ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSpring, animated } from 'react-spring';
@@ -63,12 +63,14 @@ const FOCUS_PRESETS = [
 ];
 
 const FocusSection = ({ onFullscreenChange }) => {
-  // Main states
+  // Main state variables
   const [activeTab, setActiveTab] = useState('focus'); // focus, analytics, history
-  const [setupMode, setSetupMode] = useState(false);
   const [focusActive, setFocusActive] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // View state variables (similar to HabitSection pattern)
+  const [isSetupMode, setIsSetupMode] = useState(false);
   
   // Setup states
   const [selectedPreset, setSelectedPreset] = useState(FOCUS_PRESETS[0]);
@@ -84,11 +86,11 @@ const FocusSection = ({ onFullscreenChange }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [timerStartTime, setTimerStartTime] = useState(null);
   
-  // NEW - Interruption tracking
+  // Interruption tracking
   const [interruptionsCount, setInterruptionsCount] = useState(0);
   const [totalPauseDuration, setTotalPauseDuration] = useState(0);
   const [lastPauseTime, setLastPauseTime] = useState(null);
-
+  
   // Auto-save ref
   const autoSaveIntervalRef = useRef(null);
   
@@ -103,8 +105,6 @@ const FocusSection = ({ onFullscreenChange }) => {
   const [showFinishConfirmModal, setShowFinishConfirmModal] = useState(false);
   const [showTaskCompleteModal, setShowTaskCompleteModal] = useState(false);
   const [selectedTaskToComplete, setSelectedTaskToComplete] = useState(null);
-
-  const [setupView, setSetupView] = useState(false); // Add this state
   const [tasksTimingData, setTasksTimingData] = useState({});
   
   // Session history
@@ -283,19 +283,6 @@ const FocusSection = ({ onFullscreenChange }) => {
     }
   };
 
-  // Save on beforeunload
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      saveCurrentSessionState();
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, []);
-
   // Handle navigation/section change detection
   useEffect(() => {
     const handleSectionChange = (e) => {
@@ -368,7 +355,7 @@ const FocusSection = ({ onFullscreenChange }) => {
     };
   }, [focusActive, isPaused, timerType, untilTime]);
 
-  // Add fullscreen change event listener to keep our state in sync with browser
+  // Fullscreen change events
   useEffect(() => {
     const handleFullscreenChange = () => {
       const isCurrentlyFullscreen = !!(
@@ -599,20 +586,11 @@ const FocusSection = ({ onFullscreenChange }) => {
     setTimerStartTime(new Date());
     setFocusActive(true);
     
-    // Exit setup view mode - this is the missing part!
-    setSetupView(false);
+    // Exit setup mode
+    setIsSetupMode(false);
     
-    // Clear old setup mode if it was being used
-    if (typeof setSetupMode === 'function') {
-      setSetupMode(false);
-    }
-  
-    console.log("Starting focus session...", { 
-      focusActive: true, 
-      timerType, 
-      timeRemaining: timerType === 'countdown' ? (selectedPreset.id === 'custom' ? customDuration * 60 : selectedPreset.duration) : 0
-    });
-  }
+    console.log("Starting focus session...");
+  };
   
   // Pause/resume focus session with interruption tracking
   const togglePause = () => {
@@ -703,31 +681,27 @@ const FocusSection = ({ onFullscreenChange }) => {
   
   // Handle session submission with interruption data
   const handleSessionSubmit = (completedData) => {
-    // Calculate duration
-    const duration = timerType === 'countdown' 
-      ? selectedPreset.duration - timeRemaining
-      : elapsedTime;
-    
-    // Get completed tasks
-    const completedTasks = selectedTasks.filter(task => 
-      completedData.tasks && completedData.tasks.some(t => t.id === task.id)
-    );
-    
-    // Create session record with ALL tasks, not just completed ones
+    // Create session record
     const sessionData = {
       id: `focus-${Date.now()}`,
       startTime: timerStartTime?.toISOString() || new Date().toISOString(),
       endTime: new Date().toISOString(),
       technique: selectedPreset.id,
-      duration: duration,
+      duration: timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime,
       objective,
       allTasks: selectedTasks, // Store ALL tasks
-      tasks: completedTasks, // Completed tasks
+      tasks: selectedTasks.filter(task => 
+        completedData.tasks && completedData.tasks.some(t => t.id === task.id)
+      ), // Completed tasks
       notes: completedData.notes,
       // Add new metrics:
       interruptionsCount,
       totalPauseDuration,
-      focusScore: calculateFocusScore(duration, interruptionsCount, totalPauseDuration),
+      focusScore: calculateFocusScore(
+        timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime,
+        interruptionsCount,
+        totalPauseDuration
+      ),
       productivityRating: completedData.productivityRating,
       energyLevel: completedData.energyLevel,
       taskTimeData: selectedTasks.map(task => ({
@@ -738,32 +712,8 @@ const FocusSection = ({ onFullscreenChange }) => {
       }))
     };
     
-    // Update tasks in storage
+    // Update storage
     const storage = getStorage();
-    
-    // Group tasks by date
-    const tasksByDate = {};
-    completedTasks.forEach(task => {
-      if (!tasksByDate[task.date]) {
-        tasksByDate[task.date] = [];
-      }
-      tasksByDate[task.date].push(task.text);
-    });
-    
-    // Update checked status
-    Object.entries(tasksByDate).forEach(([date, tasks]) => {
-      if (!storage[date]) {
-        storage[date] = {};
-      }
-      
-      if (!storage[date].checked) {
-        storage[date].checked = {};
-      }
-      
-      tasks.forEach(task => {
-        storage[date].checked[task] = true;
-      });
-    });
     
     // Save session to history
     if (!storage.focusSessions) {
@@ -784,6 +734,7 @@ const FocusSection = ({ onFullscreenChange }) => {
     resetStates();
   };
   
+  // Reset all states
   const resetStates = () => {
     setFocusActive(false);
     setSessionComplete(false);
@@ -954,6 +905,500 @@ const FocusSection = ({ onFullscreenChange }) => {
     }
     
     return `${now.getHours().toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  };
+  
+  // Go back to main focus list (similar to HabitSection's handleBackToList)
+  const handleBackToList = () => {
+    setIsSetupMode(false);
+  };
+  
+  // Set up focus session (similar to HabitSection's handleCreateHabit)
+  const handleSetupFocus = () => {
+    setIsSetupMode(true);
+  };
+
+  // Render focus session setup form (similar to HabitForm)
+  const renderFocusSetupForm = () => {
+    return (
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm w-full sm:w-[90%] md:w-3/4 lg:w-2/3 mx-auto overflow-x-hidden px-3 sm:px-4 md:px-6 py-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-100">
+            Set Up Your Focus Session
+          </h2>
+          <button 
+            onClick={handleBackToList}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+          >
+            <X size={20} className="text-slate-600 dark:text-slate-300" />
+          </button>
+        </div>
+        
+        <div className="space-y-4">
+          {/* Step 1: Choose a Productivity Technique */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Choose a Productivity Technique
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {FOCUS_PRESETS.map(preset => (
+                <button
+                  key={preset.id}
+                  className={`p-4 rounded-xl border transition-all text-left ${
+                    selectedPreset.id === preset.id
+                      ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                  }`}
+                  onClick={() => handlePresetSelect(preset)}
+                >
+                  <div className="flex items-center">
+                    <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-gradient-to-br ${preset.color} text-white`}>
+                      {preset.icon}
+                    </div>
+                    <div className="ml-3 flex-grow">
+                      <h4 className="font-medium text-slate-900 dark:text-white transition-colors">
+                        {preset.name}
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors">
+                        {preset.description}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Step 2: Configure Your Timer */}
+          {(selectedPreset.id === 'custom' || timerType !== 'countdown') && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Configure Your Timer
+              </label>
+              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 transition-colors">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <button
+                    className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                      timerType === 'countdown'
+                        ? 'bg-blue-500 dark:bg-blue-600 text-white'
+                        : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
+                    }`}
+                    onClick={() => setTimerType('countdown')}
+                  >
+                    Countdown
+                  </button>
+                  <button
+                    className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                      timerType === 'countup'
+                        ? 'bg-blue-500 dark:bg-blue-600 text-white'
+                        : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
+                    }`}
+                    onClick={() => setTimerType('countup')}
+                  >
+                    Stopwatch
+                  </button>
+                  <button
+                    className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                      timerType === 'until'
+                        ? 'bg-blue-500 dark:bg-blue-600 text-white'
+                        : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
+                    }`}
+                    onClick={() => setTimerType('until')}
+                  >
+                    Until Time
+                  </button>
+                </div>
+                
+                {timerType === 'countdown' && selectedPreset.id === 'custom' && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Duration: {customDuration} minutes
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">5m</span>
+                      <input
+                        type="range"
+                        min="5"
+                        max="120"
+                        step="5"
+                        value={customDuration}
+                        onChange={handleCustomDurationChange}
+                        className="flex-grow h-2 bg-slate-200 dark:bg-slate-600 rounded-full appearance-none cursor-pointer accent-blue-500"
+                      />
+                      <span className="text-xs text-slate-500 dark:text-slate-400">120m</span>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {[15, 25, 30, 45, 60, 90].map(duration => (
+                        <button
+                          key={duration}
+                          onClick={() => setCustomDuration(duration)}
+                          className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                            customDuration === duration
+                              ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                              : 'bg-slate-100 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          {duration}m
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {timerType === 'until' && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Focus until what time?
+                    </label>
+                    <input
+                      type="time"
+                      value={untilTime}
+                      onChange={handleUntilTimeChange}
+                      className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200"
+                    />
+                  </div>
+                )}
+                
+                {timerType === 'countup' && (
+                  <div className="text-sm text-slate-600 dark:text-slate-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
+                    <p className="flex items-center gap-2">
+                      <Sparkles size={16} className="text-blue-500 dark:text-blue-400" />
+                      <span>Stopwatch mode will count up until you manually end your session.</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Step 3: Focus Objective */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              What are you focusing on today?
+            </label>
+            <input
+              type="text"
+              placeholder="What's your main objective for this focus session?"
+              value={objective}
+              onChange={(e) => setObjective(e.target.value)}
+              className="w-full px-4 py-3 mb-4 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          {/* Step 4: Select Tasks */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Select tasks to focus on (optional)
+            </label>
+            <FocusTaskSelector
+              selectedTasks={selectedTasks}
+              onTasksChange={setSelectedTasks}
+            />
+          </div>
+        </div>
+        
+        {/* Form Actions */}
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 mt-6 pt-3 border-t border-slate-200 dark:border-slate-700">
+          <button 
+            type="button"
+            onClick={handleBackToList}
+            className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 text-sm text-center"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button"
+            onClick={startFocusSession}
+            className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 flex items-center justify-center gap-2 text-sm"
+          >
+            <Play size={16} />
+            Start Focus Session
+          </button>
+        </div>
+      </div>
+    );
+  };
+  
+  // Render the active focus session
+  const renderFocusSession = () => {
+    return (
+      <div className="focus-session w-full h-full flex flex-col items-center justify-center">
+        <div className="relative w-full max-w-2xl mx-auto">
+          {/* Timer Display */}
+          <div className="flex flex-col items-center justify-center mb-8">
+            {objective && (
+              <div className="mb-4 text-center">
+                <h3 className="font-medium text-xl text-slate-800 dark:text-slate-200 transition-colors">
+                  {objective}
+                </h3>
+                <div className="text-sm text-slate-500 dark:text-slate-400 transition-colors">
+                  {selectedPreset.name}
+                </div>
+              </div>
+            )}
+            
+            <div className="relative w-64 h-64 sm:w-80 sm:h-80">
+              {/* Background circle with gradient */}
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                {/* Subtle background gradient */}
+                <defs>
+                  <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="rgba(219, 234, 254, 0.4)" className="dark:stop-color-blue-900/20" />
+                    <stop offset="100%" stopColor="rgba(239, 246, 255, 0.2)" className="dark:stop-color-blue-800/10" />
+                  </linearGradient>
+                  
+                  {/* Progress gradient */}
+                  <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3b82f6" className="dark:stop-color-blue-500" />
+                    <stop offset="100%" stopColor="#60a5fa" className="dark:stop-color-blue-400" />
+                  </linearGradient>
+                </defs>
+                
+                {/* Background circle with subtle fill */}
+                <circle 
+                  cx="50"
+                  cy="50"
+                  r="46"
+                  fill="url(#bg-gradient)"
+                  stroke="rgba(226, 232, 240, 0.8)"
+                  className="dark:stroke-slate-700/80"
+                  strokeWidth="1"
+                />
+                
+                {/* Timer track */}
+                <circle 
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke="rgba(226, 232, 240, 0.8)"
+                  className="dark:stroke-slate-700/80"
+                  strokeWidth="4"
+                />
+                
+                {/* Timer progress */}
+                <animated.circle 
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke="url(#progress-gradient)"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeDasharray="283"
+                  strokeDashoffset={progressAnimation.strokeDashoffset}
+                />
+                
+                {/* Add subtle tick marks */}
+                {Array.from({ length: 12 }).map((_, i) => {
+                  const angle = (i * 30) * (Math.PI / 180);
+                  const x1 = 50 + 42 * Math.cos(angle);
+                  const y1 = 50 + 42 * Math.sin(angle);
+                  const x2 = 50 + 45 * Math.cos(angle);
+                  const y2 = 50 + 45 * Math.sin(angle);
+                  
+                  return (
+                    <line 
+                      key={i}
+                      x1={x1}
+                      y1={y1}
+                      x2={x2}
+                      y2={y2}
+                      stroke="rgba(203, 213, 225, 0.8)"
+                      className="dark:stroke-slate-600/80"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  );
+                })}
+              </svg>
+              
+              {/* Time display */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <motion.div 
+                  className="text-5xl sm:text-6xl font-bold text-slate-800 dark:text-slate-100 transition-colors"
+                  key={isPaused ? 'paused' : 'running'}
+                  animate={isPaused ? { scale: [1, 1.05, 1] } : {}}
+                  transition={{ duration: 2, repeat: isPaused ? Infinity : 0, ease: "easeInOut" }}
+                >
+                  {timerType === 'countdown' || timerType === 'until' 
+                    ? formatTime(timeRemaining) 
+                    : formatTime(elapsedTime)}
+                </motion.div>
+                
+                <div className="text-sm text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1 transition-colors">
+                  <Clock size={14} />
+                  <span>{isPaused ? 'Paused' : 'In Progress'}</span>
+                </div>
+
+                {interruptionsCount > 0 && (
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">
+                    {interruptionsCount} {interruptionsCount === 1 ? 'interruption' : 'interruptions'} ({formatTime(totalPauseDuration)} paused)
+                  </div>
+                )}
+                
+                {sessionComplete && (
+                  <motion.div 
+                    className="mt-4 px-4 py-2 bg-green-500 text-white rounded-full font-medium"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                  >
+                    Session Complete!
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Timer Controls with enhanced styling */}
+          <div className="flex items-center justify-center gap-4 mb-8">
+            {!sessionComplete && (
+              <>
+                {/* Cancel Button */}
+                <motion.button
+                  onClick={() => setShowCancelConfirmModal(true)}
+                  className="p-4 rounded-full bg-gradient-to-br from-red-500 to-red-600 dark:from-red-600 dark:to-red-700 text-white shadow-lg shadow-red-500/20 hover:shadow-red-500/30 transition-all flex items-center justify-center"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Cancel session"
+                >
+                  <X size={24} />
+                </motion.button>
+
+                {/* Play/Pause Button */}
+                {isPaused ? (
+                  <motion.button
+                    onClick={togglePause}
+                    className="p-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all flex items-center justify-center"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    title="Resume focus session"
+                  >
+                    <Play size={24} fill="currentColor" />
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    onClick={togglePause}
+                    className="p-4 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all flex items-center justify-center"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    title="Pause focus session"
+                  >
+                    <Pause size={24} />
+                  </motion.button>
+                )}
+
+                {/* Finish Button */}
+                <motion.button
+                  onClick={() => setShowFinishConfirmModal(true)}
+                  className="p-4 rounded-full bg-gradient-to-br from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 text-white shadow-lg shadow-green-500/20 hover:shadow-green-500/30 transition-all flex items-center justify-center"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Finish session early"
+                >
+                  <Flag size={24} />
+                </motion.button>
+              </>
+            )}
+            
+            {sessionComplete && (
+              <motion.button
+                onClick={endFocusSession}
+                className="px-6 py-3 bg-gradient-to-br from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 text-white rounded-xl font-medium shadow-lg shadow-green-500/20 hover:shadow-green-500/30 flex items-center gap-2 transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+              >
+                <CheckSquare size={20} />
+                <span>Complete Session</span>
+              </motion.button>
+            )}
+          </div>
+          
+          {/* Fullscreen Toggle */}
+          <div className="absolute top-4 right-4">
+            <motion.button
+              onClick={enterFullscreen}
+              className="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <Maximize size={20} />
+            </motion.button>
+          </div>
+          
+          {/* Selected Tasks with checkboxes */}
+          {!sessionComplete && selectedTasks.length > 0 && (
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-slate-200 dark:border-slate-700 max-w-lg mx-auto transition-colors">
+              <h3 className="font-medium text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2 transition-colors">
+                <ListChecks size={18} className="text-blue-500 dark:text-blue-400" />
+                <span>Focus Tasks ({selectedTasks.length})</span>
+              </h3>
+              
+              <div className="max-h-60 overflow-y-auto pr-1 space-y-2">
+                {selectedTasks.map(task => (
+                  <div 
+                    key={task.id}
+                    onClick={() => handleTaskClick(task.id)}
+                    className={`
+                      flex items-center p-3 rounded-lg cursor-pointer transition-colors
+                      ${completedTaskIds.includes(task.id) 
+                        ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800/50' 
+                        : 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600'}
+                    `}
+                  >
+                    <div className={`
+                      w-5 h-5 rounded flex items-center justify-center mr-3 transition-colors
+                      ${completedTaskIds.includes(task.id) 
+                        ? 'bg-green-500 dark:bg-green-600 text-white' 
+                        : 'border border-slate-300 dark:border-slate-500'}
+                    `}>
+                      {completedTaskIds.includes(task.id) && <CheckSquare size={12} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`
+                        text-sm transition-colors
+                        ${completedTaskIds.includes(task.id) 
+                          ? 'text-green-700 dark:text-green-300 line-through opacity-70' 
+                          : 'text-slate-700 dark:text-slate-300'}
+                      `}>
+                        {task.text}
+                      </p>
+                    </div>
+                    {completedTaskIds.includes(task.id) && tasksTimingData[task.id] && (
+                      <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
+                        {formatTime(tasksTimingData[task.id])}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+  
+  // Render session completion screen
+  const renderSessionComplete = () => {
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <FocusSessionComplete
+          duration={timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime}
+          tasks={selectedTasks}
+          onSubmit={handleSessionSubmit}
+          onCancel={() => setSessionComplete(false)}
+          isFullscreen={isFullscreen}
+          tasksTimingData={tasksTimingData}
+          completedTaskIds={completedTaskIds}
+          interruptionsCount={interruptionsCount}
+          totalPauseDuration={totalPauseDuration}
+        />
+      </div>
+    );
   };
 
   // Modals render function
@@ -1163,6 +1608,7 @@ const FocusSection = ({ onFullscreenChange }) => {
                 />
               </div>
             ) : (
+              // Rest of your fullscreen content
               <>
                 {/* Timer Display */}
                 <div className="flex flex-col items-center justify-center mb-8 timer-display">
@@ -1239,11 +1685,11 @@ const FocusSection = ({ onFullscreenChange }) => {
                   </div>
                 </div>
                 
-                {/* Timer Controls - REORDERED AND ADDED FINISH BUTTON */}
+                {/* Timer Controls */}
                 <div className="flex items-center justify-center gap-4 mb-8">
                   {!sessionComplete && (
                     <>
-                      {/* Cancel Button - Now First */}
+                      {/* Cancel Button */}
                       <motion.button
                         onClick={() => setShowCancelConfirmModal(true)}
                         className="p-4 rounded-full bg-red-600 text-white shadow-lg"
@@ -1253,7 +1699,7 @@ const FocusSection = ({ onFullscreenChange }) => {
                         <X size={24} />
                       </motion.button>
 
-                      {/* Play/Pause Button - Now Middle */}
+                      {/* Play/Pause Button */}
                       {isPaused ? (
                         <motion.button
                           onClick={togglePause}
@@ -1274,7 +1720,7 @@ const FocusSection = ({ onFullscreenChange }) => {
                         </motion.button>
                       )}
 
-                      {/* Finish Button - New Addition */}
+                      {/* Finish Button */}
                       <motion.button
                         onClick={() => setShowFinishConfirmModal(true)}
                         className="p-4 rounded-full bg-amber-600 text-white shadow-lg"
@@ -1359,7 +1805,7 @@ const FocusSection = ({ onFullscreenChange }) => {
           </div>
         </div>
 
-        {/* Task Completion Modal - Render outside the container to ensure proper z-index */}
+        {/* Modals rendered in fullscreen mode */}
         {showTaskCompleteModal && selectedTaskToComplete && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
             <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
@@ -1402,7 +1848,7 @@ const FocusSection = ({ onFullscreenChange }) => {
           </div>
         )}
 
-        {/* Other Modals */}
+        {/* Other Fullscreen Modals */}
         {showCancelConfirmModal && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
             <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
@@ -1483,563 +1929,11 @@ const FocusSection = ({ onFullscreenChange }) => {
     );
   }
 
-  // Render active focus session
-  const renderFocusSession = () => {
-    return (
-      <div className="focus-session w-full h-full flex flex-col items-center justify-center">
-        <div className="relative w-full max-w-2xl mx-auto">
-          {/* Timer Display */}
-          <div className="flex flex-col items-center justify-center mb-8">
-            {objective && (
-              <div className="mb-4 text-center">
-                <h3 className="font-medium text-xl text-slate-800 dark:text-slate-200 transition-colors">
-                  {objective}
-                </h3>
-                <div className="text-sm text-slate-500 dark:text-slate-400 transition-colors">
-                  {selectedPreset.name}
-                </div>
-              </div>
-            )}
-            
-            <div className="relative w-64 h-64 sm:w-80 sm:h-80">
-              {/* Background circle with gradient */}
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                {/* Subtle background gradient */}
-                <defs>
-                  <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="rgba(219, 234, 254, 0.4)" className="dark:stop-color-blue-900/20" />
-                    <stop offset="100%" stopColor="rgba(239, 246, 255, 0.2)" className="dark:stop-color-blue-800/10" />
-                  </linearGradient>
-                  
-                  {/* Progress gradient */}
-                  <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#3b82f6" className="dark:stop-color-blue-500" />
-                    <stop offset="100%" stopColor="#60a5fa" className="dark:stop-color-blue-400" />
-                  </linearGradient>
-                </defs>
-                
-                {/* Background circle with subtle fill */}
-                <circle 
-                  cx="50"
-                  cy="50"
-                  r="46"
-                  fill="url(#bg-gradient)"
-                  stroke="rgba(226, 232, 240, 0.8)"
-                  className="dark:stroke-slate-700/80"
-                  strokeWidth="1"
-                />
-                
-                {/* Timer track */}
-                <circle 
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="rgba(226, 232, 240, 0.8)"
-                  className="dark:stroke-slate-700/80"
-                  strokeWidth="4"
-                />
-                
-                {/* Timer progress */}
-                <animated.circle 
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="url(#progress-gradient)"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeDasharray="283"
-                  strokeDashoffset={progressAnimation.strokeDashoffset}
-                />
-                
-                {/* Add subtle tick marks */}
-                {Array.from({ length: 12 }).map((_, i) => {
-                  const angle = (i * 30) * (Math.PI / 180);
-                  const x1 = 50 + 42 * Math.cos(angle);
-                  const y1 = 50 + 42 * Math.sin(angle);
-                  const x2 = 50 + 45 * Math.cos(angle);
-                  const y2 = 50 + 45 * Math.sin(angle);
-                  
-                  return (
-                    <line 
-                      key={i}
-                      x1={x1}
-                      y1={y1}
-                      x2={x2}
-                      y2={y2}
-                      stroke="rgba(203, 213, 225, 0.8)"
-                      className="dark:stroke-slate-600/80"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  );
-                })}
-              </svg>
-              
-              {/* Time display */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <motion.div 
-                  className="text-5xl sm:text-6xl font-bold text-slate-800 dark:text-slate-100 transition-colors"
-                  key={isPaused ? 'paused' : 'running'}
-                  animate={isPaused ? { scale: [1, 1.05, 1] } : {}}
-                  transition={{ duration: 2, repeat: isPaused ? Infinity : 0, ease: "easeInOut" }}
-                >
-                  {timerType === 'countdown' || timerType === 'until' 
-                    ? formatTime(timeRemaining) 
-                    : formatTime(elapsedTime)}
-                </motion.div>
-                
-                <div className="text-sm text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1 transition-colors">
-                  <Clock size={14} />
-                  <span>{isPaused ? 'Paused' : 'In Progress'}</span>
-                </div>
-
-                {interruptionsCount > 0 && (
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">
-                    {interruptionsCount} {interruptionsCount === 1 ? 'interruption' : 'interruptions'} ({formatTime(totalPauseDuration)} paused)
-                  </div>
-                )}
-                
-                {sessionComplete && (
-                  <motion.div 
-                    className="mt-4 px-4 py-2 bg-green-500 text-white rounded-full font-medium"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-                  >
-                    Session Complete!
-                  </motion.div>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {/* Timer Controls with enhanced styling - REORDERED and ADDED FINISH BUTTON */}
-          <div className="flex items-center justify-center gap-4 mb-8">
-            {!sessionComplete && (
-              <>
-                {/* Cancel Button - Now First */}
-                <motion.button
-                  onClick={() => setShowCancelConfirmModal(true)}
-                  className="p-4 rounded-full bg-gradient-to-br from-red-500 to-red-600 dark:from-red-600 dark:to-red-700 text-white shadow-lg shadow-red-500/20 hover:shadow-red-500/30 transition-all flex items-center justify-center"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  title="Cancel session"
-                >
-                  <X size={24} />
-                </motion.button>
-
-                {/* Play/Pause Button - Now Middle */}
-                {isPaused ? (
-                  <motion.button
-                    onClick={togglePause}
-                    className="p-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all flex items-center justify-center"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    title="Resume focus session"
-                  >
-                    <Play size={24} fill="currentColor" />
-                  </motion.button>
-                ) : (
-                  <motion.button
-                    onClick={togglePause}
-                    className="p-4 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all flex items-center justify-center"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    title="Pause focus session"
-                  >
-                    <Pause size={24} />
-                  </motion.button>
-                )}
-
-                {/* Finish Button - New Addition */}
-                <motion.button
-                  onClick={() => setShowFinishConfirmModal(true)}
-                  className="p-4 rounded-full bg-gradient-to-br from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 text-white shadow-lg shadow-green-500/20 hover:shadow-green-500/30 transition-all flex items-center justify-center"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  title="Finish session early"
-                >
-                  <Flag size={24} />
-                </motion.button>
-              </>
-            )}
-            
-            {sessionComplete && (
-              <motion.button
-                onClick={endFocusSession}
-                className="px-6 py-3 bg-gradient-to-br from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 text-white rounded-xl font-medium shadow-lg shadow-green-500/20 hover:shadow-green-500/30 flex items-center gap-2 transition-all"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-              >
-                <CheckSquare size={20} />
-                <span>Complete Session</span>
-              </motion.button>
-            )}
-          </div>
-          
-          {/* Fullscreen Toggle */}
-          <div className="absolute top-4 right-4">
-            <motion.button
-              onClick={enterFullscreen}
-              className="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <Maximize size={20} />
-            </motion.button>
-          </div>
-          
-          {/* Selected Tasks with checkboxes */}
-          {!sessionComplete && selectedTasks.length > 0 && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-slate-200 dark:border-slate-700 max-w-lg mx-auto transition-colors">
-              <h3 className="font-medium text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2 transition-colors">
-                <ListChecks size={18} className="text-blue-500 dark:text-blue-400" />
-                <span>Focus Tasks ({selectedTasks.length})</span>
-              </h3>
-              
-              <div className="max-h-60 overflow-y-auto pr-1 space-y-2">
-                {selectedTasks.map(task => (
-                  <div 
-                    key={task.id}
-                    onClick={() => handleTaskClick(task.id)}
-                    className={`
-                      flex items-center p-3 rounded-lg cursor-pointer transition-colors
-                      ${completedTaskIds.includes(task.id) 
-                        ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800/50' 
-                        : 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600'}
-                    `}
-                  >
-                    <div className={`
-                      w-5 h-5 rounded flex items-center justify-center mr-3 transition-colors
-                      ${completedTaskIds.includes(task.id) 
-                        ? 'bg-green-500 dark:bg-green-600 text-white' 
-                        : 'border border-slate-300 dark:border-slate-500'}
-                    `}>
-                      {completedTaskIds.includes(task.id) && <CheckSquare size={12} />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`
-                        text-sm transition-colors
-                        ${completedTaskIds.includes(task.id) 
-                          ? 'text-green-700 dark:text-green-300 line-through opacity-70' 
-                          : 'text-slate-700 dark:text-slate-300'}
-                      `}>
-                        {task.text}
-                      </p>
-                    </div>
-                    {completedTaskIds.includes(task.id) && tasksTimingData[task.id] && (
-                      <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
-                        {formatTime(tasksTimingData[task.id])}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-  
-  // Render session completion screen
-  const renderSessionComplete = () => {
-    return (
-      <div className="h-full w-full flex items-center justify-center">
-        <FocusSessionComplete
-          duration={timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime}
-          tasks={selectedTasks}
-          onSubmit={handleSessionSubmit}
-          onCancel={() => setSessionComplete(false)}
-          isFullscreen={isFullscreen}
-          tasksTimingData={tasksTimingData}
-          completedTaskIds={completedTaskIds}
-          interruptionsCount={interruptionsCount}
-          totalPauseDuration={totalPauseDuration}
-        />
-      </div>
-    );
-  };
-  
-  // Render setup modal for new focus session
- // Replace your entire renderSetupModal function with this simplified version
-// Updated renderSetupForm function with better mobile support
-
-const renderSetupForm = () => {
-  return (
-    <div className="w-full flex flex-col h-full px-4 md:px-6 mobile-setup-form">
-      {/* Header with back button */}
-      <div className="flex items-center border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
-        <button
-          onClick={() => setSetupView(false)}
-          className="mr-3 p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-          Set Up Your Focus Session
-        </h2>
-      </div>
-      
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto pb-20">
-        {/* Step 1: Select Productivity Technique */}
-        <div className="mb-6">
-          <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-3">
-            Choose a Productivity Technique
-          </h3>
-          
-          <div className="grid grid-cols-1 gap-3">
-            {FOCUS_PRESETS.map(preset => (
-              <button
-                key={preset.id}
-                className={`p-4 rounded-xl border-2 transition-all text-left ${
-                  selectedPreset.id === preset.id
-                    ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                }`}
-                onClick={() => handlePresetSelect(preset)}
-              >
-                <div className="flex items-center">
-                  <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-gradient-to-br ${preset.color} text-white`}>
-                    {preset.icon}
-                  </div>
-                  <div className="ml-3 flex-grow">
-                    <h4 className="font-medium text-slate-900 dark:text-white transition-colors">
-                      {preset.name}
-                    </h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors">
-                      {preset.description}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        {/* Only show timer config if needed */}
-        {(selectedPreset.id === 'custom' || timerType !== 'countdown') && (
-          <div className="mb-6">
-            <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-3">
-              Configure Your Timer
-            </h3>
-            
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 mb-4 transition-colors">
-              <div className="flex flex-wrap gap-2 mb-4">
-                <button
-                  className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
-                    timerType === 'countdown'
-                      ? 'bg-blue-500 dark:bg-blue-600 text-white'
-                      : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
-                  }`}
-                  onClick={() => setTimerType('countdown')}
-                >
-                  Countdown
-                </button>
-                <button
-                  className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
-                    timerType === 'countup'
-                      ? 'bg-blue-500 dark:bg-blue-600 text-white'
-                      : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
-                  }`}
-                  onClick={() => setTimerType('countup')}
-                >
-                  Stopwatch
-                </button>
-                <button
-                  className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
-                    timerType === 'until'
-                      ? 'bg-blue-500 dark:bg-blue-600 text-white'
-                      : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
-                  }`}
-                  onClick={() => setTimerType('until')}
-                >
-                  Until Time
-                </button>
-              </div>
-              
-              {timerType === 'countdown' && selectedPreset.id === 'custom' && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Duration: {customDuration} minutes
-                  </label>
-                  <div className="flex items-center gap-4">
-                    <span className="text-xs text-slate-500 dark:text-slate-400">5m</span>
-                    <input
-                      type="range"
-                      min="5"
-                      max="120"
-                      step="5"
-                      value={customDuration}
-                      onChange={handleCustomDurationChange}
-                      className="flex-grow h-2 bg-slate-200 dark:bg-slate-600 rounded-full appearance-none cursor-pointer accent-blue-500"
-                    />
-                    <span className="text-xs text-slate-500 dark:text-slate-400">120m</span>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {[15, 25, 30, 45, 60, 90].map(duration => (
-                      <button
-                        key={duration}
-                        onClick={() => setCustomDuration(duration)}
-                        className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                          customDuration === duration
-                            ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
-                            : 'bg-slate-100 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
-                        }`}
-                      >
-                        {duration}m
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {timerType === 'until' && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Focus until what time?
-                  </label>
-                  <input
-                    type="time"
-                    value={untilTime}
-                    onChange={handleUntilTimeChange}
-                    className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              )}
-              
-              {timerType === 'countup' && (
-                <div className="text-sm text-slate-600 dark:text-slate-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
-                  <p className="flex items-center gap-2">
-                    <Sparkles size={16} className="text-blue-500 dark:text-blue-400" />
-                    <span>Stopwatch mode will count up until you manually end your session.</span>
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        
-        {/* Step 3: Focus Objective and Tasks */}
-        <div className="mb-8">
-          <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-3">
-            What are you focusing on today?
-          </h3>
-          
-          <input
-            type="text"
-            placeholder="What's your main objective for this focus session?"
-            value={objective}
-            onChange={e => setObjective(e.target.value)}
-            className="w-full px-4 py-3 mb-6 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          
-          <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-3">
-            Select tasks to focus on (optional)
-          </h3>
-          
-          <FocusTaskSelector
-            selectedTasks={selectedTasks}
-            onTasksChange={setSelectedTasks}
-          />
-        </div>
-      </div>
-      
-      {/* Footer with Start button - fixed to bottom */}
-      <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4 bg-white dark:bg-slate-800 sticky bottom-0 z-10">
-        <div className="flex justify-center">
-          <button
-            onClick={startFocusSession}
-            className="w-full px-6 py-3 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-medium rounded-xl flex items-center justify-center gap-2 shadow-md"
-          >
-            <Play size={20} />
-            <span>Start Focus Session</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
-  
-  // Render tab content based on active tab
-  const renderTabContent = () => {
-    // If we're in setup view, show the setup form
-    if (setupView) {
-      return renderSetupForm();
-    }
-  
-    // If focus is active or session is complete, show those views
-    if (focusActive || sessionComplete) {
-      return (
-        <AnimatePresence mode="wait">
-          {sessionComplete ? (
-            <motion.div
-              key="session-complete"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="h-full w-full flex items-center justify-center"
-            >
-              {renderSessionComplete()}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="active-session"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="h-full w-full flex items-center justify-center"
-            >
-              {renderFocusSession()}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      );
-    }
-    
-    // Otherwise show the tab content based on activeTab
-    switch (activeTab) {
-      case 'analytics':
-        return <FocusAnalytics sessions={sessionHistory} />;
-      case 'history':
-        return <FocusHistory sessions={sessionHistory} />;
-      case 'focus':
-      default:
-        return (
-          <div className="w-full h-full flex flex-col items-center justify-center py-10">
-            <motion.button
-              onClick={() => setSetupView(true)}
-              className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white flex items-center justify-center shadow-xl shadow-blue-500/30 mx-auto mb-6 transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Play size={48} fill="currentColor" />
-            </motion.button>
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2 transition-colors">
-              Start a Focus Session
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto text-center transition-colors">
-              Boost your productivity with focused time blocks. Track your progress and build better work habits.
-            </p>
-          </div>
-        );
-    }
-  };
-  
-  
-  // Main component render with new header style matching habits and workouts
+  // Main component render (non-fullscreen)
   return (
     <div className="focus-section w-full h-full flex flex-col">
-      {/* New header style to match Habits and Workout sections - only show if not in active session */}
-      {!focusActive && !sessionComplete && !setupView && (
+      {/* Header with navigation buttons - only shown when not in active focus session */}
+      {!focusActive && !sessionComplete && !isSetupMode && (
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100 transition-colors">
             My Focus
@@ -2082,7 +1976,7 @@ const renderSetupForm = () => {
             
             {activeTab === 'focus' && (
               <button
-                onClick={() => setSetupView(true)}  // Changed from setSetupMode to setSetupView
+                onClick={handleSetupFocus}
                 className="px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
               >
                 <Play size={16} />
@@ -2093,13 +1987,65 @@ const renderSetupForm = () => {
         </div>
       )}
       
-      {/* Content area - make it flex-grow to fill available space */}
+      {/* Main content area */}
       <div className="flex-grow bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors overflow-auto">
-        {renderTabContent()}
+        {/* Conditional rendering pattern similar to HabitSection */}
+        {isSetupMode ? (
+          renderFocusSetupForm()
+        ) : focusActive || sessionComplete ? (
+          <AnimatePresence mode="wait">
+            {sessionComplete ? (
+              <motion.div
+                key="session-complete"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-full w-full flex items-center justify-center"
+              >
+                {renderSessionComplete()}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="active-session"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-full w-full flex items-center justify-center"
+              >
+                {renderFocusSession()}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        ) : (
+          <>
+            {activeTab === 'analytics' ? (
+              <FocusAnalytics sessions={sessionHistory} />
+            ) : activeTab === 'history' ? (
+              <FocusHistory sessions={sessionHistory} />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center py-10">
+                <motion.button
+                  onClick={handleSetupFocus}
+                  className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white flex items-center justify-center shadow-xl shadow-blue-500/30 mx-auto mb-6 transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Play size={48} fill="currentColor" />
+                </motion.button>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2 transition-colors">
+                  Start a Focus Session
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto text-center transition-colors">
+                  Boost your productivity with focused time blocks. Track your progress and build better work habits.
+                </p>
+                </div>
+            )}
+          </>
+        )}
       </div>
       
-      {/* Modals */}
-      {renderModals()}
+      {/* Modals - not displayed in fullscreen mode */}
+      {!isFullscreen && renderModals()}
     </div>
   );
 };

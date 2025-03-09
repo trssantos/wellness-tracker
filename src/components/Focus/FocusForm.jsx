@@ -20,7 +20,7 @@ const FocusForm = ({
   FOCUS_PRESETS
 }) => {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm w-full sm:w-[90%] md:w-3/4 lg:w-2/3 mx-auto overflow-x-hidden px-3 sm:px-4 md:px-6 py-4">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm w-full max-w-3xl mx-auto px-3 sm:px-4 md:px-6 py-4 overflow-hidden">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-100">
           Set Up Your Focus Session
@@ -39,7 +39,7 @@ const FocusForm = ({
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
             Choose a Productivity Technique
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             {FOCUS_PRESETS.map(preset => (
               <button
                 key={preset.id}
@@ -51,14 +51,14 @@ const FocusForm = ({
                 onClick={() => onPresetSelect(preset)}
               >
                 <div className="flex items-center">
-                  <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-gradient-to-br ${preset.color} text-white`}>
+                  <div className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center bg-gradient-to-br ${preset.color} text-white`}>
                     {preset.icon}
                   </div>
-                  <div className="ml-3 flex-grow">
-                    <h4 className="font-medium text-slate-900 dark:text-white transition-colors">
+                  <div className="ml-3 flex-grow min-w-0">
+                    <h4 className="font-medium text-slate-900 dark:text-white transition-colors text-sm sm:text-base truncate">
                       {preset.name}
                     </h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors line-clamp-2 break-words">
                       {preset.description}
                     </p>
                   </div>
@@ -74,10 +74,10 @@ const FocusForm = ({
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Configure Your Timer
             </label>
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 transition-colors">
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3 sm:p-4 transition-colors">
               <div className="flex flex-wrap gap-2 mb-4">
                 <button
-                  className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-2 sm:px-3 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                     timerType === 'countdown'
                       ? 'bg-blue-500 dark:bg-blue-600 text-white'
                       : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
@@ -87,7 +87,7 @@ const FocusForm = ({
                   Countdown
                 </button>
                 <button
-                  className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-2 sm:px-3 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                     timerType === 'countup'
                       ? 'bg-blue-500 dark:bg-blue-600 text-white'
                       : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
@@ -97,7 +97,7 @@ const FocusForm = ({
                   Stopwatch
                 </button>
                 <button
-                  className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-2 sm:px-3 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                     timerType === 'until'
                       ? 'bg-blue-500 dark:bg-blue-600 text-white'
                       : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
@@ -113,7 +113,7 @@ const FocusForm = ({
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Duration: {customDuration} minutes
                   </label>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 sm:gap-4">
                     <span className="text-xs text-slate-500 dark:text-slate-400">5m</span>
                     <input
                       type="range"
@@ -161,8 +161,8 @@ const FocusForm = ({
               
               {timerType === 'countup' && (
                 <div className="text-sm text-slate-600 dark:text-slate-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
-                  <p className="flex items-center gap-2">
-                    <Sparkles size={16} className="text-blue-500 dark:text-blue-400" />
+                  <p className="flex items-center gap-2 text-xs sm:text-sm">
+                    <Sparkles size={16} className="text-blue-500 dark:text-blue-400 flex-shrink-0" />
                     <span>Stopwatch mode will count up until you manually end your session.</span>
                   </p>
                 </div>
@@ -181,7 +181,7 @@ const FocusForm = ({
             placeholder="What's your main objective for this focus session?"
             value={objective}
             onChange={(e) => onObjectiveChange(e.target.value)}
-            className="w-full px-4 py-3 mb-4 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           />
         </div>
         

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Calendar, BarChart2, Zap, CheckSquare, Award, Target, ArrowUp, ArrowDown, AlertTriangle, 
+import { Info,Clock, Calendar, BarChart2, Zap, CheckSquare, Award, Target, ArrowUp, ArrowDown, AlertTriangle, 
          Dumbbell, ChevronLeft, ChevronRight, Sparkles, Sun, Moon, Lightbulb } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, 
          Pie, Cell, Legend, ComposedChart, Line } from 'recharts';
@@ -566,52 +566,83 @@ const FocusAnalytics = ({ sessions }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* Focus Session Technique Distribution */}
         <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
-          <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
-            <Target size={16} className="text-red-500 dark:text-red-400" />
-            Focus Technique Distribution
-          </h4>
-          
-          <div className="h-64 flex items-center justify-center">
-            {statsData.presetDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statsData.presetDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={40}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {statsData.presetDistribution.map((entry) => (
-                      <Cell 
-                        key={`cell-${entry.id}`} 
-                        fill={getPresetColor(entry.id)} 
-                        stroke="none"
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value, name, props) => [`${formatDuration(value)}`, props.payload.name]}
-                  />
-                  <Legend 
-                    layout="vertical" 
-                    verticalAlign="middle" 
-                    align="right"
-                    formatter={(value, entry) => (
-                      <span style={{ color: entry.color }}>{entry.payload.name}</span>
-                    )}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="text-center text-slate-500 dark:text-slate-400">
-                No preset data available.
-              </div>
+  <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
+    <Target size={16} className="text-red-500 dark:text-red-400" />
+    Focus Technique Distribution
+    <Tooltip content={
+      <div>
+        <p className="font-medium mb-1">Technique Distribution</p>
+        <p>Shows which focus methods you use most frequently, by total time spent.</p>
+      </div>
+    }>
+      <Info size={14} className="text-slate-400 dark:text-slate-500 ml-1" />
+    </Tooltip>
+  </h4>
+  
+  <div className="h-64 flex items-center justify-center mobile-pie-chart">
+    {statsData.presetDistribution.length > 0 ? (
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart margin={{ top: 0, right: 0, bottom: 30, left: 0 }}>
+          <Pie
+            data={statsData.presetDistribution}
+            cx="50%"
+            cy="50%"
+            innerRadius={40}
+            outerRadius={80}
+            paddingAngle={2}
+            dataKey="value"
+            label={({ cx, cy, midAngle, innerRadius, outerRadius, value, index }) => {
+              // Only show labels on desktop
+              if (window.innerWidth < 640) return null;
+              const RADIAN = Math.PI / 180;
+              const radius = 25 + innerRadius + (outerRadius - innerRadius);
+              const x = cx + radius * Math.cos(-midAngle * RADIAN);
+              const y = cy + radius * Math.sin(-midAngle * RADIAN);
+              return (
+                <text
+                  x={x}
+                  y={y}
+                  textAnchor={x > cx ? 'start' : 'end'}
+                  dominantBaseline="central"
+                  fill="#6b7280"
+                  fontSize={12}
+                >
+                  {statsData.presetDistribution[index].name}
+                </text>
+              );
+            }}
+          >
+            {statsData.presetDistribution.map((entry) => (
+              <Cell 
+                key={`cell-${entry.id}`} 
+                fill={getPresetColor(entry.id)} 
+                stroke="none"
+              />
+            ))}
+          </Pie>
+          <Tooltip 
+            formatter={(value, name, props) => [`${formatDuration(value)}`, props.payload.name]}
+          />
+          <Legend 
+            layout={window.innerWidth < 640 ? "horizontal" : "vertical"}
+            verticalAlign={window.innerWidth < 640 ? "bottom" : "middle"}
+            align={window.innerWidth < 640 ? "center" : "right"}
+            wrapperStyle={window.innerWidth < 640 ? { bottom: -20 } : {}}
+            formatter={(value, entry) => (
+              <span style={{ color: entry.color, fontSize: window.innerWidth < 640 ? '10px' : '12px' }}>
+                {entry.payload.name}
+              </span>
             )}
-          </div>
-        </div>
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    ) : (
+      <div className="text-center text-slate-500 dark:text-slate-400">
+        No preset data available.
+      </div>
+    )}
+  </div>
+</div>
         
         {/* Weekly Trend */}
         <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">

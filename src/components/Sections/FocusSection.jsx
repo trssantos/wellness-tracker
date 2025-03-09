@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Play, Pause, X, AlertTriangle, Clock, Target, ListChecks, Maximize, 
+  ArrowLeft,Play, Pause, X, AlertTriangle, Clock, Target, ListChecks, Maximize, 
   Minimize, CheckSquare, Calendar, BarChart2, History, 
   Award, SaveAll, Sparkles, Moon, Sun, Star, Flag, Lightbulb
 } from 'lucide-react';
@@ -103,6 +103,8 @@ const FocusSection = ({ onFullscreenChange }) => {
   const [showFinishConfirmModal, setShowFinishConfirmModal] = useState(false);
   const [showTaskCompleteModal, setShowTaskCompleteModal] = useState(false);
   const [selectedTaskToComplete, setSelectedTaskToComplete] = useState(null);
+
+  const [setupView, setSetupView] = useState(false); // Add this state
   const [tasksTimingData, setTasksTimingData] = useState({});
   
   // Session history
@@ -596,8 +598,21 @@ const FocusSection = ({ onFullscreenChange }) => {
     
     setTimerStartTime(new Date());
     setFocusActive(true);
-    setSetupMode(false);
-  };
+    
+    // Exit setup view mode - this is the missing part!
+    setSetupView(false);
+    
+    // Clear old setup mode if it was being used
+    if (typeof setSetupMode === 'function') {
+      setSetupMode(false);
+    }
+  
+    console.log("Starting focus session...", { 
+      focusActive: true, 
+      timerType, 
+      timeRemaining: timerType === 'countdown' ? (selectedPreset.id === 'custom' ? customDuration * 60 : selectedPreset.duration) : 0
+    });
+  }
   
   // Pause/resume focus session with interruption tracking
   const togglePause = () => {
@@ -1751,211 +1766,213 @@ const FocusSection = ({ onFullscreenChange }) => {
   };
   
   // Render setup modal for new focus session
-  const renderSetupModal = () => {
-    return (
-      <div 
-        className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-        onClick={() => setSetupMode(false)}
-      >
-        <div 
-          className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] shadow-xl overflow-hidden flex flex-col"
-          onClick={e => e.stopPropagation()}
-          style={{ margin: '0 auto' }}
+ // Replace your entire renderSetupModal function with this simplified version
+ const renderSetupForm = () => {
+  return (
+    <div className="w-full flex flex-col h-full">
+      {/* Header with back button */}
+      <div className="flex items-center border-b border-slate-200 dark:border-slate-700 pb-4 mb-6">
+        <button
+          onClick={() => setSetupView(false)}
+          className="mr-4 p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
         >
-          {/* Header - Fixed at top */}
-          <div className="p-5 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-t-2xl sticky top-0 z-10 transition-colors">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white transition-colors">
-                Set Up Your Focus Session
-              </h2>
-              <button 
-                onClick={() => setSetupMode(false)}
-                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
-          </div>
+          <ArrowLeft size={18} />
+        </button>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+          Set Up Your Focus Session
+        </h2>
+      </div>
+      
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Step 1: Select Productivity Technique */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">
+            Choose a Productivity Technique
+          </h3>
           
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto p-5 overscroll-contain">
-            {/* Step 1: Select Productivity Technique */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3 transition-colors">
-                Choose a Productivity Technique
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {FOCUS_PRESETS.map(preset => (
-                  <button
-                    key={preset.id}
-                    className={`p-4 rounded-xl border-2 transition-all text-left ${
-                      selectedPreset.id === preset.id
-                        ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                    }`}
-                    onClick={() => handlePresetSelect(preset)}
-                  >
-                    <div className={`w-10 h-10 mb-2 rounded-full flex items-center justify-center bg-gradient-to-br ${preset.color} text-white`}>
-                      {preset.icon}
-                    </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {FOCUS_PRESETS.map(preset => (
+              <button
+                key={preset.id}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  selectedPreset.id === preset.id
+                    ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                }`}
+                onClick={() => handlePresetSelect(preset)}
+              >
+                <div className="flex items-center">
+                  <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-gradient-to-br ${preset.color} text-white`}>
+                    {preset.icon}
+                  </div>
+                  <div className="ml-3 flex-grow">
                     <h4 className="font-medium text-slate-900 dark:text-white transition-colors">
                       {preset.name}
                     </h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors">
                       {preset.description}
                     </p>
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Step 2: Timer Configuration */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3 transition-colors">
-                Configure Your Timer
-              </h3>
-              
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 mb-4 transition-colors">
-                <div className="flex flex-wrap gap-3 mb-4">
-                  <button
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      timerType === 'countdown'
-                        ? 'bg-blue-500 dark:bg-blue-600 text-white'
-                        : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
-                    }`}
-                    onClick={() => setTimerType('countdown')}
-                  >
-                    Countdown
-                  </button>
-                  <button
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      timerType === 'countup'
-                        ? 'bg-blue-500 dark:bg-blue-600 text-white'
-                        : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
-                    }`}
-                    onClick={() => setTimerType('countup')}
-                  >
-                    Stopwatch
-                  </button>
-                  <button
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      timerType === 'until'
-                        ? 'bg-blue-500 dark:bg-blue-600 text-white'
-                        : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
-                    }`}
-                    onClick={() => setTimerType('until')}
-                  >
-                    Until Specific Time
-                  </button>
+                  </div>
                 </div>
-                
-                {timerType === 'countdown' && selectedPreset.id === 'custom' && (
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 transition-colors">
-                      Duration: {customDuration} minutes
-                    </label>
-                    <div className="flex items-center gap-4">
-                      <span className="text-xs text-slate-500 dark:text-slate-400 transition-colors">5m</span>
-                      <input
-                        type="range"
-                        min="5"
-                        max="120"
-                        step="5"
-                        value={customDuration}
-                        onChange={handleCustomDurationChange}
-                        className="flex-grow h-2 bg-slate-200 dark:bg-slate-600 rounded-full appearance-none cursor-pointer accent-blue-500 transition-colors"
-                      />
-                      <span className="text-xs text-slate-500 dark:text-slate-400 transition-colors">120m</span>
-                    </div>
-                    
-                    {/* Preset quick buttons */}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {[15, 25, 30, 45, 60, 90].map(duration => (
-                        <button
-                          key={duration}
-                          onClick={() => setCustomDuration(duration)}
-                          className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                            customDuration === duration
-                              ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
-                              : 'bg-slate-100 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
-                          }`}
-                        >
-                          {duration}m
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {timerType === 'until' && (
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 transition-colors">
-                      Focus until what time?
-                    </label>
-                    <input
-                      type="time"
-                      value={untilTime}
-                      onChange={handleUntilTimeChange}
-                      className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 transition-colors"
-                    />
-                  </div>
-                )}
-                
-                {timerType === 'countup' && (
-                  <div className="text-sm text-slate-600 dark:text-slate-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800 transition-colors">
-                    <p className="flex items-center gap-2">
-                      <Sparkles size={16} className="text-blue-500 dark:text-blue-400" />
-                      <span>Stopwatch mode will count up until you manually end your session.</span>
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Step 3: Focus Objective and Tasks */}
-            <div>
-              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3 transition-colors">
-                What are you focusing on today?
-              </h3>
-              
-              <input
-                type="text"
-                placeholder="What's your main objective for this focus session?"
-                value={objective}
-                onChange={e => setObjective(e.target.value)}
-                className="w-full px-4 py-3 mb-4 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-              />
-              
-              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3 transition-colors">
-                Select tasks to focus on (optional)
-              </h3>
-              
-              <FocusTaskSelector
-                selectedTasks={selectedTasks}
-                onTasksChange={setSelectedTasks}
-              />
-            </div>
-          </div>
-          
-          {/* Footer - Fixed at bottom */}
-          <div className="p-5 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-b-2xl sticky bottom-0 z-10 transition-colors">
-            <div className="flex justify-end">
-              <button
-                onClick={startFocusSession}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-colors"
-              >
-                <Play size={20} />
-                <span>Start Focus Session</span>
               </button>
-            </div>
+            ))}
           </div>
         </div>
+        
+        {/* Step 2: Timer Configuration */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">
+            Configure Your Timer
+          </h3>
+          
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 mb-4 transition-colors">
+            <div className="flex flex-wrap gap-3 mb-4">
+              <button
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  timerType === 'countdown'
+                    ? 'bg-blue-500 dark:bg-blue-600 text-white'
+                    : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
+                }`}
+                onClick={() => setTimerType('countdown')}
+              >
+                Countdown
+              </button>
+              <button
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  timerType === 'countup'
+                    ? 'bg-blue-500 dark:bg-blue-600 text-white'
+                    : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
+                }`}
+                onClick={() => setTimerType('countup')}
+              >
+                Stopwatch
+              </button>
+              <button
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  timerType === 'until'
+                    ? 'bg-blue-500 dark:bg-blue-600 text-white'
+                    : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
+                }`}
+                onClick={() => setTimerType('until')}
+              >
+                Until Specific Time
+              </button>
+            </div>
+            
+            {timerType === 'countdown' && selectedPreset.id === 'custom' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Duration: {customDuration} minutes
+                </label>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">5m</span>
+                  <input
+                    type="range"
+                    min="5"
+                    max="120"
+                    step="5"
+                    value={customDuration}
+                    onChange={handleCustomDurationChange}
+                    className="flex-grow h-2 bg-slate-200 dark:bg-slate-600 rounded-full appearance-none cursor-pointer accent-blue-500"
+                  />
+                  <span className="text-xs text-slate-500 dark:text-slate-400">120m</span>
+                </div>
+                
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {[15, 25, 30, 45, 60, 90].map(duration => (
+                    <button
+                      key={duration}
+                      onClick={() => setCustomDuration(duration)}
+                      className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                        customDuration === duration
+                          ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                          : 'bg-slate-100 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {duration}m
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {timerType === 'until' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Focus until what time?
+                </label>
+                <input
+                  type="time"
+                  value={untilTime}
+                  onChange={handleUntilTimeChange}
+                  className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
+            
+            {timerType === 'countup' && (
+              <div className="text-sm text-slate-600 dark:text-slate-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
+                <p className="flex items-center gap-2">
+                  <Sparkles size={16} className="text-blue-500 dark:text-blue-400" />
+                  <span>Stopwatch mode will count up until you manually end your session.</span>
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Step 3: Focus Objective and Tasks */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">
+            What are you focusing on today?
+          </h3>
+          
+          <input
+            type="text"
+            placeholder="What's your main objective for this focus session?"
+            value={objective}
+            onChange={e => setObjective(e.target.value)}
+            className="w-full px-4 py-3 mb-6 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">
+            Select tasks to focus on (optional)
+          </h3>
+          
+          <FocusTaskSelector
+            selectedTasks={selectedTasks}
+            onTasksChange={setSelectedTasks}
+          />
+        </div>
       </div>
-    );
-  };
+      
+      {/* Footer with Start button */}
+      <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4">
+        <div className="flex justify-end">
+          <button
+            onClick={startFocusSession}
+            className="px-6 py-3 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-medium rounded-xl flex items-center gap-2 shadow-md"
+          >
+            <Play size={20} />
+            <span>Start Focus Session</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
   
   // Render tab content based on active tab
   const renderTabContent = () => {
+    // If we're in setup view, show the setup form
+    if (setupView) {
+      return renderSetupForm();
+    }
+  
+    // If focus is active or session is complete, show those views
     if (focusActive || sessionComplete) {
       return (
         <AnimatePresence mode="wait">
@@ -1983,6 +2000,8 @@ const FocusSection = ({ onFullscreenChange }) => {
         </AnimatePresence>
       );
     }
+    
+    // Otherwise show the tab content based on activeTab
     switch (activeTab) {
       case 'analytics':
         return <FocusAnalytics sessions={sessionHistory} />;
@@ -1993,7 +2012,7 @@ const FocusSection = ({ onFullscreenChange }) => {
         return (
           <div className="w-full h-full flex flex-col items-center justify-center py-10">
             <motion.button
-              onClick={() => setSetupMode(true)}
+              onClick={() => setSetupView(true)}
               className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white flex items-center justify-center shadow-xl shadow-blue-500/30 mx-auto mb-6 transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -2011,11 +2030,12 @@ const FocusSection = ({ onFullscreenChange }) => {
     }
   };
   
+  
   // Main component render with new header style matching habits and workouts
   return (
     <div className="focus-section w-full h-full flex flex-col">
       {/* New header style to match Habits and Workout sections - only show if not in active session */}
-      {!focusActive && !sessionComplete && (
+      {!focusActive && !sessionComplete && !setupView && (
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100 transition-colors">
             My Focus
@@ -2058,7 +2078,7 @@ const FocusSection = ({ onFullscreenChange }) => {
             
             {activeTab === 'focus' && (
               <button
-                onClick={() => setSetupMode(true)}
+                onClick={() => setSetupView(true)}  // Changed from setSetupMode to setSetupView
                 className="px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
               >
                 <Play size={16} />
@@ -2073,11 +2093,6 @@ const FocusSection = ({ onFullscreenChange }) => {
       <div className="flex-grow bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors overflow-auto">
         {renderTabContent()}
       </div>
-      
-      {/* Setup modal */}
-      <AnimatePresence>
-        {setupMode && renderSetupModal()}
-      </AnimatePresence>
       
       {/* Modals */}
       {renderModals()}

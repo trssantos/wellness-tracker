@@ -456,7 +456,7 @@ const ProcrastinationStats = forwardRef(({ currentMonth, moodData }, ref) => {
       )}
       
       {/* Top Procrastinated Tasks View - Fixed for mobile layout */}
-{selectedView === 'tasks' && (
+      {selectedView === 'tasks' && (
   <div className="bg-white dark:bg-slate-800 rounded-lg p-4 transition-colors">
     <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors">Most Procrastinated Tasks</h3>
     
@@ -476,17 +476,17 @@ const ProcrastinationStats = forwardRef(({ currentMonth, moodData }, ref) => {
           .map((entry, index) => (
             <div 
               key={index} 
-              className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 w-full"
+              className="flex items-start p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700"
             >
-              <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-sm font-medium flex-shrink-0">
+              <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-sm font-medium flex-shrink-0 mt-0.5">
                 {index + 1}
               </div>
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <div className="text-slate-700 dark:text-slate-200 truncate">{entry.task}</div>
-                <div className="flex flex-wrap gap-2 mt-1">
+              <div className="flex-1 min-w-0 mx-2 overflow-hidden">
+                <div className="text-slate-700 dark:text-slate-200 text-sm break-words line-clamp-2">{entry.task}</div>
+                <div className="flex flex-wrap gap-1 mt-1">
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 flex-shrink-0">
                     <RefreshCw size={12} className="mr-1" />
-                    Deferred {entry.count}×
+                    {entry.count}×
                   </span>
                   {entry.days > 0 && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 flex-shrink-0">
@@ -499,11 +499,11 @@ const ProcrastinationStats = forwardRef(({ currentMonth, moodData }, ref) => {
               {/* Add a visual indicator based on procrastination severity */}
               <div className="flex-shrink-0">
                 {entry.count > 3 || entry.days > 7 ? (
-                  <div className="w-3 h-10 bg-red-500 dark:bg-red-400 rounded-full"></div>
+                  <div className="w-2 h-10 bg-red-500 dark:bg-red-400 rounded-full"></div>
                 ) : entry.count > 2 || entry.days > 3 ? (
-                  <div className="w-3 h-10 bg-amber-500 dark:bg-amber-400 rounded-full"></div>
+                  <div className="w-2 h-10 bg-amber-500 dark:bg-amber-400 rounded-full"></div>
                 ) : (
-                  <div className="w-3 h-10 bg-green-500 dark:bg-green-400 rounded-full"></div>
+                  <div className="w-2 h-10 bg-green-500 dark:bg-green-400 rounded-full"></div>
                 )}
               </div>
             </div>

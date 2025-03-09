@@ -162,63 +162,63 @@ const FocusTaskSelector = ({ selectedTasks, onTasksChange }) => {
   };
   
   return (
-    <div className="task-selector">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2 transition-colors">
-          <List size={18} className="text-blue-500 dark:text-blue-400" />
+    <div className="task-selector w-full">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1 transition-colors">
+          <List size={12} className="text-blue-500 dark:text-blue-400" />
           <span>Select Tasks to Focus On</span>
         </h3>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             onClick={handleSelectAllTasks}
-            className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors"
+            className="text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors"
           >
             {filteredTasks.length === selectedTasks.length ? 'Deselect All' : 'Select All'}
           </button>
           
           <button
             onClick={() => setIsAddingTask(true)}
-            className="text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-800/40 transition-colors"
+            className="text-[10px] px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-800/40 transition-colors"
           >
-            <Plus size={14} className="inline mr-1" /> 
-            <span>New Task</span>
+            <Plus size={10} className="inline mr-0.5" /> 
+            <span>New</span>
           </button>
         </div>
       </div>
       
       {/* Search bar */}
-      <div className="relative mb-3">
+      <div className="relative mb-2">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search tasks..."
-          className="w-full pl-8 pr-8 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full pl-7 pr-7 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
-        <Search className="absolute left-2.5 top-2.5 text-slate-400 dark:text-slate-500 h-4 w-4 transition-colors" />
+        <Search className="absolute left-2 top-1.5 text-slate-400 dark:text-slate-500 h-4 w-4 transition-colors" />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute right-2 top-2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+            className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
           >
-            <X size={16} />
+            <X size={14} />
           </button>
         )}
       </div>
       
       {/* New task form */}
       {isAddingTask && (
-        <div className="mb-3 p-3 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-900/20 transition-colors">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors">
-              Add New Task
+        <div className="mb-2 p-2 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-900/20 transition-colors">
+          <div className="flex justify-between items-center mb-1.5">
+            <h4 className="text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors">
+              Add Task
             </h4>
             <button
               onClick={() => setIsAddingTask(false)}
               className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
             >
-              <X size={16} />
+              <X size={14} />
             </button>
           </div>
           
@@ -227,17 +227,17 @@ const FocusTaskSelector = ({ selectedTasks, onTasksChange }) => {
             value={newTaskText}
             onChange={(e) => setNewTaskText(e.target.value)}
             placeholder="What do you need to focus on?"
-            className="w-full px-3 py-2 mb-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-2 py-1.5 mb-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500"
             autoFocus
           />
           
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Tag size={14} className="text-slate-500 dark:text-slate-400" />
+            <div className="flex items-center gap-1">
+              <Tag size={12} className="text-slate-500 dark:text-slate-400" />
               <select
                 value={taskCategory}
                 onChange={(e) => setTaskCategory(e.target.value)}
-                className="text-xs py-1 px-2 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="text-[10px] py-0.5 px-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="Focus Tasks">Focus Tasks</option>
                 <option value="Work">Work</option>
@@ -249,22 +249,22 @@ const FocusTaskSelector = ({ selectedTasks, onTasksChange }) => {
             <button
               onClick={handleCreateTask}
               disabled={!newTaskText.trim()}
-              className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+              className={`px-2 py-1 rounded-lg text-xs transition-colors ${
                 !newTaskText.trim()
                   ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
                   : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
               }`}
             >
-              Add Task
+              Add
             </button>
           </div>
         </div>
       )}
       
-      {/* Task list */}
-      <div className="max-h-60 overflow-y-auto pr-1 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors">
+      {/* Task list - FIXED FOR MOBILE */}
+      <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 transition-colors">
         {filteredTasks.length === 0 ? (
-          <div className="py-8 text-center text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 transition-colors">
+          <div className="py-4 text-center text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 transition-colors">
             {searchQuery ? 'No matching tasks found.' : 'No tasks available. Add a task to get started.'}
           </div>
         ) : (
@@ -274,36 +274,36 @@ const FocusTaskSelector = ({ selectedTasks, onTasksChange }) => {
                 key={task.id}
                 onClick={() => toggleTaskSelection(task)}
                 className={`
-                  flex items-center p-3 cursor-pointer transition-colors
+                  flex items-start p-2 cursor-pointer transition-colors
                   ${isTaskSelected(task.id) 
                     ? 'bg-blue-50 dark:bg-blue-900/30' 
-                    : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700'}
+                    : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50'}
                 `}
               >
                 <div className={`
-                  w-5 h-5 rounded flex items-center justify-center mr-3 transition-colors
+                  w-4 h-4 rounded flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 transition-colors
                   ${isTaskSelected(task.id) 
                     ? 'bg-blue-500 dark:bg-blue-600 text-white' 
                     : 'border border-slate-300 dark:border-slate-500'}
                 `}>
-                  {isTaskSelected(task.id) && <CheckSquare size={12} />}
+                  {isTaskSelected(task.id) && <CheckSquare size={10} />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-700 dark:text-slate-200 truncate transition-colors">
+                  <p className="text-xs text-slate-700 dark:text-slate-200 break-words line-clamp-2 transition-colors">
                     {task.text}
                   </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`flex items-center gap-1 text-xs ${
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className={`flex items-center gap-0.5 text-[10px] ${
                       task.isToday 
                         ? 'text-green-600 dark:text-green-400' 
                         : 'text-slate-500 dark:text-slate-400'
                     }`}>
-                      <Calendar size={10} />
+                      <Calendar size={8} />
                       {formatDate(task.date)}
                     </span>
                     
                     {task.isToday && (
-                      <span className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full transition-colors">
+                      <span className="text-[10px] px-1 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full transition-colors">
                         Today
                       </span>
                     )}
@@ -317,10 +317,10 @@ const FocusTaskSelector = ({ selectedTasks, onTasksChange }) => {
       
       {/* Selected tasks summary */}
       {selectedTasks.length > 0 && (
-        <div className="mt-3 bg-slate-50 dark:bg-slate-700 rounded-lg p-2 text-sm text-center transition-colors">
+        <div className="mt-2 bg-slate-50 dark:bg-slate-700 rounded-lg p-1.5 text-xs text-center transition-colors">
           <span className="text-slate-700 dark:text-slate-300 transition-colors">
-            <Star size={12} className="inline text-amber-500 dark:text-amber-400 mr-1" />
-            {selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''} selected for focus
+            <Star size={10} className="inline text-amber-500 dark:text-amber-400 mr-0.5" />
+            {selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''} selected
           </span>
         </div>
       )}

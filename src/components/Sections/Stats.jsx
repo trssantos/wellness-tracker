@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, Clock, Flame, BarChart2, LineChart, Activity, TrendingUp, Dumbbell, ChevronLeft, ChevronRight, Sparkles, Sun, Moon, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, Flame, BarChart2, LineChart, Activity, TrendingUp, 
+         TrendingDown, Dumbbell, ChevronLeft, ChevronRight, Sparkles, 
+         Sun, Moon, ArrowRight } from 'lucide-react';
 import { ProgressChart } from './Charts/ProgressChart';
 import { MoodTrendChart } from './Charts/MoodTrendChart';
 import { WorkoutStatsChart } from './Charts/WorkoutStatsChart';
@@ -9,6 +11,7 @@ import { MOODS } from '../MoodSelector';
 import { processMoodComparisonData, analyzeMoodImpacts } from '../../utils/moodAnalysisUtils';
 import ProcrastinationStats from './Charts/ProcrastinationStats';
 import TemplateStatsWidget from '../Templates/TemplateStatsWidget';
+import SleepAnalyticsChart from './Charts/SleepAnalyticsChart';
 
 export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
   const [statsData, setStatsData] = useState({
@@ -20,8 +23,8 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     moodTrend: [],
     workoutData: [],
     moodComparisonData: [],
-    moodImpactData: { insights: {} }
-    
+    moodImpactData: { insights: {} },
+    sleepData: []
   });
 
   // Create ref for ProcrastinationStats
@@ -38,8 +41,25 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
   // Add internal state for month selection
   const [currentMonth, setCurrentMonth] = useState(propCurrentMonth || new Date());
   
-  // Add state for showing the mood impact section
-  const [showMoodImpactSection, setShowMoodImpactSection] = useState(true);
+  // Section visibility state
+  const [sectionsVisible, setSectionsVisible] = useState({
+    procrastination: true,
+    moodComparison: true,
+    moodImpact: true,
+    sleepAnalysis: true,
+    taskCompletion: true,
+    moodTrend: true,
+    workoutStats: true,
+    templateStats: true
+  });
+  
+  // Toggle section visibility
+  const toggleSection = (section) => {
+    setSectionsVisible(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
   
   useEffect(() => {
     const data = processStorageData(storageData, currentMonth);
@@ -76,6 +96,7 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     const dailyProgressData = [];
     const moodData = [];
     const workoutData = [];
+    const sleepData = []; // Added for sleep tracking
     
     // Process each day in the current month
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -127,6 +148,20 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
             types: workout.types || []
           });
         }
+        
+        // Process sleep data
+        if (dayData.sleep) {
+          const sleep = dayData.sleep;
+          sleepData.push({
+            date: dateStr,
+            day: d.getDate(),
+            duration: sleep.duration || 0,
+            quality: sleep.quality || 0,
+            bedtime: sleep.bedtime || '',
+            wakeTime: sleep.wakeTime || '',
+            factors: sleep.factors || []
+          });
+        }
       }
     }
     
@@ -137,6 +172,7 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     dailyProgressData.sort((a, b) => new Date(a.date) - new Date(b.date));
     moodData.sort((a, b) => new Date(a.date) - new Date(b.date));
     workoutData.sort((a, b) => new Date(a.date) - new Date(b.date));
+    sleepData.sort((a, b) => new Date(a.date) - new Date(b.date));
     
     // Process the morning/evening mood comparison data
     const moodComparisonData = processMoodComparisonData(data, month);
@@ -154,7 +190,8 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
       moodTrend: moodData,
       workoutData: workoutData,
       moodComparisonData,
-      moodImpactData
+      moodImpactData,
+      sleepData
     };
   };
 
@@ -387,11 +424,44 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
   // Get average mood improvement for display
   const avgMoodImprovement = calculateAvgMoodImprovement();
 
+  // Calculate average sleep metrics for display
+  const calculateAvgSleepMetrics = () => {
+    if (!statsData.sleepData || statsData.sleepData.length === 0) return null;
+    
+    const totalDuration = statsData.sleepData.reduce((sum, day) => sum + day.duration, 0);
+    const totalQuality = statsData.sleepData.reduce((sum, day) => sum + day.quality, 0);
+    
+    return {
+      avgDuration: totalDuration / statsData.sleepData.length,
+      avgQuality: totalQuality / statsData.sleepData.length,
+      daysTracked: statsData.sleepData.length
+    };
+  };
+  
+  const avgSleepMetrics = calculateAvgSleepMetrics();
+
+  // Create section header component for consistency
+  const SectionHeader = ({ title, icon, section, isVisible }) => (
+    <div 
+      onClick={() => toggleSection(section)} 
+      className="cursor-pointer mb-4"
+    >
+      <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 transition-colors flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {icon}
+          <span>{title}</span>
+        </div>
+        <ArrowRight className={`transition-transform duration-300 ${isVisible ? 'rotate-90' : ''}`} size={20} />
+      </h3>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
+      {/* Summary Cards Section - Always visible */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xrefreshProcrastinationStats();l font-semibold text-slate-800 dark:text-slate-100 transition-colors">
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 transition-colors">
             Stats for {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
           </h2>
           
@@ -474,6 +544,20 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
         
         {/* Second row with more detailed metrics */}
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-6">
+          {/* Sleep Stats Card - NEW */}
+          <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-2 sm:p-4 transition-colors">
+            <div className="flex items-center gap-2 mb-2">
+              <Moon className="text-indigo-500 dark:text-indigo-400" size={20} />
+              <h3 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Sleep</h3>
+            </div>
+            <p className="text-xl sm:text-2xl font-bold text-indigo-700 dark:text-indigo-300 transition-colors">
+              {avgSleepMetrics ? avgSleepMetrics.avgDuration.toFixed(1) + 'h' : 'N/A'}
+            </p>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 transition-colors">
+              {avgSleepMetrics ? `${avgSleepMetrics.daysTracked} nights tracked` : 'no data'}
+            </p>
+          </div>
+          
           {/* Workout Statistics */}
           <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg p-2 sm:p-4 transition-colors">
             <div className="flex items-center gap-2 mb-2">
@@ -488,21 +572,7 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
             </p>
           </div>
           
-          {/* Calories Burned */}
-          <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-2 sm:p-4 transition-colors">
-            <div className="flex items-center gap-2 mb-2">
-              <Flame className="text-red-500 dark:text-red-400" size={20} />
-              <h3 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Calories</h3>
-            </div>
-            <p className="text-xl sm:text-2xl font-bold text-red-700 dark:text-red-300 transition-colors">
-              {statsData.totalCaloriesBurned} kcal
-            </p>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 transition-colors">
-              {statsData.totalCaloriesBurned > 0 ? `~${Math.round(statsData.totalCaloriesBurned / (statsData.workoutData.length || 1))} per session` : '0 per session'}
-            </p>
-          </div>
-          
-          {/* NEW: Daily Mood Change */}
+          {/* Daily Mood Change */}
           <div className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-2 sm:p-4 transition-colors">
             <div className="flex items-center gap-2 mb-2">
               <Sun className="text-amber-500 dark:text-amber-400" size={20} />
@@ -529,19 +599,19 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
           </div>
           
           {/* Productivity Rating */}
-          <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-2 sm:p-4 transition-colors">
+          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-2 sm:p-4 transition-colors">
             <div className="flex items-center gap-2 mb-2">
-              <BarChart2 className="text-indigo-500 dark:text-indigo-400" size={20} />
+              <BarChart2 className="text-blue-500 dark:text-blue-400" size={20} />
               <h3 className="font-medium text-slate-700 dark:text-slate-200 transition-colors">Productivity</h3>
             </div>
             <div className="flex items-center">
               <div className="flex-1 bg-slate-200 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full"
+                  className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
                   style={{ width: `${calculateProductivityScore(statsData)}%` }}
                 ></div>
               </div>
-              <p className="ml-3 text-xl sm:text-2xl font-bold text-indigo-700 dark:text-indigo-300 transition-colors">
+              <p className="ml-3 text-xl sm:text-2xl font-bold text-blue-700 dark:text-blue-300 transition-colors">
                 {calculateProductivityScore(statsData)}/100
               </p>
             </div>
@@ -552,87 +622,159 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
         </div>
       </div>
 
-      {/* Procrastination Stats Section */}
-<div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors mb-6 lg:col-span-2">
-  <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors flex items-center gap-2">
-    <Clock className="text-amber-500 dark:text-amber-400" size={20} />
-    Procrastination Analyzer
-  </h3>
-  <ProcrastinationStats 
-          ref={procrastinationStatsRef}
-          currentMonth={currentMonth} 
-        />
-</div>
-      
-      {/* Morning/Evening Mood Comparison Chart - NEW SECTION */}
+      {/* Sleep Analytics Section - NEW */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors flex items-center gap-2">
-          <Sun className="text-amber-500 dark:text-amber-400" size={20} />
-          <Moon className="text-indigo-500 dark:text-indigo-400" size={20} />
-          <span>Morning vs Evening Mood</span>
-        </h3>
-        <div className="h-64">
-          <MoodEnergyComparisonChart data={statsData.moodComparisonData} />
-        </div>
+        <SectionHeader 
+          title="Sleep Analysis" 
+          icon={<Moon className="text-indigo-500 dark:text-indigo-400" size={20} />}
+          section="sleepAnalysis"
+          isVisible={sectionsVisible.sleepAnalysis}
+        />
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 transition-colors">
+          Track how your sleep quality affects your mood and productivity
+        </p>
+        
+        {sectionsVisible.sleepAnalysis && (
+          <SleepAnalyticsChart 
+            data={statsData.sleepData} 
+            moodData={statsData.moodComparisonData}
+          />
+        )}
+      </div>
+
+      {/* Procrastination Stats Section */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors mb-6">
+        <SectionHeader 
+          title="Procrastination Analyzer" 
+          icon={<Clock className="text-amber-500 dark:text-amber-400" size={20} />}
+          section="procrastination"
+          isVisible={sectionsVisible.procrastination}
+        />
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 transition-colors">
+          Analyze and understand your task deferral patterns
+        </p>
+        
+        {sectionsVisible.procrastination && (
+          <ProcrastinationStats 
+            ref={procrastinationStatsRef}
+            currentMonth={currentMonth} 
+            moodData={statsData.moodComparisonData}
+          />
+        )}
       </div>
       
-      {/* Mood Impact Analysis - NEW SECTION */}
+      {/* Morning/Evening Mood Comparison Chart */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-        <div onClick={() => setShowMoodImpactSection(!showMoodImpactSection)} className="cursor-pointer">
-          <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-1 transition-colors flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="text-purple-500 dark:text-purple-400" size={20} />
-              <span>Mood Impact Analysis</span>
-            </div>
-            <ArrowRight className={`transition-transform duration-300 ${showMoodImpactSection ? 'rotate-90' : ''}`} size={20} />
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 transition-colors">
-            Discover which activities and patterns affect your daily mood
-          </p>
-        </div>
+        <SectionHeader 
+          title="Morning vs Evening Mood" 
+          icon={<><Sun className="text-amber-500 dark:text-amber-400" size={20} />
+                 <Moon className="text-indigo-500 dark:text-indigo-400" size={20} /></>}
+          section="moodComparison"
+          isVisible={sectionsVisible.moodComparison}
+        />
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 transition-colors">
+          Compare your mood and energy levels throughout the day
+        </p>
         
-        {showMoodImpactSection && (
+        {sectionsVisible.moodComparison && (
+          <div className="h-64">
+            <MoodEnergyComparisonChart data={statsData.moodComparisonData} />
+          </div>
+        )}
+      </div>
+      
+      {/* Mood Impact Analysis Section */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+        <SectionHeader 
+          title="Mood Impact Analysis" 
+          icon={<Sparkles className="text-purple-500 dark:text-purple-400" size={20} />}
+          section="moodImpact"
+          isVisible={sectionsVisible.moodImpact}
+        />
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 transition-colors">
+          Discover which activities and patterns affect your daily mood
+        </p>
+        
+        {sectionsVisible.moodImpact && (
           <MoodImpactAnalysis data={statsData.moodImpactData} />
         )}
       </div>
       
-      {/* Original Charts Section */}
+      {/* Charts Grid Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Progress Chart */}
+        {/* Task Completion Chart */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-          <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors flex items-center gap-2">
-            <Activity className="text-blue-500 dark:text-blue-400" size={20} />
-            Task Completion Trend
-          </h3>
-          <div className="h-64">
-            <ProgressChart data={statsData.monthlyProgress} />
-          </div>
+          <SectionHeader 
+            title="Task Completion Trend" 
+            icon={<Activity className="text-blue-500 dark:text-blue-400" size={20} />}
+            section="taskCompletion"
+            isVisible={sectionsVisible.taskCompletion}
+          />
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 transition-colors">
+            Track your daily task completion percentage
+          </p>
+          
+          {sectionsVisible.taskCompletion && (
+            <div className="h-64">
+              <ProgressChart data={statsData.monthlyProgress} />
+            </div>
+          )}
         </div>
         
         {/* Mood Trend Chart */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-          <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors flex items-center gap-2">
-            <LineChart className="text-purple-500 dark:text-purple-400" size={20} />
-            Morning Mood Trend
-          </h3>
-          <div className="h-64">
-            <MoodTrendChart data={statsData.moodTrend} />
-          </div>
+          <SectionHeader 
+            title="Morning Mood Trend" 
+            icon={<LineChart className="text-purple-500 dark:text-purple-400" size={20} />}
+            section="moodTrend"
+            isVisible={sectionsVisible.moodTrend}
+          />
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 transition-colors">
+            Monitor how your mood fluctuates over time
+          </p>
+          
+          {sectionsVisible.moodTrend && (
+            <div className="h-64">
+              <MoodTrendChart data={statsData.moodTrend} />
+            </div>
+          )}
         </div>
         
         {/* Workout Stats */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors lg:col-span-2">
-          <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors flex items-center gap-2">
-            <Activity className="text-green-500 dark:text-green-400" size={20} />
-            Workout Statistics
-          </h3>
-          <div className="h-64">
-            <WorkoutStatsChart data={statsData.workoutData} />
-          </div>
+          <SectionHeader 
+            title="Workout Statistics" 
+            icon={<Activity className="text-green-500 dark:text-green-400" size={20} />}
+            section="workoutStats"
+            isVisible={sectionsVisible.workoutStats}
+          />
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 transition-colors">
+            Track your exercise duration and calories burned
+          </p>
+          
+          {sectionsVisible.workoutStats && (
+            <div className="h-64">
+              <WorkoutStatsChart data={statsData.workoutData} />
+            </div>
+          )}
         </div>
 
         {/* Template Stats Widget */}
-<TemplateStatsWidget />
+        <div className="lg:col-span-2">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+            <SectionHeader 
+              title="Template Usage" 
+              icon={<BarChart2 className="text-teal-500 dark:text-teal-400" size={20} />}
+              section="templateStats"
+              isVisible={sectionsVisible.templateStats}
+            />
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 transition-colors">
+              Track which task templates you use most frequently
+            </p>
+            
+            {sectionsVisible.templateStats && <TemplateStatsWidget />}
+          </div>
+        </div>
       </div>
     </div>
   );

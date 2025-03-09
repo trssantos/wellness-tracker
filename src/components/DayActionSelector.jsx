@@ -1,5 +1,5 @@
 import React from 'react';
-import { SmilePlus, CheckSquare, X, PenTool, Dumbbell } from 'lucide-react';
+import { SmilePlus, CheckSquare, X, PenTool, Dumbbell, Moon } from 'lucide-react';
 
 export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
   const getFormattedDate = () => {
@@ -14,13 +14,19 @@ export const DayActionSelector = ({ date, onClose, onSelectAction }) => {
     });
   };
 
-  // Define actions with their properties - back to single mood tracking option
+  // Define actions with their properties - added Sleep tracking
   const actions = [
     {
       id: 'mood',
       label: 'Track Mood',
       icon: <SmilePlus size={24} className="text-purple-500 dark:text-purple-400" />,
       bgColor: 'bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-800/40'
+    },
+    {
+      id: 'sleep',
+      label: 'Track Sleep',
+      icon: <Moon size={24} className="text-indigo-500 dark:text-indigo-400" />,
+      bgColor: 'bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-800/40'
     },
     {
       id: 'progress',

@@ -4,6 +4,7 @@ import { SectionContainer } from './components/Navigation/SectionContainer';
 import { Overview } from './components/Sections/Overview';
 import { Stats } from './components/Sections/Stats';
 import { MeditationSection, DayCoachSection } from './components/Sections/Placeholders';
+import SleepTracker from './components/SleepTracker';
 import TemplatesSection from './components/Sections/TemplatesSection';
 import HabitsPlaceholder from './components/Sections/HabitsPlaceholder';
 import FocusPlaceholder from './components/Sections/FocusPlaceholder';
@@ -52,6 +53,7 @@ const App = () => {
   const [moodTimeDefaultTime, setMoodTimeDefaultTime] = useState('morning');
   const [pendingTasksDate, setPendingTasksDate] = useState(null);
 const [pendingTasksForDate, setPendingTasksForDate] = useState(null);
+const [sleepDate, setSleepDate] = useState(null);
 
 // Track if Focus section has an active session
 const hasFocusSession = useRef(false);
@@ -192,6 +194,10 @@ const preventNavigationAway = useRef(false);
         // Set the mood time date and open modal
         setMoodTimeDate(selectedDay);
         document.getElementById('mood-time-tracker-modal').showModal();
+      } else if (action === 'sleep') {
+        // Set the sleep date and open modal
+        setSleepDate(selectedDay);
+        document.getElementById('sleep-tracker-modal').showModal();
       } else if (action === 'progress') {
         // Check if there are any tasks for this day
         const dayData = getStorage()[selectedDay] || {};
@@ -583,6 +589,15 @@ const handlePendingTasksAction = (action, tasks = []) => {
   previousDate={pendingTasksDate}
   onAction={handlePendingTasksAction}
 />
+
+<SleepTracker
+        date={sleepDate}
+        onClose={() => {
+          document.getElementById('sleep-tracker-modal').close();
+          setSleepDate(null);
+          handleStorageUpdate();
+        }}
+      />
 
         <VoiceTaskInput 
           date={voiceInputDate}

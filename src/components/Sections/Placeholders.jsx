@@ -272,7 +272,7 @@ export const DayCoachSection = () => {
   );
 };
 
-export const TemplatesSection = () => {
+export const TemplatesSectionShowcase = () => {
   // Features for templates section
   const features = [
     { icon: <FileText size={18} />, title: "Reusable Templates", description: "Create task templates for recurring activities" },

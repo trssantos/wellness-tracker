@@ -8,6 +8,7 @@ import { MoodImpactAnalysis } from './Charts/MoodImpactAnalysis';
 import { MOODS } from '../MoodSelector';
 import { processMoodComparisonData, analyzeMoodImpacts } from '../../utils/moodAnalysisUtils';
 import ProcrastinationStats from './Charts/ProcrastinationStats';
+import TemplateStatsWidget from '../Templates/TemplateStatsWidget';
 
 export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
   const [statsData, setStatsData] = useState({
@@ -630,7 +631,8 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
           </div>
         </div>
 
-        
+        {/* Template Stats Widget */}
+<TemplateStatsWidget />
       </div>
     </div>
   );

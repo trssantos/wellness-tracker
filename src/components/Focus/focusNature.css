@@ -1,5 +1,3 @@
-/* Complete replacement for focusNature.css */
-
 /* App-level fullscreen mode */
 .fullscreen-app-mode {
   overflow: hidden;
@@ -148,6 +146,7 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  overflow-y: auto; /* Enable scrolling if content is too tall */
 }
 
 /* Animations */
@@ -225,7 +224,32 @@
   color: white;
   max-width: 500px;
   width: 90%;
-  margin: 0 auto;
+  margin: 20px auto;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 50;
+}
+
+/* Emergency exit button styling */
+.fullscreen-emergency-exit {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 9999;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  padding: 8px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
 }
 
 /* Mobile responsive adjustments */
@@ -240,5 +264,129 @@
   
   .timer-display {
     transform: scale(0.85);
+  }
+  
+  .fullscreen-session-complete {
+    width: 95%;
+    padding: 16px;
+    margin: 10px auto;
+  }
+  
+  /* Make sure the scrolling works on small screens */
+  .focus-fullscreen-container {
+    overflow-y: auto !important;
+  }
+}
+
+/* Focus section specific fixes for mobile */
+.focus-section {
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
+/* Fix button layout on mobile */
+.focus-section .flex {
+  flex-wrap: wrap;
+}
+
+/* Make the content area adjust its width */
+.focus-section .content-area {
+  width: 100%;
+  max-width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Adjust the button grid on small screens */
+@media (max-width: 640px) {
+  .focus-session .preset-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .focus-section button, 
+  .focus-section .button {
+    font-size: 0.875rem;
+  }
+}
+
+/* Setup modal fixes */
+.focus-section .fixed {
+  position: fixed !important;
+}
+
+/* Fix modal width */
+.focus-section [role="dialog"],
+.focus-section .fixed > div {
+  width: 100% !important;
+  max-width: 600px !important;
+  margin: 0 auto !important;
+}
+
+/* Fix the grid layout for techniques */
+.focus-section .grid {
+  display: grid !important;
+}
+
+/* Fix padding */
+.focus-section .p-4,
+.focus-section .p-5,
+.focus-section .p-6 {
+  padding: 1rem !important;
+}
+
+.focus-section .mb-4,
+.focus-section .mb-5,
+.focus-section .mb-6 {
+  margin-bottom: 1rem !important;
+}
+
+/* Fix flex layout */
+.focus-section .flex {
+  display: flex !important;
+}
+
+.focus-section .flex-1 {
+  flex: 1 1 0% !important;
+}
+
+/* Scrollable container fix */
+.focus-section .overflow-y-auto {
+  overflow-y: auto !important;
+  max-height: 70vh !important;
+}
+
+/* Fix button layout in setup modal */
+.focus-section .justify-end {
+  justify-content: flex-end !important;
+}
+
+/* Fix button wrapper */
+.focus-section .flex.justify-center.items-center.gap-3.sm\:gap-4.mb-6.w-full.max-w-full {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  margin-bottom: 1.5rem !important;
+  width: 100% !important;
+}
+
+@media (max-width: 640px) {
+  /* Ensure modal fits on mobile */
+  .focus-section [role="dialog"],
+  .focus-section .fixed > div {
+    width: 95% !important;
+    margin: 0 auto !important;
+  }
+  
+  /* Adjust mobile padding */
+  .focus-section .p-4,
+  .focus-section .p-5,
+  .focus-section .p-6 {
+    padding: 0.75rem !important;
+  }
+  
+  /* Fix grid on mobile */
+  .focus-section .grid.grid-cols-1.sm\:grid-cols-2.gap-3 {
+    grid-template-columns: 1fr !important;
   }
 }

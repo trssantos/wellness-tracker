@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Calendar, BarChart2, Zap, CheckSquare, Award, Target, ArrowUp, ArrowDown } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts';
+import { Clock, Calendar, BarChart2, Zap, CheckSquare, Award, Target, ArrowUp, ArrowDown, AlertTriangle, 
+         Dumbbell, ChevronLeft, ChevronRight, Sparkles, Sun, Moon, Lightbulb } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, 
+         Pie, Cell, Legend, ComposedChart, Line } from 'recharts';
 
 const FocusAnalytics = ({ sessions }) => {
   const [timeframe, setTimeframe] = useState('week'); // 'day', 'week', 'month', 'year'
@@ -12,7 +14,13 @@ const FocusAnalytics = ({ sessions }) => {
     weeklyData: [],
     dailyData: [],
     hourlyData: [],
-    presetDistribution: []
+    presetDistribution: [],
+    // New interruption metrics
+    totalInterruptions: 0,
+    totalPauseDuration: 0,
+    avgFocusScore: 0,
+    hourlyInterruptionData: [],
+    sessionsWithInterruptionData: 0
   });
   
   // Process statistics on sessions change or timeframe change
@@ -40,11 +48,14 @@ const FocusAnalytics = ({ sessions }) => {
         startDate = new Date(now);
         startDate.setFullYear(now.getFullYear() - 1);
         break;
+      default:
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
     }
     
     // Filter sessions within the timeframe
     const filteredSessions = sessions.filter(session => {
-      const sessionDate = new Date(session.startTime);
+      const sessionDate = new Date(session.startTime || session.timestamp);
       return sessionDate >= startDate && sessionDate <= now;
     });
     
@@ -63,7 +74,12 @@ const FocusAnalytics = ({ sessions }) => {
         weeklyData: [],
         dailyData: [],
         hourlyData: [],
-        presetDistribution: []
+        presetDistribution: [],
+        totalInterruptions: 0,
+        totalPauseDuration: 0,
+        avgFocusScore: 0,
+        hourlyInterruptionData: [],
+        sessionsWithInterruptionData: 0
       });
       return;
     }
@@ -71,6 +87,14 @@ const FocusAnalytics = ({ sessions }) => {
     // Initialize data
     let totalDuration = 0;
     let tasksCompleted = 0;
+    
+    // Initialize new data for interruption stats
+    const hourlyInterruptionMap = Array(24).fill(0);
+    const dailyInterruptionMap = Array(7).fill(0);
+    let totalInterruptions = 0;
+    let totalPauseDuration = 0;
+    let totalFocusScore = 0;
+    let sessionsWithInterruptionData = 0;
     
     // Maps for aggregating data
     const hourlyMap = Array(24).fill(0);
@@ -81,19 +105,19 @@ const FocusAnalytics = ({ sessions }) => {
     // Process each session
     sessionList.forEach(session => {
       // Add to total duration
-      totalDuration += session.duration;
+      totalDuration += session.duration || 0;
       
       // Count completed tasks
       tasksCompleted += (session.tasks ? session.tasks.length : 0);
       
       // Add to hourly distribution
-      const sessionDate = new Date(session.startTime);
+      const sessionDate = new Date(session.startTime || session.timestamp);
       const hour = sessionDate.getHours();
-      hourlyMap[hour] += session.duration;
+      hourlyMap[hour] += session.duration || 0;
       
       // Add to daily distribution
       const day = sessionDate.getDay();
-      dailyMap[day] += session.duration;
+      dailyMap[day] += session.duration || 0;
       
       // Add to weekly distribution
       const weekStart = new Date(sessionDate);
@@ -103,15 +127,43 @@ const FocusAnalytics = ({ sessions }) => {
       if (!weeklyMap[weekKey]) {
         weeklyMap[weekKey] = { week: weekKey, duration: 0 };
       }
-      weeklyMap[weekKey].duration += session.duration;
+      weeklyMap[weekKey].duration += session.duration || 0;
       
       // Add to preset distribution
-      const preset = session.preset || session.technique || 'custom';
+      const preset = session.technique || session.preset || 'custom';
       if (!presetMap[preset]) {
         presetMap[preset] = { name: getTechniqueName(preset), value: 0, id: preset };
       }
-      presetMap[preset].value += session.duration;
+      presetMap[preset].value += session.duration || 0;
+      
+      // Process interruption data if available
+      if (session.interruptionsCount !== undefined) {
+        totalInterruptions += session.interruptionsCount;
+        sessionsWithInterruptionData++;
+        
+        // Add to hourly interruption distribution
+        hourlyInterruptionMap[hour] += session.interruptionsCount;
+        
+        // Add to daily interruption distribution
+        dailyInterruptionMap[day] += session.interruptionsCount;
+        
+        // Track total pause duration
+        totalPauseDuration += session.totalPauseDuration || 0;
+        
+        // Track focus scores
+        if (session.focusScore !== undefined) {
+          totalFocusScore += session.focusScore;
+        }
+      }
     });
+    
+    // Calculate averages
+    const averageSession = totalDuration / sessionList.length;
+    
+    // Calculate average focus score
+    const avgFocusScore = sessionsWithInterruptionData > 0 
+      ? Math.round(totalFocusScore / sessionsWithInterruptionData) 
+      : 0;
     
     // Convert maps to arrays for charts
     const hourlyData = hourlyMap.map((duration, hour) => ({ hour, duration }));
@@ -123,8 +175,12 @@ const FocusAnalytics = ({ sessions }) => {
     const weeklyData = Object.values(weeklyMap).sort((a, b) => a.week.localeCompare(b.week));
     const presetDistribution = Object.values(presetMap);
     
-    // Calculate averages
-    const averageSession = totalDuration / sessionList.length;
+    // Create hourly interruption data for chart
+    const hourlyInterruptionData = hourlyMap.map((duration, hour) => ({
+      hour,
+      duration,
+      interruptions: hourlyInterruptionMap[hour]
+    }));
     
     // Update state
     setStatsData({
@@ -135,7 +191,13 @@ const FocusAnalytics = ({ sessions }) => {
       weeklyData,
       dailyData,
       hourlyData,
-      presetDistribution
+      presetDistribution,
+      // Interruption metrics
+      totalInterruptions,
+      totalPauseDuration,
+      avgFocusScore,
+      hourlyInterruptionData,
+      sessionsWithInterruptionData
     });
   };
   
@@ -157,6 +219,8 @@ const FocusAnalytics = ({ sessions }) => {
   
   // Format seconds to readable time
   const formatDuration = (seconds) => {
+    if (!seconds && seconds !== 0) return "0m";
+    
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     
@@ -327,6 +391,111 @@ const FocusAnalytics = ({ sessions }) => {
         </div>
       </div>
       
+      {/* Interruption Analytics - NEW */}
+      <div className="mb-6 bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
+        <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
+          <AlertTriangle size={16} className="text-amber-500 dark:text-amber-400" />
+          Focus Interruption Analysis
+        </h4>
+        
+        {statsData.sessionsWithInterruptionData > 0 ? (
+          <>
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 text-center transition-colors">
+                <div className="text-lg font-bold text-blue-700 dark:text-blue-300 mb-1 transition-colors">
+                  {statsData.totalInterruptions}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-slate-400 transition-colors">
+                  Total Interruptions
+                </div>
+              </div>
+              
+              <div className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-3 text-center transition-colors">
+                <div className="text-lg font-bold text-amber-700 dark:text-amber-300 mb-1 transition-colors">
+                  {formatDuration(statsData.totalPauseDuration)}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-slate-400 transition-colors">
+                  Total Pause Time
+                </div>
+              </div>
+              
+              <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 text-center transition-colors">
+                <div className="text-lg font-bold text-green-700 dark:text-green-300 mb-1 transition-colors">
+                  {statsData.avgFocusScore}/100
+                </div>
+                <div className="text-xs text-slate-600 dark:text-slate-400 transition-colors">
+                  Avg Focus Score
+                </div>
+              </div>
+            </div>
+            
+            <div className="h-64 mt-6">
+              <h5 className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
+                Interruptions by Hour of Day
+              </h5>
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={statsData.hourlyInterruptionData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
+                  <XAxis 
+                    dataKey="hour" 
+                    tickFormatter={formatHourLabel} 
+                    tick={{ fill: '#6b7280' }} 
+                    interval={3}
+                  />
+                  <YAxis 
+                    yAxisId="left"
+                    label={{ value: 'Focus Time (min)', angle: -90, position: 'insideLeft', offset: -10, fill: '#6b7280' }}
+                    tick={{ fill: '#6b7280' }}
+                    tickFormatter={(value) => Math.floor(value / 60)}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    label={{ value: 'Interruptions', angle: 90, position: 'insideRight', offset: -5, fill: '#6b7280' }}
+                    tick={{ fill: '#6b7280' }}
+                  />
+                  <Tooltip 
+                    formatter={(value, name) => {
+                      if (name === 'Focus Time') return formatDuration(value);
+                      return value;
+                    }}
+                    labelFormatter={(value) => `${formatHourLabel(value)} - ${formatHourLabel((value + 1) % 24)}`}
+                  />
+                  <Bar yAxisId="left" dataKey="duration" name="Focus Time" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Line 
+                    yAxisId="right" 
+                    type="monotone" 
+                    dataKey="interruptions" 
+                    name="Interruptions" 
+                    stroke="#ef4444" 
+                    strokeWidth={2} 
+                    dot={{ r: 4 }} 
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+              <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                <Lightbulb size={16} className="text-amber-600 dark:text-amber-400" />
+                Insight
+              </h5>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                {statsData.hourlyInterruptionData.reduce((a, b) => a.interruptions > b.interruptions ? a : b).hour === 
+                 statsData.hourlyInterruptionData.reduce((a, b) => a.duration > b.duration ? a : b).hour ?
+                  `Your most productive hour (${formatHourLabel(statsData.hourlyInterruptionData.reduce((a, b) => a.duration > b.duration ? a : b).hour)}) is also your most interrupted time. Consider setting stronger boundaries during this productive period.` :
+                  `You experience the most interruptions at ${formatHourLabel(statsData.hourlyInterruptionData.reduce((a, b) => a.interruptions > b.interruptions ? a : b).hour)}, but your most focused hour is ${formatHourLabel(statsData.hourlyInterruptionData.reduce((a, b) => a.duration > b.duration ? a : b).hour)}. Consider scheduling important focus work during your least interrupted times.`
+                }
+              </p>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-6 text-slate-500 dark:text-slate-400">
+            No interruption data available yet. Complete more focus sessions to see analytics.
+          </div>
+        )}
+      </div>
+      
       {/* Main charts */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
         {/* Time Distribution by Day of Week */}
@@ -393,9 +562,9 @@ const FocusAnalytics = ({ sessions }) => {
         </div>
       </div>
       
-      {/* Secondary charts - IMPROVED PIE CHART */}
+      {/* Secondary charts */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {/* Focus Session Technique Distribution - IMPROVED */}
+        {/* Focus Session Technique Distribution */}
         <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
           <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
             <Target size={16} className="text-red-500 dark:text-red-400" />
@@ -507,43 +676,74 @@ const FocusAnalytics = ({ sessions }) => {
             <p className="text-slate-600 dark:text-slate-400 text-sm transition-colors">
               Your most focused hours are in the 
               <span className="font-medium text-green-600 dark:text-green-400 mx-1 transition-colors">
-                morning from 9 AM to 12 PM
+                {statsData.hourlyData.length > 0 
+                  ? formatHourLabel(statsData.hourlyData.reduce((a, b) => a.duration > b.duration ? a : b).hour) 
+                  : 'morning'} to {statsData.hourlyData.length > 0 
+                    ? formatHourLabel(statsData.hourlyData.reduce((a, b) => a.duration > b.duration ? a : b).hour + 2) 
+                    : 'noon'}
               </span>
-              with an average focus time of 30 min per hour.
+              time block with the highest focus metrics.
             </p>
           </div>
           
-          {/* Best day */}
+          {/* Interruption peak */}
           <div className="bg-white dark:bg-slate-800 p-3 rounded-lg flex flex-col shadow-sm transition-colors">
             <div className="flex items-center gap-2 mb-2">
-              <Calendar size={16} className="text-blue-500 dark:text-blue-400" />
+              <AlertTriangle size={16} className="text-amber-500 dark:text-amber-400" />
               <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors">
-                Most Consistent Day
+                Interruption Patterns
               </h5>
             </div>
             <p className="text-slate-600 dark:text-slate-400 text-sm transition-colors">
-              You've been most consistent with focus sessions on 
-              <span className="font-medium text-blue-600 dark:text-blue-400 mx-1 transition-colors">
-                Tuesdays
-              </span>
-              with an average of 2.5 hours of focus time.
+              {statsData.sessionsWithInterruptionData > 0 ? (
+                <>
+                  Your sessions are most frequently interrupted  
+                  <span className="font-medium text-amber-600 dark:text-amber-400 mx-1 transition-colors">
+                    {formatHourLabel(statsData.hourlyInterruptionData.reduce((a, b) => a.interruptions > b.interruptions ? a : b).hour)}
+                  </span>
+                  with an average of 
+                  <span className="font-medium text-amber-600 dark:text-amber-400 mx-1 transition-colors">
+                    {(statsData.totalInterruptions / (statsData.sessionsWithInterruptionData || 1)).toFixed(1)}
+                  </span>
+                  interruptions per session.
+                </>
+              ) : (
+                <>
+                  No interruption data available yet. Continue tracking focus sessions to reveal your interruption patterns.
+                </>
+              )}
             </p>
           </div>
           
-          {/* Task efficiency */}
+          {/* Focus score improvement */}
           <div className="bg-white dark:bg-slate-800 p-3 rounded-lg flex flex-col shadow-sm transition-colors">
             <div className="flex items-center gap-2 mb-2">
               <Zap size={16} className="text-amber-500 dark:text-amber-400" />
               <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors">
-                Task Efficiency
+                Focus Score
               </h5>
             </div>
             <p className="text-slate-600 dark:text-slate-400 text-sm transition-colors">
-              You complete 
-              <span className="font-medium text-amber-600 dark:text-amber-400 mx-1 transition-colors">
-                24% more tasks
-              </span> 
-              when using the Pomodoro technique compared to regular focus sessions.
+              {statsData.sessionsWithInterruptionData > 0 ? (
+                <>
+                  Your average focus score is 
+                  <span className={`font-medium mx-1 ${
+                    statsData.avgFocusScore >= 80 ? 'text-green-600 dark:text-green-400' :
+                    statsData.avgFocusScore >= 60 ? 'text-lime-600 dark:text-lime-400' :
+                    statsData.avgFocusScore >= 40 ? 'text-amber-600 dark:text-amber-400' :
+                    'text-red-600 dark:text-red-400'
+                  }`}>
+                    {statsData.avgFocusScore}/100
+                  </span>
+                  - {statsData.avgFocusScore >= 80 ? 'excellent' : 
+                     statsData.avgFocusScore >= 60 ? 'good' : 
+                     statsData.avgFocusScore >= 40 ? 'moderate' : 'needs improvement'}.
+                </>
+              ) : (
+                <>
+                  Focus scores will appear after you complete more sessions with the latest tracking features.
+                </>
+              )}
             </p>
           </div>
         </div>

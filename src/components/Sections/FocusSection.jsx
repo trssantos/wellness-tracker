@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Play, Pause, X, AlertTriangle, Clock, Target, ListChecks, Maximize, 
   Minimize, CheckSquare, Calendar, BarChart2, History, 
-  Award, SaveAll, Sparkles, Moon, Sun, Star, Flag
+  Award, SaveAll, Sparkles, Moon, Sun, Star, Flag, Lightbulb
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSpring, animated } from 'react-spring';
@@ -84,6 +84,14 @@ const FocusSection = ({ onFullscreenChange }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [timerStartTime, setTimerStartTime] = useState(null);
   
+  // NEW - Interruption tracking
+  const [interruptionsCount, setInterruptionsCount] = useState(0);
+  const [totalPauseDuration, setTotalPauseDuration] = useState(0);
+  const [lastPauseTime, setLastPauseTime] = useState(null);
+
+  // Auto-save ref
+  const autoSaveIntervalRef = useRef(null);
+  
   // Completion states
   const [completedTaskIds, setCompletedTaskIds] = useState([]);
   const [focusRating, setFocusRating] = useState(3);
@@ -132,7 +140,10 @@ const FocusSection = ({ onFullscreenChange }) => {
         completedTaskIds,
         tasksTimingData,
         timerStartTime: timerStartTime?.toISOString(),
-        untilTime
+        untilTime,
+        interruptionsCount,
+        totalPauseDuration,
+        lastPauseTime: lastPauseTime?.toISOString()
       };
       
       console.log('Updated window.currentFocusState with active session data');
@@ -140,7 +151,7 @@ const FocusSection = ({ onFullscreenChange }) => {
   }, [
     focusActive, sessionComplete, isPaused, timeRemaining, elapsedTime, 
     timerType, selectedPreset, objective, selectedTasks, completedTaskIds, 
-    tasksTimingData, timerStartTime, untilTime
+    tasksTimingData, timerStartTime, untilTime, interruptionsCount, totalPauseDuration, lastPauseTime
   ]);
   
   // Load saved session on first render
@@ -164,6 +175,12 @@ const FocusSection = ({ onFullscreenChange }) => {
         setSelectedTasks(savedState.selectedTasks || []);
         setCompletedTaskIds(savedState.completedTaskIds || []);
         setTasksTimingData(savedState.tasksTimingData || {});
+        setInterruptionsCount(savedState.interruptionsCount || 0);
+        setTotalPauseDuration(savedState.totalPauseDuration || 0);
+        
+        if (savedState.lastPauseTime) {
+          setLastPauseTime(new Date(savedState.lastPauseTime));
+        }
         
         if (savedState.timerStartTime) {
           setTimerStartTime(new Date(savedState.timerStartTime));
@@ -204,6 +221,76 @@ const FocusSection = ({ onFullscreenChange }) => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
+      
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Auto-save interval setup
+  useEffect(() => {
+    // Clear any existing interval
+    if (autoSaveIntervalRef.current) {
+      clearInterval(autoSaveIntervalRef.current);
+      autoSaveIntervalRef.current = null;
+    }
+    
+    // Only set up auto-save when session is active and not paused
+    if (focusActive && !isPaused && !sessionComplete) {
+      console.log('Setting up auto-save interval');
+      autoSaveIntervalRef.current = setInterval(() => {
+        saveCurrentSessionState();
+      }, 10000); // Save every 10 seconds
+    }
+    
+    // Clean up on unmount or when dependencies change
+    return () => {
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current);
+        autoSaveIntervalRef.current = null;
+      }
+    };
+  }, [focusActive, isPaused, sessionComplete]);
+
+  // Create a function to save the current session state
+  const saveCurrentSessionState = () => {
+    if (focusActive && !sessionComplete) {
+      console.log('Auto-saving focus session state...');
+      const sessionState = {
+        focusActive,
+        sessionComplete,
+        isPaused,
+        timeRemaining,
+        elapsedTime,
+        timerType,
+        selectedPreset,
+        objective,
+        selectedTasks,
+        completedTaskIds,
+        tasksTimingData,
+        timerStartTime: timerStartTime?.toISOString(),
+        untilTime,
+        interruptionsCount,
+        totalPauseDuration,
+        lastPauseTime: lastPauseTime?.toISOString(),
+        lastSaveTime: new Date().toISOString()
+      };
+      
+      saveFocusSessionState(sessionState);
+    }
+  };
+
+  // Save on beforeunload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      saveCurrentSessionState();
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
 
@@ -219,6 +306,7 @@ const FocusSection = ({ onFullscreenChange }) => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         handleNavigationAway();
+        saveCurrentSessionState();
       }
     };
     
@@ -278,94 +366,6 @@ const FocusSection = ({ onFullscreenChange }) => {
     };
   }, [focusActive, isPaused, timerType, untilTime]);
 
-
-  // Add this useEffect hook to the FocusSection component to save and restore session state
-  useEffect(() => {
-    // Save focus session state when component unmounts or when state changes
-    const saveSessionState = () => {
-      if (focusActive) {
-        const sessionState = {
-          focusActive,
-          sessionComplete,
-          isPaused: true, // Always pause when saving state
-          timeRemaining,
-          elapsedTime,
-          timerType,
-          selectedPreset,
-          objective,
-          selectedTasks,
-          completedTaskIds,
-          tasksTimingData,
-          timerStartTime: timerStartTime?.toISOString(),
-          untilTime
-        };
-        localStorage.setItem('focusSessionState', JSON.stringify(sessionState));
-        console.log('Saved focus session state');
-      }
-    };
-
-    // Handle page visibility change
-    const handleVisibilityChange = () => {
-      if (document.hidden && focusActive && !sessionComplete && !isPaused) {
-        // Pause the timer and save state
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-        }
-        setIsPaused(true);
-        saveSessionState();
-      }
-    };
-
-    // Add event listener for page visibility
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Load saved session state
-    const loadSavedSession = () => {
-      const savedState = localStorage.getItem('focusSessionState');
-      if (savedState) {
-        try {
-          const state = JSON.parse(savedState);
-          setFocusActive(state.focusActive);
-          setSessionComplete(state.sessionComplete);
-          setIsPaused(state.isPaused);
-          setTimeRemaining(state.timeRemaining);
-          setElapsedTime(state.elapsedTime);
-          setTimerType(state.timerType);
-          setSelectedPreset(state.selectedPreset);
-          setObjective(state.objective);
-          setSelectedTasks(state.selectedTasks);
-          setCompletedTaskIds(state.completedTaskIds || []);
-          setTasksTimingData(state.tasksTimingData || {});
-          setTimerStartTime(state.timerStartTime ? new Date(state.timerStartTime) : null);
-          setUntilTime(state.untilTime || getCurrentTimeRounded());
-          
-          // Show pause modal if the session was active
-          if (state.focusActive && !state.sessionComplete) {
-            setShowPauseModal(true);
-          }
-          
-          console.log('Restored focus session state');
-        } catch (e) {
-          console.error('Error restoring focus session state:', e);
-        }
-      }
-    };
-
-    // Load saved session on mount
-    loadSavedSession();
-
-    // Clean up
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      
-      // Save state on unmount if session is active
-      if (focusActive) {
-        saveSessionState();
-      }
-    };
-  }, []);
-
-
   // Add fullscreen change event listener to keep our state in sync with browser
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -408,6 +408,8 @@ const FocusSection = ({ onFullscreenChange }) => {
       
       // Update state
       setIsPaused(true);
+      setLastPauseTime(new Date());
+      setInterruptionsCount(prev => prev + 1);
       
       // Show modal
       setShowPauseModal(true);
@@ -426,7 +428,10 @@ const FocusSection = ({ onFullscreenChange }) => {
         completedTaskIds,
         tasksTimingData,
         timerStartTime: timerStartTime?.toISOString(),
-        untilTime
+        untilTime,
+        interruptionsCount,
+        totalPauseDuration,
+        lastPauseTime: new Date().toISOString()
       };
       
       saveFocusSessionState(sessionState);
@@ -476,6 +481,12 @@ const FocusSection = ({ onFullscreenChange }) => {
 
   // Resume a paused session
   const resumeSession = () => {
+    // When resuming from a pause modal, calculate pause duration and add to total
+    if (lastPauseTime) {
+      const pauseDuration = Math.floor((new Date() - lastPauseTime) / 1000);
+      setTotalPauseDuration(prev => prev + pauseDuration);
+    }
+    
     setIsPaused(false);
     setShowPauseModal(false);
     startTimer();
@@ -533,6 +544,20 @@ const FocusSection = ({ onFullscreenChange }) => {
       });
     }
     
+    // First, exit fullscreen if active
+    // This ensures the user isn't stuck in fullscreen
+    if (isFullscreen) {
+      try {
+        exitFullscreen();
+      } catch (err) {
+        console.error('Error exiting fullscreen on timer completion:', err);
+        // Force update the state even if the API call fails
+        setIsFullscreen(false);
+        if (onFullscreenChange) onFullscreenChange(false);
+      }
+    }
+    
+    // Then set session complete
     setSessionComplete(true);
   };
   
@@ -564,14 +589,35 @@ const FocusSection = ({ onFullscreenChange }) => {
       setElapsedTime(0);
     }
     
+    // Reset interruption tracking
+    setInterruptionsCount(0);
+    setTotalPauseDuration(0);
+    setLastPauseTime(null);
+    
     setTimerStartTime(new Date());
     setFocusActive(true);
     setSetupMode(false);
   };
   
-  // Pause/resume focus session
+  // Pause/resume focus session with interruption tracking
   const togglePause = () => {
-    setIsPaused(!isPaused);
+    if (!isPaused) {
+      // When pausing, record the time and increment interruption count
+      setLastPauseTime(new Date());
+      setInterruptionsCount(prev => prev + 1);
+      setIsPaused(true);
+      
+      // Save the state immediately when pausing
+      saveCurrentSessionState();
+    } else {
+      // When resuming, calculate pause duration and add to total
+      if (lastPauseTime) {
+        const pauseDuration = Math.floor((new Date() - lastPauseTime) / 1000);
+        setTotalPauseDuration(prev => prev + pauseDuration);
+      }
+      setIsPaused(false);
+      startTimer();
+    }
   };
   
   // End focus session early
@@ -617,8 +663,30 @@ const FocusSection = ({ onFullscreenChange }) => {
       }
     }
   };
+
+  // Function to calculate focus score
+  const calculateFocusScore = (sessionDuration, interruptions, pauseDuration) => {
+    if (sessionDuration <= 0) return 0;
+    
+    // Calculate the actual focus time (total session time minus pause time)
+    const actualFocusTime = Math.max(0, sessionDuration - pauseDuration);
+    
+    // Calculate focus percentage (time actually focused vs total session time)
+    const focusPercentage = (actualFocusTime / sessionDuration) * 100;
+    
+    // Penalize for frequent interruptions
+    // Base score is the focus percentage
+    let score = focusPercentage;
+    
+    // Subtract points for interruptions (more weight for longer sessions)
+    const sessionDurationMinutes = sessionDuration / 60;
+    const interruptionPenalty = interruptions * (5 + Math.min(5, sessionDurationMinutes / 15));
+    
+    // Final score with a minimum of 0
+    return Math.max(0, Math.min(100, Math.round(score - interruptionPenalty)));
+  };
   
-  // Update the handleSessionSubmit function to clear localStorage
+  // Handle session submission with interruption data
   const handleSessionSubmit = (completedData) => {
     // Calculate duration
     const duration = timerType === 'countdown' 
@@ -636,13 +704,17 @@ const FocusSection = ({ onFullscreenChange }) => {
       startTime: timerStartTime?.toISOString() || new Date().toISOString(),
       endTime: new Date().toISOString(),
       technique: selectedPreset.id,
-      duration: timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime,
+      duration: duration,
       objective,
       allTasks: selectedTasks, // Store ALL tasks
-      tasks: selectedTasks.filter(task => 
-        completedData.tasks && completedData.tasks.some(t => t.id === task.id)
-      ), // Completed tasks
+      tasks: completedTasks, // Completed tasks
       notes: completedData.notes,
+      // Add new metrics:
+      interruptionsCount,
+      totalPauseDuration,
+      focusScore: calculateFocusScore(duration, interruptionsCount, totalPauseDuration),
+      productivityRating: completedData.productivityRating,
+      energyLevel: completedData.energyLevel,
       taskTimeData: selectedTasks.map(task => ({
         id: task.id,
         text: task.text,
@@ -690,9 +762,6 @@ const FocusSection = ({ onFullscreenChange }) => {
     setSessionHistory([...sessionHistory, sessionData]);
     
     // Clear saved session state
-    localStorage.removeItem('focusSessionState');
-
-    // Clear saved session state
     clearFocusSessionState();
     console.log('Session completed, cleared saved state');
     
@@ -700,7 +769,6 @@ const FocusSection = ({ onFullscreenChange }) => {
     resetStates();
   };
   
-  // Update the resetStates function to clear localStorage
   const resetStates = () => {
     setFocusActive(false);
     setSessionComplete(false);
@@ -713,6 +781,15 @@ const FocusSection = ({ onFullscreenChange }) => {
     setObjective('');
     setSelectedTasks([]);
     setTasksTimingData({});
+    setInterruptionsCount(0);
+    setTotalPauseDuration(0);
+    setLastPauseTime(null);
+    
+    // Clear auto-save interval
+    if (autoSaveIntervalRef.current) {
+      clearInterval(autoSaveIntervalRef.current);
+      autoSaveIntervalRef.current = null;
+    }
     
     // Clear saved session state
     clearFocusSessionState();
@@ -754,42 +831,52 @@ const FocusSection = ({ onFullscreenChange }) => {
   
   // Exit fullscreen
   const exitFullscreen = () => {
-    try {
-      if (document.fullscreenElement || 
-          document.webkitFullscreenElement || 
-          document.mozFullScreenElement ||
-          document.msFullscreenElement) {
-        if (document.exitFullscreen) {
-          document.exitFullscreen().then(() => {
+    return new Promise((resolve, reject) => {
+      try {
+        if (document.fullscreenElement || 
+            document.webkitFullscreenElement || 
+            document.mozFullScreenElement ||
+            document.msFullscreenElement) {
+          // Use the appropriate exit method based on browser support
+          const exitMethod = document.exitFullscreen || 
+                           document.webkitExitFullscreen || 
+                           document.mozCancelFullScreen || 
+                           document.msExitFullscreen;
+          
+          if (exitMethod) {
+            exitMethod.call(document)
+              .then(() => {
+                setIsFullscreen(false);
+                if (onFullscreenChange) onFullscreenChange(false);
+                resolve();
+              })
+              .catch(err => {
+                console.error('Error attempting to exit fullscreen:', err);
+                // Update state anyway to ensure UI consistency
+                setIsFullscreen(false);
+                if (onFullscreenChange) onFullscreenChange(false);
+                reject(err);
+              });
+          } else {
+            // No exit method available, just update state
             setIsFullscreen(false);
             if (onFullscreenChange) onFullscreenChange(false);
-          }).catch(err => {
-            console.error('Error attempting to exit fullscreen:', err);
-            setIsFullscreen(false);
-            if (onFullscreenChange) onFullscreenChange(false);
-          });
-        } else if (document.mozCancelFullScreen) {
-          document.mozCancelFullScreen();
+            resolve();
+          }
+        } else {
+          // Not in fullscreen mode, just update state
           setIsFullscreen(false);
           if (onFullscreenChange) onFullscreenChange(false);
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-          setIsFullscreen(false);
-          if (onFullscreenChange) onFullscreenChange(false);
-        } else if (document.msExitFullscreen) {
-          document.msExitFullscreen();
-          setIsFullscreen(false);
-          if (onFullscreenChange) onFullscreenChange(false);
+          resolve();
         }
-      } else {
+      } catch (err) {
+        // Handle any unexpected errors
+        console.error('Failed to exit fullscreen mode:', err);
         setIsFullscreen(false);
         if (onFullscreenChange) onFullscreenChange(false);
+        reject(err);
       }
-    } catch (err) {
-      console.error('Failed to exit fullscreen mode:', err);
-      setIsFullscreen(false);
-      if (onFullscreenChange) onFullscreenChange(false);
-    }
+    });
   };
   
   // Format time from seconds to MM:SS or HH:MM:SS
@@ -1032,15 +1119,32 @@ const FocusSection = ({ onFullscreenChange }) => {
           <div className="focus-fullscreen-content">
             {/* Current session content */}
             {sessionComplete ? (
-              <div className="h-full w-full flex items-center justify-center">
+              <div className="h-full w-full flex items-center justify-center relative">
+                {/* Add emergency escape button that's always visible */}
+                <button
+                  onClick={exitFullscreen}
+                  className="absolute top-4 right-4 z-50 p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+                  aria-label="Exit fullscreen"
+                >
+                  <Minimize size={20} />
+                </button>
+                
                 <FocusSessionComplete
                   duration={timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime}
                   tasks={selectedTasks}
                   onSubmit={handleSessionSubmit}
-                  onCancel={() => setSessionComplete(false)}
+                  onCancel={() => {
+                    setSessionComplete(false);
+                    // Also ensure we're not in fullscreen
+                    if (isFullscreen) {
+                      exitFullscreen();
+                    }
+                  }}
                   isFullscreen={true}
                   tasksTimingData={tasksTimingData}
                   completedTaskIds={completedTaskIds}
+                  interruptionsCount={interruptionsCount}
+                  totalPauseDuration={totalPauseDuration}
                 />
               </div>
             ) : (
@@ -1094,6 +1198,17 @@ const FocusSection = ({ onFullscreenChange }) => {
                           ? formatTime(timeRemaining) 
                           : formatTime(elapsedTime)}
                       </motion.div>
+                      
+                      <div className="text-sm text-white/80 mt-2 flex items-center gap-1">
+                        <Clock size={14} />
+                        <span>{isPaused ? 'Paused' : 'In Progress'}</span>
+                      </div>
+                      
+                      {interruptionsCount > 0 && (
+                        <div className="text-xs text-white/60 mt-1">
+                          {interruptionsCount} {interruptionsCount === 1 ? 'interruption' : 'interruptions'} ({formatTime(totalPauseDuration)} paused)
+                        </div>
+                      )}
                       
                       {sessionComplete && (
                         <motion.div 
@@ -1174,6 +1289,7 @@ const FocusSection = ({ onFullscreenChange }) => {
                 {/* Fullscreen Exit Button */}
                 <div className="absolute top-4 right-4">
                   <motion.button
+                    id="emergency-fullscreen-exit"
                     onClick={exitFullscreen}
                     className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
                     whileHover={{ scale: 1.1 }}
@@ -1463,6 +1579,12 @@ const FocusSection = ({ onFullscreenChange }) => {
                   <Clock size={14} />
                   <span>{isPaused ? 'Paused' : 'In Progress'}</span>
                 </div>
+
+                {interruptionsCount > 0 && (
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">
+                    {interruptionsCount} {interruptionsCount === 1 ? 'interruption' : 'interruptions'} ({formatTime(totalPauseDuration)} paused)
+                  </div>
+                )}
                 
                 {sessionComplete && (
                   <motion.div 
@@ -1621,6 +1743,8 @@ const FocusSection = ({ onFullscreenChange }) => {
           isFullscreen={isFullscreen}
           tasksTimingData={tasksTimingData}
           completedTaskIds={completedTaskIds}
+          interruptionsCount={interruptionsCount}
+          totalPauseDuration={totalPauseDuration}
         />
       </div>
     );
@@ -1629,24 +1753,19 @@ const FocusSection = ({ onFullscreenChange }) => {
   // Render setup modal for new focus session
   const renderSetupModal = () => {
     return (
-      <motion.div 
+      <div 
         className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
         onClick={() => setSetupMode(false)}
       >
-        <motion.div 
-          className="bg-white dark:bg-slate-800 rounded-2xl w-[90%] max-w-2xl max-h-[90vh] shadow-xl m-auto flex flex-col"
-          initial={{ scale: 0.9, y: 20 }}
-          animate={{ scale: 1, y: 0 }}
-          exit={{ scale: 0.9, y: 20 }}
+        <div 
+          className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] shadow-xl overflow-hidden flex flex-col"
           onClick={e => e.stopPropagation()}
+          style={{ margin: '0 auto' }}
         >
           {/* Header - Fixed at top */}
-          <div className="p-6 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-t-2xl sticky top-0 z-10 transition-colors">
+          <div className="p-5 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-t-2xl sticky top-0 z-10 transition-colors">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white transition-colors">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white transition-colors">
                 Set Up Your Focus Session
               </h2>
               <button 
@@ -1659,15 +1778,15 @@ const FocusSection = ({ onFullscreenChange }) => {
           </div>
           
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto p-6 overscroll-contain">
+          <div className="flex-1 overflow-y-auto p-5 overscroll-contain">
             {/* Step 1: Select Productivity Technique */}
-            <div className="mb-8">
+            <div className="mb-6">
               <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3 transition-colors">
                 Choose a Productivity Technique
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {FOCUS_PRESETS.map(preset => (
-                  <motion.button
+                  <button
                     key={preset.id}
                     className={`p-4 rounded-xl border-2 transition-all text-left ${
                       selectedPreset.id === preset.id
@@ -1675,8 +1794,6 @@ const FocusSection = ({ onFullscreenChange }) => {
                         : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'
                     }`}
                     onClick={() => handlePresetSelect(preset)}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
                   >
                     <div className={`w-10 h-10 mb-2 rounded-full flex items-center justify-center bg-gradient-to-br ${preset.color} text-white`}>
                       {preset.icon}
@@ -1687,13 +1804,13 @@ const FocusSection = ({ onFullscreenChange }) => {
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">
                       {preset.description}
                     </p>
-                  </motion.button>
+                  </button>
                 ))}
               </div>
             </div>
             
             {/* Step 2: Timer Configuration */}
-            <div className="mb-8">
+            <div className="mb-6">
               <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3 transition-colors">
                 Configure Your Timer
               </h3>
@@ -1821,21 +1938,19 @@ const FocusSection = ({ onFullscreenChange }) => {
           </div>
           
           {/* Footer - Fixed at bottom */}
-          <div className="p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-b-2xl sticky bottom-0 z-10 transition-colors">
+          <div className="p-5 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-b-2xl sticky bottom-0 z-10 transition-colors">
             <div className="flex justify-end">
-              <motion.button
+              <button
                 onClick={startFocusSession}
                 className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-colors"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
               >
                 <Play size={20} />
                 <span>Start Focus Session</span>
-              </motion.button>
+              </button>
             </div>
           </div>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     );
   };
   
@@ -1868,7 +1983,6 @@ const FocusSection = ({ onFullscreenChange }) => {
         </AnimatePresence>
       );
     }
-    
     switch (activeTab) {
       case 'analytics':
         return <FocusAnalytics sessions={sessionHistory} />;
@@ -1907,48 +2021,48 @@ const FocusSection = ({ onFullscreenChange }) => {
             My Focus
           </h1>
           
-          <div className="flex gap-3">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
             <button
               onClick={() => setActiveTab('analytics')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base ${
                 activeTab === 'analytics'
                   ? 'bg-teal-500 dark:bg-teal-600 text-white'
                   : 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 hover:bg-teal-200 dark:hover:bg-teal-900/50'
               }`}
             >
-              <BarChart2 size={18} />
-              Analytics
+              <BarChart2 size={16} />
+              <span>Analytics</span>
             </button>
             
             <button
               onClick={() => setActiveTab('history')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base ${
                 activeTab === 'history'
                   ? 'bg-purple-500 dark:bg-purple-600 text-white'
                   : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50'
               }`}
             >
-              <History size={18} />
-              History
+              <History size={16} />
+              <span>History</span>
             </button>
             
             {activeTab !== 'focus' && (
               <button
                 onClick={() => setActiveTab('focus')}
-                className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
+                className="px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
               >
-                <Clock size={18} />
-                Focus
+                <Clock size={16} />
+                <span>Focus</span>
               </button>
             )}
             
             {activeTab === 'focus' && (
               <button
                 onClick={() => setSetupMode(true)}
-                className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
+                className="px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
               >
-                <Play size={18} />
-                Start Session
+                <Play size={16} />
+                <span>Start Session</span>
               </button>
             )}
           </div>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, Clock, Save, X, Award, MessageSquare, Star, AlertTriangle } from 'lucide-react';
+import { CheckSquare, Clock, Save, X, Award, MessageSquare, Star, AlertTriangle, Minimize } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getStorage, setStorage } from '../../utils/storage';
 
-// Enhanced FocusSessionComplete component with productivity rating
+// Enhanced FocusSessionComplete component with productivity rating and interruption data
 const FocusSessionComplete = ({ 
   duration, 
   tasks, 
@@ -11,7 +11,9 @@ const FocusSessionComplete = ({
   onCancel, 
   isFullscreen,
   tasksTimingData = {}, // Default to empty object if not provided
-  completedTaskIds = [] // Pass in already completed task IDs
+  completedTaskIds = [], // Pass in already completed task IDs
+  interruptionsCount = 0,
+  totalPauseDuration = 0
 }) => {
   // Initialize completedTaskIds with tasks that were already completed during the session
   const [completedTasksState, setCompletedTasksState] = useState([]);
@@ -24,6 +26,71 @@ const FocusSessionComplete = ({
   useEffect(() => {
     setCompletedTasksState(completedTaskIds || []);
   }, [completedTaskIds]);
+  
+  // Add a safety mechanism for fullscreen mode
+  useEffect(() => {
+    // Create a safety timeout that checks if we're in fullscreen mode
+    // This ensures users can exit even if something goes wrong
+    if (isFullscreen) {
+      const timer = setTimeout(() => {
+        // Check if we're still in fullscreen after the component rendered
+        const isInFullscreen = !!(
+          document.fullscreenElement ||
+          document.webkitFullscreenElement ||
+          document.mozFullScreenElement ||
+          document.msFullscreenElement
+        );
+        
+        if (isInFullscreen) {
+          // Make sure emergency exit button is visible by appending it to the body if needed
+          let exitButton = document.getElementById('emergency-fullscreen-exit');
+          if (!exitButton) {
+            exitButton = document.createElement('button');
+            exitButton.id = 'emergency-fullscreen-exit';
+            exitButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"></path><path d="M21 8h-3a2 2 0 0 1-2-2V3"></path><path d="M3 16h3a2 2 0 0 1 2 2v3"></path><path d="M16 21v-3a2 2 0 0 1 2-2h3"></path></svg>';
+            exitButton.style.position = 'fixed';
+            exitButton.style.top = '10px';
+            exitButton.style.right = '10px';
+            exitButton.style.zIndex = '9999';
+            exitButton.style.backgroundColor = 'rgba(255,255,255,0.2)';
+            exitButton.style.color = 'white';
+            exitButton.style.border = 'none';
+            exitButton.style.borderRadius = '50%';
+            exitButton.style.padding = '8px';
+            exitButton.style.cursor = 'pointer';
+            
+            exitButton.addEventListener('click', () => {
+              try {
+                // Try all possible fullscreen exit methods
+                if (document.exitFullscreen) {
+                  document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                  document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                  document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                  document.msExitFullscreen();
+                }
+              } catch (e) {
+                console.error('Emergency exit fullscreen failed:', e);
+              }
+            });
+            
+            document.body.appendChild(exitButton);
+          }
+        }
+      }, 1000); // Check after 1 second
+      
+      return () => {
+        clearTimeout(timer);
+        // Remove emergency button if it exists
+        const exitButton = document.getElementById('emergency-fullscreen-exit');
+        if (exitButton) {
+          exitButton.remove();
+        }
+      };
+    }
+  }, [isFullscreen]);
   
   // Format duration from seconds to readable time
   const formatTime = (seconds) => {
@@ -38,6 +105,37 @@ const FocusSessionComplete = ({
     } else {
       return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
+  };
+  
+  // Calculate focus score
+  const calculateFocusScore = (sessionDuration, interruptions, pauseDuration) => {
+    if (sessionDuration <= 0) return 0;
+    
+    // Calculate the actual focus time (total session time minus pause time)
+    const actualFocusTime = Math.max(0, sessionDuration - pauseDuration);
+    
+    // Calculate focus percentage (time actually focused vs total session time)
+    const focusPercentage = (actualFocusTime / sessionDuration) * 100;
+    
+    // Penalize for frequent interruptions
+    // Base score is the focus percentage
+    let score = focusPercentage;
+    
+    // Subtract points for interruptions (more weight for longer sessions)
+    const sessionDurationMinutes = sessionDuration / 60;
+    const interruptionPenalty = interruptions * (5 + Math.min(5, sessionDurationMinutes / 15));
+    
+    // Final score with a minimum of 0
+    return Math.max(0, Math.min(100, Math.round(score - interruptionPenalty)));
+  };
+  
+  // Helper function for color coding focus score
+  const getFocusScoreColor = (score, isFullscreen) => {
+    if (score >= 80) return isFullscreen ? '#22c55e' : '#22c55e'; // Green
+    if (score >= 60) return isFullscreen ? '#84cc16' : '#84cc16'; // Lime
+    if (score >= 40) return isFullscreen ? '#eab308' : '#eab308'; // Yellow
+    if (score >= 20) return isFullscreen ? '#f97316' : '#f97316'; // Orange
+    return isFullscreen ? '#ef4444' : '#ef4444'; // Red
   };
   
   // Toggle task completion
@@ -84,7 +182,7 @@ const FocusSessionComplete = ({
     
     setStorage(storage);
     
-    // Submit the session data with ratings
+    // Submit the session data with ratings and interruption data
     onSubmit({
       tasks: tasksToComplete,
       notes,
@@ -113,6 +211,80 @@ const FocusSessionComplete = ({
             <Clock size={14} className="inline" />
             <span>You focused for {formatTime(duration)}</span>
           </p>
+        </div>
+      </div>
+      
+      {/* Session Performance metrics with interruption data - NEW */}
+      <div className="mb-6">
+        <h3 className={`text-sm font-medium mb-3 transition-colors ${
+          isFullscreen ? 'text-white' : 'text-slate-700 dark:text-slate-300'
+        }`}>
+          Session Performance
+        </h3>
+        
+        <div className={`p-4 rounded-lg ${
+          isFullscreen ? 'bg-white/10' : 'bg-slate-50 dark:bg-slate-700'
+        } transition-colors`}>
+          <div className="grid grid-cols-3 gap-4 mb-2">
+            <div className="text-center">
+              <p className={`text-xs ${
+                isFullscreen ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
+              }`}>Actual Focus Time</p>
+              <p className={`text-lg font-semibold ${
+                isFullscreen ? 'text-white' : 'text-slate-700 dark:text-slate-300'
+              }`}>
+                {formatTime(duration - totalPauseDuration)}
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <p className={`text-xs ${
+                isFullscreen ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
+              }`}>Interruptions</p>
+              <p className={`text-lg font-semibold ${
+                isFullscreen ? 'text-white' : 'text-slate-700 dark:text-slate-300'
+              }`}>
+                {interruptionsCount}
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <p className={`text-xs ${
+                isFullscreen ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
+              }`}>Pause Duration</p>
+              <p className={`text-lg font-semibold ${
+                isFullscreen ? 'text-white' : 'text-slate-700 dark:text-slate-300'
+              }`}>
+                {formatTime(totalPauseDuration)}
+              </p>
+            </div>
+          </div>
+          
+          {/* Focus Score */}
+          <div className="mt-4">
+            <div className="flex justify-between items-center mb-1">
+              <p className={`text-xs ${
+                isFullscreen ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'
+              }`}>Focus Score</p>
+              <p className={`text-xs font-medium ${
+                isFullscreen ? 'text-white' : 'text-slate-700 dark:text-slate-300'
+              }`}>
+                {calculateFocusScore(duration, interruptionsCount, totalPauseDuration)}/100
+              </p>
+            </div>
+            
+            <div className={`h-2 rounded-full overflow-hidden ${
+              isFullscreen ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-600'
+            }`}>
+              <div 
+                className="h-full bg-green-500 rounded-full"
+                style={{ 
+                  width: `${calculateFocusScore(duration, interruptionsCount, totalPauseDuration)}%`,
+                  backgroundColor: getFocusScoreColor(calculateFocusScore(duration, interruptionsCount, totalPauseDuration), isFullscreen)
+                }}
+              ></div>
+            </div>
+          </div>
         </div>
       </div>
       

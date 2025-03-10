@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Clock, Target, Calendar, CheckSquare, ArrowLeft, Star, MessageCircle, AlertTriangle, Timer, HelpCircle, Info } from 'lucide-react';
+import { Clock, Target, Calendar, CheckSquare, ArrowLeft, Star, MessageCircle, AlertTriangle, Timer, HelpCircle, Info, Trash2 } from 'lucide-react';
+import { getStorage, setStorage } from '../../utils/storage';
 
 // Simple tooltip component
 const Tooltip = ({ content, children }) => {
@@ -28,8 +29,10 @@ const Tooltip = ({ content, children }) => {
   );
 };
 
-const FocusHistory = ({ sessions }) => {
+const FocusHistory = ({ sessions, onSessionsUpdate }) => {
   const [selectedSession, setSelectedSession] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState(null);
   
   // Improved time formatter to avoid decimal places
   const formatDuration = (seconds) => {
@@ -113,6 +116,40 @@ const FocusHistory = ({ sessions }) => {
     return 100; // Default only if no tasks AND no interruption data
   };
   
+  // Delete a session
+  const handleDeleteSession = (sessionId) => {
+    setSessionToDelete(sessionId);
+    setShowDeleteConfirm(true);
+  };
+  
+  // Confirm deletion
+  const confirmDeleteSession = () => {
+    if (!sessionToDelete) return;
+    
+    // Get storage
+    const storage = getStorage();
+    
+    // Remove session from storage
+    if (storage.focusSessions) {
+      storage.focusSessions = storage.focusSessions.filter(session => session.id !== sessionToDelete);
+      setStorage(storage);
+      
+      // Update local sessions state - call parent update handler
+      if (onSessionsUpdate) {
+        onSessionsUpdate(storage.focusSessions);
+      }
+      
+      // If deleting the currently selected session, go back to list
+      if (selectedSession && selectedSession.id === sessionToDelete) {
+        setSelectedSession(null);
+      }
+    }
+    
+    // Reset state
+    setSessionToDelete(null);
+    setShowDeleteConfirm(false);
+  };
+  
   // Render the session details view  
   const renderSessionDetails = (session) => {
     const startDate = new Date(session.startTime);
@@ -124,16 +161,27 @@ const FocusHistory = ({ sessions }) => {
     return (
       <div className="focus-session-details">
         {/* Header with back button */}
-        <div className="mb-6 flex items-center gap-3">
-          <button 
-            onClick={handleBackClick}
-            className="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleBackClick}
+              className="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 transition-colors">
+              Focus Session Details
+            </h3>
+          </div>
+          
+          {/* Add delete button */}
+          <button
+            onClick={() => handleDeleteSession(session.id)}
+            className="p-2 rounded-full bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/40 transition-colors"
+            title="Delete session"
           >
-            <ArrowLeft size={18} />
+            <Trash2 size={18} />
           </button>
-          <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 transition-colors">
-            Focus Session Details
-          </h3>
         </div>
         
         {/* Session header */}
@@ -460,11 +508,10 @@ const FocusHistory = ({ sessions }) => {
                 return (
                   <div 
                     key={session.id}
-                    onClick={() => setSelectedSession(session)}
-                    className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors"
+                    className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                   >
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div onClick={() => setSelectedSession(session)} className="cursor-pointer flex-1">
                         <h4 className="font-medium text-slate-800 dark:text-slate-200 transition-colors">
                           {session.objective || 'Focus Session'}
                         </h4>
@@ -505,6 +552,18 @@ const FocusHistory = ({ sessions }) => {
                               </span>
                             </Tooltip>
                           )}
+                          
+                          {/* Add delete button */}
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSession(session.id);
+                            }}
+                            className="ml-2 p-1 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-colors"
+                            title="Delete session"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -540,6 +599,42 @@ const FocusHistory = ({ sessions }) => {
   return (
     <div className="focus-history">
       {selectedSession ? renderSessionDetails(selectedSession) : renderSessionList()}
+      
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full shadow-lg">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/40 text-red-500 dark:text-red-400">
+                <Trash2 size={24} />
+              </div>
+              <h3 className="text-xl font-medium text-slate-800 dark:text-slate-100">
+                Delete Focus Session?
+              </h3>
+            </div>
+            
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              Are you sure you want to delete this focus session? This action cannot be undone and the session data will be permanently removed from your history.
+            </p>
+            
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              
+              <button
+                onClick={confirmDeleteSession}
+                className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

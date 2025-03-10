@@ -357,6 +357,11 @@ const FocusSection = ({ onFullscreenChange }) => {
     };
   }, [focusActive, isPaused, timerType, untilTime]);
 
+  // Add session update handler
+const handleSessionsUpdate = (updatedSessions) => {
+  setSessionHistory(updatedSessions);
+};
+
   // Fullscreen change events
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -1218,7 +1223,7 @@ const handleSessionSubmit = (completedData) => {
   // Render session completion screen
   const renderSessionComplete = () => {
     // Calculate actual duration for display in the session complete screen
-  const actualDuration = timerType === 'countdown' 
+  const actualDuration = timerType === 'countdo\wn' 
   ? Math.max(0, Math.floor((new Date() - timerStartTime) / 1000) - totalPauseDuration)
   : elapsedTime;
     return (
@@ -1850,7 +1855,10 @@ const handleSessionSubmit = (completedData) => {
             {activeTab === 'analytics' ? (
               <FocusAnalytics sessions={sessionHistory} />
             ) : activeTab === 'history' ? (
-              <FocusHistory sessions={sessionHistory} />
+              <FocusHistory 
+    sessions={sessionHistory} 
+    onSessionsUpdate={handleSessionsUpdate} 
+  />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center py-10">
     <AnimatedPlayButton onClick={handleSetupFocus} />

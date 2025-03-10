@@ -682,59 +682,69 @@ const FocusSection = ({ onFullscreenChange }) => {
   };
   
   // Handle session submission with interruption data
-  const handleSessionSubmit = (completedData) => {
-    // Create session record
-    const sessionData = {
-      id: `focus-${Date.now()}`,
-      startTime: timerStartTime?.toISOString() || new Date().toISOString(),
-      endTime: new Date().toISOString(),
-      technique: selectedPreset.id,
-      duration: timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime,
-      objective,
-      allTasks: selectedTasks, // Store ALL tasks
-      tasks: selectedTasks.filter(task => 
-        completedData.tasks && completedData.tasks.some(t => t.id === task.id)
-      ), // Completed tasks
-      notes: completedData.notes,
-      // Add new metrics:
+  // Handle session submission with interruption data
+const handleSessionSubmit = (completedData) => {
+  // Calculate actual elapsed time between start and end
+  const startTime = timerStartTime || new Date();
+  const endTime = new Date();
+  const actualElapsedTime = Math.floor((endTime - startTime) / 1000);
+  
+  // Remove pauses from the duration calculation
+  const actualDuration = Math.max(0, actualElapsedTime - totalPauseDuration);
+  
+  // Create session record
+  const sessionData = {
+    id: `focus-${Date.now()}`,
+    startTime: startTime.toISOString(),
+    endTime: endTime.toISOString(),
+    technique: selectedPreset.id,
+    // Use the more accurate duration calculation
+    duration: actualDuration,
+    objective,
+    allTasks: selectedTasks, // Store ALL tasks
+    tasks: selectedTasks.filter(task => 
+      completedData.tasks && completedData.tasks.some(t => t.id === task.id)
+    ), // Completed tasks
+    notes: completedData.notes,
+    // Add new metrics:
+    interruptionsCount,
+    totalPauseDuration,
+    focusScore: calculateFocusScore(
+      actualDuration,  // Use the corrected duration 
       interruptionsCount,
-      totalPauseDuration,
-      focusScore: calculateFocusScore(
-        timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime,
-        interruptionsCount,
-        totalPauseDuration
-      ),
-      productivityRating: completedData.productivityRating,
-      energyLevel: completedData.energyLevel,
-      taskTimeData: selectedTasks.map(task => ({
-        id: task.id,
-        text: task.text,
-        completed: completedData.tasks && completedData.tasks.some(t => t.id === task.id),
-        timeSpent: tasksTimingData[task.id] || 0
-      }))
-    };
-    
-    // Update storage
-    const storage = getStorage();
-    
-    // Save session to history
-    if (!storage.focusSessions) {
-      storage.focusSessions = [];
-    }
-    
-    storage.focusSessions.push(sessionData);
-    setStorage(storage);
-    
-    // Update local session history
-    setSessionHistory([...sessionHistory, sessionData]);
-    
-    // Clear saved session state
-    clearFocusSessionState();
-    console.log('Session completed, cleared saved state');
-    
-    // Reset all states
-    resetStates();
+      totalPauseDuration
+    ),
+    productivityRating: completedData.productivityRating,
+    energyLevel: completedData.energyLevel,
+    taskTimeData: selectedTasks.map(task => ({
+      id: task.id,
+      text: task.text,
+      completed: completedData.tasks && completedData.tasks.some(t => t.id === task.id),
+      timeSpent: tasksTimingData[task.id] || 0
+    }))
   };
+  
+  // Update storage
+  const storage = getStorage();
+  
+  // Save session to history
+  if (!storage.focusSessions) {
+    storage.focusSessions = [];
+  }
+  
+  storage.focusSessions.push(sessionData);
+  setStorage(storage);
+  
+  // Update local session history
+  setSessionHistory([...sessionHistory, sessionData]);
+  
+  // Clear saved session state
+  clearFocusSessionState();
+  console.log('Session completed, cleared saved state');
+  
+  // Reset all states
+  resetStates();
+};
   
   // Reset all states
   const resetStates = () => {
@@ -1210,7 +1220,7 @@ const FocusSection = ({ onFullscreenChange }) => {
     return (
       <div className="h-full w-full flex items-center justify-center">
         <FocusSessionComplete
-          duration={timerType === 'countdown' ? selectedPreset.duration - timeRemaining : elapsedTime}
+          duration={actualDuration}
           tasks={selectedTasks}
           onSubmit={handleSessionSubmit}
           onCancel={() => setSessionComplete(false)}

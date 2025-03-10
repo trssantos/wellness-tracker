@@ -92,25 +92,38 @@ const FocusTimer = ({ onSessionComplete, lastSession, isFullscreen, toggleFullsc
   };
   
   // Handle session submission
-  const handleSessionSubmit = (completedData) => {
-    // Create session data
-    const sessionData = {
-      duration: timerMode === 'countdown' ? totalDuration - seconds : seconds,
-      totalDuration: timerMode === 'countdown' ? totalDuration : 0,
-      tasks: completedData.tasks,
-      startTime: new Date(Date.now() - seconds * 1000).toISOString(),
-      endTime: new Date().toISOString(),
-      preset: presetName,
-      notes: completedData.notes
-    };
+  // Handle session submission
+const handleSessionSubmit = (completedData) => {
+  // Calculate accurate session duration based on actual time elapsed minus pauses
+  const startDate = new Date(Date.now() - seconds * 1000); // Calculate when timer started
+  const endDate = new Date();
+  
+  // For countdown timer: use actual elapsed wall-clock time, not the timer value
+  // For countup timer: seconds already represents the elapsed time
+  const actualDuration = timerMode === 'countdown'
+    ? Math.max(0, Math.floor((endDate - timerStartTime) / 1000) - totalPauseDuration)
+    : seconds;
     
-    // Call the onSessionComplete callback
-    onSessionComplete(sessionData);
-    
-    // Reset the timer
-    resetTimer();
-    setShowSessionComplete(false);
+  // Create session data
+  const sessionData = {
+    duration: actualDuration,
+    totalDuration: timerMode === 'countdown' ? totalDuration : 0,
+    tasks: completedData.tasks,
+    startTime: timerStartTime ? timerStartTime.toISOString() : startDate.toISOString(),
+    endTime: endDate.toISOString(),
+    preset: presetName,
+    notes: completedData.notes,
+    interruptionsCount: interruptionsCount || 0,
+    totalPauseDuration: totalPauseDuration || 0
   };
+  
+  // Call the onSessionComplete callback
+  onSessionComplete(sessionData);
+  
+  // Reset the timer
+  resetTimer();
+  setShowSessionComplete(false);
+};
   
   // Manually end the session
   const handleManualEnd = () => {

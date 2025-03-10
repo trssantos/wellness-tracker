@@ -430,50 +430,61 @@ const FocusAnalytics = ({ sessions }) => {
             </div>
             
             <div className="h-64 mt-6">
-              <h5 className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-                Interruptions by Hour of Day
-              </h5>
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={statsData.hourlyInterruptionData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
-                  <XAxis 
-                    dataKey="hour" 
-                    tickFormatter={formatHourLabel} 
-                    tick={{ fill: '#6b7280' }} 
-                    interval={3}
-                  />
-                  <YAxis 
-                    yAxisId="left"
-                    label={{ value: 'Focus Time (min)', angle: -90, position: 'insideLeft', offset: -10, fill: '#6b7280' }}
-                    tick={{ fill: '#6b7280' }}
-                    tickFormatter={(value) => Math.floor(value / 60)}
-                  />
-                  <YAxis 
-                    yAxisId="right"
-                    orientation="right"
-                    label={{ value: 'Interruptions', angle: 90, position: 'insideRight', offset: -5, fill: '#6b7280' }}
-                    tick={{ fill: '#6b7280' }}
-                  />
-                  <Tooltip 
-                    formatter={(value, name) => {
-                      if (name === 'Focus Time') return formatDuration(value);
-                      return value;
-                    }}
-                    labelFormatter={(value) => `${formatHourLabel(value)} - ${formatHourLabel((value + 1) % 24)}`}
-                  />
-                  <Bar yAxisId="left" dataKey="duration" name="Focus Time" fill="#10b981" radius={[4, 4, 0, 0]} />
-                  <Line 
-                    yAxisId="right" 
-                    type="monotone" 
-                    dataKey="interruptions" 
-                    name="Interruptions" 
-                    stroke="#ef4444" 
-                    strokeWidth={2} 
-                    dot={{ r: 4 }} 
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
+  <h5 className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
+    Interruptions by Hour of Day
+  </h5>
+  {timeframe === 'day' || statsData.hourlyInterruptionData.filter(hour => hour.interruptions > 0).length <= 1 ? (
+    <div className="h-full flex flex-col items-center justify-center">
+      <p className="text-slate-500 dark:text-slate-400 text-center">
+        Not enough interruption data to display chart.
+      </p>
+      <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
+        Complete more focus sessions with interruption tracking.
+      </p>
+    </div>
+  ) : (
+    <ResponsiveContainer width="100%" height="100%">
+      <ComposedChart data={statsData.hourlyInterruptionData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
+        <XAxis 
+          dataKey="hour" 
+          tickFormatter={formatHourLabel} 
+          tick={{ fill: '#6b7280' }} 
+          interval={3}
+        />
+        <YAxis 
+          yAxisId="left"
+          label={{ value: 'Focus Time (min)', angle: -90, position: 'insideLeft', offset: -10, fill: '#6b7280' }}
+          tick={{ fill: '#6b7280' }}
+          tickFormatter={(value) => Math.floor(value / 60)}
+        />
+        <YAxis 
+          yAxisId="right"
+          orientation="right"
+          label={{ value: 'Interruptions', angle: 90, position: 'insideRight', offset: -5, fill: '#6b7280' }}
+          tick={{ fill: '#6b7280' }}
+        />
+        <Tooltip 
+          formatter={(value, name) => {
+            if (name === 'Focus Time') return formatDuration(value);
+            return value;
+          }}
+          labelFormatter={(value) => `${formatHourLabel(value)} - ${formatHourLabel((value + 1) % 24)}`}
+        />
+        <Bar yAxisId="left" dataKey="duration" name="Focus Time" fill="#10b981" radius={[4, 4, 0, 0]} />
+        <Line 
+          yAxisId="right" 
+          type="monotone" 
+          dataKey="interruptions" 
+          name="Interruptions" 
+          stroke="#ef4444" 
+          strokeWidth={2} 
+          dot={{ r: 4 }} 
+        />
+      </ComposedChart>
+    </ResponsiveContainer>
+  )}
+</div>
             
             <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
               <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
@@ -500,66 +511,107 @@ const FocusAnalytics = ({ sessions }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
         {/* Time Distribution by Day of Week */}
         <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
-          <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
-            <Calendar size={16} className="text-blue-500 dark:text-blue-400" />
-            Focus Time by Day of Week
-          </h4>
-          
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={statsData.dailyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
-                <XAxis 
-                  dataKey="day" 
-                  tickFormatter={formatDayLabel} 
-                  tick={{ fill: '#6b7280' }} 
-                />
-                <YAxis 
-                  label={{ value: 'Duration (min)', angle: -90, position: 'insideLeft', offset: -10, fill: '#6b7280' }}
-                  tick={{ fill: '#6b7280' }}
-                  tickFormatter={(value) => Math.floor(value / 60)}
-                />
-                <Tooltip 
-                  formatter={(value) => [`${formatDuration(value)}`, 'Focus Time']}
-                  labelFormatter={(value) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][value]}
-                />
-                <Bar dataKey="duration" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+  <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
+    <Calendar size={16} className="text-blue-500 dark:text-blue-400" />
+    Focus Time by Day of Week
+  </h4>
+  
+  <div className="h-64">
+    {timeframe === 'day' ? (
+      <div className="h-full flex flex-col items-center justify-center">
+        <p className="text-slate-500 dark:text-slate-400 text-center">
+          Daily view shows summary information only.
+        </p>
+        <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
+          Switch to week, month, or year view for detailed charts.
+        </p>
+      </div>
+    ) : statsData.dailyData.filter(day => day.duration > 0).length <= 1 ? (
+      <div className="h-full flex flex-col items-center justify-center">
+        <p className="text-slate-500 dark:text-slate-400 text-center">
+          Not enough data to display daily chart.
+        </p>
+        <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
+          Complete more focus sessions across different days.
+        </p>
+      </div>
+    ) : (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={statsData.dailyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
+          <XAxis 
+            dataKey="day" 
+            tickFormatter={formatDayLabel} 
+            tick={{ fill: '#6b7280' }} 
+          />
+          <YAxis 
+            label={{ value: 'Duration (min)', angle: -90, position: 'insideLeft', offset: -10, fill: '#6b7280' }}
+            tick={{ fill: '#6b7280' }}
+            tickFormatter={(value) => Math.floor(value / 60)}
+          />
+          <Tooltip 
+            formatter={(value) => [`${formatDuration(value)}`, 'Focus Time']}
+            labelFormatter={(value) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][value]}
+          />
+          <Bar dataKey="duration" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    )}
+  </div>
+</div>
         
         {/* Time Distribution by Hour of Day */}
         <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
-          <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
-            <Clock size={16} className="text-green-500 dark:text-green-400" />
-            Focus Time by Hour of Day
-          </h4>
-          
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={statsData.hourlyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
-                <XAxis 
-                  dataKey="hour" 
-                  tickFormatter={formatHourLabel} 
-                  tick={{ fill: '#6b7280' }} 
-                  interval={3}
-                />
-                <YAxis 
-                  label={{ value: 'Duration (min)', angle: -90, position: 'insideLeft', offset: -10, fill: '#6b7280' }}
-                  tick={{ fill: '#6b7280' }}
-                  tickFormatter={(value) => Math.floor(value / 60)}
-                />
-                <Tooltip 
-                  formatter={(value) => [`${formatDuration(value)}`, 'Focus Time']}
-                  labelFormatter={(value) => `${formatHourLabel(value)} - ${formatHourLabel((value + 1) % 24)}`}
-                />
-                <Bar dataKey="duration" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+  <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
+    <Clock size={16} className="text-green-500 dark:text-green-400" />
+    Focus Time by Hour of Day
+  </h4>
+  
+  <div className="h-64">
+    {timeframe === 'day' ? (
+      <div className="h-full flex flex-col items-center justify-center">
+        <p className="text-slate-500 dark:text-slate-400 text-center">
+          Daily view shows summary information only.
+        </p>
+        <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
+          Switch to week, month, or year view for detailed charts.
+        </p>
+      </div>
+    ) : statsData.hourlyData.filter(hour => hour.duration > 0).length <= 1 ? (
+      <div className="h-full flex flex-col items-center justify-center">
+        <p className="text-slate-500 dark:text-slate-400 text-center">
+          Not enough data to display hourly chart.
+        </p>
+        <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
+          Complete more focus sessions at different times of day.
+        </p>
+      </div>
+    ) : (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={statsData.hourlyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
+          <XAxis 
+            dataKey="hour" 
+            tickFormatter={formatHourLabel} 
+            tick={{ fill: '#6b7280' }} 
+            interval={3}
+          />
+          <YAxis 
+            label={{ value: 'Duration (min)', angle: -90, position: 'insideLeft', offset: -10, fill: '#6b7280' }}
+            tick={{ fill: '#6b7280' }}
+            tickFormatter={(value) => Math.floor(value / 60)}
+          />
+          <Tooltip 
+            formatter={(value) => [`${formatDuration(value)}`, 'Focus Time']}
+            labelFormatter={(value) => `${formatHourLabel(value)} - ${formatHourLabel((value + 1) % 24)}`}
+          />
+          <Bar dataKey="duration" fill="#10b981" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    )}
+  </div>
+</div>
+
       </div>
       
       {/* Secondary charts */}

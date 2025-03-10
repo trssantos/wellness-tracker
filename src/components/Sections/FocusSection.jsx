@@ -15,6 +15,7 @@ import FocusNatureBackground from '../Focus/FocusNatureBackground';
 import { getStorage, setStorage } from '../../utils/storage';
 import { loadFocusSessionState, saveFocusSessionState, clearFocusSessionState} from '../../utils/FocusSessionState';
 import FocusForm from '../Focus/FocusForm';
+import AnimatedPlayButton from '../Focus/AnimatedPlayButton';
 
 // Import the CSS file for nature animations
 import '../Focus/focusNature.css';
@@ -1838,21 +1839,8 @@ const FocusSection = ({ onFullscreenChange }) => {
               <FocusHistory sessions={sessionHistory} />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center py-10">
-                <motion.button
-                  onClick={handleSetupFocus}
-                  className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white flex items-center justify-center shadow-xl shadow-blue-500/30 mx-auto mb-6 transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Play size={48} fill="currentColor" />
-                </motion.button>
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2 transition-colors">
-                  Start a Focus Session
-                </h2>
-                <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto text-center transition-colors">
-                  Boost your productivity with focused time blocks. Track your progress and build better work habits.
-                </p>
-                </div>
+    <AnimatedPlayButton onClick={handleSetupFocus} />
+  </div>
             )}
           </>
         )}

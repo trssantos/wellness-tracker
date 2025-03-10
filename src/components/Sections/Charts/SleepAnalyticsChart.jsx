@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ResponsiveContainer, AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { Moon, Sun, Clock, Zap, Brain, Star, ChevronRight, AlertCircle } from 'lucide-react';
+import { ResponsiveContainer, AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ComposedChart } from 'recharts';
+import { Moon, Sun, Clock, Zap, Brain, Star, ChevronRight, AlertCircle, Info } from 'lucide-react';
 
 export const SleepAnalyticsChart = ({ data, moodData }) => {
   const [chartType, setChartType] = useState('duration'); // 'duration', 'quality', 'correlation'
@@ -237,7 +237,7 @@ export const SleepAnalyticsChart = ({ data, moodData }) => {
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white dark:bg-slate-800 p-3 border border-slate-200 dark:border-slate-700 rounded-lg shadow-md text-sm">
+        <div className="bg-white dark:bg-slate-800 p-3 border border-slate-200 dark:border-slate-700 rounded-lg shadow-md text-sm max-w-[200px]">
           <p className="font-medium text-slate-800 dark:text-slate-200">Day {label}</p>
           {payload.map((entry, index) => (
             <p key={index} style={{ color: entry.color }}>
@@ -252,11 +252,11 @@ export const SleepAnalyticsChart = ({ data, moodData }) => {
 
   return (
     <div className="space-y-6">
-      {/* Chart Type Selector */}
+      {/* Chart Type Selector - MOBILE OPTIMIZED */}
       <div className="flex justify-center mb-4">
-        <div className="inline-flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+        <div className="inline-flex flex-wrap xs:flex-nowrap bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
           <button
-            className={`px-3 py-1 rounded-md text-sm font-medium ${
+            className={`px-2 py-1 text-xs sm:text-sm rounded-md font-medium mb-1 mx-0.5 sm:mb-0 ${
               chartType === 'duration' 
                 ? 'bg-indigo-500 text-white' 
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
@@ -266,7 +266,7 @@ export const SleepAnalyticsChart = ({ data, moodData }) => {
             Duration
           </button>
           <button
-            className={`px-3 py-1 rounded-md text-sm font-medium ${
+            className={`px-2 py-1 text-xs sm:text-sm rounded-md font-medium mb-1 mx-0.5 sm:mb-0 ${
               chartType === 'quality' 
                 ? 'bg-amber-500 text-white' 
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
@@ -276,7 +276,7 @@ export const SleepAnalyticsChart = ({ data, moodData }) => {
             Quality
           </button>
           <button
-            className={`px-3 py-1 rounded-md text-sm font-medium ${
+            className={`px-2 py-1 text-xs sm:text-sm rounded-md font-medium mb-1 mx-0.5 sm:mb-0 ${
               chartType === 'correlation' 
                 ? 'bg-blue-500 text-white' 
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
@@ -349,12 +349,12 @@ export const SleepAnalyticsChart = ({ data, moodData }) => {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex items-center justify-between mt-4 text-xs text-slate-500 dark:text-slate-400">
-            <div className="flex items-center gap-1">
+          <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between mt-4 text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-1 mb-1 xs:mb-0">
               <div className="h-3 w-3 bg-indigo-500 rounded-full opacity-70"></div>
               <span>Your sleep duration</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 mb-1 xs:mb-0">
               <div className="h-1 w-6 bg-green-500 rounded-full"></div>
               <span>Recommended (8h)</span>
             </div>
@@ -522,10 +522,12 @@ export const SleepAnalyticsChart = ({ data, moodData }) => {
                   : 'bg-blue-100/50 dark:bg-blue-900/20'
               }`}
             >
-              {insight.icon}
+              <div className="flex-shrink-0 mt-0.5">
+                {insight.icon}
+              </div>
               <div>
-                <h4 className="font-medium text-slate-800 dark:text-slate-100">{insight.title}</h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400">{insight.description}</p>
+                <h4 className="font-medium text-slate-800 dark:text-slate-100 text-sm sm:text-base">{insight.title}</h4>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{insight.description}</p>
               </div>
             </div>
           ))}
@@ -538,72 +540,69 @@ export const SleepAnalyticsChart = ({ data, moodData }) => {
         </div>
       </div>
       
-      {/* Sleep Tips Section */}
+      {/* Sleep Tips Section - MOBILE OPTIMIZED */}
       <div className="bg-white dark:bg-slate-800 rounded-lg p-4 transition-colors">
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors flex items-center gap-2">
           <Sun className="text-amber-500 dark:text-amber-400" size={20} />
           Sleep Improvement Tips
         </h3>
         
-        <div className="space-y-3">
-          <div className="overflow-x-auto">
-            <div className="flex gap-4 pb-4">
-              <div className="min-w-[280px] max-w-[280px] bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-4 flex flex-col">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-indigo-100 dark:bg-indigo-800 rounded-full">
-                    <Moon size={18} className="text-indigo-600 dark:text-indigo-300" />
-                  </div>
-                  <h4 className="font-medium text-slate-800 dark:text-slate-100">Consistent Schedule</h4>
-                </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 flex-1">Go to bed and wake up at the same time every day, even on weekends. This helps regulate your body's internal clock.</p>
-                <button className="mt-3 flex items-center gap-1 text-indigo-600 dark:text-indigo-400 text-sm self-end">
-                  <span>Learn more</span>
-                  <ChevronRight size={16} />
-                </button>
+        {/* Sleep tip cards - now in a grid for mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-4 flex flex-col">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-indigo-100 dark:bg-indigo-800 rounded-full">
+                <Moon size={18} className="text-indigo-600 dark:text-indigo-300" />
               </div>
-              
-              <div className="min-w-[280px] max-w-[280px] bg-amber-50 dark:bg-amber-900/30 rounded-lg p-4 flex flex-col">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-full">
-                    <Zap size={18} className="text-amber-600 dark:text-amber-300" />
-                  </div>
-                  <h4 className="font-medium text-slate-800 dark:text-slate-100">Limit Caffeine</h4>
-                </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 flex-1">Avoid caffeine (coffee, tea, soda, chocolate) at least 6 hours before bedtime as it can disrupt your ability to fall asleep.</p>
-                <button className="mt-3 flex items-center gap-1 text-amber-600 dark:text-amber-400 text-sm self-end">
-                  <span>Learn more</span>
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-              
-              <div className="min-w-[280px] max-w-[280px] bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 flex flex-col">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-full">
-                    <Brain size={18} className="text-blue-600 dark:text-blue-300" />
-                  </div>
-                  <h4 className="font-medium text-slate-800 dark:text-slate-100">Wind Down Routine</h4>
-                </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 flex-1">Create a pre-sleep routine to help your body recognize it's time for bed: dim lights, read, meditate, or take a warm bath.</p>
-                <button className="mt-3 flex items-center gap-1 text-blue-600 dark:text-blue-400 text-sm self-end">
-                  <span>Learn more</span>
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-              
-              <div className="min-w-[280px] max-w-[280px] bg-green-50 dark:bg-green-900/30 rounded-lg p-4 flex flex-col">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-green-100 dark:bg-green-800 rounded-full">
-                    <Sun size={18} className="text-green-600 dark:text-green-300" />
-                  </div>
-                  <h4 className="font-medium text-slate-800 dark:text-slate-100">Morning Light</h4>
-                </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 flex-1">Get exposure to natural morning light for 15-30 minutes after waking up to help regulate your circadian rhythm.</p>
-                <button className="mt-3 flex items-center gap-1 text-green-600 dark:text-green-400 text-sm self-end">
-                  <span>Learn more</span>
-                  <ChevronRight size={16} />
-                </button>
-              </div>
+              <h4 className="font-medium text-slate-800 dark:text-slate-100">Consistent Schedule</h4>
             </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 flex-1">Go to bed and wake up at the same time every day, even on weekends. This helps regulate your body's internal clock.</p>
+            <button className="mt-3 flex items-center gap-1 text-indigo-600 dark:text-indigo-400 text-sm self-end">
+              <span>Learn more</span>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+          
+          <div className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-4 flex flex-col">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-full">
+                <Zap size={18} className="text-amber-600 dark:text-amber-300" />
+              </div>
+              <h4 className="font-medium text-slate-800 dark:text-slate-100">Limit Caffeine</h4>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 flex-1">Avoid caffeine (coffee, tea, soda, chocolate) at least 6 hours before bedtime as it can disrupt your ability to fall asleep.</p>
+            <button className="mt-3 flex items-center gap-1 text-amber-600 dark:text-amber-400 text-sm self-end">
+              <span>Learn more</span>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+          
+          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 flex flex-col">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-full">
+                <Brain size={18} className="text-blue-600 dark:text-blue-300" />
+              </div>
+              <h4 className="font-medium text-slate-800 dark:text-slate-100">Wind Down Routine</h4>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 flex-1">Create a pre-sleep routine to help your body recognize it's time for bed: dim lights, read, meditate, or take a warm bath.</p>
+            <button className="mt-3 flex items-center gap-1 text-blue-600 dark:text-blue-400 text-sm self-end">
+              <span>Learn more</span>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+          
+          <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4 flex flex-col">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-green-100 dark:bg-green-800 rounded-full">
+                <Sun size={18} className="text-green-600 dark:text-green-300" />
+              </div>
+              <h4 className="font-medium text-slate-800 dark:text-slate-100">Morning Light</h4>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 flex-1">Get exposure to natural morning light for 15-30 minutes after waking up to help regulate your circadian rhythm.</p>
+            <button className="mt-3 flex items-center gap-1 text-green-600 dark:text-green-400 text-sm self-end">
+              <span>Learn more</span>
+              <ChevronRight size={16} />
+            </button>
           </div>
         </div>
       </div>

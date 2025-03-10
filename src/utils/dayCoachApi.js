@@ -372,9 +372,19 @@ const fetchFromAI = async (context) => {
   try {
     // Build a system prompt that establishes the coach's persona
     const systemPrompt = `
-      You are a supportive and insightful day coach within the ZenTracker wellness app. 
-      Your role is to provide users with personalized guidance, insights, and encouragement based on their tracked data.
-
+    You are a supportive, friendly day coach within the ZenTracker app. 
+    Your role is to be a compassionate companion, offering brief insights and encouragement.
+  
+    Keep your responses casual, warm and short (50-100 words max). Write like a supportive friend texting, not a formal coach writing an email.
+    
+    Use the user's journal entries extensively when available for personalization.
+    Reference their task completion status and mood/energy data to make your responses relevant.
+    
+    Vary your conversation style - sometimes ask questions, sometimes offer observations, sometimes give encouragement.
+    
+    Avoid repeating yourself or using formulaic structures in your responses.
+    
+    Current date: ${context.userData.today}
       You have access to the user's:
       - Mood and energy levels (morning and evening)
       - Task completion rates
@@ -385,15 +395,6 @@ const fetchFromAI = async (context) => {
       
       For recent data (last 7 days), you have detailed information. For older data, you have weekly and monthly summaries.
       
-      Respond conversationally and empathetically. Be concise but thorough (under 250 words). When appropriate, ask follow-up questions to deepen the conversation.
-      
-      Your responses should include:
-      1. A thoughtful, personalized message responding to the user's context
-      2. Any relevant observations or patterns you notice in their data
-      3. Actionable suggestions when appropriate
-      4. A conversational question to continue the dialogue
-      
-      Current date: ${context.userData.today}
     `;
     
     // Build a user prompt based on the context
@@ -473,11 +474,20 @@ const buildUserPrompt = (context) => {
       break;
       
     case 'journalEntry':
-      prompt += `
-        The user has just written in their journal.
-        Entry: "${getLatestJournalEntry(userData)}"
-        Acknowledge this reflective practice and ask an insightful follow-up question.
-      `;
+      // Get the latest journal entry
+  const journalEntry = getLatestJournalEntry(userData);
+  
+  // If we have a journal entry, emphasize its importance
+  if (journalEntry && journalEntry.length > 10) {
+    prompt += `
+      The user has journal entries that provide valuable context.
+      Latest journal: "${journalEntry}"
+      
+      Pay special attention to the journal content to personalize your response.
+      Extract topics, emotions, challenges, or goals from their journal to reference.
+      Make your response feel personalized by connecting to something they mentioned.
+    `;
+  }
       break;
       
     case 'allTasksCompleted':
@@ -505,12 +515,20 @@ const buildUserPrompt = (context) => {
       `;
       break;
       
-    case 'userQuery':
-      prompt += `
-        The user has asked: "${userMessage}"
-        Provide a helpful response based on their data. If they're asking about patterns or insights, analyze their data to give a meaningful answer.
-      `;
-      break;
+      case 'userQuery':
+        prompt += `
+          The user has asked: "${userMessage}"
+          
+          Provide a helpful, specific response based on their data. The user's question may be about 
+          their tasks, habits, mood, energy, workouts, focus sessions, or other tracked data.
+          
+          Be specific - if they're asking about their data, reference the actual items from their data
+          in your response (like specific task names, habit details, etc.) rather than being vague.
+          
+          Below you'll find detailed information about the user's recent activities and data.
+          Use this information to give them a personalized, relevant answer.
+        `;
+        break;
       
     default:
       prompt += `
@@ -520,7 +538,35 @@ const buildUserPrompt = (context) => {
   }
   
   // Add detailed recent data for better context
-  prompt += `\nRecent data details (last few days):\n${JSON.stringify(getRecentDataSummary(userData), null, 2)}`;
+  // Add TODAY'S complete data
+  const today = userData.today;
+  const todayData = userData.recentData[today] || {};
+  
+  prompt += `\n\nTODAY'S COMPLETE DATA (${today}):\n${JSON.stringify(todayData, null, 2)}`;
+  
+  // Add RECENT DAYS' complete data
+  prompt += `\n\nRECENT DAYS' COMPLETE DATA:\n${JSON.stringify(userData.recentData, null, 2)}`;
+  
+  // Add habits data
+  prompt += `\n\nHABITS DATA:\n${JSON.stringify(userData.habits, null, 2)}`;
+  
+  // Add focus sessions
+  prompt += `\n\nRECENT FOCUS SESSIONS:\n${JSON.stringify(userData.focusSessions, null, 2)}`;
+  
+  // Add workouts
+  prompt += `\n\nRECENT WORKOUTS:\n${JSON.stringify(userData.workouts, null, 2)}`;
+  
+  // Add weekly summaries (but limit to prevent prompt from getting too large)
+  const recentWeeklySummaries = Object.entries(userData.weeklySummaries || {})
+    .sort(([a], [b]) => b.localeCompare(a))
+    .slice(0, 2)
+    .reduce((obj, [key, value]) => {
+      obj[key] = value;
+      return obj;
+    }, {});
+    
+  prompt += `\n\nRECENT WEEKLY SUMMARIES:\n${JSON.stringify(recentWeeklySummaries, null, 2)}`;
+  
   
   return prompt;
 };
@@ -587,30 +633,6 @@ const getRemainingTaskCount = (userData) => {
   
   const tasks = userData.recentData[today].checked;
   return Object.values(tasks).filter(v => !v).length;
-};
-
-const getRecentDataSummary = (userData) => {
-  const summary = {};
-  
-  // Get the 3 most recent days with data
-  const recentDates = Object.keys(userData.recentData).sort().reverse().slice(0, 3);
-  
-  recentDates.forEach(date => {
-    const dayData = userData.recentData[date];
-    
-    summary[date] = {
-      date,
-      morningMood: dayData.morningMood,
-      eveningMood: dayData.eveningMood,
-      morningEnergy: dayData.morningEnergy,
-      eveningEnergy: dayData.eveningEnergy,
-      hasWorkout: !!(dayData.workout || (dayData.workouts && dayData.workouts.length > 0)),
-      hasJournal: !!dayData.notes,
-      taskCompletion: calculateTaskCompletion(dayData)
-    };
-  });
-  
-  return summary;
 };
 
 // Helper to calculate task completion percentage

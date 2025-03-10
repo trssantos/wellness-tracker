@@ -42,6 +42,7 @@ export const isProviderConfigured = (provider) => {
 
 // Generate content with the selected provider - generic function
 export const generateContent = async (prompt) => {
+  console.log('CALLING AI FOR ANALYSIS!');
   const provider = getAIProvider();
   
   if (provider === AI_PROVIDERS.OPENAI) {

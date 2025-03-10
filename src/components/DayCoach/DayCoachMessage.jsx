@@ -3,13 +3,13 @@ import { MessageCircle, User, Star, ThumbsUp, ThumbsDown, Copy, Check } from 'lu
 import ReactMarkdown from 'react-markdown';
 
 // Component to display a single message in the chat
-const DayCoachMessage = ({ message, onReply }) => {
-  const [liked, setLiked] = useState(false);
-  const [disliked, setDisliked] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(true);
-  
-  const isCoach = message.sender === 'coach';
+const DayCoachMessage = ({ message, onReply, displaySuggestions = true }) => {
+    const [liked, setLiked] = useState(false);
+    const [disliked, setDisliked] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [internalShowSuggestions, setInternalShowSuggestions] = useState(true);
+    
+    const isCoach = message.sender === 'coach';
   
   // Format timestamp for display
   const formatTime = (timestamp) => {
@@ -143,22 +143,22 @@ const DayCoachMessage = ({ message, onReply }) => {
         </div>
         
         {/* Quick reply suggestions */}
-        {isCoach && message.suggestions && message.suggestions.length > 0 && showSuggestions && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {message.suggestions.map((suggestion, index) => (
-              <button
-                key={index}
-                className="text-xs px-3 py-1.5 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-full border border-slate-200 dark:border-slate-600 transition-colors shadow-sm"
-                onClick={() => {
-                  onReply(suggestion);
-                  setShowSuggestions(false);
-                }}
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        )}
+        {isCoach && message.suggestions && message.suggestions.length > 0 && internalShowSuggestions && displaySuggestions && (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {message.suggestions.map((suggestion, index) => (
+        <button
+          key={index}
+          className="text-xs px-3 py-1.5 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-full border border-slate-200 dark:border-slate-600 transition-colors shadow-sm"
+          onClick={() => {
+            onReply(suggestion);
+            setInternalShowSuggestions(false);
+          }}
+        >
+          {suggestion}
+        </button>
+      ))}
+    </div>
+  )}
       </div>
     </div>
   );

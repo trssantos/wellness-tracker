@@ -26,7 +26,7 @@ export const initializeDayCoach = async () => {
       const welcomeMessage = {
         id: `coach-msg-${Date.now()}`,
         sender: 'coach',
-        content: "Welcome to your personal ZenTracker Day Coach! I'm here to help you make sense of your wellbeing data and provide personalized insights and guidance. Feel free to ask me anything about your habits, mood patterns, productivity, or workout routine. What would you like to know today?",
+        content: "Hey there! 👋 I'm your ZenTracker buddy. I'm here to chat about your wellbeing, habits, and goals. I'll keep an eye on your data and offer insights when helpful. What's on your mind today?",
         timestamp: new Date().toISOString(),
         suggestions: [
           "What can you help me with?",

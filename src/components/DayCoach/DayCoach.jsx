@@ -11,8 +11,7 @@ import {
   getDayCoachData, 
   saveDayCoachMessage, 
   markAllMessagesAsRead,
-  hasUnreadMessages 
-} from '../../utils/dayCoachUtils';
+  hasUnreadMessages} from '../../utils/dayCoachUtils';
 import DayCoachMessage from './DayCoachMessage';
 import DayCoachInput from './DayCoachInput';
 import DayCoachSuggestions from './DayCoachSuggestions';
@@ -38,6 +37,7 @@ const DayCoach = () => {
   const chatContainerRef = useRef(null);
   const dataUpdateInterval = useRef(null);
   const checkInitiated = useRef(false);
+  const componentMountTime = useRef(Date.now());
   
   // First-time initialization
   useEffect(() => {
@@ -116,28 +116,46 @@ const DayCoach = () => {
       const storage = getStorage();
       const now = Date.now();
       
-      // Only check if it's been at least 5 minutes since last check
-      if (now - lastDataCheckTime < 5 * 60 * 1000) {
-        console.log("Skipping check - less than 5 minutes since last check");
+      // Don't check again if the component just mounted (within the last 10 seconds)
+      // This prevents triggering on each visit to the coach section
+      if (now - componentMountTime.current < 10000) {
+        console.log("Skipping check - component just mounted");
+        return;
+      }
+      
+      // Only check if it's been at least 30 minutes since last check
+      if (now - lastDataCheckTime < 30 * 60 * 1000) {
+        console.log("Skipping check - less than 30 minutes since last check");
+        return;
+      }
+      
+      // Check if the last message was from the coach (don't send consecutive coach messages)
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage && lastMessage.sender === 'coach') {
+        console.log("Last message was from coach - waiting for user response");
         return;
       }
       
       const today = new Date().toISOString().split('T')[0];
       const todayData = storage[today] || {};
       
+      // Create deep copies of objects for comparison to avoid reference issues
+      const currentDataCopy = JSON.parse(JSON.stringify(todayData));
+      const lastCheckedDataCopy = JSON.parse(JSON.stringify(lastCheckedData));
+      
       // Check if there are significant changes that would warrant a message
-      if (hasSignificantChanges(todayData, lastCheckedData)) {
+      if (hasSignificantChanges(currentDataCopy, lastCheckedDataCopy)) {
         console.log("Significant data changes detected, generating proactive message");
         await generateProactiveMessage(todayData);
         
-        // Update the last checked data and time
+        // Update the last checked data and time (use deep copy to avoid reference issues)
         setLastDataCheckTime(now);
-        setLastCheckedData(todayData);
+        setLastCheckedData(JSON.parse(JSON.stringify(todayData)));
         
         // Also update in storage
         const coachData = getDayCoachData();
         coachData.lastDataCheck = now;
-        coachData.lastCheckedData = todayData;
+        coachData.lastCheckedData = JSON.parse(JSON.stringify(todayData));
         storage.dayCoach = coachData;
         setStorage(storage);
       } else {
@@ -159,21 +177,28 @@ const DayCoach = () => {
   
   // Check if there are significant changes that would warrant a coach message
   const hasSignificantChanges = (currentData, previousData) => {
-    // If there's no previous data, consider it a significant change
+    // If there's no previous data at all, consider it a significant change
     if (!previousData || Object.keys(previousData).length === 0) return true;
     
-    // Check for new mood entries
-    if (currentData.morningMood && currentData.morningMood !== previousData.morningMood) return true;
-    if (currentData.eveningMood && currentData.eveningMood !== previousData.eveningMood) return true;
+    // Ignore focus sessions for detecting changes (since they're triggering too often)
+    // We'll handle these separately
     
-    // Check for new workouts
-    if ((currentData.workout || (currentData.workouts && currentData.workouts.length > 0)) && 
-        (!previousData.workout && (!previousData.workouts || previousData.workouts.length === 0))) {
+    // Check for new mood entries (that weren't there before)
+    if ((currentData.morningMood && !previousData.morningMood) ||
+        (currentData.eveningMood && !previousData.eveningMood)) {
       return true;
     }
     
-    // Check for new journal entries
-    if (currentData.notes && (!previousData.notes || currentData.notes.length > previousData.notes.length + 100)) {
+    // Check for substantial new journal entries (more than 100 characters longer)
+    if (currentData.notes && 
+        (!previousData.notes || currentData.notes.length > previousData.notes.length + 100)) {
+      return true;
+    }
+    
+    // Check for workout completion (only for new workouts)
+    if ((currentData.workout && !previousData.workout) || 
+        (currentData.workouts && (!previousData.workouts || 
+         currentData.workouts.length > previousData.workouts.length))) {
       return true;
     }
     
@@ -183,23 +208,11 @@ const DayCoach = () => {
       const previousCompleted = Object.values(previousData.checked).filter(Boolean).length;
       const totalTasks = Object.keys(currentData.checked).length;
       
-      // If all tasks are completed and it wasn't the case before
-      if (currentCompleted === totalTasks && previousCompleted < totalTasks) return true;
-      
-      // If there's a significant jump in completion (more than 3 tasks or 50%)
-      if (currentCompleted - previousCompleted >= 3 || 
-          (totalTasks > 0 && (currentCompleted / totalTasks) - (previousCompleted / totalTasks) >= 0.5)) {
+      // If there's a significant jump in completion (more than 50% change)
+      if (totalTasks > 0 && 
+          Math.abs((currentCompleted / totalTasks) - (previousCompleted / totalTasks)) >= 0.5) {
         return true;
       }
-    }
-    
-    // Check for focus sessions
-    const storage = getStorage();
-    const focusSessions = storage.focusSessions || [];
-    const previousSessionCount = previousData.focusSessionCount || 0;
-    
-    if (focusSessions.length > previousSessionCount) {
-      return true;
     }
     
     return false;
@@ -452,35 +465,45 @@ const DayCoach = () => {
                 <div className="flex-1 flex flex-col min-h-0">
                   {/* Chat messages container */}
                   <div 
-                    ref={chatContainerRef}
-                    className="flex-1 overflow-y-auto p-2 mb-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg transition-colors"
-                  >
-                    {messages.length === 0 ? (
-                      <DayCoachEmptyState onStartChat={() => handleSendMessage("Hi! How can you help me?")} />
-                    ) : (
-                      <div className="space-y-4">
-                        {messages.map((message) => (
-                          <DayCoachMessage 
-                            key={message.id} 
-                            message={message} 
-                            onReply={handleQuickReply}
-                          />
-                        ))}
-                        
-                        {isLoading && (
-                          <div className="flex items-center justify-center p-4">
-                            <div className="animate-pulse flex items-center space-x-2">
-                              <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce"></div>
-                              <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-75"></div>
-                              <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-150"></div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        <div ref={messagesEndRef} />
-                      </div>
-                    )}
-                  </div>
+  ref={chatContainerRef}
+  className="flex-1 overflow-y-auto p-2 mb-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg transition-colors"
+  style={{
+    maxHeight: "60vh", // Limit the height to 60% of viewport height
+    height: "400px"     // Set a default height
+  }}
+>
+  {messages.length === 0 ? (
+    <DayCoachEmptyState onStartChat={() => handleSendMessage("Hi! How can you help me?")} />
+  ) : (
+    <div className="space-y-4">
+      {/* Only show the last 10 messages to keep the UI clean */}
+      {messages.slice(-10).map((message, index) => (
+        <DayCoachMessage 
+          key={message.id} 
+          message={message} 
+          onReply={handleQuickReply}
+          displaySuggestions={
+            message.sender === 'coach' && 
+            index === messages.slice(-10).length - 1 &&
+            !quickReplies.length
+          }
+        />
+      ))}
+      
+      {isLoading && (
+        <div className="flex items-center justify-center p-4">
+          <div className="animate-pulse flex items-center space-x-2">
+            <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce"></div>
+            <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-75"></div>
+            <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-150"></div>
+          </div>
+        </div>
+      )}
+      
+      <div ref={messagesEndRef} />
+    </div>
+  )}
+</div>
                   
                   {/* Quick reply suggestions */}
                   {quickReplies && quickReplies.length > 0 && (

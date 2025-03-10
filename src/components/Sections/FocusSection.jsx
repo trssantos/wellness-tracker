@@ -1217,6 +1217,10 @@ const handleSessionSubmit = (completedData) => {
   
   // Render session completion screen
   const renderSessionComplete = () => {
+    // Calculate actual duration for display in the session complete screen
+  const actualDuration = timerType === 'countdown' 
+  ? Math.max(0, Math.floor((new Date() - timerStartTime) / 1000) - totalPauseDuration)
+  : elapsedTime;
     return (
       <div className="h-full w-full flex items-center justify-center">
         <FocusSessionComplete

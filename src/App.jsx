@@ -38,6 +38,7 @@ import WorkoutSection from './components/Sections/WorkoutSection';
 // Import the WorkoutThemeProvider
 import { WorkoutThemeProvider } from './context/ThemeContext';
 import { saveFocusSessionState } from './utils/FocusSessionState';
+import DayCoach from './components/DayCoach/DayCoach';
 
 const App = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -449,7 +450,7 @@ const handlePendingTasksAction = (action, tasks = []) => {
 </SectionContainer>
 
               <SectionContainer id="coach" isActive={activeSection === 'coach'}>
-                <DayCoachSection />
+                <DayCoach />
               </SectionContainer>
 
               <SectionContainer id="focus" isActive={activeSection === 'focus'}>

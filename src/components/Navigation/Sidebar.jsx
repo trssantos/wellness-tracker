@@ -5,11 +5,77 @@ import {
   MessageCircle, Layout, Bell, Settings, HelpCircle, Moon, Sun, Zap
 } from 'lucide-react';
 import { useTheme } from '../ThemeProvider';
+import { hasUnreadMessages } from '../../utils/dayCoachUtils';
+import { getStorage } from '../../utils/storage';
 
 export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen, onSettingsOpen, onHelpOpen }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  // Add state for unread messages
+  const [hasUnreadCoachMessages, setHasUnreadCoachMessages] = useState(false);
+
+  // Add this function directly inside your Sidebar component
+const checkForUnreadMessages = () => {
+  try {
+    const storage = getStorage();
+    
+    if (!storage.dayCoach) return false;
+    
+    // Check if any messages are unread
+    return storage.dayCoach.messages.some(msg => 
+      msg.sender === 'coach' && !msg.isRead
+    );
+  } catch (error) {
+    console.error('Error checking unread messages:', error);
+    return false;
+  }
+};
+
+// Then use this function instead of the imported one
+useEffect(() => {
+  // Initial check
+  setHasUnreadCoachMessages(checkForUnreadMessages());
+  
+  // Set up interval
+  const checkUnreadInterval = setInterval(() => {
+    setHasUnreadCoachMessages(checkForUnreadMessages());
+  }, 60000); // Check every minute
+  
+  return () => {
+    clearInterval(checkUnreadInterval);
+  };
+}, []);
+
+  // Inside the Sidebar component, add this useEffect to check for unread messages
+  useEffect(() => {
+    // Check for unread messages initially
+    try {
+      // Check if the function is available
+      if (typeof hasUnreadMessages === 'function') {
+        setHasUnreadCoachMessages(hasUnreadMessages());
+      }
+    } catch (error) {
+      console.error('Error checking unread messages:', error);
+    }
+    
+    // Set up interval to check for unread messages
+    const checkUnreadInterval = setInterval(() => {
+      try {
+        // Check if the function is available
+        if (typeof hasUnreadMessages === 'function') {
+          const hasUnread = hasUnreadMessages();
+          setHasUnreadCoachMessages(hasUnread);
+        }
+      } catch (error) {
+        console.error('Error checking unread messages:', error);
+      }
+    }, 60000); // Check every minute
+    
+    return () => {
+      clearInterval(checkUnreadInterval);
+    };
+  }, []);
   
   // Handle screen resize to detect mobile
   useEffect(() => {
@@ -150,11 +216,17 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
                     `}
                   >
                     <div className="flex items-center w-full">
-                      <span className="flex-shrink-0">{section.icon}</span>
+                      <span className="flex-shrink-0">{section.icon}{/* Show notification dot for Day Coach when there are unread messages */}
+          {section.id === 'coach' && hasUnreadCoachMessages && (
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+          )}</span>
                       <span className="ml-3 md:hidden lg:inline whitespace-nowrap">{section.label}</span>
                       <span className="hidden md:inline lg:hidden group-hover:hidden absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">
-                        {section.label}
-                      </span>
+          {section.label}
+          {section.id === 'coach' && hasUnreadMessages && (
+            <span className="ml-1 inline-flex items-center justify-center w-3 h-3 bg-red-500 rounded-full"></span>
+          )}
+        </span>
                     </div>
                   </button>
                 </li>

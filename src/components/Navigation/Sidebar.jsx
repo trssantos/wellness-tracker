@@ -223,7 +223,7 @@ useEffect(() => {
                       <span className="ml-3 md:hidden lg:inline whitespace-nowrap">{section.label}</span>
                       <span className="hidden md:inline lg:hidden group-hover:hidden absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">
           {section.label}
-          {section.id === 'coach' && hasUnreadMessages && (
+          {section.id === 'coach' && hasUnreadCoachMessages && (
             <span className="ml-1 inline-flex items-center justify-center w-3 h-3 bg-red-500 rounded-full"></span>
           )}
         </span>

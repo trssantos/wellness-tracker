@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Activity, Calendar, BarChart2, Award, TrendingUp, 
+         TrendingDown, Dumbbell, ChevronLeft, ChevronRight, Sparkles, 
+         Sun, Moon, ArrowRight, Flame, ChevronUp, ChevronDown, Clock,
+         Filter, Heart, Zap, Target } from 'lucide-react';
 import { BarChart, LineChart, PieChart, AreaChart, Bar, Line, Pie, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { Award, Calendar, Clock, TrendingUp, BarChart2, Activity, ArrowLeft, Filter, Dumbbell, Flame, Heart, Zap, Target, Repeat, ChevronDown, ChevronUp } from 'lucide-react';
 import { getAllCompletedWorkouts, getWorkoutTypes, calculateWorkoutStats, getWorkoutTypesWithColors } from '../../utils/workoutUtils';
 import WorkoutCalendar from './WorkoutCalendar';
 
@@ -48,7 +51,7 @@ const CollapsibleExercises = ({ exercises, initialExpanded = false }) => {
 const DayDetailsView = ({ date, workouts, onBack }) => {
   // Calculate totals for the day
   const totalDuration = workouts.reduce((sum, w) => sum + (w.duration || 0), 0);
-  const totalCalories = workouts.reduce((sum, w) => sum + (w.calories || 0), 0);
+  const totalCalories = workouts.reduce((sum, w) => sum + (parseInt(w.calories) || 0), 0);
   
   const formatDate = (date) => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -69,7 +72,11 @@ const DayDetailsView = ({ date, workouts, onBack }) => {
       'cardio': 'bg-red-500',
       'yoga': 'bg-purple-500',
       'cycling': 'bg-green-500',
-      'hiit': 'bg-orange-500'
+      'hiit': 'bg-orange-500',
+      'weightlifting': 'bg-blue-500',
+      'boxing': 'bg-red-500',
+      'running': 'bg-amber-500',
+      'walking': 'bg-green-500'
     };
     
     return typeColors[type?.toLowerCase()] || 'bg-slate-500';
@@ -201,7 +208,7 @@ const DayDetailsView = ({ date, workouts, onBack }) => {
 
 const WorkoutAnalytics = ({ onBack }) => {
   const [workouts, setWorkouts] = useState([]);
-  const [timeRange, setTimeRange] = useState('month'); // 'week', 'month', 'year', 'all'
+  const [timeRange, setTimeRange] = useState('all'); // 'week', 'month', 'year', 'all'
   const [workoutTypeFilter, setWorkoutTypeFilter] = useState('all');
   const [activeSection, setActiveSection] = useState('overview'); // 'overview', 'calendar', 'details'
   const [selectedDate, setSelectedDate] = useState(null);
@@ -234,9 +241,154 @@ const WorkoutAnalytics = ({ onBack }) => {
   }, [workouts, timeRange, workoutTypeFilter]);
   
   const loadWorkouts = () => {
-    const completedWorkouts = getAllCompletedWorkouts();
-    setWorkouts(completedWorkouts);
+    try {
+      // Get data directly from localStorage - using the same method as Stats.jsx
+      const storageString = localStorage.getItem('wellnessTracker');
+      
+      if (!storageString) {
+        console.warn("No zentrack data found in localStorage");
+        setWorkouts([]);
+        return;
+      }
+      
+      const storageData = JSON.parse(storageString);
+      console.log("Successfully loaded zentrack data");
+      
+      let allWorkouts = [];
+      const processedWorkoutIds = new Set();
+      
+      // STEP 1: Process completedWorkouts array (top level)
+      if (storageData.completedWorkouts && Array.isArray(storageData.completedWorkouts)) {
+        storageData.completedWorkouts.forEach(workout => {
+          const workoutId = workout.id;
+          if (!processedWorkoutIds.has(workoutId)) {
+            processedWorkoutIds.add(workoutId);
+            allWorkouts.push({
+              ...workout,
+              date: workout.date,
+              id: workoutId
+            });
+          }
+        });
+      }
+      
+      // STEP 2: Process date entries with workout property
+      Object.entries(storageData).forEach(([dateKey, dateData]) => {
+        // Skip if not a date entry or if it's a special key
+        if (!dateKey.match(/^\d{4}-\d{2}-\d{2}$/) || 
+            !dateData || 
+            typeof dateData !== 'object') {
+          return;
+        }
+        
+        // Process single workout
+        if (dateData.workout) {
+          const workout = dateData.workout;
+          const workoutId = workout.id || `workout-${dateKey}`;
+          
+          if (!processedWorkoutIds.has(workoutId)) {
+            processedWorkoutIds.add(workoutId);
+            allWorkouts.push({
+              ...workout,
+              date: dateKey,
+              id: workoutId
+            });
+          }
+        }
+        
+        // Process workouts array
+        if (dateData.workouts && Array.isArray(dateData.workouts)) {
+          dateData.workouts.forEach(workout => {
+            const workoutId = workout.id;
+            
+            if (!processedWorkoutIds.has(workoutId)) {
+              processedWorkoutIds.add(workoutId);
+              allWorkouts.push({
+                ...workout,
+                date: workout.date || dateKey,
+                id: workoutId
+              });
+            }
+          });
+        }
+      });
+      
+      console.log(`Found ${allWorkouts.length} total workouts`);
+      setWorkouts(allWorkouts);
+    } catch (error) {
+      console.error("Error loading workouts:", error);
+      setWorkouts([]);
+    }
   };
+
+  // Comprehensive function to get all workouts from all storage locations
+const getAllWorkouts = () => {
+  let allWorkouts = [];
+  
+  try {
+    // Get data from localStorage to account for all workout types
+    const storageData = JSON.parse(localStorage.getItem('zentrack-data') || '{}');
+    
+    // 1. Get workouts from completedWorkouts array
+    if (storageData.completedWorkouts && Array.isArray(storageData.completedWorkouts)) {
+      allWorkouts = [...storageData.completedWorkouts];
+    }
+    
+    // 2. Get workouts directly stored in date entries
+    Object.entries(storageData).forEach(([dateKey, dateData]) => {
+      // Skip if not a date entry or if it's a special key
+      if (!dateData || typeof dateData !== 'object' || 
+          dateKey === 'completedWorkouts' || dateKey === 'settings' || 
+          dateKey === 'habits' || dateKey === 'workouts' || 
+          dateKey === 'reminderSettings' || dateKey === 'focusSessions') {
+        return;
+      }
+      
+      // Check for single workout
+      if (dateData.workout) {
+        const workout = {
+          ...dateData.workout,
+          date: dateKey,
+          id: dateData.workout.id || `workout-${dateKey}-${Date.now()}`
+        };
+        allWorkouts.push(workout);
+      }
+      
+      // Check for workouts array
+      if (dateData.workouts && Array.isArray(dateData.workouts)) {
+        dateData.workouts.forEach(workout => {
+          allWorkouts.push({
+            ...workout,
+            date: workout.date || dateKey
+          });
+        });
+      }
+    });
+    
+    // Add console logs for debugging
+    console.log("Raw workout data found:", allWorkouts);
+    
+    // 3. Deduplicate workouts by ID if needed
+    const workoutMap = new Map();
+    allWorkouts.forEach(workout => {
+      // Make sure we have a valid ID
+      const id = workout.id || `workout-${Date.now()}-${Math.random()}`;
+      
+      // Use the workout ID as the key in the map (this will automatically deduplicate)
+      workoutMap.set(id, {
+        ...workout,
+        id: id
+      });
+    });
+    
+    const result = Array.from(workoutMap.values());
+    console.log("After deduplication:", result.length, "workouts found");
+    return result;
+  } catch (error) {
+    console.error("Error getting workouts:", error);
+    return [];
+  }
+};
   
   const processWorkoutData = () => {
     // Filter workouts based on selected time range
@@ -251,7 +403,7 @@ const WorkoutAnalytics = ({ onBack }) => {
         );
     
     // Calculate stats
-    const stats = calculateWorkoutStats(typeFilteredWorkouts);
+    const stats = calculateWorkoutStatsImproved(typeFilteredWorkouts);
     
     // Create data for charts
     const frequencyByDay = calculateFrequencyByDay(typeFilteredWorkouts);
@@ -267,31 +419,191 @@ const WorkoutAnalytics = ({ onBack }) => {
       durationTrend
     });
   };
+
+  // Improved stats calculation function
+  const calculateWorkoutStatsImproved = (workouts) => {
+    if (!workouts || workouts.length === 0) {
+      return {
+        totalWorkouts: 0,
+        totalMinutes: 0,
+        totalCalories: 0, 
+        avgDuration: 0,
+        avgIntensity: 0,
+        consistency: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+        completionRate: 0
+      };
+    }
+
+    // Sort workouts by date
+    const sortedWorkouts = [...workouts].sort((a, b) => {
+      const dateA = new Date(a.date || a.completedAt || a.timestamp);
+      const dateB = new Date(b.date || b.completedAt || b.timestamp);
+      return dateA - dateB;
+    });
+
+    // Basic stats
+    const totalWorkouts = workouts.length;
+    const totalMinutes = workouts.reduce((sum, workout) => sum + (workout.duration || 0), 0);
+    const totalCalories = workouts.reduce((sum, workout) => {
+      const calories = parseInt(workout.calories) || 0;
+      return sum + calories;
+    }, 0);
+    
+    const avgDuration = totalWorkouts > 0 ? Math.round(totalMinutes / totalWorkouts) : 0;
+    
+    // Calculate average intensity if available
+    let intensitySum = 0;
+    let intensityCount = 0;
+    workouts.forEach(workout => {
+      if (workout.intensity) {
+        intensitySum += workout.intensity;
+        intensityCount++;
+      }
+    });
+    const avgIntensity = intensityCount > 0 ? intensitySum / intensityCount : 0;
+
+    // Calculate streaks and consistency
+    const uniqueDates = new Map();
+    workouts.forEach(workout => {
+      const dateStr = typeof workout.date === 'string' ? workout.date : 
+                   new Date(workout.completedAt || workout.timestamp).toISOString().split('T')[0];
+      uniqueDates.set(dateStr, true);
+    });
+
+    // Calculate streaks
+    const dates = Array.from(uniqueDates.keys()).sort();
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let currentStreak2 = 0;
+
+    // Calculate longest streak
+    for (let i = 0; i < dates.length; i++) {
+      if (i === 0) {
+        currentStreak2 = 1;
+      } else {
+        const current = new Date(dates[i]);
+        const prev = new Date(dates[i-1]);
+        const diffDays = Math.round((current - prev) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) {
+          currentStreak2++;
+        } else {
+          currentStreak2 = 1;
+        }
+      }
+      
+      longestStreak = Math.max(longestStreak, currentStreak2);
+    }
+
+    // Calculate current streak (consecutive days ending with today or yesterday)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const todayStr = today.toISOString().split('T')[0];
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    // Check if today or yesterday had a workout
+    const hasTodayWorkout = uniqueDates.has(todayStr);
+    const hasYesterdayWorkout = uniqueDates.has(yesterdayStr);
+    
+    if (hasTodayWorkout || hasYesterdayWorkout) {
+      // Start with 1 for today/yesterday
+      currentStreak = 1;
+      
+      // Start checking from yesterday or the day before
+      const startDate = hasTodayWorkout ? yesterday : new Date(yesterday);
+      startDate.setDate(startDate.getDate() - 1);
+      
+      // Go backwards day by day
+      for (let d = new Date(startDate); ; d.setDate(d.getDate() - 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        if (uniqueDates.has(dateStr)) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Calculate consistency (% of days with workouts in the period)
+    const firstDate = dates.length > 0 ? new Date(dates[0]) : new Date();
+    const lastDate = dates.length > 0 ? new Date(dates[dates.length - 1]) : new Date();
+    const totalDays = Math.round((lastDate - firstDate) / (1000 * 60 * 60 * 24)) + 1;
+    const consistency = totalDays > 0 ? Math.round((uniqueDates.size / totalDays) * 100) : 0;
+
+    // Calculate completion rate (if workout templates were used)
+    let completionRate = 100; // Default to 100% if no templates were used
+
+    return {
+      totalWorkouts,
+      totalMinutes,
+      totalCalories,
+      avgDuration,
+      avgIntensity,
+      consistency,
+      currentStreak,
+      longestStreak,
+      completionRate
+    };
+  };
   
-  // Filter workouts based on time range
+  // Filter workouts based on proper time range
   const filterWorkoutsByTimeRange = (workouts, range) => {
+    if (!workouts || workouts.length === 0) return [];
+    
+    // If range is 'all', return all workouts
+    if (range === 'all') {
+      return workouts;
+    }
+    
     const now = new Date();
-    const cutoffDate = new Date();
+    let startDate, endDate;
     
     switch (range) {
       case 'week':
-        cutoffDate.setDate(now.getDate() - 7);
+        // Last 7 days
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999);
         break;
       case 'month':
-        cutoffDate.setMonth(now.getMonth() - 1);
+        // Current month
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
         break;
       case 'year':
-        cutoffDate.setFullYear(now.getFullYear() - 1);
+        // Current year
+        startDate = new Date(now.getFullYear(), 0, 1);
+        endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
         break;
-      case 'all':
       default:
-        cutoffDate.setFullYear(2000); // Far in the past to include all
-        break;
+        return workouts; // Default to all workouts
     }
     
     return workouts.filter(workout => {
-      const workoutDate = new Date(workout.date || workout.completedAt || workout.timestamp);
-      return workoutDate >= cutoffDate;
+      // Parse the date from various formats
+      let workoutDate;
+      
+      if (typeof workout.date === 'string' && workout.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Handle YYYY-MM-DD format
+        const [year, month, day] = workout.date.split('-').map(Number);
+        workoutDate = new Date(year, month - 1, day); // month is 0-indexed in JS Date
+      } else if (workout.completedAt) {
+        workoutDate = new Date(workout.completedAt);
+      } else if (workout.timestamp) {
+        workoutDate = new Date(workout.timestamp);
+      } else {
+        // If no usable date is found, skip this workout
+        return false;
+      }
+      
+      return workoutDate >= startDate && workoutDate <= endDate;
     });
   };
   
@@ -301,8 +613,16 @@ const WorkoutAnalytics = ({ onBack }) => {
     const dayCounts = Array(7).fill(0);
     
     workouts.forEach(workout => {
-      const date = new Date(workout.date || workout.completedAt || workout.timestamp);
-      dayCounts[date.getDay()]++;
+      let workoutDate;
+      if (workout.date && typeof workout.date === 'string') {
+        // Handle date as string (YYYY-MM-DD)
+        workoutDate = new Date(workout.date + 'T12:00:00');
+      } else {
+        // Handle timestamp or completedAt
+        workoutDate = new Date(workout.completedAt || workout.timestamp);
+      }
+      
+      dayCounts[workoutDate.getDay()]++;
     });
     
     return days.map((day, index) => ({
@@ -320,17 +640,19 @@ const WorkoutAnalytics = ({ onBack }) => {
       // Handle workouts with multiple types
       if (workout.types && workout.types.length > 0) {
         workout.types.forEach(type => {
-          typeMap[type] = (typeMap[type] || 0) + 1;
+          const normalizedType = type.toLowerCase();
+          typeMap[normalizedType] = (typeMap[normalizedType] || 0) + 1;
         });
       } else if (workout.type) {
-        typeMap[workout.type] = (typeMap[workout.type] || 0) + 1;
+        const normalizedType = workout.type.toLowerCase();
+        typeMap[normalizedType] = (typeMap[normalizedType] || 0) + 1;
       } else {
         typeMap['other'] = (typeMap['other'] || 0) + 1;
       }
     });
     
     return Object.entries(typeMap).map(([type, count]) => {
-      const typeInfo = types.find(t => t.value === type);
+      const typeInfo = types.find(t => t.value.toLowerCase() === type.toLowerCase());
       return {
         type: typeInfo ? typeInfo.label : type,
         count,
@@ -339,20 +661,29 @@ const WorkoutAnalytics = ({ onBack }) => {
     }).sort((a, b) => b.count - a.count);
   };
   
-  // Calculate calories burned trend
+  // Calculate calories burned trend - fixed to properly sum by date
   const calculateCaloriesTrend = (workouts) => {
     // Group by date
     const caloriesByDate = {};
     
     workouts.forEach(workout => {
-      const date = new Date(workout.date || workout.completedAt || workout.timestamp);
-      const dateStr = date.toISOString().split('T')[0];
+      let dateStr;
+      if (workout.date && typeof workout.date === 'string') {
+        // Handle date string
+        dateStr = workout.date;
+      } else {
+        // Handle timestamp or completedAt
+        const date = new Date(workout.completedAt || workout.timestamp);
+        dateStr = date.toISOString().split('T')[0];
+      }
       
       if (!caloriesByDate[dateStr]) {
         caloriesByDate[dateStr] = 0;
       }
       
-      caloriesByDate[dateStr] += workout.calories || 0;
+      // Ensure calories are parsed as numbers
+      const calories = parseInt(workout.calories) || 0;
+      caloriesByDate[dateStr] += calories;
     });
     
     // Convert to array and sort by date
@@ -365,15 +696,22 @@ const WorkoutAnalytics = ({ onBack }) => {
       .sort((a, b) => new Date(a.date) - new Date(b.date));
   };
   
-  // Calculate duration trend
+  // Calculate duration trend with proper aggregation by date
   const calculateDurationTrend = (workouts) => {
     // Group by date
     const durationByDate = {};
     const countByDate = {};
     
     workouts.forEach(workout => {
-      const date = new Date(workout.date || workout.completedAt || workout.timestamp);
-      const dateStr = date.toISOString().split('T')[0];
+      let dateStr;
+      if (workout.date && typeof workout.date === 'string') {
+        // Handle date string
+        dateStr = workout.date;
+      } else {
+        // Handle timestamp or completedAt
+        const date = new Date(workout.completedAt || workout.timestamp);
+        dateStr = date.toISOString().split('T')[0];
+      }
       
       if (!durationByDate[dateStr]) {
         durationByDate[dateStr] = 0;
@@ -397,7 +735,7 @@ const WorkoutAnalytics = ({ onBack }) => {
   };
   
   // Custom tooltip for charts
-  const CustomTooltip = ({ active, payload, label, dataKey }) => {
+  const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white dark:bg-slate-800 p-3 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg">
@@ -525,7 +863,7 @@ const WorkoutAnalytics = ({ onBack }) => {
           </div>
           
           {/* Stats Summary */}
-          <div className="grid grid-cols-4 gap-4 mt-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
             <div className="bg-slate-800 border border-slate-700 p-3 rounded-lg">
               <div className="flex items-center gap-2 mb-1">
                 <Dumbbell size={16} className="text-blue-400" />

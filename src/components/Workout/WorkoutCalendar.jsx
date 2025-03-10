@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Dumbbell, Activity, Droplet, Zap } from 'lucide-react';
 
 /**
@@ -13,11 +13,24 @@ const WorkoutCalendar = ({
   onDateClick = null
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [processedWorkouts, setProcessedWorkouts] = useState([]);
   
-  // Filter workouts if a specific ID is provided
-  const filteredWorkouts = workoutId 
-    ? workoutData.filter(workout => workout.workoutId === workoutId || workout.id === workoutId)
-    : workoutData;
+  // Process and deduplicate workouts when data changes
+  useEffect(() => {
+    // Filter workouts if a specific ID is provided
+    let filteredWorkouts = workoutId 
+      ? workoutData.filter(workout => workout.workoutId === workoutId || workout.id === workoutId)
+      : workoutData;
+    
+    // Deduplicate by ID
+    const workoutMap = new Map();
+    filteredWorkouts.forEach(workout => {
+      const workoutId = workout.id || `workout-${Date.now()}-${Math.random()}`;
+      workoutMap.set(workoutId, workout);
+    });
+    
+    setProcessedWorkouts(Array.from(workoutMap.values()));
+  }, [workoutData, workoutId]);
 
   // Navigate to previous month
   const handlePrevMonth = () => {
@@ -60,8 +73,14 @@ const WorkoutCalendar = ({
     // Create a lookup map for workout dates
     const workoutMap = {};
     
-    filteredWorkouts.forEach(workout => {
-      const date = new Date(workout.date || workout.completedAt || workout.timestamp);
+    processedWorkouts.forEach(workout => {
+      let date;
+      if (workout.date && typeof workout.date === 'string') {
+        date = new Date(workout.date + 'T12:00:00');
+      } else {
+        date = new Date(workout.completedAt || workout.timestamp);
+      }
+      
       const dateStr = date.toISOString().split('T')[0];
       
       if (!workoutMap[dateStr]) {
@@ -92,9 +111,12 @@ const WorkoutCalendar = ({
         const workoutTypes = new Set();
         workoutMap[dateStr].forEach(workout => {
           if (workout.types && workout.types.length > 0) {
-            workout.types.forEach(type => workoutTypes.add(type));
+            workout.types.forEach(type => {
+              // Normalize case
+              workoutTypes.add(type.toLowerCase());
+            });
           } else if (workout.type) {
-            workoutTypes.add(workout.type);
+            workoutTypes.add(workout.type.toLowerCase());
           }
         });
         
@@ -113,7 +135,9 @@ const WorkoutCalendar = ({
 
   // Get color for a workout type
   const getTypeColor = (type) => {
-    type = type?.toLowerCase() || '';
+    if (!type) return 'bg-slate-500';
+    
+    type = type.toLowerCase();
     
     const typeColorMap = {
       'strength': 'bg-blue-500',
@@ -124,6 +148,9 @@ const WorkoutCalendar = ({
       'multiple': 'bg-gradient-to-r from-blue-500 to-purple-500',
       'running': 'bg-amber-500',
       'swimming': 'bg-cyan-500',
+      'walking': 'bg-teal-500',
+      'weightlifting': 'bg-blue-500',
+      'boxing': 'bg-red-500',
     };
     
     return typeColorMap[type] || 'bg-slate-500';
@@ -131,13 +158,17 @@ const WorkoutCalendar = ({
   
   // Get icon for a workout type
   const getTypeIcon = (type) => {
-    type = type?.toLowerCase() || '';
+    if (!type) return <Dumbbell size={14} className="text-slate-500" />;
+    
+    type = type.toLowerCase();
     
     switch (type) {
       case 'strength':
+      case 'weightlifting':
         return <Dumbbell size={14} className="text-blue-500" />;
       case 'cardio':
       case 'running':
+      case 'boxing':
         return <Activity size={14} className="text-red-500" />;
       case 'yoga':
         return <Droplet size={14} className="text-purple-500" />;
@@ -208,14 +239,15 @@ const WorkoutCalendar = ({
               key={day.dateStr}
               onClick={() => onDateClick && onDateClick(day.date, day.workouts)}
               className={`
-                aspect-square relative flex flex-col items-center justify-center rounded-md border transition-colors cursor-pointer
+                relative flex flex-col items-center justify-center rounded-md border transition-colors cursor-pointer
                 ${isToday ? 'border-blue-500 dark:border-blue-400' : 'border-slate-200 dark:border-slate-700'}
                 ${day.hasWorkout 
                   ? isDarkMode ? 'bg-slate-800' : 'bg-white'
                   : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/70'}
+                  aspect-square min-h-[30px] w-full
               `}
             >
-              <span className={`${isToday ? 'font-bold text-blue-500 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>
+              <span className={`${isToday ? 'font-bold text-blue-500 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'} text-xs sm:text-sm`}>
                 {day.day}
               </span>
               
@@ -223,11 +255,11 @@ const WorkoutCalendar = ({
               {day.hasWorkout && (
                 <div className="absolute bottom-1 flex justify-center gap-1">
                   {day.multipleTypes ? (
-                    <div className="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" />
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" />
                   ) : (
                     day.workoutTypes && day.workoutTypes.slice(0, 1).map((type, i) => (
-                      <div key={i} className={`w-4 h-4 rounded-full flex items-center justify-center ${getTypeColor(type)}`}>
-                        {/* Icon can be added here */}
+                      <div key={i} className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full flex items-center justify-center ${getTypeColor(type)}`}>
+                        {/* Icon can be added here for larger screens */}
                       </div>
                     ))
                   )}
@@ -239,7 +271,7 @@ const WorkoutCalendar = ({
       </div>
       
       {/* Legend for all workout types */}
-      <div className="mt-4 flex flex-wrap gap-3 text-xs">
+      <div className="mt-4 grid grid-cols-3 sm:flex sm:flex-wrap gap-x-3 gap-y-2 text-xs">
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded-full bg-blue-500"></div>
           <span className="text-slate-600 dark:text-slate-400">Strength</span>

@@ -80,67 +80,77 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
     setCurrentMonth(nextMonth);
   };
   
-  const processStorageData = (data, month) => {
-    // Get start and end date for the current month
-    const start = new Date(month.getFullYear(), month.getMonth(), 1);
-    const end = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+  // This is a partial update focusing on the workout data processing in Stats.jsx
+const processStorageData = (data, month) => {
+  // Get start and end date for the current month
+  const start = new Date(month.getFullYear(), month.getMonth(), 1);
+  const end = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+  
+  // Data processing variables
+  let totalTasksCompleted = 0;
+  let totalTasksCreated = 0;
+  let totalProgressPercentage = 0;
+  let daysWithProgress = 0;
+  let totalWorkoutMinutes = 0;
+  let totalCaloriesBurned = 0;
+  
+  const dailyProgressData = [];
+  const moodData = [];
+  const workoutData = [];
+  const sleepData = []; // Added for sleep tracking
+  
+  // Create a set to track unique workout IDs to avoid duplicates
+  const processedWorkoutIds = new Set();
+  
+  // Process each day in the current month
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const dateStr = d.toISOString().split('T')[0];
+    const dayData = data[dateStr];
     
-    // Data processing variables
-    let totalTasksCompleted = 0;
-    let totalTasksCreated = 0;
-    let totalProgressPercentage = 0;
-    let daysWithProgress = 0;
-    let totalWorkoutMinutes = 0;
-    let totalCaloriesBurned = 0;
-    
-    const dailyProgressData = [];
-    const moodData = [];
-    const workoutData = [];
-    const sleepData = []; // Added for sleep tracking
-    
-    // Process each day in the current month
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().split('T')[0];
-      const dayData = data[dateStr];
-      
-      if (dayData) {
-        // Process tasks and progress
-        if (dayData.checked) {
-          const completed = Object.values(dayData.checked).filter(Boolean).length;
-          const total = Object.values(dayData.checked).length;
-          
-          if (total > 0) {
-            const progressPercentage = Math.round((completed / total) * 100);
-            totalTasksCompleted += completed;
-            totalTasksCreated += total;
-            totalProgressPercentage += progressPercentage;
-            daysWithProgress++;
-            
-            dailyProgressData.push({
-              date: dateStr,
-              progress: progressPercentage,
-              day: d.getDate()
-            });
-          }
-        }
+    if (dayData) {
+      // Process tasks and progress
+      if (dayData.checked) {
+        const completed = Object.values(dayData.checked).filter(Boolean).length;
+        const total = Object.values(dayData.checked).length;
         
-        // Process mood data - prioritize morning mood for backward compatibility
-        const moodToUse = dayData.morningMood || dayData.mood;
-        if (moodToUse) {
-          moodData.push({
+        if (total > 0) {
+          const progressPercentage = Math.round((completed / total) * 100);
+          totalTasksCompleted += completed;
+          totalTasksCreated += total;
+          totalProgressPercentage += progressPercentage;
+          daysWithProgress++;
+          
+          dailyProgressData.push({
             date: dateStr,
-            mood: moodToUse,
+            progress: progressPercentage,
             day: d.getDate()
           });
         }
+      }
+      
+      // Process mood data
+      const moodToUse = dayData.morningMood || dayData.mood;
+      if (moodToUse) {
+        moodData.push({
+          date: dateStr,
+          mood: moodToUse,
+          day: d.getDate()
+        });
+      }
+      
+      // Process single workout entry
+      if (dayData.workout) {
+        const workout = dayData.workout;
+        const workoutId = workout.id || `workout-${dateStr}-single`;
         
-        // Process workout data
-        if (dayData.workout) {
-          const workout = dayData.workout;
+        // Only process if we haven't seen this workout before
+        if (!processedWorkoutIds.has(workoutId)) {
+          processedWorkoutIds.add(workoutId);
           totalWorkoutMinutes += workout.duration || 0;
           totalCaloriesBurned += parseInt(workout.calories || 0) || 0;
           
           workoutData.push({
+            id: workoutId,
             date: dateStr,
             duration: workout.duration || 0,
             calories: parseInt(workout.calories || 0) || 0,
@@ -148,52 +158,102 @@ export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
             types: workout.types || []
           });
         }
-        
-        // Process sleep data
-        if (dayData.sleep) {
-          const sleep = dayData.sleep;
-          sleepData.push({
-            date: dateStr,
-            day: d.getDate(),
-            duration: sleep.duration || 0,
-            quality: sleep.quality || 0,
-            bedtime: sleep.bedtime || '',
-            wakeTime: sleep.wakeTime || '',
-            factors: sleep.factors || []
-          });
-        }
+      }
+      
+      // Process workout array if it exists
+      if (dayData.workouts && Array.isArray(dayData.workouts)) {
+        dayData.workouts.forEach(workout => {
+          const workoutId = workout.id || `workout-${dateStr}-${workoutData.length}`;
+          
+          // Only process if we haven't seen this workout before
+          if (!processedWorkoutIds.has(workoutId)) {
+            processedWorkoutIds.add(workoutId);
+            totalWorkoutMinutes += workout.duration || 0;
+            totalCaloriesBurned += parseInt(workout.calories || 0) || 0;
+            
+            workoutData.push({
+              id: workoutId,
+              date: dateStr,
+              duration: workout.duration || 0,
+              calories: parseInt(workout.calories || 0) || 0,
+              day: d.getDate(),
+              types: workout.types || []
+            });
+          }
+        });
+      }
+      
+      // Process sleep data
+      if (dayData.sleep) {
+        const sleep = dayData.sleep;
+        sleepData.push({
+          date: dateStr,
+          day: d.getDate(),
+          duration: sleep.duration || 0,
+          quality: sleep.quality || 0,
+          bedtime: sleep.bedtime || '',
+          wakeTime: sleep.wakeTime || '',
+          factors: sleep.factors || []
+        });
       }
     }
-    
-    // Calculate averages and prepare final data
-    const avgProgress = daysWithProgress > 0 ? Math.round(totalProgressPercentage / daysWithProgress) : 0;
-    
-    // Sort data by date
-    dailyProgressData.sort((a, b) => new Date(a.date) - new Date(b.date));
-    moodData.sort((a, b) => new Date(a.date) - new Date(b.date));
-    workoutData.sort((a, b) => new Date(a.date) - new Date(b.date));
-    sleepData.sort((a, b) => new Date(a.date) - new Date(b.date));
-    
-    // Process the morning/evening mood comparison data
-    const moodComparisonData = processMoodComparisonData(data, month);
-    
-    // Analyze the mood impact data
-    const moodImpactData = analyzeMoodImpacts(data, month);
-    
-    return {
-      monthlyProgress: dailyProgressData,
-      totalTasksCompleted,
-      totalTasksCreated,
-      avgProgress,
-      totalWorkoutMinutes,
-      totalCaloriesBurned,
-      moodTrend: moodData,
-      workoutData: workoutData,
-      moodComparisonData,
-      moodImpactData,
-      sleepData
-    };
+  }
+  
+  // Also process completedWorkouts from the top level if present
+  if (data.completedWorkouts && Array.isArray(data.completedWorkouts)) {
+    data.completedWorkouts.forEach(workout => {
+      // Parse date from workout
+      const workoutDate = new Date(workout.date || workout.completedAt || workout.timestamp);
+      const workoutDateStr = workoutDate.toISOString().split('T')[0];
+      const workoutId = workout.id || `completed-${workoutDateStr}-${Math.random()}`;
+      
+      // Only include if it's in the current month and not already processed
+      if (workoutDate >= start && workoutDate <= end && !processedWorkoutIds.has(workoutId)) {
+        processedWorkoutIds.add(workoutId);
+        totalWorkoutMinutes += workout.duration || 0;
+        totalCaloriesBurned += parseInt(workout.calories || 0) || 0;
+        
+        workoutData.push({
+          id: workoutId,
+          date: workoutDateStr,
+          duration: workout.duration || 0,
+          calories: parseInt(workout.calories || 0) || 0,
+          day: workoutDate.getDate(),
+          types: workout.types || []
+        });
+      }
+    });
+  }
+  
+  // Calculate averages and prepare final data
+  const avgProgress = daysWithProgress > 0 ? Math.round(totalProgressPercentage / daysWithProgress) : 0;
+  
+  // Sort data by date
+  dailyProgressData.sort((a, b) => new Date(a.date) - new Date(b.date));
+  moodData.sort((a, b) => new Date(a.date) - new Date(b.date));
+  workoutData.sort((a, b) => new Date(a.date) - new Date(b.date));
+  sleepData.sort((a, b) => new Date(a.date) - new Date(b.date));
+  
+  // Process the morning/evening mood comparison data
+  const moodComparisonData = processMoodComparisonData(data, month);
+  
+  // Analyze the mood impact data
+  const moodImpactData = analyzeMoodImpacts(data, month);
+  
+  return {
+    monthlyProgress: dailyProgressData,
+    totalTasksCompleted,
+    totalTasksCreated,
+    avgProgress,
+    totalWorkoutMinutes,
+    totalCaloriesBurned,
+    moodTrend: moodData,
+    workoutData: workoutData,
+    moodComparisonData,
+    moodImpactData,
+    sleepData
   };
+};
 
   // Helper function to calculate streak
   const calculateStreak = (progressData) => {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar, RefreshCw, Book, TrendingUp, AlertTriangle,
-  Smile, Brain, Zap, Dumbbell, Clock, FileText, Loader, BarChart2
+  Smile, Brain, Zap, Dumbbell, Clock, FileText, Loader, 
+  BarChart2, ChevronDown, Menu
 } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
 import { generateContent } from '../../utils/ai-service';
@@ -10,27 +11,37 @@ import ReactMarkdown from 'react-markdown';
 const DayCoachAnalysis = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [analysis, setAnalysis] = useState({});
-  const [activeTab, setActiveTab] = useState('overview'); // overview, mood, focus, habits, workouts
-  const [timeRange, setTimeRange] = useState('week'); // day, week, month
+  const [activeTab, setActiveTab] = useState('overview');
+  const [timeRange, setTimeRange] = useState('week');
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   
   // Reference to track if component is mounted
   const isMounted = useRef(true);
+  const dropdownRef = useRef(null);
   
-  // Set mounted flag
+  // Close dropdown when clicking outside
   useEffect(() => {
-    isMounted.current = true;
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowCategoryMenu(false);
+      }
+    };
+    
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
       isMounted.current = false;
     };
   }, []);
   
-  // Load saved analysis when component mounts or tab/range changes - but don't generate automatically
+  // Load saved analysis when component mounts or tab/range changes
   useEffect(() => {
     loadSavedAnalysis();
   }, [activeTab, timeRange]);
   
-  // Load saved analysis from storage
+  // Existing functions (loadSavedAnalysis, generateReport, etc.) remain unchanged
+  
   const loadSavedAnalysis = () => {
     try {
       const storage = getStorage();
@@ -38,7 +49,6 @@ const DayCoachAnalysis = () => {
       
       setAnalysis(savedAnalytics);
       
-      // Set last updated timestamp if available
       if (savedAnalytics[activeTab]?.[timeRange]?.timestamp) {
         setLastUpdated(savedAnalytics[activeTab][timeRange].timestamp);
       } else {
@@ -49,44 +59,30 @@ const DayCoachAnalysis = () => {
     }
   };
   
-  // Generate a single report for a specific tab and time range
   const generateReport = async (tab, range) => {
     setIsLoading(true);
     
     try {
       const storage = getStorage();
-      
-      // Collect relevant data based on time range
       const userData = collectUserData(storage, range);
-      
-      // Generate prompt based on tab
       const prompt = generatePrompt(userData, tab, range);
-      
-      // Get analysis from AI
       const result = await generateContent(prompt);
       
-      // Only continue if component is still mounted
       if (!isMounted.current) return;
       
-      // Get existing analytics or create new object
       const existingAnalytics = storage.dayCoachAnalytics || {};
-      
-      // Create nested structure if needed
       if (!existingAnalytics[tab]) {
         existingAnalytics[tab] = {};
       }
       
-      // Add the new report
       existingAnalytics[tab][range] = {
         text: result,
         timestamp: new Date().toISOString()
       };
       
-      // Save back to storage
       storage.dayCoachAnalytics = existingAnalytics;
       setStorage(storage);
       
-      // Update state
       setAnalysis(existingAnalytics);
       setLastUpdated(existingAnalytics[tab][range].timestamp);
       
@@ -99,22 +95,21 @@ const DayCoachAnalysis = () => {
     }
   };
   
-  // Handle manual generation of current report
   const handleGenerateCurrentReport = async () => {
     await generateReport(activeTab, timeRange);
     
-    // Update the last generation timestamp
     const storage = getStorage();
     storage.dayCoachAnalyticsLastGeneration = new Date().toISOString();
     setStorage(storage);
   };
   
-  // The rest of your functions stay the same
+  // Rest of your utility functions (collectUserData, generatePrompt, etc.)
+  
   const collectUserData = (storage, range) => {
+    // Existing implementation
     const today = new Date();
     const result = {};
     
-    // Get dates for the selected time range
     let startDate;
     switch (range) {
       case 'day':
@@ -134,7 +129,6 @@ const DayCoachAnalysis = () => {
         startDate.setDate(today.getDate() - 7);
     }
     
-    // Collect data for each date in the range
     for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
       if (storage[dateStr]) {
@@ -142,7 +136,6 @@ const DayCoachAnalysis = () => {
       }
     }
     
-    // Add habits, focus sessions, workouts data
     if (storage.habits) result.habits = storage.habits;
     if (storage.focusSessions) result.focusSessions = storage.focusSessions;
     if (storage.completedWorkouts) result.workouts = storage.completedWorkouts;
@@ -151,6 +144,8 @@ const DayCoachAnalysis = () => {
   };
   
   const generatePrompt = (userData, tab, range) => {
+    // Existing implementation
+    // (keeping this unchanged)
     const basePrompt = `Analyze the following user data for the last ${range === 'day' ? 'day' : range === 'week' ? 'week' : 'month'} and provide insights, patterns, and personalized recommendations. 
     
 IMPORTANT: Address the user directly using "you" and "your" (not "the user" or "they"). Keep your tone warm, friendly and conversational as if you're talking directly to them.
@@ -183,7 +178,6 @@ Keep your analysis conversational, helpful, and actionable.`;
     return `${basePrompt}\n\n${specificPrompt}\n\nUser Data: ${JSON.stringify(userData, null, 2)}`;
   };
   
-  // Format timestamp
   const formatLastUpdated = (timestamp) => {
     if (!timestamp) return 'Never';
     
@@ -196,7 +190,6 @@ Keep your analysis conversational, helpful, and actionable.`;
     });
   };
   
-  // Custom styles for different insight sections
   const getSectionClass = (type) => {
     switch (type) {
       case 'positive':
@@ -210,186 +203,115 @@ Keep your analysis conversational, helpful, and actionable.`;
     }
   };
   
+  // Helper function to get icon and color for each category
+  const getCategoryProperties = (category) => {
+    switch (category) {
+      case 'overview':
+        return { icon: <Book size={16} />, name: 'Overview', color: 'blue' };
+      case 'mood':
+        return { icon: <Smile size={16} />, name: 'Mood', color: 'purple' };
+      case 'focus':
+        return { icon: <Brain size={16} />, name: 'Focus', color: 'indigo' };
+      case 'habits':
+        return { icon: <Zap size={16} />, name: 'Habits', color: 'amber' };
+      case 'workouts':
+        return { icon: <Dumbbell size={16} />, name: 'Workouts', color: 'green' };
+      default:
+        return { icon: <Book size={16} />, name: 'Overview', color: 'blue' };
+    }
+  };
+  
+  // Get properties for active category
+  const activeCategory = getCategoryProperties(activeTab);
+  
   return (
-    <div className="p-2 sm:p-4 overflow-auto max-h-screen">
-      {/* Mobile category tabs - First row */}
-      <div className="sm:hidden mb-4">
-        <div className="flex flex-wrap gap-2 justify-center items-center bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded-lg ${
-              activeTab === 'overview' 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            } transition-colors`}
-          >
-            <Book size={20} />
-            <span className="text-xs truncate">Overview</span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('mood')}
-            className={`flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded-lg ${
-              activeTab === 'mood' 
-                ? 'bg-purple-500 text-white' 
-                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            } transition-colors`}
-          >
-            <Smile size={20} />
-            <span className="text-xs truncate">Mood</span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('focus')}
-            className={`flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded-lg ${
-              activeTab === 'focus' 
-                ? 'bg-indigo-500 text-white' 
-                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            } transition-colors`}
-          >
-            <Brain size={20} />
-            <span className="text-xs truncate">Focus</span>
-          </button>
-        </div>
-      </div>
-      
-      {/* Mobile category tabs - Second row */}
-      <div className="sm:hidden mb-4">  
-        <div className="flex flex-wrap gap-2 justify-center items-center bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
-          <button
-            onClick={() => setActiveTab('habits')}
-            className={`flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded-lg ${
-              activeTab === 'habits' 
-                ? 'bg-amber-500 text-white' 
-                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            } transition-colors`}
-          >
-            <Zap size={20} />
-            <span className="text-xs truncate">Habits</span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('workouts')}
-            className={`flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded-lg ${
-              activeTab === 'workouts' 
-                ? 'bg-green-500 text-white' 
-                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            } transition-colors`}
-          >
-            <Dumbbell size={20} />
-            <span className="text-xs truncate">Workouts</span>
-          </button>
-          
-          {/* Empty space for balance */}
-          <div className="flex-1 min-w-0 p-2 invisible">
-            <Dumbbell size={20} className="invisible" />
-            <span className="text-xs invisible">spacer</span>
-          </div>
-        </div>
-      </div>
-      
-      {/* Mobile time range selector */}
-      <div className="sm:hidden mb-4">
-        <div className="flex items-center justify-center">
-          <div className="inline-flex rounded-md shadow-sm">
-            <button
-              onClick={() => setTimeRange('day')}
-              className={`px-4 py-2 text-sm rounded-l-md ${
-                timeRange === 'day' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-r border-slate-200 dark:border-slate-600'
-              } transition-colors`}
-            >
-              Day
-            </button>
+    <div className="p-2 sm:p-4 h-full overflow-auto">
+      {/* Compact Mobile Header */}
+      <div className="sm:hidden mb-3">
+        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 flex flex-col">
+          <div className="flex justify-between items-center">
+            {/* Category Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                onClick={() => setShowCategoryMenu(!showCategoryMenu)}
+                className={`flex items-center gap-2 p-2 rounded-lg bg-${activeCategory.color}-500 text-white transition-colors`}
+              >
+                {activeCategory.icon}
+                <span>{activeCategory.name}</span>
+                <ChevronDown size={16} />
+              </button>
+              
+              {/* Dropdown Menu */}
+              {showCategoryMenu && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-slate-700 rounded-lg shadow-lg border border-slate-200 dark:border-slate-600 z-10 overflow-hidden">
+                  {['overview', 'mood', 'focus', 'habits', 'workouts'].map(cat => {
+                    const {icon, name, color} = getCategoryProperties(cat);
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => {
+                          setActiveTab(cat);
+                          setShowCategoryMenu(false);
+                        }}
+                        className={`flex items-center gap-2 w-full p-3 hover:bg-slate-100 dark:hover:bg-slate-600 ${cat === activeTab ? `text-${color}-500` : 'text-slate-700 dark:text-slate-300'}`}
+                      >
+                        {icon}
+                        <span>{name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
             
-            <button
-              onClick={() => setTimeRange('week')}
-              className={`px-4 py-2 text-sm ${
-                timeRange === 'week' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-r border-slate-200 dark:border-slate-600'
-              } transition-colors`}
-            >
-              Week
-            </button>
-            
-            <button
-              onClick={() => setTimeRange('month')}
-              className={`px-4 py-2 text-sm rounded-r-md ${
-                timeRange === 'month' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-              } transition-colors`}
-            >
-              Month
-            </button>
+            {/* Compact Time Range Selector */}
+            <div className="flex items-center rounded-lg bg-white dark:bg-slate-700 shadow-sm overflow-hidden h-8">
+              {['day', 'week', 'month'].map(range => (
+                <button
+                  key={range}
+                  onClick={() => setTimeRange(range)}
+                  className={`px-2 h-full text-xs ${
+                    timeRange === range 
+                      ? 'bg-blue-500 text-white' 
+                      : 'text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  {range.charAt(0).toUpperCase() + range.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
+          
+          {/* Last Updated Info */}
+          {lastUpdated && (
+            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-2 justify-end">
+              <Clock size={12} />
+              <span>Updated: {formatLastUpdated(lastUpdated)}</span>
+            </div>
+          )}
         </div>
       </div>
       
-      {/* Desktop layout - horizontal tabs and time selector */}
+      {/* Desktop Header */}
       <div className="hidden sm:flex justify-between items-center mb-6">
         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
-              activeTab === 'overview' 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            } transition-colors whitespace-nowrap`}
-          >
-            <Book size={16} />
-            <span>Overview</span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('mood')}
-            className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
-              activeTab === 'mood' 
-                ? 'bg-purple-500 text-white' 
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            } transition-colors whitespace-nowrap`}
-          >
-            <Smile size={16} />
-            <span>Mood</span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('focus')}
-            className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
-              activeTab === 'focus' 
-                ? 'bg-indigo-500 text-white' 
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            } transition-colors whitespace-nowrap`}
-          >
-            <Brain size={16} />
-            <span>Focus</span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('habits')}
-            className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
-              activeTab === 'habits' 
-                ? 'bg-amber-500 text-white' 
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            } transition-colors whitespace-nowrap`}
-          >
-            <Zap size={16} />
-            <span>Habits</span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('workouts')}
-            className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
-              activeTab === 'workouts' 
-                ? 'bg-green-500 text-white' 
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            } transition-colors whitespace-nowrap`}
-          >
-            <Dumbbell size={16} />
-            <span>Workouts</span>
-          </button>
+          {['overview', 'mood', 'focus', 'habits', 'workouts'].map(tab => {
+            const {icon, name, color} = getCategoryProperties(tab);
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
+                  activeTab === tab 
+                    ? `bg-${color}-500 text-white` 
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                } transition-colors whitespace-nowrap`}
+              >
+                {icon}
+                <span>{name}</span>
+              </button>
+            );
+          })}
         </div>
         
         <div className="flex gap-1 items-center">
@@ -428,8 +350,8 @@ Keep your analysis conversational, helpful, and actionable.`;
         </div>
       </div>
       
-      {/* Analysis content - full height on mobile */}
-      <div className="bg-white dark:bg-slate-700 p-4 sm:p-6 rounded-xl shadow-sm h-[calc(100vh-240px)] sm:h-auto flex flex-col">
+      {/* Content Container - more vertical space on mobile */}
+      <div className="bg-white dark:bg-slate-700 p-4 sm:p-6 rounded-xl shadow-sm h-[calc(100vh-110px)] sm:h-auto flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
             {activeTab === 'overview' ? 'Wellbeing Overview' :
@@ -448,17 +370,10 @@ Keep your analysis conversational, helpful, and actionable.`;
                  'Last 30 days'}
               </span>
             </div>
-            
-            {lastUpdated && (
-              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                <Clock size={14} />
-                <span>Updated: {formatLastUpdated(lastUpdated)}</span>
-              </div>
-            )}
           </div>
         </div>
         
-        {/* Full container scroll on mobile */}
+        {/* Content with full container scroll */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
@@ -502,7 +417,7 @@ Keep your analysis conversational, helpful, and actionable.`;
                 className="px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 mx-auto"
               >
                 <RefreshCw size={16} />
-                <span>Generate {activeTab} analysis</span>
+                <span>Generate {activeCategory.name} analysis</span>
               </button>
             </div>
           )}

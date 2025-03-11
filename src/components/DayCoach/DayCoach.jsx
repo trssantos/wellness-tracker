@@ -383,7 +383,7 @@ const DayCoach = () => {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-6 transition-colors w-full h-full flex flex-col">
       {/* Header with view tabs */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-3">
   <div className="flex items-center gap-2">
     <MessageCircle className="text-blue-500 dark:text-blue-400" size={24} />
     <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 transition-colors">
@@ -396,77 +396,44 @@ const DayCoach = () => {
     </h2>
   </div>
   
-  <div className="flex items-center">
-    {/* Mobile view - icon only buttons */}
-    <div className="flex sm:hidden rounded-lg overflow-hidden shadow-sm border border-slate-200 dark:border-slate-600">
-      <button
-        onClick={() => setViewMode('chat')}
-        className={`p-2 ${
-          viewMode === 'chat' 
-            ? 'bg-blue-500 text-white' 
-            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-        } transition-colors flex items-center justify-center`}
-        title="Chat"
-      >
-        <MessageCircle size={20} />
-      </button>
-      <button
-        onClick={() => setViewMode('profile')}
-        className={`p-2 ${
-          viewMode === 'profile' 
-            ? 'bg-blue-500 text-white' 
-            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-        } transition-colors flex items-center justify-center`}
-        title="Profile"
-      >
-        <User size={20} />
-      </button>
-      <button
-        onClick={() => setViewMode('analysis')}
-        className={`p-2 ${
-          viewMode === 'analysis' 
-            ? 'bg-blue-500 text-white' 
-            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-        } transition-colors flex items-center justify-center`}
-        title="Analysis"
-      >
-        <BarChart2 size={20} />
-      </button>
-    </div>
-    
-    {/* Desktop view - text buttons */}
-    <div className="hidden sm:flex">
-      <button
-        onClick={() => setViewMode('chat')}
-        className={`px-3 py-1.5 rounded-l-lg text-sm ${
-          viewMode === 'chat' 
-            ? 'bg-blue-500 text-white' 
-            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-        } transition-colors`}
-      >
-        Chat
-      </button>
-      <button
-        onClick={() => setViewMode('profile')}
-        className={`px-3 py-1.5 text-sm ${
-          viewMode === 'profile' 
-            ? 'bg-blue-500 text-white' 
-            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-        } transition-colors`}
-      >
-        Profile
-      </button>
-      <button
-        onClick={() => setViewMode('analysis')}
-        className={`px-3 py-1.5 rounded-r-lg text-sm ${
-          viewMode === 'analysis' 
-            ? 'bg-blue-500 text-white' 
-            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-        } transition-colors`}
-      >
-        Analysis
-      </button>
-    </div>
+  {/* Super compact mobile view - Pill-shaped segmented control */}
+  <div className="flex rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 shadow-sm border border-slate-200 dark:border-slate-600 h-8">
+    <button
+      onClick={() => setViewMode('chat')}
+      className={`h-full px-3 flex items-center justify-center ${
+        viewMode === 'chat' 
+          ? 'bg-blue-500 text-white' 
+          : 'text-slate-600 dark:text-slate-300'
+      } transition-colors`}
+      title="Chat"
+    >
+      <MessageCircle size={14} className="sm:hidden" />
+      <span className="hidden sm:inline text-sm">Chat</span>
+    </button>
+    <button
+      onClick={() => setViewMode('profile')}
+      className={`h-full px-3 flex items-center justify-center ${
+        viewMode === 'profile' 
+          ? 'bg-blue-500 text-white' 
+          : 'text-slate-600 dark:text-slate-300'
+      } transition-colors`}
+      title="Profile"
+    >
+      <User size={14} className="sm:hidden" />
+      <span className="hidden sm:inline text-sm">Profile</span>
+    </button>
+    <button
+      onClick={() => setViewMode('analysis')}
+      className={`h-full px-3 flex items-center justify-center ${
+        viewMode === 'analysis' 
+          ? 'bg-blue-500 text-white' 
+          : 'text-slate-600 dark:text-slate-300'
+      } transition-colors`}
+      title="Analysis"
+    >
+      <BarChart2 size={14} className="sm:hidden" />
+      <span className="hidden sm:inline text-sm">Analysis</span>
+    </button>
   </div>
 </div>
 
@@ -504,17 +471,16 @@ const DayCoach = () => {
             <>
               {viewMode === 'chat' && (
   <div className="flex-1 flex flex-col min-h-0 max-w-full">
-    {/* Chat messages container */}
+    {/* Chat messages container - taller on mobile */}
     <div 
       ref={chatContainerRef}
-      className="flex-1 overflow-y-auto p-2 mb-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg transition-colors h-64 xs:h-80 sm:h-96 md:h-[400px] max-h-[60vh] w-full max-w-full"
+      className="flex-1 overflow-y-auto p-2 mb-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg transition-colors h-[calc(100vh-170px)] max-w-full"
     >
       <div className="max-w-full">
         {messages.length === 0 ? (
           <DayCoachEmptyState onStartChat={() => handleSendMessage("Hi! How can you help me?")} />
         ) : (
           <div className="space-y-4 max-w-full">
-            {/* Only show the last 10 messages to keep the UI clean */}
             {messages.slice(-10).map((message, index) => (
               <DayCoachMessage 
                 key={message.id} 

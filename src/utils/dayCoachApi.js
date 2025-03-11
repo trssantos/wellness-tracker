@@ -524,6 +524,8 @@ const buildUserPrompt = (context) => {
           
           Be specific - if they're asking about their data, reference the actual items from their data
           in your response (like specific task names, habit details, etc.) rather than being vague.
+
+          If they ask for suggestions give suggestions that makes sense to them, like new tasks, new habits, new hobbies and activities, etc, feel free to advise the user as you see fit
           
           Below you'll find detailed information about the user's recent activities and data.
           Use this information to give them a personalized, relevant answer.

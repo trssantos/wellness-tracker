@@ -367,75 +367,11 @@ const getRecentDetailedData = (storage, today) => {
   return result;
 };
 
-// Call AI with prepared context
-const fetchFromAI = async (context) => {
-  try {
-    // Build a system prompt that establishes the coach's persona
-    const systemPrompt = `
-    You are a supportive, friendly day coach within the ZenTracker app. 
-    Your role is to be a compassionate companion, offering brief insights and encouragement.
-  
-    Keep your responses casual, warm and short (50-100 words max). Write like a supportive friend texting, not a formal coach writing an email.
-    
-    Use the user's journal entries extensively when available for personalization.
-    Reference their task completion status and mood/energy data to make your responses relevant.
-    
-    Vary your conversation style - sometimes ask questions, sometimes offer observations, sometimes give encouragement.
-    
-    Avoid repeating yourself or using formulaic structures in your responses.
-    
-    Current date: ${context.userData.today}
-      You have access to the user's:
-      - Mood and energy levels (morning and evening)
-      - Task completion rates
-      - Workout history
-      - Focus session statistics
-      - Habit tracking data
-      - Journal entries
-      
-      For recent data (last 7 days), you have detailed information. For older data, you have weekly and monthly summaries.
-      
-    `;
-    
-    // Build a user prompt based on the context
-    const userPrompt = buildUserPrompt(context);
-    
-    // Call the AI service
-    const response = await generateContent(`
-      ${systemPrompt}
-      
-      ${userPrompt}
-      
-      Please format your response in a conversational tone. At the end, include 2-3 suggested replies the user might want to choose from, in the format:
-      
-      SUGGESTED_REPLIES:
-      - Suggestion 1
-      - Suggestion 2
-      - Suggestion 3
-    `);
-    
-    // Extract suggestions from the response
-    const suggestions = extractSuggestions(response);
-    
-    // Remove suggestions from the main message
-    let message = response.replace(/SUGGESTED_REPLIES:[\s\S]*$/, '').trim();
-    
-    return {
-      message,
-      suggestions
-    };
-  } catch (error) {
-    console.error('Error with AI API:', error);
-    throw error;
-  }
-};
 
-// Build user prompt based on context
 const buildUserPrompt = (context) => {
-  const { messageType, userData, userMessage, specificContext } = context;
+  const { messageType, userData, userMessage, specificContext, previousMessages } = context;
   
   // Base prompt with user data summary
-  // Base prompt with user data summary and enhanced guidance for suggestions
   let prompt = `
     Here's a summary of the user's data:
     
@@ -449,12 +385,25 @@ const buildUserPrompt = (context) => {
     IMPORTANT GUIDANCE:
     1. Be conversational and friendly - address the user directly as "you"
     2. Be supportive of their goals and lifestyle choices
-    3. OFFER CONCRETE SUGGESTIONS for new tasks, habits, or activities based on patterns in their data
+    3. Use thoughtful judgment to determine what kind of suggestions would be most helpful:
+       - Sometimes recommend completely new ideas when the user seems open to exploration
+       - Other times suggest manageable variations or improvements to existing habits when consistency is important
+       - Base this decision on their mood, energy level, and the conversation context
     4. Reference specific details from their journal entries and task lists
     5. Make connections between different aspects of their data (e.g., sleep quality affecting mood)
     6. Be personalized - avoid generic advice that could apply to anyone
     7. If they mention people in their journals, acknowledge these social connections
   `;
+
+  // Add conversation history for context
+  if (previousMessages && previousMessages.length > 0) {
+    prompt += `\n\nRECENT CONVERSATION HISTORY (newest last):\n`;
+    previousMessages.forEach((msg, index) => {
+      const role = msg.sender === 'coach' ? 'SOLARIS' : 'USER';
+      prompt += `\n${role}: ${msg.content}\n`;
+    });
+    prompt += `\nPlease continue this conversation thread naturally.\n`;
+  }
   
   // Add specific context based on message type
   switch (messageType) {
@@ -463,7 +412,7 @@ const buildUserPrompt = (context) => {
         The user has just logged their morning mood as "${specificContext.mood}".
         Their energy level is ${specificContext.energy || 'not specified'}.
         Acknowledge this mood, provide a supportive response, and offer a suggestion relevant to their current state.
-        IMPORTANT: Based on their recent patterns, suggest a specific new task that might improve their day.
+        The suggestion could be a new task or a way to adapt an existing habit - choose based on what seems most helpful for their current mood and energy level.
       `;
       break;
       
@@ -473,7 +422,7 @@ const buildUserPrompt = (context) => {
         Their morning mood today was "${specificContext.morningMood || 'not specified'}".
         Their evening energy level is ${specificContext.eveningEnergy || 'not specified'}.
         Reflect on how their day went, considering the change in mood throughout the day.
-        IMPORTANT: Suggest a specific habit or routine that could improve their evening based on patterns you observe.
+        Based on this pattern, suggest either a new evening routine or a modification to their existing habits that could improve their wellbeing.
       `;
       break;
       
@@ -482,7 +431,7 @@ const buildUserPrompt = (context) => {
         The user has just completed a workout.
         Details: ${JSON.stringify(specificContext.workout)}
         Acknowledge this achievement and provide encouragement.
-        IMPORTANT: Based on their workout history, suggest a related habit or complementary workout they might enjoy.
+        Based on their workout history and preferences, suggest either a complementary exercise they might enjoy or a completely new physical activity that aligns with their fitness goals.
       `;
       break;
       
@@ -497,7 +446,7 @@ const buildUserPrompt = (context) => {
         3. Acknowledge any personal or social events they mention.
         4. If they mentioned any people by name, reference these social connections in your response.
         5. Make your response feel personalized by connecting to something specific they mentioned.
-        6. Suggest at least one concrete action, habit, or reflection based on their journal content.
+        6. Based on the content of their journal, suggest an action, habit, or activity that feels appropriate - this could be something new or a refinement of something they already do.
       `;
       break;
       
@@ -506,7 +455,7 @@ const buildUserPrompt = (context) => {
         The user has completed all their tasks for today!
         Task list: ${JSON.stringify(specificContext.tasks)}
         Celebrate this achievement and offer an insight about their productivity.
-        IMPORTANT: Based on their completed tasks, suggest a potential new task or habit they might want to consider for tomorrow.
+        Based on their task history and accomplishments, suggest something they might enjoy - either a reward activity or a new challenge that builds on their success.
       `;
       break;
       
@@ -517,7 +466,7 @@ const buildUserPrompt = (context) => {
         Remaining: ${specificContext.total - specificContext.completed} tasks
         Recently completed: ${JSON.stringify(specificContext.recentlyCompleted)}
         Acknowledge their progress and offer encouragement.
-        IMPORTANT: Suggest a specific strategy to help them with their remaining tasks based on their patterns.
+        Suggest a specific strategy to help with their remaining tasks - this could be a new approach or an improvement to their current method, whichever seems more appropriate.
       `;
       break;
       
@@ -527,7 +476,7 @@ const buildUserPrompt = (context) => {
         Details: ${JSON.stringify(specificContext.sleep)}
         
         Comment on their sleep quality and pattern. Note any factors they've identified that affected their sleep.
-        IMPORTANT: Offer a specific suggestion for improving their sleep or a task that's appropriate for their energy level.
+        Based on their sleep data trends, suggest an appropriate action - this could be a new sleep habit or a refinement of their current routine.
       `;
       break;
       
@@ -535,7 +484,7 @@ const buildUserPrompt = (context) => {
       prompt += `
         It's ${specificContext.timeOfDay} on ${specificContext.date}.
         
-        Check in with the user to see how his day is going and offering any advice or followup question if you see fit based on his data for the day or appropriate for the time of the day
+        Check in with the user and suggest something appropriate for the time of day and their typical patterns - this could be something that fits their routine or a refreshing change.
       `;
       break;
       
@@ -543,17 +492,16 @@ const buildUserPrompt = (context) => {
       prompt += `
         The user has asked: "${userMessage}"
         
-        Provide a helpful, specific response based on their data. The user's question may be about 
+        Provide a helpful, specific response based on their data and prior conversation. The user's question may be about 
         their tasks, habits, mood, energy, workouts, focus sessions, or other tracked data.
         
         Be specific - if they're asking about their data, reference the actual items from their data
         in your response (like specific task names, habit details, etc.) rather than being vague.
 
-        If they ask for suggestions, provide specific, personalized recommendations that make sense for them:
-        - New tasks based on their existing patterns and completed tasks
-        - New habits that complement their existing routines
-        - New activities that might improve their mood or energy
-        - Ways to improve their social connections based on journal entries
+        If they ask for suggestions, determine what would be most helpful based on context:
+        - Sometimes suggest entirely new activities if they're looking for fresh inspiration
+        - Other times recommend improvements to existing habits if consistency and gradual progress are important
+        - Always consider their mood, energy levels, and the conversation flow when deciding
         
         Below you'll find detailed information about the user's recent activities and data.
         Use this information to give them a personalized, relevant answer.
@@ -564,12 +512,11 @@ const buildUserPrompt = (context) => {
       prompt += `
         Generate a supportive check-in message for the user based on their recent data.
         Look for meaningful insights, correlations, or patterns that might be helpful for them.
-        IMPORTANT: Suggest a specific new habit, task, or activity based on their patterns and history.
+        Make a thoughtful suggestion based on what you observe - this could be a new habit, a modified approach to an existing activity, or a different perspective on their current practices.
       `;
   }
   
-  // Add detailed recent data for better context
-  // Add TODAY'S complete data
+  // Rest of the function remains the same - adding data for context
   const today = userData.today;
   const todayData = userData.recentData[today] || {};
   
@@ -598,8 +545,79 @@ const buildUserPrompt = (context) => {
     
   prompt += `\n\nRECENT WEEKLY SUMMARIES:\n${JSON.stringify(recentWeeklySummaries, null, 2)}`;
   
-  
   return prompt;
+};
+
+// Also modify the system prompt in the fetchFromAI function for better balance:
+
+const fetchFromAI = async (context) => {
+  try {
+    // Build a system prompt that establishes the coach's persona
+    const systemPrompt = `
+    You are Solaris, a supportive, friendly day coach within the ZenTracker app. 
+    Your role is to be a compassionate companion, offering insights, encouragement, and suggestions.
+  
+    Keep your responses casual, warm and concise (50-150 words). Write like a supportive friend texting, not a formal coach writing an email.
+    
+    Use the user's journal entries extensively when available for personalization.
+    Reference their task completion status and mood/energy data to make your responses relevant.
+    
+    BE THOUGHTFUL WITH RECOMMENDATIONS:
+    - Use judgment to determine when to suggest entirely new activities vs. improvements to existing habits
+    - Consider the user's current mood, energy level, and conversation context
+    - Suggest new activities when the user seems open to exploration or needs fresh inspiration
+    - Recommend manageable steps and variations when building on existing progress makes more sense
+    - Focus on what would genuinely help them make progress toward their goals
+    
+    Vary your conversation style - sometimes ask questions, sometimes offer observations, sometimes give encouragement.
+    
+    Always maintain continuity with the prior conversation and refer back to things previously discussed.
+    
+    Avoid repeating yourself or using formulaic structures in your responses.
+    
+    Current date: ${context.userData.today}
+      You have access to the user's:
+      - Mood and energy levels (morning and evening)
+      - Task completion rates
+      - Workout history
+      - Focus session statistics
+      - Habit tracking data
+      - Journal entries
+      - Previous conversation history
+      
+      For recent data (last 7 days), you have detailed information. For older data, you have weekly and monthly summaries.
+    `;
+    
+    // Rest of function remains the same as original fix
+    const userPrompt = buildUserPrompt(context);
+    
+    const response = await generateContent(`
+      ${systemPrompt}
+      
+      ${userPrompt}
+      
+      Please format your response in a conversational tone. At the end, include 2-3 suggested replies the user might want to choose from, in the format:
+      
+      SUGGESTED_REPLIES:
+      - Suggestion 1
+      - Suggestion 2
+      - Suggestion 3
+    `);
+    
+    // Extract suggestions from the response
+    const suggestions = extractSuggestions(response);
+    
+    // Remove suggestions from the main message
+    let message = response.replace(/SUGGESTED_REPLIES:[\s\S]*$/, '').trim();
+    
+    return {
+      message,
+      suggestions
+    };
+  } catch (error) {
+    console.error('Error with AI API:', error);
+    throw error;
+  }
 };
 
 // Helper functions to extract specific data

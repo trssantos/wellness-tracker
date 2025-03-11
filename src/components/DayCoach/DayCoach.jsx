@@ -20,66 +20,6 @@ import DayCoachProfile from './DayCoachProfile';
 import DayCoachAnalysis from './DayCoachAnalysis';
 import DayCoachMoodTracker from './DayCoachMoodTracker';
 
-const StickyHeader = ({ viewMode, setViewMode, hasUnread }) => {
-  return (
-    <div className="sticky top-0 z-30 bg-white dark:bg-slate-800 shadow-md border-b border-slate-200 dark:border-slate-700 p-4 mb-3">
-      <div className="flex justify-between items-center max-w-screen-xl mx-auto">
-        <div className="flex items-center gap-2">
-          <Sparkles className="text-indigo-500 dark:text-indigo-400" size={24} />
-          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 transition-colors">
-            Solaris
-            {hasUnread && (
-              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-amber-500 text-white rounded-full">
-                !
-              </span>
-            )}
-          </h2>
-        </div>
-        
-        {/* Navigation tabs */}
-        <div className="flex rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 shadow-sm border border-slate-200 dark:border-slate-600 h-8">
-          <button
-            onClick={() => setViewMode('chat')}
-            className={`h-full px-3 flex items-center justify-center ${
-              viewMode === 'chat' 
-                ? 'bg-indigo-500 text-white' 
-                : 'text-slate-600 dark:text-slate-300'
-            } transition-colors`}
-            title="Chat"
-          >
-            <MessageCircle size={14} className="sm:hidden" />
-            <span className="hidden sm:inline text-sm">Chat</span>
-          </button>
-          <button
-            onClick={() => setViewMode('profile')}
-            className={`h-full px-3 flex items-center justify-center ${
-              viewMode === 'profile' 
-                ? 'bg-indigo-500 text-white' 
-                : 'text-slate-600 dark:text-slate-300'
-            } transition-colors`}
-            title="Profile"
-          >
-            <User size={14} className="sm:hidden" />
-            <span className="hidden sm:inline text-sm">Profile</span>
-          </button>
-          <button
-            onClick={() => setViewMode('analysis')}
-            className={`h-full px-3 flex items-center justify-center ${
-              viewMode === 'analysis' 
-                ? 'bg-indigo-500 text-white' 
-                : 'text-slate-600 dark:text-slate-300'
-            } transition-colors`}
-            title="Analysis"
-          >
-            <BarChart2 size={14} className="sm:hidden" />
-            <span className="hidden sm:inline text-sm">Analysis</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const DayCoach = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -93,11 +33,48 @@ const DayCoach = () => {
   const [lastDataCheckTime, setLastDataCheckTime] = useState(0);
   const [lastCheckedData, setLastCheckedData] = useState({});
   
+  // Scroll-aware header states
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [lastScrollTop, setLastScrollTop] = useState(0);
+  const contentContainerRef = useRef(null);
+  
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const dataUpdateInterval = useRef(null);
   const checkInitiated = useRef(false);
   const componentMountTime = useRef(Date.now());
+  
+  // Scroll direction detection for header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!contentContainerRef.current) return;
+      
+      const scrollTop = contentContainerRef.current.scrollTop;
+      
+      // Detect scroll direction
+      if (scrollTop > lastScrollTop) {
+        // Scrolling down - hide header
+        setIsHeaderVisible(false);
+      } else {
+        // Scrolling up - show header
+        setIsHeaderVisible(true);
+      }
+      
+      // Update last scroll position
+      setLastScrollTop(scrollTop);
+    };
+    
+    const container = contentContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll, { passive: true });
+    }
+    
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [lastScrollTop]);
   
   // First-time initialization
   useEffect(() => {
@@ -439,15 +416,86 @@ const DayCoach = () => {
     handleSendMessage(replyText);
   };
   
+  // Header component with scroll-aware behavior
+  const ScrollAwareHeader = ({ viewMode, setViewMode, hasUnread, isVisible }) => {
+    return (
+      <div className={`sticky top-0 z-30 bg-white dark:bg-slate-800 shadow-md border-b border-slate-200 dark:border-slate-700 transition-transform duration-300 ${
+        isVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}>
+        <div className="flex justify-between items-center p-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="text-indigo-500 dark:text-indigo-400" size={24} />
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 transition-colors">
+              Solaris
+              {hasUnread && (
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-amber-500 text-white rounded-full">
+                  !
+                </span>
+              )}
+            </h2>
+          </div>
+          
+          {/* Navigation tabs */}
+          <div className="flex rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 shadow-sm border border-slate-200 dark:border-slate-600 h-8">
+            <button
+              onClick={() => setViewMode('chat')}
+              className={`h-full px-3 flex items-center justify-center ${
+                viewMode === 'chat' 
+                  ? 'bg-indigo-500 text-white' 
+                  : 'text-slate-600 dark:text-slate-300'
+              } transition-colors`}
+              title="Chat"
+            >
+              <MessageCircle size={14} className="sm:hidden" />
+              <span className="hidden sm:inline text-sm">Chat</span>
+            </button>
+            <button
+              onClick={() => setViewMode('profile')}
+              className={`h-full px-3 flex items-center justify-center ${
+                viewMode === 'profile' 
+                  ? 'bg-indigo-500 text-white' 
+                  : 'text-slate-600 dark:text-slate-300'
+              } transition-colors`}
+              title="Profile"
+            >
+              <User size={14} className="sm:hidden" />
+              <span className="hidden sm:inline text-sm">Profile</span>
+            </button>
+            <button
+              onClick={() => setViewMode('analysis')}
+              className={`h-full px-3 flex items-center justify-center ${
+                viewMode === 'analysis' 
+                  ? 'bg-indigo-500 text-white' 
+                  : 'text-slate-600 dark:text-slate-300'
+              } transition-colors`}
+              title="Analysis"
+            >
+              <BarChart2 size={14} className="sm:hidden" />
+              <span className="hidden sm:inline text-sm">Analysis</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
   // Main render function
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm transition-colors w-full h-full flex flex-col overflow-hidden">
-      {/* Content container - includes the header */}
-      <div className="flex-1 flex flex-col overflow-y-auto">
-        {/* Sticky Header */}
-        <StickyHeader viewMode={viewMode} setViewMode={setViewMode} hasUnread={hasUnread} />
+      {/* Main scrollable content container with ref */}
+      <div 
+        ref={contentContainerRef}
+        className="flex-1 flex flex-col overflow-y-auto"
+      >
+        {/* Header that shows/hides based on scroll direction */}
+        <ScrollAwareHeader 
+          viewMode={viewMode} 
+          setViewMode={setViewMode} 
+          hasUnread={hasUnread} 
+          isVisible={isHeaderVisible} 
+        />
         
-        {/* Main content - no extra padding needed */}
+        {/* Main content */}
         <div className="p-4 sm:p-6 flex-1">
           {/* First-time introduction or main content */}
           {isFirstVisit ? (

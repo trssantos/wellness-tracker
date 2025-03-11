@@ -15,7 +15,6 @@ import { DayChecklist } from './components/DayChecklist';
 import { MoodSelector } from './components/MoodSelector';
 import { DayActionSelector } from './components/DayActionSelector';
 import { AITaskGenerator } from './components/AITaskGenerator';
-import SolarisQuickAccess from './components/SolarisQuickAccess';
 import CustomTaskListCreator from './components/CustomTaskListCreator';
 import { TaskListSelector } from './components/TaskListSelector';
 import { DayNotes } from './components/DayNotes';
@@ -640,7 +639,6 @@ const handlePendingTasksAction = (action, tasks = []) => {
           }}
         />
 
-<SolarisQuickAccess moduleName="app" />
 
       </div>
       </WorkoutThemeProvider>

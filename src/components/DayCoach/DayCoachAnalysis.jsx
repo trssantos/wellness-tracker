@@ -227,70 +227,78 @@ Keep your analysis conversational, helpful, and actionable.`;
   return (
     <div className="p-2 sm:p-4 h-full overflow-auto">
       {/* Compact Mobile Header */}
-      <div className="sm:hidden mb-3">
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 flex flex-col">
-          <div className="flex justify-between items-center">
-            {/* Category Dropdown */}
-            <div className="relative" ref={dropdownRef}>
-              <button 
-                onClick={() => setShowCategoryMenu(!showCategoryMenu)}
-                className={`flex items-center gap-2 p-2 rounded-lg bg-${activeCategory.color}-500 text-white transition-colors`}
-              >
-                {activeCategory.icon}
-                <span>{activeCategory.name}</span>
-                <ChevronDown size={16} />
-              </button>
-              
-              {/* Dropdown Menu */}
-              {showCategoryMenu && (
-                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-slate-700 rounded-lg shadow-lg border border-slate-200 dark:border-slate-600 z-10 overflow-hidden">
-                  {['overview', 'mood', 'focus', 'habits', 'workouts'].map(cat => {
-                    const {icon, name, color} = getCategoryProperties(cat);
-                    return (
-                      <button
-                        key={cat}
-                        onClick={() => {
-                          setActiveTab(cat);
-                          setShowCategoryMenu(false);
-                        }}
-                        className={`flex items-center gap-2 w-full p-3 hover:bg-slate-100 dark:hover:bg-slate-600 ${cat === activeTab ? `text-${color}-500` : 'text-slate-700 dark:text-slate-300'}`}
-                      >
-                        {icon}
-                        <span>{name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            
-            {/* Compact Time Range Selector */}
-            <div className="flex items-center rounded-lg bg-white dark:bg-slate-700 shadow-sm overflow-hidden h-8">
-              {['day', 'week', 'month'].map(range => (
+<div className="sm:hidden mb-3">
+  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-slate-800 dark:to-indigo-900/20 rounded-lg p-3 flex flex-col shadow-sm">
+    {/* Category Dropdown */}
+    <div className="mb-3">
+      <div className="relative" ref={dropdownRef}>
+        <button 
+          onClick={() => setShowCategoryMenu(!showCategoryMenu)}
+          className={`w-full flex items-center justify-between gap-2 p-2.5 rounded-lg bg-gradient-to-r from-${activeCategory.color}-500 to-${activeCategory.color}-600 text-white transition-colors shadow-sm`}
+        >
+          <span className="flex items-center gap-2">
+            {activeCategory.icon}
+            <span className="font-medium">{activeCategory.name}</span>
+          </span>
+          <ChevronDown size={16} />
+        </button>
+        
+        {/* Dropdown Menu */}
+        {showCategoryMenu && (
+          <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-slate-700 rounded-lg shadow-lg border border-slate-200 dark:border-slate-600 z-10 overflow-hidden">
+            {['overview', 'mood', 'focus', 'habits', 'workouts'].map(cat => {
+              const {icon, name, color} = getCategoryProperties(cat);
+              return (
                 <button
-                  key={range}
-                  onClick={() => setTimeRange(range)}
-                  className={`px-2 h-full text-xs ${
-                    timeRange === range 
-                      ? 'bg-blue-500 text-white' 
-                      : 'text-slate-700 dark:text-slate-300'
-                  }`}
+                  key={cat}
+                  onClick={() => {
+                    setActiveTab(cat);
+                    setShowCategoryMenu(false);
+                  }}
+                  className={`flex items-center gap-2 w-full p-3 hover:bg-slate-100 dark:hover:bg-slate-600 ${cat === activeTab ? `text-${color}-500` : 'text-slate-700 dark:text-slate-300'}`}
                 >
-                  {range.charAt(0).toUpperCase() + range.slice(1)}
+                  {icon}
+                  <span>{name}</span>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
-          
-          {/* Last Updated Info */}
-          {lastUpdated && (
-            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-2 justify-end">
-              <Clock size={12} />
-              <span>Updated: {formatLastUpdated(lastUpdated)}</span>
-            </div>
-          )}
-        </div>
+        )}
       </div>
+    </div>
+    
+    {/* Time Range Selector - Now below dropdown */}
+    <div className="mb-2">
+      <label className="text-xs text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
+        <Calendar size={12} />
+        <span>Time Period:</span>
+      </label>
+      <div className="grid grid-cols-3 gap-1 rounded-lg overflow-hidden bg-white dark:bg-slate-700 shadow-sm border border-slate-200 dark:border-slate-600">
+        {['day', 'week', 'month'].map(range => (
+          <button
+            key={range}
+            onClick={() => setTimeRange(range)}
+            className={`py-2 text-xs font-medium ${
+              timeRange === range 
+                ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' 
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
+            } transition-colors`}
+          >
+            {range === 'day' ? 'Daily' : range === 'week' ? 'Weekly' : 'Monthly'}
+          </button>
+        ))}
+      </div>
+    </div>
+    
+    {/* Last Updated Info */}
+    {lastUpdated && (
+      <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1 justify-end">
+        <Clock size={12} />
+        <span>Updated: {formatLastUpdated(lastUpdated)}</span>
+      </div>
+    )}
+  </div>
+</div>
       
       {/* Desktop Header */}
       <div className="hidden sm:flex justify-between items-center mb-6">

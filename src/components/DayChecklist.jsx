@@ -9,6 +9,7 @@ import EditTaskPanel from './DayChecklist/EditTaskPanel';
 import { TaskReminder } from './TaskReminder';
 import HabitTaskIntegration from './HabitTaskIntegration';
 import { getHabitsForDate, trackHabitCompletion, getHabitTaskNames } from '../utils/habitTrackerUtils';
+import { handleDataChange } from '../utils/dayCoachUtils';
 
 // Default categories from separate file
 import { DEFAULT_CATEGORIES } from '../utils/defaultTasks';
@@ -259,6 +260,12 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
       checked: newChecked
     };
     setStorage(storage);
+
+    // Check if all tasks are completed
+const allTasksCompleted = Object.values(newChecked).every(Boolean) && Object.keys(newChecked).length > 0;
+if (allTasksCompleted) {
+  handleDataChange(date, 'tasks', { allCompleted: true });
+}
     
     // Update habit completions based on checked tasks
     updateHabitCompletions(newChecked);

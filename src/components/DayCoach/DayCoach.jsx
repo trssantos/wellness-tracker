@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, BarChart2,
+import { User, BarChart2,Trash2,
   MessageCircle, Send, SmilePlus, Calendar, Clock, 
   Dumbbell, Brain, Zap, Check, Bell, X, Moon, Sun,
   Lightbulb, Activity, ArrowRight, ChevronDown, ChevronUp, Sparkles
 } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
 import { fetchCoachResponse } from '../../utils/dayCoachApi';
+import DateSeparator from './DateSeparator';
 import { 
   initializeDayCoach, 
   getDayCoachData, 
@@ -19,6 +20,8 @@ import DayCoachEmptyState from './DayCoachEmptyState';
 import DayCoachProfile from './DayCoachProfile';
 import DayCoachAnalysis from './DayCoachAnalysis';
 import DayCoachMoodTracker from './DayCoachMoodTracker';
+import { clearDayCoachMessages } from '../../utils/dayCoachUtils';
+import ClearChatDialog from './ClearChatDialog';
 
 const DayCoach = () => {
   const [messages, setMessages] = useState([]);
@@ -38,6 +41,8 @@ const DayCoach = () => {
   const dataUpdateInterval = useRef(null);
   const checkInitiated = useRef(false);
   const componentMountTime = useRef(Date.now());
+
+  const [showClearDialog, setShowClearDialog] = useState(false);
   
   // First-time initialization
   useEffect(() => {
@@ -107,6 +112,53 @@ const DayCoach = () => {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  const handleClearChat = () => {
+    if (clearDayCoachMessages()) {
+      // Update local state
+      const storage = getStorage();
+      setMessages(storage.dayCoach?.messages || []);
+      setShowClearDialog(false);
+    }
+  };
+  
+
+  // Group messages by date
+const groupMessagesByDate = (messages) => {
+  // Sort messages by timestamp
+  const sortedMessages = [...messages].sort((a, b) => 
+    new Date(a.timestamp) - new Date(b.timestamp)
+  );
+  
+  // Group by date
+  const groups = [];
+  let currentDate = null;
+  let currentGroup = null;
+  
+  sortedMessages.forEach(message => {
+    const messageDate = new Date(message.timestamp).toDateString();
+    
+    if (messageDate !== currentDate) {
+      currentDate = messageDate;
+      currentGroup = {
+        date: message.timestamp,
+        messages: []
+      };
+      groups.push(currentGroup);
+    }
+    
+    currentGroup.messages.push(message);
+  });
+  
+  return groups;
+};
+
+// Check if a date is today
+const isToday = (dateStr) => {
+  const date = new Date(dateStr);
+  const today = new Date();
+  return date.toDateString() === today.toDateString();
+};
   
   // Check for data changes that should trigger a proactive coach message
   const checkForDataUpdates = async () => {
@@ -479,37 +531,46 @@ const DayCoach = () => {
       className="flex-1 overflow-y-auto p-2 mb-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg transition-colors h-[calc(100vh-170px)] max-w-full"
     >
       <div className="max-w-full">
-        {messages.length === 0 ? (
-          <DayCoachEmptyState onStartChat={() => handleSendMessage("Hi! How can you help me?")} />
-        ) : (
-          <div className="space-y-4 max-w-full">
-            {messages.slice(-10).map((message, index) => (
-              <DayCoachMessage 
-                key={message.id} 
-                message={message} 
-                onReply={handleQuickReply}
-                displaySuggestions={
-                  message.sender === 'coach' && 
-                  index === messages.slice(-10).length - 1 &&
-                  !quickReplies.length
-                }
-                isMobile={window.innerWidth < 640}
-              />
-            ))}
-            
-            {isLoading && (
-              <div className="flex items-center justify-center p-4">
-                <div className="animate-pulse flex items-center space-x-2">
-                  <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce"></div>
-                  <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-75"></div>
-                  <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-150"></div>
-                </div>
-              </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
-        )}
+      {messages.length === 0 ? (
+  <DayCoachEmptyState onStartChat={() => handleSendMessage("Hi! How can you help me?")} />
+) : (
+  <div className="space-y-4 max-w-full">
+    {groupMessagesByDate(messages).map((group, groupIndex) => (
+      <React.Fragment key={`group-${groupIndex}`}>
+        <DateSeparator 
+          date={group.date} 
+          isToday={isToday(group.date)} 
+        />
+        {group.messages.map((message, index) => (
+          <DayCoachMessage 
+            key={message.id} 
+            message={message} 
+            onReply={handleQuickReply}
+            displaySuggestions={
+              message.sender === 'coach' && 
+              index === group.messages.length - 1 &&
+              groupIndex === groupMessagesByDate(messages).length - 1 &&
+              !quickReplies.length
+            }
+            isMobile={window.innerWidth < 640}
+          />
+        ))}
+      </React.Fragment>
+    ))}
+    
+    {isLoading && (
+      <div className="flex items-center justify-center p-4">
+        <div className="animate-pulse flex items-center space-x-2">
+          <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce"></div>
+          <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-75"></div>
+          <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-150"></div>
+        </div>
+      </div>
+    )}
+    
+    <div ref={messagesEndRef} />
+  </div>
+)}
       </div>
     </div>
                   
@@ -528,6 +589,7 @@ const DayCoach = () => {
                     onSend={handleSendMessage}
                     isLoading={isLoading}
                     disabled={isLoading || !isInitialized}
+                    onShowClearDialog={() => setShowClearDialog(true)}
                   />
                 </div>
               )}
@@ -547,6 +609,14 @@ const DayCoach = () => {
           )}
         </>
       )}
+
+
+      {/* Clear chat confirmation dialog */}
+<ClearChatDialog 
+  isOpen={showClearDialog}
+  onClose={() => setShowClearDialog(false)}
+  onConfirm={handleClearChat}
+/>
     </div>
   );
 };

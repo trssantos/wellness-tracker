@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, X, Pause, Smile } from 'lucide-react';
+import { Trash2,Send, Mic, X, Pause, Smile } from 'lucide-react';
 import '../..//index.css'; // Your existing import
+import { clearDayCoachMessages } from '../../utils/dayCoachUtils';
+import ClearChatDialog from './ClearChatDialog';
+import { getStorage, setStorage } from '../../utils/storage';
 
-const DayCoachInput = ({ value, onChange, onSend, isLoading, disabled }) => {
+const DayCoachInput = ({ value, onChange, onSend, isLoading, disabled, onShowClearDialog }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordedTime, setRecordedTime] = useState(0);
@@ -186,6 +189,9 @@ const DayCoachInput = ({ value, onChange, onSend, isLoading, disabled }) => {
           </div>
         </div>
       )}
+
+     
+   
       
       {/* Emoji picker dropdown */}
       {showEmojiPicker && (
@@ -221,6 +227,15 @@ const DayCoachInput = ({ value, onChange, onSend, isLoading, disabled }) => {
     />
     
     <div className="absolute right-2 flex gap-1">
+ {/* Clear chat button - NEW */}
+ <button
+            onClick={onShowClearDialog}
+            className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            title="Clear chat history"
+          >
+            <Trash2 size={18} />
+          </button>
+
           {/* Emoji button */}
           <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -256,6 +271,7 @@ const DayCoachInput = ({ value, onChange, onSend, isLoading, disabled }) => {
         </div>
       </div>
     </div>
+    
   );
 };
 

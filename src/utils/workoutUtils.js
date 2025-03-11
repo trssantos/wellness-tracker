@@ -1,5 +1,7 @@
 // src/utils/workoutUtils.js
 import { getStorage, setStorage } from './storage';
+import { handleDataChange } from './dayCoachUtils';
+
 
 /**
  * Initialize workout data if it doesn't exist
@@ -300,6 +302,8 @@ export const logWorkout = (date, workoutData, existingWorkoutId = null) => {
     // Save the updated day data
     storage[date] = dayData;
     setStorage(storage);
+
+    handleDataChange(date, 'workout', { workoutData });
     
     return workoutToLog;
   };

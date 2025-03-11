@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Edit2, Save, PenTool, Lightbulb, Sparkles, RefreshCw } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
+import { handleDataChange } from '../utils/dayCoachUtils';
 
 // Reflection prompts to help users get started
 const REFLECTION_PROMPTS = [
@@ -79,6 +80,7 @@ export const DayNotes = ({ date, onClose }) => {
     };
     
     setStorage(storage);
+    handleDataChange(date, 'journal', { notes });
     setIsEditing(false);
   };
 

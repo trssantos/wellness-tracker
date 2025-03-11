@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Moon, Sun, Clock, Star, Zap, FileText, AlertCircle } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
+import { handleDataChange } from '../utils/dayCoachUtils';
 
 const SleepTracker = ({ date, onClose }) => {
   // Sleep data states
@@ -121,6 +122,8 @@ const SleepTracker = ({ date, onClose }) => {
       };
       
       setStorage(storage);
+      handleDataChange(dateStr, 'sleep', { sleep: { duration, quality, bedtime, wakeTime, factors, notes } });
+
       setSaveError(null);
       onClose();
     } catch (error) {

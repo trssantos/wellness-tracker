@@ -435,6 +435,7 @@ const buildUserPrompt = (context) => {
   const { messageType, userData, userMessage, specificContext } = context;
   
   // Base prompt with user data summary
+  // Base prompt with user data summary and enhanced guidance for suggestions
   let prompt = `
     Here's a summary of the user's data:
     
@@ -444,98 +445,126 @@ const buildUserPrompt = (context) => {
     Active habits: ${userData.habits.length}
     Recent focus sessions: ${userData.focusSessions.length}
     Recent workouts: ${userData.workouts.length}
+    
+    IMPORTANT GUIDANCE:
+    1. Be conversational and friendly - address the user directly as "you"
+    2. Be supportive of their goals and lifestyle choices
+    3. OFFER CONCRETE SUGGESTIONS for new tasks, habits, or activities based on patterns in their data
+    4. Reference specific details from their journal entries and task lists
+    5. Make connections between different aspects of their data (e.g., sleep quality affecting mood)
+    6. Be personalized - avoid generic advice that could apply to anyone
+    7. If they mention people in their journals, acknowledge these social connections
   `;
   
   // Add specific context based on message type
   switch (messageType) {
     case 'morningMood':
       prompt += `
-        The user has just logged their morning mood as "${specificContext}".
-        Their energy level is ${userData.recentData[userData.today]?.morningEnergy || 'not specified'}.
+        The user has just logged their morning mood as "${specificContext.mood}".
+        Their energy level is ${specificContext.energy || 'not specified'}.
         Acknowledge this mood, provide a supportive response, and offer a suggestion relevant to their current state.
+        IMPORTANT: Based on their recent patterns, suggest a specific new task that might improve their day.
       `;
       break;
       
     case 'eveningMood':
       prompt += `
-        The user has just logged their evening mood as "${specificContext}".
-        Their morning mood today was "${userData.recentData[userData.today]?.morningMood || 'not specified'}".
-        Their evening energy level is ${userData.recentData[userData.today]?.eveningEnergy || 'not specified'}.
+        The user has just logged their evening mood as "${specificContext.eveningMood}".
+        Their morning mood today was "${specificContext.morningMood || 'not specified'}".
+        Their evening energy level is ${specificContext.eveningEnergy || 'not specified'}.
         Reflect on how their day went, considering the change in mood throughout the day.
+        IMPORTANT: Suggest a specific habit or routine that could improve their evening based on patterns you observe.
       `;
       break;
       
     case 'workout':
       prompt += `
         The user has just completed a workout.
-        Details: ${JSON.stringify(getLatestWorkout(userData))}
-        Acknowledge this achievement and provide encouragement or recovery advice.
+        Details: ${JSON.stringify(specificContext.workout)}
+        Acknowledge this achievement and provide encouragement.
+        IMPORTANT: Based on their workout history, suggest a related habit or complementary workout they might enjoy.
       `;
       break;
       
     case 'journalEntry':
-      // Get the latest journal entry
-  const journalEntry = getLatestJournalEntry(userData);
-  
-  // If we have a journal entry, emphasize its importance
-  if (journalEntry && journalEntry.length > 10) {
-    prompt += `
-      The user has journal entries that provide valuable context.
-      Latest journal: "${journalEntry}"
-      
-      Pay special attention to the journal content to personalize your response.
-      Extract topics, emotions, challenges, or goals from their journal to reference.
-      Make your response feel personalized by connecting to something they mentioned.
-    `;
-  }
+      prompt += `
+        The user has made a journal entry.
+        Entry: "${specificContext.notes}"
+        
+        IMPORTANT INSTRUCTIONS:
+        1. Pay special attention to their journal content to personalize your response.
+        2. Extract topics, emotions, challenges, goals or people mentioned in their journal.
+        3. Acknowledge any personal or social events they mention.
+        4. If they mentioned any people by name, reference these social connections in your response.
+        5. Make your response feel personalized by connecting to something specific they mentioned.
+        6. Suggest at least one concrete action, habit, or reflection based on their journal content.
+      `;
       break;
       
     case 'allTasksCompleted':
       prompt += `
         The user has completed all their tasks for today!
-        Task list: ${JSON.stringify(getTodaysTasks(userData))}
+        Task list: ${JSON.stringify(specificContext.tasks)}
         Celebrate this achievement and offer an insight about their productivity.
+        IMPORTANT: Based on their completed tasks, suggest a potential new task or habit they might want to consider for tomorrow.
       `;
       break;
       
     case 'progressMade':
       prompt += `
         The user has made good progress on their tasks today, but still has some remaining.
-        Completed: ${getCompletedTaskCount(userData)} tasks
-        Remaining: ${getRemainingTaskCount(userData)} tasks
+        Completed: ${specificContext.completed} tasks
+        Remaining: ${specificContext.total - specificContext.completed} tasks
+        Recently completed: ${JSON.stringify(specificContext.recentlyCompleted)}
         Acknowledge their progress and offer encouragement.
+        IMPORTANT: Suggest a specific strategy to help them with their remaining tasks based on their patterns.
       `;
       break;
       
-    case 'focusSession':
+    case 'sleep':
       prompt += `
-        The user has just completed a focus session.
-        Session details: ${JSON.stringify(specificContext)}
-        Comment on their focus session and offer a relevant tip if they had interruptions.
+        The user has logged their sleep data.
+        Details: ${JSON.stringify(specificContext.sleep)}
+        
+        Comment on their sleep quality and pattern. Note any factors they've identified that affected their sleep.
+        IMPORTANT: Offer a specific suggestion for improving their sleep or a task that's appropriate for their energy level.
       `;
       break;
       
-      case 'userQuery':
-        prompt += `
-          The user has asked: "${userMessage}"
-          
-          Provide a helpful, specific response based on their data. The user's question may be about 
-          their tasks, habits, mood, energy, workouts, focus sessions, or other tracked data.
-          
-          Be specific - if they're asking about their data, reference the actual items from their data
-          in your response (like specific task names, habit details, etc.) rather than being vague.
+    case 'timeBasedGreeting':
+      prompt += `
+        It's ${specificContext.timeOfDay} on ${specificContext.date}.
+        
+        Check in with the user to see how his day is going and offering any advice or followup question if you see fit based on his data for the day or appropriate for the time of the day
+      `;
+      break;
+      
+    case 'userQuery':
+      prompt += `
+        The user has asked: "${userMessage}"
+        
+        Provide a helpful, specific response based on their data. The user's question may be about 
+        their tasks, habits, mood, energy, workouts, focus sessions, or other tracked data.
+        
+        Be specific - if they're asking about their data, reference the actual items from their data
+        in your response (like specific task names, habit details, etc.) rather than being vague.
 
-          If they ask for suggestions give suggestions that makes sense to them, like new tasks, new habits, new hobbies and activities, etc, feel free to advise the user as you see fit
-          
-          Below you'll find detailed information about the user's recent activities and data.
-          Use this information to give them a personalized, relevant answer.
-        `;
-        break;
+        If they ask for suggestions, provide specific, personalized recommendations that make sense for them:
+        - New tasks based on their existing patterns and completed tasks
+        - New habits that complement their existing routines
+        - New activities that might improve their mood or energy
+        - Ways to improve their social connections based on journal entries
+        
+        Below you'll find detailed information about the user's recent activities and data.
+        Use this information to give them a personalized, relevant answer.
+      `;
+      break;
       
     default:
       prompt += `
         Generate a supportive check-in message for the user based on their recent data.
         Look for meaningful insights, correlations, or patterns that might be helpful for them.
+        IMPORTANT: Suggest a specific new habit, task, or activity based on their patterns and history.
       `;
   }
   

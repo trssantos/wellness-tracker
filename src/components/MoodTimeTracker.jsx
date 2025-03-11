@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sun, Moon, AlertCircle, X, Zap } from 'lucide-react';
 import { MOODS } from './MoodSelector';
 import { getStorage, setStorage } from '../utils/storage';
+import { handleDataChange } from '../utils/dayCoachUtils';
 
 const MoodTimeTracker = ({ date, onClose }) => {
   const [currentTime, setCurrentTime] = useState('morning'); // Default to morning
@@ -124,6 +125,14 @@ const MoodTimeTracker = ({ date, onClose }) => {
       }
       
       setStorage(storage);
+
+      // Notify the day coach of the data change
+if (currentTime === 'morning') {
+  handleDataChange(dateStr, 'mood', { type: 'morningMood' });
+} else {
+  handleDataChange(dateStr, 'mood', { type: 'eveningMood' });
+}
+
       setSaveError(null);
       onClose();
     } catch (error) {

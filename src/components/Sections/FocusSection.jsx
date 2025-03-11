@@ -16,6 +16,7 @@ import { getStorage, setStorage } from '../../utils/storage';
 import { loadFocusSessionState, saveFocusSessionState, clearFocusSessionState} from '../../utils/FocusSessionState';
 import FocusForm from '../Focus/FocusForm';
 import AnimatedPlayButton from '../Focus/AnimatedPlayButton';
+import { handleDataChange } from '../../utils/dayCoachUtils';
 
 // Import the CSS file for nature animations
 import '../Focus/focusNature.css';
@@ -749,6 +750,8 @@ const handleSessionSubmit = (completedData) => {
   
   // Reset all states
   resetStates();
+
+  handleDataChange(new Date().toISOString(), 'focus', { sessionData });
 };
   
   // Reset all states

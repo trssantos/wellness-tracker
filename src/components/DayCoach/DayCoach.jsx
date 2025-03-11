@@ -20,10 +20,9 @@ import DayCoachProfile from './DayCoachProfile';
 import DayCoachAnalysis from './DayCoachAnalysis';
 import DayCoachMoodTracker from './DayCoachMoodTracker';
 
-// Fixed Header Component
-const FixedHeader = ({ viewMode, setViewMode, hasUnread }) => {
+const StickyHeader = ({ viewMode, setViewMode, hasUnread }) => {
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-slate-800 shadow-md border-b border-slate-200 dark:border-slate-700 p-4">
+    <div className="sticky top-0 z-30 bg-white dark:bg-slate-800 shadow-md border-b border-slate-200 dark:border-slate-700 p-4 mb-3">
       <div className="flex justify-between items-center max-w-screen-xl mx-auto">
         <div className="flex items-center gap-2">
           <Sparkles className="text-indigo-500 dark:text-indigo-400" size={24} />
@@ -442,123 +441,127 @@ const DayCoach = () => {
   
   // Main render function
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm transition-colors w-full h-full flex flex-col relative">
-      {/* Fixed Header - Always visible */}
-      <FixedHeader viewMode={viewMode} setViewMode={setViewMode} hasUnread={hasUnread} />
-      
-      {/* Content with padding for fixed header */}
-      <div className="pt-16 p-4 sm:p-6 flex-1 flex flex-col overflow-hidden">
-        {/* First-time introduction or main content */}
-        {isFirstVisit ? (
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 p-8 rounded-xl max-w-md mx-auto text-center shadow-sm">
-              <Sparkles className="text-indigo-500 dark:text-indigo-400 mx-auto mb-4" size={48} />
-              <h3 className="text-xl font-medium text-indigo-800 dark:text-indigo-200 mb-2">
-                Meet Solaris, Your Wellness Guide
-              </h3>
-              <p className="text-slate-600 dark:text-slate-400 mb-6">
-                I'm here to help you stay on track, analyze your patterns, and provide personalized guidance based on your data. 
-                Ask me anything about your habits, mood, tasks, or focus sessions!
-              </p>
-              <button
-                onClick={() => {
-                  setIsFirstVisit(false);
-                  handleSendMessage("Hi Solaris! I'm excited to start working with you as my wellness guide.");
-                }}
-                className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 dark:from-indigo-600 dark:to-purple-700 text-white rounded-lg transition-colors shadow-md"
-              >
-                Start Conversation
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            {!isInitialized ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm transition-colors w-full h-full flex flex-col overflow-hidden">
+      {/* Content container - includes the header */}
+      <div className="flex-1 flex flex-col overflow-y-auto">
+        {/* Sticky Header */}
+        <StickyHeader viewMode={viewMode} setViewMode={setViewMode} hasUnread={hasUnread} />
+        
+        {/* Main content - no extra padding needed */}
+        <div className="p-4 sm:p-6 flex-1">
+          {/* First-time introduction or main content */}
+          {isFirstVisit ? (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 p-8 rounded-xl max-w-md mx-auto text-center shadow-sm">
+                <Sparkles className="text-indigo-500 dark:text-indigo-400 mx-auto mb-4" size={48} />
+                <h3 className="text-xl font-medium text-indigo-800 dark:text-indigo-200 mb-2">
+                  Meet Solaris, Your Wellness Guide
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-6">
+                  I'm here to help you stay on track, analyze your patterns, and provide personalized guidance based on your data. 
+                  Ask me anything about your habits, mood, tasks, or focus sessions!
+                </p>
+                <button
+                  onClick={() => {
+                    setIsFirstVisit(false);
+                    handleSendMessage("Hi Solaris! I'm excited to start working with you as my wellness guide.");
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 dark:from-indigo-600 dark:to-purple-700 text-white rounded-lg transition-colors shadow-md"
+                >
+                  Start Conversation
+                </button>
               </div>
-            ) : (
-              <>
-                {viewMode === 'chat' && (
-                  <div className="flex-1 flex flex-col min-h-0 max-w-full">
-                    {/* Chat messages container - Enhanced with gradients */}
-                    <div 
-                      ref={chatContainerRef}
-                      className="flex-1 overflow-y-auto p-3 mb-2 bg-gradient-to-b from-slate-50 via-indigo-50/30 to-purple-50/20 dark:from-slate-800 dark:via-indigo-900/10 dark:to-purple-900/10 rounded-lg transition-colors h-[calc(100vh-170px)] max-w-full relative"
-                    >
-                      {/* Add a subtle pattern/texture for background */}
-                      <div className="absolute inset-0 bg-repeat opacity-5 dark:opacity-10" 
-                           style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M16 0 A16 16 0 0 0 16 32 A16 16 0 0 0 16 0 M16 4 A12 12 0 0 1 16 28 A12 12 0 0 1 16 4" fill="%23594CB5" fill-opacity="0.2"/%3E%3C/svg%3E")'}}></div>
-                      
-                      <div className="max-w-full relative z-10">
-                        {messages.length === 0 ? (
-                          <DayCoachEmptyState onStartChat={() => handleSendMessage("Hi Solaris! How can you help me today?")} />
-                        ) : (
-                          <div className="space-y-4 max-w-full">
-                            {messages.slice(-10).map((message, index) => (
-                              <DayCoachMessage 
-                                key={message.id} 
-                                message={message} 
-                                onReply={handleQuickReply}
-                                displaySuggestions={
-                                  message.sender === 'coach' && 
-                                  index === messages.slice(-10).length - 1 &&
-                                  !quickReplies.length
-                                }
-                                isMobile={window.innerWidth < 640}
-                              />
-                            ))}
-                            
-                            {isLoading && (
-                              <div className="flex items-center justify-center p-4">
-                                <div className="animate-pulse flex items-center space-x-2">
-                                  <div className="h-3 w-3 bg-indigo-400 dark:bg-indigo-600 rounded-full animate-bounce"></div>
-                                  <div className="h-3 w-3 bg-purple-400 dark:bg-purple-600 rounded-full animate-bounce delay-75"></div>
-                                  <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-150"></div>
+            </div>
+          ) : (
+            <>
+              {!isInitialized ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+                </div>
+              ) : (
+                <>
+                  {viewMode === 'chat' && (
+                    <div className="flex-1 flex flex-col min-h-0 max-w-full">
+                      {/* Chat messages container - Enhanced with gradients */}
+                      <div 
+                        ref={chatContainerRef}
+                        className="flex-1 overflow-y-auto p-3 mb-2 bg-gradient-to-b from-slate-50 via-indigo-50/30 to-purple-50/20 dark:from-slate-800 dark:via-indigo-900/10 dark:to-purple-900/10 rounded-lg transition-colors max-w-full relative"
+                        style={{ height: 'calc(100vh - 220px)' }}
+                      >
+                        {/* Add a subtle pattern/texture for background */}
+                        <div className="absolute inset-0 bg-repeat opacity-5 dark:opacity-10" 
+                             style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M16 0 A16 16 0 0 0 16 32 A16 16 0 0 0 16 0 M16 4 A12 12 0 0 1 16 28 A12 12 0 0 1 16 4" fill="%23594CB5" fill-opacity="0.2"/%3E%3C/svg%3E")'}}></div>
+                        
+                        <div className="max-w-full relative z-10">
+                          {messages.length === 0 ? (
+                            <DayCoachEmptyState onStartChat={() => handleSendMessage("Hi Solaris! How can you help me today?")} />
+                          ) : (
+                            <div className="space-y-4 max-w-full">
+                              {messages.slice(-10).map((message, index) => (
+                                <DayCoachMessage 
+                                  key={message.id} 
+                                  message={message} 
+                                  onReply={handleQuickReply}
+                                  displaySuggestions={
+                                    message.sender === 'coach' && 
+                                    index === messages.slice(-10).length - 1 &&
+                                    !quickReplies.length
+                                  }
+                                  isMobile={window.innerWidth < 640}
+                                />
+                              ))}
+                              
+                              {isLoading && (
+                                <div className="flex items-center justify-center p-4">
+                                  <div className="animate-pulse flex items-center space-x-2">
+                                    <div className="h-3 w-3 bg-indigo-400 dark:bg-indigo-600 rounded-full animate-bounce"></div>
+                                    <div className="h-3 w-3 bg-purple-400 dark:bg-purple-600 rounded-full animate-bounce delay-75"></div>
+                                    <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-150"></div>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                            
-                            <div ref={messagesEndRef} />
-                          </div>
-                        )}
+                              )}
+                              
+                              <div ref={messagesEndRef} />
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    
-                    {/* Quick reply suggestions */}
-                    {quickReplies && quickReplies.length > 0 && (
-                      <DayCoachSuggestions 
-                        suggestions={quickReplies} 
-                        onSelectSuggestion={handleQuickReply}
+                      
+                      {/* Quick reply suggestions */}
+                      {quickReplies && quickReplies.length > 0 && (
+                        <DayCoachSuggestions 
+                          suggestions={quickReplies} 
+                          onSelectSuggestion={handleQuickReply}
+                        />
+                      )}
+                      
+                      {/* Input area */}
+                      <DayCoachInput 
+                        value={inputValue}
+                        onChange={setInputValue}
+                        onSend={handleSendMessage}
+                        isLoading={isLoading}
+                        disabled={isLoading || !isInitialized}
                       />
-                    )}
-                    
-                    {/* Input area */}
-                    <DayCoachInput 
-                      value={inputValue}
-                      onChange={setInputValue}
-                      onSend={handleSendMessage}
-                      isLoading={isLoading}
-                      disabled={isLoading || !isInitialized}
-                    />
-                  </div>
-                )}
-                
-                {viewMode === 'profile' && (
-                  <div className="flex-1 overflow-y-auto">
-                    <DayCoachProfile userData={userData} />
-                  </div>
-                )}
-                
-                {viewMode === 'analysis' && (
-                  <div className="flex-1 overflow-y-auto">
-                    <DayCoachAnalysis />
-                  </div>
-                )}
-              </>
-            )}
-          </>
-        )}
+                    </div>
+                  )}
+                  
+                  {viewMode === 'profile' && (
+                    <div className="flex-1 overflow-y-auto">
+                      <DayCoachProfile userData={userData} />
+                    </div>
+                  )}
+                  
+                  {viewMode === 'analysis' && (
+                    <div className="flex-1 overflow-y-auto">
+                      <DayCoachAnalysis />
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

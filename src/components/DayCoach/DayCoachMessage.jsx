@@ -59,58 +59,58 @@ const DayCoachMessage = ({ message, onReply, displaySuggestions = true, isMobile
         animationDuration: '0.3s'
       }}
     >
-      <div className={`max-w-[95%] xs:max-w-[85%] ${message.isError ? 'max-w-full' : ''}`}>
-        {/* Message bubble */}
-        <div 
-          className={`relative p-3 rounded-lg shadow-sm ${
+     <div className={`max-w-[85%] xs:max-w-[85%] ${message.isError ? 'max-w-full' : ''}`}>
+  {/* Message bubble */}
+  <div 
+    className={`relative p-3 rounded-lg shadow-sm overflow-hidden ${
+      isCoach 
+        ? message.isError 
+          ? 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200' 
+          : 'bg-white dark:bg-slate-700' 
+        : 'bg-blue-500 dark:bg-blue-600 text-white'
+    }`}
+  >
+    {/* Sender avatar */}
+    <div className="flex items-start mb-1">
+      <div className={`flex-shrink-0 w-8 h-8 rounded-full mr-2 flex items-center justify-center ${
+        isCoach 
+          ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
+          : 'bg-blue-400 dark:bg-blue-500 text-white'
+      }`}>
+        {isCoach ? <MessageCircle size={18} /> : <User size={18} />}
+      </div>
+      
+      <div className="flex-1 min-w-0">
+        {/* Sender name and time */}
+        <div className="flex items-center justify-between mb-1">
+          <div className={`font-medium ${
             isCoach 
-              ? message.isError 
-                ? 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200' 
-                : 'bg-white dark:bg-slate-700' 
-              : 'bg-blue-500 dark:bg-blue-600 text-white'
-          }`}
-        >
-          {/* Sender avatar */}
-          <div className="flex items-start mb-1">
-            <div className={`flex-shrink-0 w-8 h-8 rounded-full mr-2 flex items-center justify-center ${
-              isCoach 
-                ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
-                : 'bg-blue-400 dark:bg-blue-500 text-white'
-            }`}>
-              {isCoach ? <MessageCircle size={18} /> : <User size={18} />}
-            </div>
-            
-            <div className="flex-1">
-              {/* Sender name and time */}
-              <div className="flex items-center justify-between mb-1">
-                <div className={`font-medium ${
-                  isCoach 
-                    ? 'text-slate-800 dark:text-slate-200' 
-                    : 'text-white'
-                }`}>
-                  {isCoach ? 'Coach' : 'You'}
-                </div>
-                <div className={`text-xs ${
-                  isCoach 
-                    ? 'text-slate-500 dark:text-slate-400' 
-                    : 'text-white/80'
-                }`}>
-                  {formatTime(message.timestamp)}
-                </div>
-              </div>
-              
-              {/* Message content */}
-              <div className={`prose prose-sm max-w-none break-words ${
-                isCoach 
-                  ? 'text-slate-700 dark:text-slate-300 prose-headings:text-slate-800 dark:prose-headings:text-slate-200' 
-                  : 'text-white prose-headings:text-white'
-              }`}>
-                <ReactMarkdown>
-                  {message.content}
-                </ReactMarkdown>
-              </div>
-            </div>
+              ? 'text-slate-800 dark:text-slate-200' 
+              : 'text-white'
+          }`}>
+            {isCoach ? 'Coach' : 'You'}
           </div>
+          <div className={`text-xs ${
+            isCoach 
+              ? 'text-slate-500 dark:text-slate-400' 
+              : 'text-white/80'
+          }`}>
+            {formatTime(message.timestamp)}
+          </div>
+        </div>
+        
+        {/* Message content */}
+        <div className={`prose prose-sm max-w-none break-words overflow-hidden ${
+          isCoach 
+            ? 'text-slate-700 dark:text-slate-300 prose-headings:text-slate-800 dark:prose-headings:text-slate-200' 
+            : 'text-white prose-headings:text-white'
+        }`}>
+          <ReactMarkdown>
+            {message.content}
+          </ReactMarkdown>
+        </div>
+      </div>
+    </div>
           
           {/* Message actions with suggestions button for mobile */}
           {isCoach && !message.isError && (

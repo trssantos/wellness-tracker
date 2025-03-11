@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar, RefreshCw, Book, TrendingUp, AlertTriangle,
-  Smile, Brain, Zap, Dumbbell, Clock, FileText, Loader
+  Smile, Brain, Zap, Dumbbell, Clock, FileText, Loader, BarChart2
 } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
 import { generateContent } from '../../utils/ai-service';
@@ -14,8 +14,6 @@ const DayCoachAnalysis = () => {
   const [timeRange, setTimeRange] = useState('week'); // day, week, month
   const [lastUpdated, setLastUpdated] = useState(null);
   
-  // Reference to track if report generation is scheduled
-  const isGenerationScheduled = useRef(false);
   // Reference to track if component is mounted
   const isMounted = useRef(true);
   
@@ -213,8 +211,125 @@ Keep your analysis conversational, helpful, and actionable.`;
   };
   
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-2 sm:p-4 overflow-auto max-h-screen">
+      {/* Mobile category tabs - First row */}
+      <div className="sm:hidden mb-4">
+        <div className="flex flex-wrap gap-2 justify-center items-center bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded-lg ${
+              activeTab === 'overview' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+            } transition-colors`}
+          >
+            <Book size={20} />
+            <span className="text-xs truncate">Overview</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('mood')}
+            className={`flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded-lg ${
+              activeTab === 'mood' 
+                ? 'bg-purple-500 text-white' 
+                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+            } transition-colors`}
+          >
+            <Smile size={20} />
+            <span className="text-xs truncate">Mood</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('focus')}
+            className={`flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded-lg ${
+              activeTab === 'focus' 
+                ? 'bg-indigo-500 text-white' 
+                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+            } transition-colors`}
+          >
+            <Brain size={20} />
+            <span className="text-xs truncate">Focus</span>
+          </button>
+        </div>
+      </div>
+      
+      {/* Mobile category tabs - Second row */}
+      <div className="sm:hidden mb-4">  
+        <div className="flex flex-wrap gap-2 justify-center items-center bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
+          <button
+            onClick={() => setActiveTab('habits')}
+            className={`flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded-lg ${
+              activeTab === 'habits' 
+                ? 'bg-amber-500 text-white' 
+                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+            } transition-colors`}
+          >
+            <Zap size={20} />
+            <span className="text-xs truncate">Habits</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('workouts')}
+            className={`flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded-lg ${
+              activeTab === 'workouts' 
+                ? 'bg-green-500 text-white' 
+                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+            } transition-colors`}
+          >
+            <Dumbbell size={20} />
+            <span className="text-xs truncate">Workouts</span>
+          </button>
+          
+          {/* Empty space for balance */}
+          <div className="flex-1 min-w-0 p-2 invisible">
+            <Dumbbell size={20} className="invisible" />
+            <span className="text-xs invisible">spacer</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Mobile time range selector */}
+      <div className="sm:hidden mb-4">
+        <div className="flex items-center justify-center">
+          <div className="inline-flex rounded-md shadow-sm">
+            <button
+              onClick={() => setTimeRange('day')}
+              className={`px-4 py-2 text-sm rounded-l-md ${
+                timeRange === 'day' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-r border-slate-200 dark:border-slate-600'
+              } transition-colors`}
+            >
+              Day
+            </button>
+            
+            <button
+              onClick={() => setTimeRange('week')}
+              className={`px-4 py-2 text-sm ${
+                timeRange === 'week' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-r border-slate-200 dark:border-slate-600'
+              } transition-colors`}
+            >
+              Week
+            </button>
+            
+            <button
+              onClick={() => setTimeRange('month')}
+              className={`px-4 py-2 text-sm rounded-r-md ${
+                timeRange === 'month' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+              } transition-colors`}
+            >
+              Month
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Desktop layout - horizontal tabs and time selector */}
+      <div className="hidden sm:flex justify-between items-center mb-6">
         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
           <button
             onClick={() => setActiveTab('overview')}
@@ -232,7 +347,7 @@ Keep your analysis conversational, helpful, and actionable.`;
             onClick={() => setActiveTab('mood')}
             className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
               activeTab === 'mood' 
-                ? 'bg-blue-500 text-white' 
+                ? 'bg-purple-500 text-white' 
                 : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
             } transition-colors whitespace-nowrap`}
           >
@@ -244,7 +359,7 @@ Keep your analysis conversational, helpful, and actionable.`;
             onClick={() => setActiveTab('focus')}
             className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
               activeTab === 'focus' 
-                ? 'bg-blue-500 text-white' 
+                ? 'bg-indigo-500 text-white' 
                 : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
             } transition-colors whitespace-nowrap`}
           >
@@ -256,7 +371,7 @@ Keep your analysis conversational, helpful, and actionable.`;
             onClick={() => setActiveTab('habits')}
             className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
               activeTab === 'habits' 
-                ? 'bg-blue-500 text-white' 
+                ? 'bg-amber-500 text-white' 
                 : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
             } transition-colors whitespace-nowrap`}
           >
@@ -268,7 +383,7 @@ Keep your analysis conversational, helpful, and actionable.`;
             onClick={() => setActiveTab('workouts')}
             className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
               activeTab === 'workouts' 
-                ? 'bg-blue-500 text-white' 
+                ? 'bg-green-500 text-white' 
                 : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
             } transition-colors whitespace-nowrap`}
           >
@@ -313,7 +428,8 @@ Keep your analysis conversational, helpful, and actionable.`;
         </div>
       </div>
       
-      <div className="bg-white dark:bg-slate-700 p-6 rounded-xl shadow-sm">
+      {/* Analysis content - full height on mobile */}
+      <div className="bg-white dark:bg-slate-700 p-4 sm:p-6 rounded-xl shadow-sm h-[calc(100vh-240px)] sm:h-auto flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
             {activeTab === 'overview' ? 'Wellbeing Overview' :
@@ -323,7 +439,7 @@ Keep your analysis conversational, helpful, and actionable.`;
              'Workout & Activity Insights'}
           </h3>
           
-          <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-3">
             <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
               <Calendar size={14} />
               <span>
@@ -342,7 +458,8 @@ Keep your analysis conversational, helpful, and actionable.`;
           </div>
         </div>
         
-        <div className="overflow-y-auto max-h-[40vh] xs:max-h-[50vh] md:max-h-[60vh] pr-1 custom-scrollbar">
+        {/* Full container scroll on mobile */}
+        <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader size={32} className="text-blue-500 dark:text-blue-400 animate-spin mb-4" />

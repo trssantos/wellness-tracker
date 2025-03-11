@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
+import { User, BarChart2,
   MessageCircle, Send, SmilePlus, Calendar, Clock, 
   Dumbbell, Brain, Zap, Check, Bell, X, Moon, Sun,
   Lightbulb, Activity, ArrowRight, ChevronDown, ChevronUp, Sparkles
@@ -384,51 +384,92 @@ const DayCoach = () => {
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-6 transition-colors w-full h-full flex flex-col">
       {/* Header with view tabs */}
       <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          <MessageCircle className="text-blue-500 dark:text-blue-400" size={24} />
-          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 transition-colors">
-            Day Coach
-            {hasUnread && (
-              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-red-500 text-white rounded-full">
-                !
-              </span>
-            )}
-          </h2>
-        </div>
-        
-        <div className="flex items-center">
-          <button
-            onClick={() => setViewMode('chat')}
-            className={`px-3 py-1.5 rounded-l-lg text-sm ${
-              viewMode === 'chat' 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            } transition-colors`}
-          >
-            Chat
-          </button>
-          <button
-            onClick={() => setViewMode('profile')}
-            className={`px-3 py-1.5 text-sm ${
-              viewMode === 'profile' 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            } transition-colors`}
-          >
-            Profile
-          </button>
-          <button
-            onClick={() => setViewMode('analysis')}
-            className={`px-3 py-1.5 rounded-r-lg text-sm ${
-              viewMode === 'analysis' 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-            } transition-colors`}
-          >
-            Analysis
-          </button>
-        </div>
-      </div>
+  <div className="flex items-center gap-2">
+    <MessageCircle className="text-blue-500 dark:text-blue-400" size={24} />
+    <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 transition-colors">
+      Day Coach
+      {hasUnread && (
+        <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-red-500 text-white rounded-full">
+          !
+        </span>
+      )}
+    </h2>
+  </div>
+  
+  <div className="flex items-center">
+    {/* Mobile view - icon only buttons */}
+    <div className="flex sm:hidden rounded-lg overflow-hidden shadow-sm border border-slate-200 dark:border-slate-600">
+      <button
+        onClick={() => setViewMode('chat')}
+        className={`p-2 ${
+          viewMode === 'chat' 
+            ? 'bg-blue-500 text-white' 
+            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+        } transition-colors flex items-center justify-center`}
+        title="Chat"
+      >
+        <MessageCircle size={20} />
+      </button>
+      <button
+        onClick={() => setViewMode('profile')}
+        className={`p-2 ${
+          viewMode === 'profile' 
+            ? 'bg-blue-500 text-white' 
+            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+        } transition-colors flex items-center justify-center`}
+        title="Profile"
+      >
+        <User size={20} />
+      </button>
+      <button
+        onClick={() => setViewMode('analysis')}
+        className={`p-2 ${
+          viewMode === 'analysis' 
+            ? 'bg-blue-500 text-white' 
+            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+        } transition-colors flex items-center justify-center`}
+        title="Analysis"
+      >
+        <BarChart2 size={20} />
+      </button>
+    </div>
+    
+    {/* Desktop view - text buttons */}
+    <div className="hidden sm:flex">
+      <button
+        onClick={() => setViewMode('chat')}
+        className={`px-3 py-1.5 rounded-l-lg text-sm ${
+          viewMode === 'chat' 
+            ? 'bg-blue-500 text-white' 
+            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+        } transition-colors`}
+      >
+        Chat
+      </button>
+      <button
+        onClick={() => setViewMode('profile')}
+        className={`px-3 py-1.5 text-sm ${
+          viewMode === 'profile' 
+            ? 'bg-blue-500 text-white' 
+            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+        } transition-colors`}
+      >
+        Profile
+      </button>
+      <button
+        onClick={() => setViewMode('analysis')}
+        className={`px-3 py-1.5 rounded-r-lg text-sm ${
+          viewMode === 'analysis' 
+            ? 'bg-blue-500 text-white' 
+            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+        } transition-colors`}
+      >
+        Analysis
+      </button>
+    </div>
+  </div>
+</div>
+
       
       {/* First-time introduction or main content */}
       {isFirstVisit ? (
@@ -462,45 +503,47 @@ const DayCoach = () => {
           ) : (
             <>
               {viewMode === 'chat' && (
-                <div className="flex-1 flex flex-col min-h-0">
-                  {/* Chat messages container */}
-                  <div 
-  ref={chatContainerRef}
-  className="flex-1 overflow-y-auto p-2 mb-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg transition-colors h-64 xs:h-80 sm:h-96 md:h-[400px] max-h-[70vh]"
->
-  {messages.length === 0 ? (
-    <DayCoachEmptyState onStartChat={() => handleSendMessage("Hi! How can you help me?")} />
-  ) : (
-    <div className="space-y-4">
-      {/* Only show the last 10 messages to keep the UI clean */}
-      {messages.slice(-10).map((message, index) => (
-        <DayCoachMessage 
-          key={message.id} 
-          message={message} 
-          onReply={handleQuickReply}
-          displaySuggestions={
-            message.sender === 'coach' && 
-            index === messages.slice(-10).length - 1 &&
-            !quickReplies.length
-          }
-          isMobile={window.innerWidth < 640}
-        />
-      ))}
-      
-      {isLoading && (
-        <div className="flex items-center justify-center p-4">
-          <div className="animate-pulse flex items-center space-x-2">
-            <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce"></div>
-            <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-75"></div>
-            <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-150"></div>
+  <div className="flex-1 flex flex-col min-h-0 max-w-full">
+    {/* Chat messages container */}
+    <div 
+      ref={chatContainerRef}
+      className="flex-1 overflow-y-auto p-2 mb-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg transition-colors h-64 xs:h-80 sm:h-96 md:h-[400px] max-h-[60vh] w-full max-w-full"
+    >
+      <div className="max-w-full">
+        {messages.length === 0 ? (
+          <DayCoachEmptyState onStartChat={() => handleSendMessage("Hi! How can you help me?")} />
+        ) : (
+          <div className="space-y-4 max-w-full">
+            {/* Only show the last 10 messages to keep the UI clean */}
+            {messages.slice(-10).map((message, index) => (
+              <DayCoachMessage 
+                key={message.id} 
+                message={message} 
+                onReply={handleQuickReply}
+                displaySuggestions={
+                  message.sender === 'coach' && 
+                  index === messages.slice(-10).length - 1 &&
+                  !quickReplies.length
+                }
+                isMobile={window.innerWidth < 640}
+              />
+            ))}
+            
+            {isLoading && (
+              <div className="flex items-center justify-center p-4">
+                <div className="animate-pulse flex items-center space-x-2">
+                  <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce"></div>
+                  <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-75"></div>
+                  <div className="h-3 w-3 bg-blue-400 dark:bg-blue-600 rounded-full animate-bounce delay-150"></div>
+                </div>
+              </div>
+            )}
+            
+            <div ref={messagesEndRef} />
           </div>
-        </div>
-      )}
-      
-      <div ref={messagesEndRef} />
+        )}
+      </div>
     </div>
-  )}
-</div>
                   
                   {/* Quick reply suggestions */}
                   {quickReplies && quickReplies.length > 0 && (

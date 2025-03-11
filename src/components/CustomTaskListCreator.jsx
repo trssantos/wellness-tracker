@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, X, Layout, Check, AlertTriangle, Lock } from 'lucide-react';
+import { Plus, Trash2, Save, X, Layout, Check, AlertTriangle, Lock, ArrowLeft } from 'lucide-react';
 import { getTemplates, applyTemplatesToDay } from '../utils/templateUtils';
 
 const difficultyColors = {
@@ -336,52 +336,50 @@ const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
   };
   
   return (
-    <dialog id="custom-tasklist-modal" className="modal">
-      <div className="modal-box max-w-4xl bg-white dark:bg-slate-800 p-0 rounded-lg shadow-lg transition-colors">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2 transition-colors">
-            <Layout className="text-blue-500 dark:text-blue-400" size={24} />
-            Create Custom Task List
-          </h2>
+    <dialog id="custom-tasklist-modal" className="modal-base" onClick={(e) => e.target.id === 'custom-tasklist-modal' && onClose()}>
+      <div className="modal-content max-w-xl" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="modal-header">
+          <div className="flex items-center">
+            {!showTemplates && (
+              <button 
+                onClick={() => setShowTemplates(true)}
+                className="mr-2 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+              >
+                <ArrowLeft size={16} />
+              </button>
+            )}
+            <h2 className="modal-title flex items-center gap-2">
+              <Layout className="text-blue-500 dark:text-blue-400" size={20} />
+              {showTemplates ? 'Select Templates' : 'Create Task List'}
+            </h2>
+          </div>
           <button 
             onClick={onClose}
-            className="btn btn-sm btn-circle btn-ghost text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            className="modal-close-button"
           >
             <X size={20} />
           </button>
         </div>
         
-        <div className="p-6 max-h-[70vh] overflow-y-auto">
+        <div className="max-h-[60vh] overflow-y-auto px-1">
           {/* Error Display - Always visible at top */}
           {error && (
             <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-900 rounded-lg p-3 text-red-600 dark:text-red-400 flex items-start gap-2 mb-4">
               <AlertTriangle size={18} className="flex-shrink-0 mt-0.5" />
-              <p>{error}</p>
+              <p className="text-sm">{error}</p>
             </div>
           )}
         
           {/* Templates Section */}
           {showTemplates ? (
-            <div className="space-y-4 mb-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300">
-                  Select Templates
-                </h3>
-                <button
-                  onClick={applySelectedTemplates}
-                  className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg flex items-center gap-2 hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
-                >
-                  <Check size={16} />
-                  <span>{selectedTemplates.length > 0 ? 'Apply Selected' : 'Continue'}</span>
-                </button>
-              </div>
-              
+            <div className="space-y-4">
               {templates.length === 0 ? (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                <div className="text-center py-6 text-slate-500 dark:text-slate-400">
                   No templates available. Create templates in the Templates section.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   {templates.map(template => (
                     <div 
                       key={template.id}
@@ -403,19 +401,19 @@ const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
                           )}
                         </div>
                         
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-medium text-slate-700 dark:text-slate-200">{template.name}</h4>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${difficultyColors[template.difficulty || 'medium']}`}>
+                            <h4 className="font-medium text-slate-700 dark:text-slate-200 text-sm truncate">{template.name}</h4>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ml-2 flex-shrink-0 ${difficultyColors[template.difficulty || 'medium']}`}>
                               {template.difficulty || 'Medium'}
                             </span>
                           </div>
                           
-                          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
                             {template.description || 'No description'}
                           </p>
                           
-                          <div className="text-xs text-slate-400 dark:text-slate-500 mt-2">
+                          <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                             {template.categories?.reduce((count, cat) => count + cat.items.length, 0) || 0} tasks
                           </div>
                         </div>
@@ -425,91 +423,95 @@ const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
                 </div>
               )}
               
-              <div className="mt-4 flex justify-between">
+              <div className="mt-4 flex justify-between gap-2">
                 <button
                   onClick={skipTemplates}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                  className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-sm"
                 >
                   Skip Templates
                 </button>
                 
                 <button
                   onClick={applySelectedTemplates}
-                  className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg flex items-center gap-2 hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
+                  className="px-3 py-1.5 bg-blue-500 dark:bg-blue-600 text-white rounded-lg flex items-center gap-1 hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors text-sm"
                 >
-                  <Check size={16} />
-                  <span>{selectedTemplates.length > 0 ? `Apply ${selectedTemplates.length} Selected` : 'Continue Without Templates'}</span>
+                  <Check size={14} />
+                  <span>{selectedTemplates.length > 0 ? `Apply Selected (${selectedTemplates.length})` : 'Continue'}</span>
                 </button>
               </div>
             </div>
           ) : (
             <>
               {/* Custom Tasks Editor */}
-              <div className="flex justify-between mb-4">
-                <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300">
-                  Edit Task List for {new Date(date).toLocaleDateString()}
-                </h3>
+              <div className="flex justify-between mb-4 items-center">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {new Date(date).toLocaleDateString('default', { 
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </p>
                 <button
                   onClick={addCategory}
-                  className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg flex items-center gap-1 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                  className="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg flex items-center gap-1 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors text-xs"
                 >
-                  <Plus size={16} />
+                  <Plus size={14} />
                   <span>Add Category</span>
                 </button>
               </div>
               
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {categories.map((category, categoryIndex) => (
-                  <div key={categoryIndex} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-                    <div className="flex items-center mb-3">
+                  <div key={categoryIndex} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3">
+                    <div className="flex items-center mb-3 gap-2">
                       <input
                         type="text"
                         placeholder="Category Name"
                         value={category.title}
                         onChange={(e) => updateCategoryTitle(categoryIndex, e.target.value)}
-                        className="flex-1 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors"
+                        className="flex-1 p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors text-sm"
                       />
                       <button
                         onClick={() => removeCategory(categoryIndex)}
-                        className="ml-2 p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                        className="p-1.5 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-md transition-colors"
                         title="Remove Category"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                     
-                    <div className="space-y-2 ml-4 pl-2 border-l-2 border-slate-200 dark:border-slate-700 transition-colors">
+                    <div className="space-y-2 ml-3 pl-2 border-l-2 border-slate-200 dark:border-slate-700 transition-colors">
                       {category.items.map((task, taskIndex) => {
                         const isTemplateTask = !!templateTasks[task];
                         
                         return (
-                          <div key={taskIndex} className="flex items-center">
-                            <div className="w-2 h-2 bg-slate-300 dark:bg-slate-600 rounded-full mr-2 transition-colors"></div>
+                          <div key={taskIndex} className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-slate-300 dark:bg-slate-600 rounded-full mr-1 flex-shrink-0 transition-colors"></div>
                             <div className="flex-1 relative">
                               <input
                                 type="text"
                                 placeholder="Task description"
                                 value={task}
                                 onChange={(e) => updateTask(categoryIndex, taskIndex, e.target.value)}
-                                className={`w-full p-2 border ${
+                                className={`w-full p-2 border text-sm ${
                                   isTemplateTask 
                                     ? 'border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20' 
                                     : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700'
-                                } rounded-lg text-slate-700 dark:text-slate-200 transition-colors`}
+                                } rounded-md text-slate-700 dark:text-slate-200 transition-colors`}
                                 readOnly={isTemplateTask}
                               />
                               {isTemplateTask && (
                                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 dark:text-blue-400">
-                                  <Lock size={14} />
+                                  <Lock size={12} />
                                 </div>
                               )}
                             </div>
                             <button
                               onClick={() => removeTask(categoryIndex, taskIndex)}
-                              className="ml-2 p-1.5 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                              className="p-1.5 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-md transition-colors flex-shrink-0"
                               title="Remove Task"
                             >
-                              <Trash2 size={16} />
+                              <Trash2 size={14} />
                             </button>
                           </div>
                         );
@@ -517,41 +519,32 @@ const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
                       
                       <button
                         onClick={() => addTask(categoryIndex)}
-                        className="flex items-center gap-1 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 mt-2 transition-colors"
+                        className="flex items-center gap-1 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 mt-2 transition-colors text-xs"
                       >
-                        <Plus size={16} />
+                        <Plus size={14} />
                         <span>Add Task</span>
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
-              
-              <div className="mt-6 flex justify-between">
-                <button
-                  onClick={() => {
-                    setError('');
-                    setShowTemplates(true);
-                  }}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center gap-2"
-                >
-                  <Layout size={16} />
-                  <span>Back to Templates</span>
-                </button>
-                
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors flex items-center gap-2"
-                >
-                  <Save size={16} />
-                  <span>Save Task List</span>
-                </button>
-              </div>
             </>
           )}
         </div>
+        
+        {/* Footer actions - fixed at bottom of modal */}
+        {!showTemplates && (
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2">
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Save size={16} />
+              <span>Save Task List</span>
+            </button>
+          </div>
+        )}
       </div>
-      <div className="modal-backdrop bg-slate-900/50" onClick={onClose}></div>
     </dialog>
   );
 };

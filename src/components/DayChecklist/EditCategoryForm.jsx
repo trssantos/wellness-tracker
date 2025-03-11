@@ -52,13 +52,13 @@ const EditCategoryForm = ({
   };
 
   return (
-    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 transition-colors">
-      <div className="flex items-center justify-between mb-4 bg-slate-100 dark:bg-slate-700 p-3 rounded-lg border-l-4 border-blue-500 transition-colors">
+    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 transition-colors">
+      <div className="flex items-center justify-between mb-3 bg-slate-100 dark:bg-slate-700 p-2 rounded-lg border-l-4 border-blue-500 transition-colors">
         <input
           type="text"
           value={category.title}
           onChange={(e) => handleCategoryTitleChange(e.target.value)}
-          className="flex-1 p-2 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-md font-medium text-slate-700 dark:text-slate-200 transition-colors"
+          className="flex-1 p-2 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-md font-medium text-slate-700 dark:text-slate-200 text-sm transition-colors"
           placeholder="Category title"
         />
         <button
@@ -70,7 +70,7 @@ const EditCategoryForm = ({
         </button>
       </div>
 
-      <div className="space-y-2 ml-4 pl-2 border-l-2 border-slate-200 dark:border-slate-700 transition-colors">
+      <div className="space-y-2 ml-3 pl-2 border-l-2 border-slate-200 dark:border-slate-700 transition-colors">
         {category.items.map((task, taskIdx) => (
           <EditTaskItem
             key={taskIdx}
@@ -81,9 +81,9 @@ const EditCategoryForm = ({
         ))}
         <button
           onClick={handleAddTask}
-          className="flex items-center gap-1 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 mt-2 transition-colors"
+          className="flex items-center gap-1 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 mt-2 text-xs transition-colors"
         >
-          <Plus size={16} />
+          <Plus size={14} />
           <span>Add Task</span>
         </button>
       </div>

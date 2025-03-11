@@ -477,10 +477,12 @@ const handlePendingTasksAction = (action, tasks = []) => {
         </div>
 
         {/* Floating action button */}
+        {activeSection === 'overview' && (
         <FloatingMenu 
           onDaySelect={handleDaySelect}
           onVoiceInput={handleVoiceInput}
         />
+        )}
         
         {/* Modals */}
         <FlowGuide />

@@ -468,8 +468,12 @@ const DayCoach = () => {
   ref={chatContainerRef}
   className="flex-1 overflow-y-auto p-2 mb-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg transition-colors"
   style={{
-    maxHeight: "60vh", // Limit the height to 60% of viewport height
-    height: "400px"     // Set a default height
+    maxHeight: "50vh", // Smaller on mobile
+    height: "350px",   // Smaller default on mobile
+    "@media (min-width: 640px)": {
+      maxHeight: "60vh",
+      height: "400px"
+    }
   }}
 >
   {messages.length === 0 ? (

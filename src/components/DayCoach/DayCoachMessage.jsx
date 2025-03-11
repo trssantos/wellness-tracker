@@ -45,13 +45,13 @@ const DayCoachMessage = ({ message, onReply, displaySuggestions = true }) => {
   
   return (
     <div 
-      className={`flex ${isCoach ? 'justify-start' : 'justify-end'} mb-4 animate-fadeIn`}
-      style={{
-        animationDelay: '0.1s',
-        animationDuration: '0.3s'
-      }}
-    >
-      <div className={`max-w-[85%] ${message.isError ? 'max-w-full' : ''}`}>
+  className={`flex ${isCoach ? 'justify-start' : 'justify-end'} mb-4 animate-fadeIn`}
+  style={{
+    animationDelay: '0.1s',
+    animationDuration: '0.3s'
+  }}
+>
+  <div className={`max-w-[95%] xs:max-w-[85%] ${message.isError ? 'max-w-full' : ''}`}>
         {/* Message bubble */}
         <div 
           className={`relative p-3 rounded-lg shadow-sm ${

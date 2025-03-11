@@ -29,45 +29,37 @@ const DayCoachAnalysis = () => {
   
   // Load saved analysis when component mounts or tab/range changes
   useEffect(() => {
-    loadSavedAnalysis();
+    const storage = getStorage();
+    const savedAnalytics = storage.dayCoachAnalytics || {};
+    
+    // Check if we already have data for this tab/range
+    if (savedAnalytics[activeTab]?.[timeRange]?.text) {
+      // We have data, just load it without setting loading state
+      setAnalysis(savedAnalytics);
+      setLastUpdated(savedAnalytics[activeTab][timeRange].timestamp);
+    } else {
+      // No data for this combo, set loading and generate it
+      setIsLoading(true);
+      generateReport(activeTab, timeRange).finally(() => {
+        setIsLoading(false);
+      });
+    }
   }, [activeTab, timeRange]);
   
-  // Check if we need to generate reports - only on first render
-  useEffect(() => {
-    checkIfReportsNeedGeneration();
-  }, []);
-  
-  // Check if reports need generation
-  const checkIfReportsNeedGeneration = () => {
+  // Only on first render
+useEffect(() => {
     const storage = getStorage();
-    const now = new Date();
-    
-    // Get the last generation time
     const lastGeneration = storage.dayCoachAnalyticsLastGeneration || null;
-    
-    if (!lastGeneration) {
-      // First time - generate reports
-      console.log("First time, generating reports");
-      generateAllReports();
-      return;
-    }
-    
-    const lastGenerationDate = new Date(lastGeneration);
+    const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const lastGenDay = new Date(
-      lastGenerationDate.getFullYear(), 
-      lastGenerationDate.getMonth(), 
-      lastGenerationDate.getDate()
-    );
     
-    // If last generation was not today, generate new reports
-    if (today.getTime() !== lastGenDay.getTime()) {
-      console.log("New day since last generation, generating reports");
-      generateAllReports();
-    } else {
-      console.log("Reports already generated today");
+    // If last generation was not today, generate the current view
+    if (!lastGeneration || new Date(lastGeneration).getDate() !== today.getDate()) {
+      generateReport(activeTab, timeRange);
     }
-  };
+  }, []); // Empty dependency array means it only runs once
+  
+ 
   
   // Load saved analysis from storage
   const loadSavedAnalysis = () => {
@@ -426,15 +418,15 @@ Keep your analysis conversational, helpful, and actionable.`;
           </div>
         </div>
         
-        <div className="overflow-y-auto max-h-[60vh] pr-1 custom-scrollbar">
+        <div className="overflow-y-auto max-h-[60vh] md:max-h-[60vh] max-h-[50vh] pr-1 custom-scrollbar">
           {analysis[activeTab]?.[timeRange] ? (
             <div className="prose prose-sm max-w-none text-slate-700 dark:text-slate-300">
               <ReactMarkdown
                 components={{
-                  h1: ({node, ...props}) => <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4" {...props} />,
-                  h2: ({node, ...props}) => <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3 mt-6" {...props} />,
-                  h3: ({node, ...props}) => <h3 className="text-md font-semibold text-slate-800 dark:text-slate-200 mb-3 mt-4" {...props} />,
-                  p: ({node, ...props}) => <p className="mb-4 text-slate-700 dark:text-slate-300" {...props} />,
+                    h1: ({node, ...props}) => <h1 className="text-lg xs:text-xl font-bold text-slate-800 dark:text-slate-100 mb-4" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="text-base xs:text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3 mt-6" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="text-sm xs:text-md font-semibold text-slate-800 dark:text-slate-200 mb-3 mt-4" {...props} />,
+                    p: ({node, ...props}) => <p className="mb-4 text-sm xs:text-base text-slate-700 dark:text-slate-300" {...props} />,
                   ul: ({node, ...props}) => <ul className="mb-4 list-disc pl-5" {...props} />,
                   li: ({node, ...props}) => <li className="mb-1" {...props} />,
                   strong: ({node, ...props}) => <strong className="font-semibold text-blue-600 dark:text-blue-400" {...props} />,

@@ -1,5 +1,5 @@
 // DayChecklist/TaskItem.jsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CheckCircle2, Circle, Bell, AlertTriangle, Trash2 } from 'lucide-react';
 
 const TaskItem = ({ 
@@ -10,45 +10,8 @@ const TaskItem = ({
   onSetReminder, 
   onDeleteTask // This is now optional
 }) => {
-  // Only setup deletion functionality if onDeleteTask is provided
-  const [isLongPressing, setIsLongPressing] = useState(false);
+  // State for delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const pressTimeoutRef = useRef(null);
-  const taskItemRef = useRef(null);
-
-  // Cancel the long press timeout when unmounting
-  useEffect(() => {
-    return () => {
-      if (pressTimeoutRef.current) {
-        clearTimeout(pressTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Handle long press on mobile (only if deletion is enabled)
-  const handleTouchStart = (e) => {
-    if (!onDeleteTask) return; // Skip if deletion not enabled
-    
-    pressTimeoutRef.current = setTimeout(() => {
-      setIsLongPressing(true);
-      setShowDeleteConfirm(true);
-    }, 500); // 500ms for long press
-  };
-
-  const handleTouchEnd = () => {
-    if (pressTimeoutRef.current) {
-      clearTimeout(pressTimeoutRef.current);
-    }
-    setIsLongPressing(false);
-  };
-
-  // Handle right-click on desktop (only if deletion is enabled)
-  const handleContextMenu = (e) => {
-    if (!onDeleteTask) return; // Skip if deletion not enabled
-    
-    e.preventDefault();
-    setShowDeleteConfirm(true);
-  };
 
   const handleDelete = () => {
     setShowDeleteConfirm(false);
@@ -69,12 +32,7 @@ const TaskItem = ({
 
   return (
     <div
-      ref={taskItemRef}
       className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors relative"
-      onTouchStart={onDeleteTask ? handleTouchStart : undefined}
-      onTouchEnd={onDeleteTask ? handleTouchEnd : undefined}
-      onTouchCancel={onDeleteTask ? handleTouchEnd : undefined}
-      onContextMenu={onDeleteTask ? handleContextMenu : undefined}
     >
       <div 
         className="flex items-center justify-center w-5 h-5 mr-3 cursor-pointer"

@@ -466,15 +466,7 @@ const DayCoach = () => {
                   {/* Chat messages container */}
                   <div 
   ref={chatContainerRef}
-  className="flex-1 overflow-y-auto p-2 mb-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg transition-colors"
-  style={{
-    maxHeight: "50vh", // Smaller on mobile
-    height: "350px",   // Smaller default on mobile
-    "@media (min-width: 640px)": {
-      maxHeight: "60vh",
-      height: "400px"
-    }
-  }}
+  className="flex-1 overflow-y-auto p-2 mb-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg transition-colors h-64 xs:h-80 sm:h-96 md:h-[400px] max-h-[70vh]"
 >
   {messages.length === 0 ? (
     <DayCoachEmptyState onStartChat={() => handleSendMessage("Hi! How can you help me?")} />
@@ -491,6 +483,7 @@ const DayCoach = () => {
             index === messages.slice(-10).length - 1 &&
             !quickReplies.length
           }
+          isMobile={window.innerWidth < 640}
         />
       ))}
       

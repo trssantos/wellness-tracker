@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Mic, X, Pause, Smile } from 'lucide-react';
+import '../..//index.css'; // Your existing import
 
 const DayCoachInput = ({ value, onChange, onSend, isLoading, disabled }) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -157,7 +158,7 @@ const DayCoachInput = ({ value, onChange, onSend, isLoading, disabled }) => {
   };
   
   return (
-    <div className="mt-2 relative">
+    <div className="mt-2 relative pb-1">
       {/* Recording indicator */}
       {isRecording && (
         <div className="absolute -top-10 left-0 right-0 bg-red-100 dark:bg-red-900/30 p-2 rounded-lg flex items-center justify-between">
@@ -204,23 +205,22 @@ const DayCoachInput = ({ value, onChange, onSend, isLoading, disabled }) => {
       
       {/* Input bar */}
       <div className="relative flex items-center">
-        <textarea
-          ref={inputRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyPress}
-          placeholder="Message your coach..."
-          className="flex-1 p-3 pr-24 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none resize-none min-h-[44px] max-h-32 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 transition-colors"
-          disabled={disabled || isLoading || isRecording}
-          rows={1}
-          style={{ 
-            height: 'auto',
-            maxHeight: '120px',
-            overflowY: 'auto'
-          }}
-        />
-        
-        <div className="absolute right-2 flex gap-1">
+    <textarea
+      ref={inputRef}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={handleKeyPress}
+      placeholder="Message your coach..."
+      className="flex-1 p-3 pr-24 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none resize-none min-h-[44px] max-h-24 xs:max-h-32 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 transition-colors"
+      disabled={disabled || isLoading || isRecording}
+      rows={1}
+      style={{ 
+        height: 'auto',
+        overflowY: 'auto'
+      }}
+    />
+    
+    <div className="absolute right-2 flex gap-1">
           {/* Emoji button */}
           <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}

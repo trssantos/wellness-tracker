@@ -186,6 +186,31 @@ body {
   animation: firework 0.8s ease-out forwards;
 }
 
+/* Hide scrollbar but keep functionality */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
+/* Ensure text wrapping on all elements */
+.break-words {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Adjust viewport height on mobile when keyboard is open */
+@media (max-width: 639px) {
+  .h-mobile-adjusted {
+    height: 40vh; /* Lower height on mobile */
+  }
+}
+
 @keyframes badge-unlock {
   0% { transform: scale(0.5); opacity: 0; }
   50% { transform: scale(1.2); opacity: 1; }

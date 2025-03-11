@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar, RefreshCw, Book, TrendingUp, AlertTriangle,
-  Smile, Brain, Zap, Dumbbell, Clock
+  Smile, Brain, Zap, Dumbbell, Clock, FileText, Loader
 } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
 import { generateContent } from '../../utils/ai-service';
 import ReactMarkdown from 'react-markdown';
 
 const DayCoachAnalysis = () => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [analysis, setAnalysis] = useState({});
   const [activeTab, setActiveTab] = useState('overview'); // overview, mood, focus, habits, workouts
   const [timeRange, setTimeRange] = useState('week'); // day, week, month
@@ -27,44 +27,13 @@ const DayCoachAnalysis = () => {
     };
   }, []);
   
-  // Load saved analysis when component mounts or tab/range changes
+  // Load saved analysis when component mounts or tab/range changes - but don't generate automatically
   useEffect(() => {
-    const storage = getStorage();
-    const savedAnalytics = storage.dayCoachAnalytics || {};
-    
-    // Check if we already have data for this tab/range
-    if (savedAnalytics[activeTab]?.[timeRange]?.text) {
-      // We have data, just load it without setting loading state
-      setAnalysis(savedAnalytics);
-      setLastUpdated(savedAnalytics[activeTab][timeRange].timestamp);
-    } else {
-      // No data for this combo, set loading and generate it
-      setIsLoading(true);
-      generateReport(activeTab, timeRange).finally(() => {
-        setIsLoading(false);
-      });
-    }
+    loadSavedAnalysis();
   }, [activeTab, timeRange]);
-  
-  // Only on first render
-useEffect(() => {
-    const storage = getStorage();
-    const lastGeneration = storage.dayCoachAnalyticsLastGeneration || null;
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    // If last generation was not today, generate the current view
-    if (!lastGeneration || new Date(lastGeneration).getDate() !== today.getDate()) {
-      generateReport(activeTab, timeRange);
-    }
-  }, []); // Empty dependency array means it only runs once
-  
- 
   
   // Load saved analysis from storage
   const loadSavedAnalysis = () => {
-    setIsLoading(true);
-    
     try {
       const storage = getStorage();
       const savedAnalytics = storage.dayCoachAnalytics || {};
@@ -79,13 +48,13 @@ useEffect(() => {
       }
     } catch (error) {
       console.error('Error loading saved analysis:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
   
   // Generate a single report for a specific tab and time range
   const generateReport = async (tab, range) => {
+    setIsLoading(true);
+    
     try {
       const storage = getStorage();
       
@@ -119,62 +88,24 @@ useEffect(() => {
       storage.dayCoachAnalytics = existingAnalytics;
       setStorage(storage);
       
-      // Update state if this is the active tab and range
-      if (tab === activeTab && range === timeRange) {
-        setAnalysis(existingAnalytics);
-        setLastUpdated(existingAnalytics[tab][range].timestamp);
-        setIsLoading(false);
-      }
+      // Update state
+      setAnalysis(existingAnalytics);
+      setLastUpdated(existingAnalytics[tab][range].timestamp);
       
       return true;
     } catch (error) {
       console.error(`Error generating ${tab} ${range} report:`, error);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
   
-  // Generate all reports for all tabs and time ranges
-  const generateAllReports = async () => {
-    // Prevent duplicate generation
-    if (isGenerationScheduled.current) {
-      console.log("Report generation already scheduled, skipping");
-      return;
-    }
-    
-    isGenerationScheduled.current = true;
-    console.log("Starting report generation");
-    
-    // If this is the active report, show loading
-    setIsLoading(true);
-    
-    const tabs = ['overview', 'mood', 'focus', 'habits', 'workouts'];
-    const ranges = ['day', 'week', 'month'];
-    
-    for (const tab of tabs) {
-      for (const range of ranges) {
-        await generateReport(tab, range);
-        // If component unmounted during generation, stop
-        if (!isMounted.current) return;
-      }
-    }
-    
-    // Update the last generation timestamp
-    if (isMounted.current) {
-      const storage = getStorage();
-      storage.dayCoachAnalyticsLastGeneration = new Date().toISOString();
-      setStorage(storage);
-    }
-    
-    console.log("All reports generated");
-    isGenerationScheduled.current = false;
-  };
-  
-  // Manual refresh handler - just refresh the current tab/range
-  const handleManualRefresh = async () => {
-    setIsLoading(true);
+  // Handle manual generation of current report
+  const handleGenerateCurrentReport = async () => {
     await generateReport(activeTab, timeRange);
     
-    // Also update the last generation timestamp
+    // Update the last generation timestamp
     const storage = getStorage();
     storage.dayCoachAnalyticsLastGeneration = new Date().toISOString();
     setStorage(storage);
@@ -267,7 +198,6 @@ Keep your analysis conversational, helpful, and actionable.`;
     });
   };
   
-  // Rest of your rendering code remains the same
   // Custom styles for different insight sections
   const getSectionClass = (type) => {
     switch (type) {
@@ -285,7 +215,7 @@ Keep your analysis conversational, helpful, and actionable.`;
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-6">
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
           <button
             onClick={() => setActiveTab('overview')}
             className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
@@ -380,14 +310,6 @@ Keep your analysis conversational, helpful, and actionable.`;
           >
             Month
           </button>
-          
-          <button
-            onClick={handleManualRefresh}
-            className="ml-2 p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
-            title="Refresh Analysis"
-          >
-            <RefreshCw size={16} />
-          </button>
         </div>
       </div>
       
@@ -411,38 +333,76 @@ Keep your analysis conversational, helpful, and actionable.`;
               </span>
             </div>
             
-            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-              <Clock size={14} />
-              <span>Updated: {formatLastUpdated(lastUpdated)}</span>
-            </div>
+            {lastUpdated && (
+              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <Clock size={14} />
+                <span>Updated: {formatLastUpdated(lastUpdated)}</span>
+              </div>
+            )}
           </div>
         </div>
         
-        <div className="overflow-y-auto max-h-[60vh] md:max-h-[60vh] max-h-[50vh] pr-1 custom-scrollbar">
-          {analysis[activeTab]?.[timeRange] ? (
+        <div className="overflow-y-auto max-h-[40vh] xs:max-h-[50vh] md:max-h-[60vh] pr-1 custom-scrollbar">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader size={32} className="text-blue-500 dark:text-blue-400 animate-spin mb-4" />
+              <p className="text-slate-600 dark:text-slate-300">Generating your analysis...</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">This may take a minute</p>
+            </div>
+          ) : analysis[activeTab]?.[timeRange] ? (
             <div className="prose prose-sm max-w-none text-slate-700 dark:text-slate-300">
               <ReactMarkdown
                 components={{
-                    h1: ({node, ...props}) => <h1 className="text-lg xs:text-xl font-bold text-slate-800 dark:text-slate-100 mb-4" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-base xs:text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3 mt-6" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="text-sm xs:text-md font-semibold text-slate-800 dark:text-slate-200 mb-3 mt-4" {...props} />,
-                    p: ({node, ...props}) => <p className="mb-4 text-sm xs:text-base text-slate-700 dark:text-slate-300" {...props} />,
-                  ul: ({node, ...props}) => <ul className="mb-4 list-disc pl-5" {...props} />,
-                  li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                  h1: ({node, ...props}) => <h1 className="text-lg xs:text-xl font-bold text-slate-800 dark:text-slate-100 mb-4 break-words" {...props} />,
+                  h2: ({node, ...props}) => <h2 className="text-base xs:text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3 mt-6 break-words" {...props} />,
+                  h3: ({node, ...props}) => <h3 className="text-sm xs:text-md font-semibold text-slate-800 dark:text-slate-200 mb-3 mt-4 break-words" {...props} />,
+                  p: ({node, ...props}) => <p className="mb-4 text-sm xs:text-base text-slate-700 dark:text-slate-300 break-words" {...props} />,
+                  ul: ({node, ...props}) => <ul className="mb-4 list-disc pl-5 break-words" {...props} />,
+                  li: ({node, ...props}) => <li className="mb-1 break-words" {...props} />,
                   strong: ({node, ...props}) => <strong className="font-semibold text-blue-600 dark:text-blue-400" {...props} />,
-                  blockquote: ({node, ...props}) => <blockquote className={getSectionClass('neutral')} {...props} />,
+                  blockquote: ({node, ...props}) => <blockquote className={getSectionClass('neutral') + " break-words"} {...props} />,
+                  pre: ({node, ...props}) => <pre className="overflow-x-auto w-full max-w-full" {...props} />,
+                  code: ({node, ...props}) => <code className="break-words" {...props} />,
+                  table: ({node, ...props}) => <div className="overflow-x-auto"><table {...props} /></div>,
                 }}
               >
                 {analysis[activeTab][timeRange].text}
               </ReactMarkdown>
             </div>
           ) : (
-            <div className="text-center py-8">
-              <AlertTriangle size={32} className="text-amber-500 mx-auto mb-2" />
-              <p>No analysis available yet. Click Refresh to generate insights.</p>
+            <div className="text-center py-12">
+              <FileText size={48} className="text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+              <h4 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">No analysis available</h4>
+              <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                {timeRange === 'day' 
+                  ? "Daily analysis hasn't been generated yet for this category." 
+                  : timeRange === 'week'
+                    ? "Weekly analysis hasn't been generated yet for this category."
+                    : "Monthly analysis hasn't been generated yet for this category."}
+              </p>
+              <button
+                onClick={handleGenerateCurrentReport}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 mx-auto"
+              >
+                <RefreshCw size={16} />
+                <span>Generate {activeTab} analysis</span>
+              </button>
             </div>
           )}
         </div>
+
+        {/* Refresh button when analysis exists */}
+        {analysis[activeTab]?.[timeRange] && !isLoading && (
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={handleGenerateCurrentReport}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
+            >
+              <RefreshCw size={16} />
+              <span>Refresh analysis</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

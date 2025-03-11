@@ -1,6 +1,5 @@
-// DayChecklist.jsx - Cleaned without pending tasks functionality
-import React, { useState, useEffect } from 'react';
-import { X, Edit2, Save, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Edit2, Save, Sparkles, ArrowRight, Sun, Zap, CheckSquare } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
 import DayContext from './DayChecklist/DayContext';
 import ProgressSummary from './DayChecklist/ProgressSummary';
@@ -9,7 +8,7 @@ import TaskList from './DayChecklist/TaskList';
 import EditTaskPanel from './DayChecklist/EditTaskPanel';
 import { TaskReminder } from './TaskReminder';
 import HabitTaskIntegration from './HabitTaskIntegration';
-import { getHabitsForDate, trackHabitCompletion,getHabitTaskNames } from '../utils/habitTrackerUtils';
+import { getHabitsForDate, trackHabitCompletion, getHabitTaskNames } from '../utils/habitTrackerUtils';
 
 // Default categories from separate file
 import { DEFAULT_CATEGORIES } from '../utils/defaultTasks';
@@ -40,11 +39,21 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   const [quickAddText, setQuickAddText] = useState('');
 
   const [habitUpdateTrigger, setHabitUpdateTrigger] = useState(0);
+  
+  // State for collapsible sections
+  const [dayContextVisible, setDayContextVisible] = useState(false);
+  const [habitsVisible, setHabitsVisible] = useState(false);
+  const [tasksVisible, setTasksVisible] = useState(true); // Expanded by default
 
+  // Refs for maintaining scroll position
+  const taskListRef = useRef(null);
 
+  // Only update activeCategory when categories change due to initial load, not during edits
   useEffect(() => {
-    setActiveCategory(0);
-  }, [categories]);
+    if (categories === DEFAULT_CATEGORIES) {
+      setActiveCategory(0);
+    }
+  }, []);
 
   useEffect(() => {
     if (!date) return;
@@ -102,33 +111,63 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   };
   
   // Helper function to load tasks from storage
-  // In DayChecklist.jsx, update the loadTasksFromStorage function
-const loadTasksFromStorage = (savedData) => {
-  let taskCategories = [];
-  let listType = 'default';
+  const loadTasksFromStorage = (savedData) => {
+    let taskCategories = [];
+    let listType = 'default';
 
-  // AI Tasks take highest priority
-  if (savedData?.aiTasks && Array.isArray(savedData.aiTasks)) {
-    const validCategories = validateCategories(savedData.aiTasks);
-    if (validCategories.length > 0) {
-      taskCategories = validCategories;
-      setDayContext({
-        morningMood: savedData.morningMood || savedData.mood || savedData.aiContext?.mood || null,
-        eveningMood: savedData.eveningMood || null,
-        morningEnergy: savedData.morningEnergy || savedData.energyLevel || savedData.aiContext?.energyLevel || 0,
-        eveningEnergy: savedData.eveningEnergy || 0,
-        objective: savedData.aiContext?.objective || '',
-        context: savedData.aiContext?.context || '',
-        isAIGenerated: true
-      });
-      listType = 'ai';
+    // AI Tasks take highest priority
+    if (savedData?.aiTasks && Array.isArray(savedData.aiTasks)) {
+      const validCategories = validateCategories(savedData.aiTasks);
+      if (validCategories.length > 0) {
+        taskCategories = validCategories;
+        setDayContext({
+          morningMood: savedData.morningMood || savedData.mood || savedData.aiContext?.mood || null,
+          eveningMood: savedData.eveningMood || null,
+          morningEnergy: savedData.morningEnergy || savedData.energyLevel || savedData.aiContext?.energyLevel || 0,
+          eveningEnergy: savedData.eveningEnergy || 0,
+          objective: savedData.aiContext?.objective || '',
+          context: savedData.aiContext?.context || '',
+          isAIGenerated: true
+        });
+        listType = 'ai';
+      }
     }
-  }
-  // Then check for Custom Tasks
-  else if (savedData?.customTasks && Array.isArray(savedData.customTasks)) {
-    const validCategories = validateCategories(savedData.customTasks);
-    if (validCategories.length > 0) {
-      taskCategories = validCategories;
+    // Then check for Custom Tasks
+    else if (savedData?.customTasks && Array.isArray(savedData.customTasks)) {
+      const validCategories = validateCategories(savedData.customTasks);
+      if (validCategories.length > 0) {
+        taskCategories = validCategories;
+        setDayContext({
+          morningMood: savedData.morningMood || savedData.mood || null,
+          eveningMood: savedData.eveningMood || null,
+          morningEnergy: savedData.morningEnergy || savedData.energyLevel || 0,
+          eveningEnergy: savedData.eveningEnergy || 0,
+          objective: '',
+          context: '',
+          isAIGenerated: false
+        });
+        listType = 'custom';
+      }
+    }
+    // Check for Default Tasks (now stored in the same way as AI and custom)
+    else if (savedData?.defaultTasks && Array.isArray(savedData.defaultTasks)) {
+      const validCategories = validateCategories(savedData.defaultTasks);
+      if (validCategories.length > 0) {
+        taskCategories = validCategories;
+        setDayContext({
+          morningMood: savedData.morningMood || savedData.mood || null,
+          eveningMood: savedData.eveningMood || null,
+          morningEnergy: savedData.morningEnergy || savedData.energyLevel || 0,
+          eveningEnergy: savedData.eveningEnergy || 0,
+          objective: '',
+          context: '',
+          isAIGenerated: false
+        });
+        listType = 'default';
+      }
+    } else {
+      // Fallback to the original DEFAULT_CATEGORIES if nothing is stored
+      taskCategories = DEFAULT_CATEGORIES;
       setDayContext({
         morningMood: savedData.morningMood || savedData.mood || null,
         eveningMood: savedData.eveningMood || null,
@@ -138,63 +177,32 @@ const loadTasksFromStorage = (savedData) => {
         context: '',
         isAIGenerated: false
       });
-      listType = 'custom';
     }
-  }
-  // Check for Default Tasks (now stored in the same way as AI and custom)
-  else if (savedData?.defaultTasks && Array.isArray(savedData.defaultTasks)) {
-    const validCategories = validateCategories(savedData.defaultTasks);
-    if (validCategories.length > 0) {
-      taskCategories = validCategories;
-      setDayContext({
-        morningMood: savedData.morningMood || savedData.mood || null,
-        eveningMood: savedData.eveningMood || null,
-        morningEnergy: savedData.morningEnergy || savedData.energyLevel || 0,
-        eveningEnergy: savedData.eveningEnergy || 0,
-        objective: '',
-        context: '',
-        isAIGenerated: false
+
+    setCategories(taskCategories);
+    setEditedCategories(JSON.parse(JSON.stringify(taskCategories))); // Deep copy
+    setTaskListType(listType);
+
+    if (savedData?.checked) {
+      setChecked(savedData.checked);
+    } else {
+      const initialChecked = {};
+      taskCategories.forEach(category => {
+        category.items.forEach(item => {
+          initialChecked[item] = false;
+        });
       });
-      listType = 'default';
+      setChecked(initialChecked);
     }
-  } else {
-    // Fallback to the original DEFAULT_CATEGORIES if nothing is stored
-    taskCategories = DEFAULT_CATEGORIES;
-    setDayContext({
-      morningMood: savedData.morningMood || savedData.mood || null,
-      eveningMood: savedData.eveningMood || null,
-      morningEnergy: savedData.morningEnergy || savedData.energyLevel || 0,
-      eveningEnergy: savedData.eveningEnergy || 0,
-      objective: '',
-      context: '',
-      isAIGenerated: false
-    });
-  }
+    
+    // Load task reminders
+    if (savedData?.taskReminders) {
+      setTaskReminders(savedData.taskReminders);
+    }
 
-  setCategories(taskCategories);
-  setEditedCategories(JSON.parse(JSON.stringify(taskCategories))); // Deep copy
-  setTaskListType(listType);
-
-  if (savedData?.checked) {
-    setChecked(savedData.checked);
-  } else {
-    const initialChecked = {};
-    taskCategories.forEach(category => {
-      category.items.forEach(item => {
-        initialChecked[item] = false;
-      });
-    });
-    setChecked(initialChecked);
-  }
-  
-  // Load task reminders
-  if (savedData?.taskReminders) {
-    setTaskReminders(savedData.taskReminders);
-  }
-
-  // Reset active category to 0 whenever data changes
-  setActiveCategory(0);
-};
+    // Reset active category to 0 whenever data changes
+    setActiveCategory(0);
+  };
 
   const validateCategories = (categoriesData) => {
     return categoriesData
@@ -256,11 +264,14 @@ const loadTasksFromStorage = (savedData) => {
     updateHabitCompletions(newChecked);
   };
 
-  // Handle quick adding tasks
+  // Modified handleQuickAddTask to preserve category selection and scroll position
   const handleQuickAddTask = (categoryIndex) => {
     if (!quickAddText.trim()) {
       return;
     }
+    
+    // Keep the current active category
+    const currentActiveCategory = activeCategory;
     
     // Create a copy of the current categories
     const newCategories = JSON.parse(JSON.stringify(categories));
@@ -300,11 +311,18 @@ const loadTasksFromStorage = (savedData) => {
     
     setStorage(storage);
     
-    // Update local state
+    // Update local state without changing active category
     setCategories(newCategories);
     setChecked(newChecked);
     setQuickAddText('');
     setQuickAddCategory(null);
+    
+    // Ensure we maintain the same active category
+    // We don't need to explicitly set it since we're not calling any functions that reset it
+    // But to be extra safe:
+    if (currentActiveCategory !== activeCategory) {
+      setActiveCategory(currentActiveCategory);
+    }
   };
 
   // Task deletion function
@@ -318,6 +336,9 @@ const loadTasksFromStorage = (savedData) => {
     );
     
     if (categoryIndex === -1) return; // Task not found
+    
+    // Save current active category
+    const currentActiveCategory = activeCategory;
     
     // Remove the task from the category
     newCategories[categoryIndex].items = newCategories[categoryIndex].items.filter(
@@ -369,6 +390,11 @@ const loadTasksFromStorage = (savedData) => {
     // Update local state
     setCategories(newCategories);
     setChecked(newChecked);
+    
+    // Maintain active category
+    if (currentActiveCategory !== activeCategory) {
+      setActiveCategory(currentActiveCategory);
+    }
   };
 
   // Editing functions
@@ -518,6 +544,22 @@ const loadTasksFromStorage = (savedData) => {
     }, 100);
   };
 
+  // Section header component for collapsible sections
+  const SectionHeader = ({ title, icon, section, isVisible, onToggle }) => (
+    <div 
+      onClick={onToggle} 
+      className="cursor-pointer mb-4"
+    >
+      <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 transition-colors flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {icon}
+          <span>{title}</span>
+        </div>
+        <ArrowRight className={`transition-transform duration-300 ${isVisible ? 'rotate-90' : ''}`} size={20} />
+      </h3>
+    </div>
+  );
+
   if (!date) return null;
 
   return (
@@ -570,55 +612,87 @@ const loadTasksFromStorage = (savedData) => {
             </button>
           </div>
 
-          <DayContext 
-            context={dayContext} 
-            onUpdate={handleContextUpdate} 
+          {/* Day Context - collapsible */}
+          <SectionHeader 
+            title="Day Context" 
+            icon={<Sun className="text-amber-500 dark:text-amber-400" size={20} />}
+            section="dayContext"
+            isVisible={dayContextVisible}
+            onToggle={() => setDayContextVisible(!dayContextVisible)}
           />
-
-<HabitTaskIntegration date={date} checked={checked} />
-
-          
-          {!isEditing && (
-            <ProgressSummary 
-              checked={checked} 
-              categories={categories} 
+          {dayContextVisible && (
+            <DayContext 
+              context={dayContext} 
+              onUpdate={handleContextUpdate} 
             />
           )}
 
-          {isEditing ? (
-            // Editing mode view
-            <EditTaskPanel
-              editedCategories={editedCategories}
-              setEditedCategories={setEditedCategories}
-              editingError={editingError}
-              setEditingError={setEditingError}
-              saveEdits={saveEdits}
-              cancelEditing={cancelEditing}
-            />
-          ) : (
-            // Normal viewing mode
-            <>
-              <TaskCategoryTabs
-                categories={categories}
-                activeCategory={activeCategory}
-                setActiveCategory={setActiveCategory}
-              />
+          {/* Habits for Today - collapsible */}
+          <SectionHeader 
+            title="Habits for Today" 
+            icon={<Zap className="text-purple-500 dark:text-purple-400" size={20} />}
+            section="habits"
+            isVisible={habitsVisible}
+            onToggle={() => setHabitsVisible(!habitsVisible)}
+          />
+          {habitsVisible && (
+            <HabitTaskIntegration date={date} checked={checked} />
+          )}
+          
+          {/* Tasks Section - collapsible but expanded by default */}
+          <SectionHeader 
+            title="Tasks" 
+            icon={<CheckSquare className="text-blue-500 dark:text-blue-400" size={20} />}
+            section="tasks"
+            isVisible={tasksVisible}
+            onToggle={() => setTasksVisible(!tasksVisible)}
+          />
+          
+          {tasksVisible && (
+            <div ref={taskListRef}>
+              {!isEditing && (
+                <ProgressSummary 
+                  checked={checked} 
+                  categories={categories} 
+                />
+              )}
 
-              <TaskList
-                categories={categories}
-                activeCategory={activeCategory}
-                checked={checked}
-                handleCheck={handleCheck}
-                hasReminderForTask={hasReminderForTask}
-                handleSetReminder={handleSetReminder}
-                quickAddCategory={quickAddCategory}
-                setQuickAddCategory={setQuickAddCategory}
-                quickAddText={quickAddText}
-                setQuickAddText={setQuickAddText}
-                handleQuickAddTask={handleQuickAddTask}
-                handleDeleteTask={handleDeleteTask}
-              />
-            </>
+              {isEditing ? (
+                // Editing mode view
+                <EditTaskPanel
+                  editedCategories={editedCategories}
+                  setEditedCategories={setEditedCategories}
+                  editingError={editingError}
+                  setEditingError={setEditingError}
+                  saveEdits={saveEdits}
+                  cancelEditing={cancelEditing}
+                />
+              ) : (
+                // Normal viewing mode
+                <>
+                  <TaskCategoryTabs
+                    categories={categories}
+                    activeCategory={activeCategory}
+                    setActiveCategory={setActiveCategory}
+                  />
+
+                  <TaskList
+                    categories={categories}
+                    activeCategory={activeCategory}
+                    checked={checked}
+                    handleCheck={handleCheck}
+                    hasReminderForTask={hasReminderForTask}
+                    handleSetReminder={handleSetReminder}
+                    quickAddCategory={quickAddCategory}
+                    setQuickAddCategory={setQuickAddCategory}
+                    quickAddText={quickAddText}
+                    setQuickAddText={setQuickAddText}
+                    handleQuickAddTask={handleQuickAddTask}
+                    handleDeleteTask={handleDeleteTask}
+                  />
+                </>
+              )}
+            </div>
           )}
         </div>
       </dialog>

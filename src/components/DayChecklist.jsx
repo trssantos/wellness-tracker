@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Edit2, Save, Sparkles, ArrowRight, Sun, Zap, CheckSquare } from 'lucide-react';
+import { X, Edit2, Save, Sparkles, ArrowRight, Sun, Zap, CheckSquare, Clock } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
 import DayContext from './DayChecklist/DayContext';
 import ProgressSummary from './DayChecklist/ProgressSummary';
@@ -48,6 +48,26 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
 
   // Refs for maintaining scroll position
   const taskListRef = useRef(null);
+
+  // 2. Add a new function in the DayChecklist component to handle opening the import tasks modal
+const openImportTasksModal = () => {
+  // Store the current date for reference
+  const currentDate = date;
+  
+  // Close the current checklist modal
+  onClose();
+  
+  // Using setTimeout to ensure the modal closes before opening the import modal
+  setTimeout(() => {
+    // Instead of creating new logic, we'll use the existing checkForPendingTasks function
+    // but modified to search through multiple days
+    if (typeof window.checkForPendingTasksMultiDay === 'function') {
+      window.checkForPendingTasksMultiDay(currentDate, 7); // Check up to 7 previous days
+    } else {
+      console.error('checkForPendingTasksMultiDay function not available');
+    }
+  }, 100);
+};
 
   // Only update activeCategory when categories change due to initial load, not during edits
   useEffect(() => {
@@ -602,6 +622,14 @@ if (allTasksCompleted) {
                 >
                   {isEditing ? <Save size={14} /> : <Edit2 size={14} />}
                 </button>
+                {/* New Import Tasks Button */}
+  <button
+    onClick={openImportTasksModal}
+    className="text-purple-500 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 p-1 rounded-md transition-colors"
+    title="Import unfinished tasks from previous days"
+  >
+    <Clock size={14} />
+  </button>
                 <button
                   onClick={openAIGenerator}
                   className="text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 p-1 rounded-md transition-colors"

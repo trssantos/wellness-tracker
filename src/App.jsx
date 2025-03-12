@@ -83,6 +83,9 @@ const preventNavigationAway = useRef(false);
       const today = new Date().toISOString().split('T')[0];
       handleDaySelect(today);
     };
+
+     // Add our new function to make it accessible from DayChecklist
+  window.checkForPendingTasksMultiDay = checkForPendingTasksMultiDay;
     
     // Add a handler for opening actions from task reminders
     window.openTaskReminderAction = handleTaskReminderAction;
@@ -107,6 +110,95 @@ const preventNavigationAway = useRef(false);
       });
     }
   }, []);
+
+  // 1. Add a new function to check for pending tasks from multiple days
+const checkForPendingTasksMultiDay = (currentDate, daysToCheck = 7) => {
+  console.log(`Checking for pending tasks for date ${currentDate} from up to ${daysToCheck} days ago`);
+  
+  // This will store all dates with pending tasks
+  const datesWithPendingTasks = [];
+  
+  // Convert currentDate to Date object if it's a string
+  const currentDateObj = new Date(currentDate);
+  
+  // Check each of the past days
+  for (let i = 1; i <= daysToCheck; i++) {
+    // Calculate the date to check
+    const checkDateObj = new Date(currentDateObj);
+    checkDateObj.setDate(currentDateObj.getDate() - i);
+    const checkDateStr = checkDateObj.toISOString().split('T')[0];
+    
+    // Use the existing findPreviousTaskDate logic internally
+    // but we're specifically checking this date
+    const hasPendingTasks = hasPendingTasksOnDate(checkDateStr, currentDate);
+    
+    if (hasPendingTasks) {
+      datesWithPendingTasks.push(checkDateStr);
+    }
+  }
+  
+  // If we found any dates with pending tasks, use the most recent one
+  if (datesWithPendingTasks.length > 0) {
+    // Sort dates newest first
+    datesWithPendingTasks.sort((a, b) => new Date(b) - new Date(a));
+    
+    console.log(`Found pending tasks from dates: ${datesWithPendingTasks.join(', ')}`);
+    // Use the most recent date with pending tasks
+    const mostRecentDate = datesWithPendingTasks[0];
+    
+    // Use the existing pending tasks modal
+    setPendingTasksDate(mostRecentDate);
+    setPendingTasksForDate(currentDate);
+    
+    // Show the modal
+    setTimeout(() => {
+      const modal = document.getElementById('pending-tasks-modal');
+      if (modal) {
+        modal.showModal();
+      } else {
+        console.error('Pending tasks modal not found');
+      }
+    }, 100);
+    
+    return true;
+  }
+  
+  console.log('No pending tasks found from previous days');
+  return false;
+};
+
+// 2. This helper function checks if a specific date has pending tasks
+// Similar to logic in findPreviousTaskDate but for a specific date
+const hasPendingTasksOnDate = (dateToCheck, targetDate) => {
+  const storage = getStorage();
+  const dayData = storage[dateToCheck];
+  
+  // If no data for this day, it has no pending tasks
+  if (!dayData) return false;
+  
+  // Only consider days with checked items
+  if (!dayData.checked) return false;
+  
+  // Get all task items from various possible task lists
+  const taskCategories = dayData.customTasks || dayData.aiTasks || dayData.defaultTasks;
+  if (!taskCategories || !Array.isArray(taskCategories)) return false;
+  
+  // Check if any tasks on this date are uncompleted
+  let hasUncompletedTasks = false;
+  
+  for (const category of taskCategories) {
+    for (const task of category.items) {
+      // If task exists in checked map and is false (uncompleted)
+      if (dayData.checked[task] === false) {
+        hasUncompletedTasks = true;
+        break;
+      }
+    }
+    if (hasUncompletedTasks) break;
+  }
+  
+  return hasUncompletedTasks;
+};
 
   // Update event listeners to handle the page unload event
   useEffect(() => {
@@ -338,33 +430,38 @@ const handleCustomTasksCreated = () => {
 
 const handlePendingTasksAction = (action, tasks = []) => {
   console.log('Handling pending tasks action:', action, 'with tasks:', tasks);
-  
   if (action === 'import' && tasks.length > 0) {
-    // Import tasks into the current day
-    console.log('Importing tasks into day:', pendingTasksForDate);
-    importDeferredTasks(pendingTasksForDate, tasks);
-
-    injectHabitTasks(pendingTasksForDate);
-
-    handleStorageUpdate();
-  }
+  // Import tasks into the current day
+  console.log('Importing tasks into day:', pendingTasksForDate);
+  importDeferredTasks(pendingTasksForDate, tasks);
+  injectHabitTasks(pendingTasksForDate);
   
+  handleStorageUpdate();
+  }
   // Close pending tasks modal
   const modal = document.getElementById('pending-tasks-modal');
   if (modal) {
-    modal.close();
+  modal.close();
   }
-  
+  // Store the date before resetting state
+  const targetDate = pendingTasksForDate;
   // Reset pending tasks state
   setPendingTasksDate(null);
   setPendingTasksForDate(null);
-  
-  // Open regular checklist with the current date
+  // Only try to open the checklist modal if we have a valid date
+  if (targetDate) {
+  // First check if the modal exists
   setTimeout(() => {
-    setSelectedDay(pendingTasksForDate);
-    document.getElementById('checklist-modal').showModal();
+  setSelectedDay(targetDate);
+  const checklistModal = document.getElementById('checklist-modal');
+  if (checklistModal) {
+  checklistModal.showModal();
+  } else {
+  console.error('Could not find checklist-modal element');
+  }
   }, 100);
-};
+  }
+  };
 
   const handleReminderSettingsOpen = () => {
     document.getElementById('reminder-settings-modal').showModal();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, AlertCircle, Check, X, ArrowRight, TrendingUp } from 'lucide-react';
+import { Calendar,Clock, AlertCircle, Check, X, ArrowRight, TrendingUp } from 'lucide-react';
 import { getStorage } from '../utils/storage';
 
 const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) => {
@@ -25,6 +25,18 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
     let totalDeferDays = 0;
     
     if (prevDayData.checked) {
+      // Calculate time difference between previous date and target date
+      const prevDateObj = new Date(previousDate);
+      const targetDateObj = new Date(date);
+      const daysDifference = Math.round((targetDateObj - prevDateObj) / (1000 * 60 * 60 * 24));
+      
+      // Format previous date for display
+      const formattedPrevDate = prevDateObj.toLocaleDateString('default', { 
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      });
+      
       // Collect tasks from custom or AI tasks
       const taskCategories = prevDayData.customTasks || prevDayData.aiTasks || prevDayData.defaultTasks;
       taskCategories.forEach(category => {
@@ -45,7 +57,9 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
               category: category.title,
               deferCount: deferCount,
               daysSinceFirstDefer: daysSinceFirstDefer > 0 ? daysSinceFirstDefer : 0,
-              firstDate: deferHistory.firstDate
+              firstDate: deferHistory.firstDate,
+              daysAgo: daysDifference, // Add how many days ago this task is from
+              sourceDate: formattedPrevDate // Add formatted date for display
             });
             
             // Track oldest task for stats
@@ -79,6 +93,7 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
     
     setLoading(false);
   };
+  
 
   const handleToggleTask = (taskText) => {
     setSelectedTasks(prev => ({
@@ -260,6 +275,12 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
                   <div className="flex-1 min-w-0">
                     <div className="text-slate-700 dark:text-slate-200 truncate">{task.text}</div>
                     <div className="flex items-center gap-2 mt-1">
+                      {/* From date indicator - NEW */}
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300">
+        <Calendar size={12} className="mr-1" />
+        {task.sourceDate || 'Unknown'} 
+        ({task.daysAgo === 1 ? 'Yesterday' : `${task.daysAgo} days ago`})
+      </span>
                       {task.deferCount > 0 && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">
                           <Clock size={12} className="mr-1" />

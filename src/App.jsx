@@ -112,63 +112,63 @@ const preventNavigationAway = useRef(false);
   }, []);
 
   // 1. Add a new function to check for pending tasks from multiple days
-const checkForPendingTasksMultiDay = (currentDate, daysToCheck = 7) => {
-  console.log(`Checking for pending tasks for date ${currentDate} from up to ${daysToCheck} days ago`);
-  
-  // This will store all dates with pending tasks
-  const datesWithPendingTasks = [];
-  
-  // Convert currentDate to Date object if it's a string
-  const currentDateObj = new Date(currentDate);
-  
-  // Check each of the past days
-  for (let i = 1; i <= daysToCheck; i++) {
-    // Calculate the date to check
-    const checkDateObj = new Date(currentDateObj);
-    checkDateObj.setDate(currentDateObj.getDate() - i);
-    const checkDateStr = checkDateObj.toISOString().split('T')[0];
+  const checkForPendingTasksMultiDay = (currentDate, daysToCheck = 7) => {
+    console.log(`Checking for pending tasks for date ${currentDate} from up to ${daysToCheck} days ago`);
     
-    // Use the existing findPreviousTaskDate logic internally
-    // but we're specifically checking this date
-    const hasPendingTasks = hasPendingTasksOnDate(checkDateStr, currentDate);
+    // This will store all dates with pending tasks
+    const datesWithPendingTasks = [];
     
-    if (hasPendingTasks) {
-      datesWithPendingTasks.push(checkDateStr);
-    }
-  }
-  
-  // If we found any dates with pending tasks, use the most recent one
-  if (datesWithPendingTasks.length > 0) {
-    // Sort dates newest first
-    datesWithPendingTasks.sort((a, b) => new Date(b) - new Date(a));
+    // Convert currentDate to Date object if it's a string
+    const currentDateObj = new Date(currentDate);
     
-    console.log(`Found pending tasks from dates: ${datesWithPendingTasks.join(', ')}`);
-    // Use the most recent date with pending tasks
-    const mostRecentDate = datesWithPendingTasks[0];
-    
-    // Use the existing pending tasks modal
-    setPendingTasksDate(mostRecentDate);
-    setPendingTasksForDate(currentDate);
-    
-    // Show the modal
-    setTimeout(() => {
-      const modal = document.getElementById('pending-tasks-modal');
-      if (modal) {
-        modal.showModal();
-      } else {
-        console.error('Pending tasks modal not found');
+    // Check each of the past days
+    for (let i = 1; i <= daysToCheck; i++) {
+      // Calculate the date to check
+      const checkDateObj = new Date(currentDateObj);
+      checkDateObj.setDate(currentDateObj.getDate() - i);
+      const checkDateStr = checkDateObj.toISOString().split('T')[0];
+      
+      // Check if this date has pending tasks
+      const hasPendingTasks = hasPendingTasksOnDate(checkDateStr);
+      
+      if (hasPendingTasks) {
+        datesWithPendingTasks.push(checkDateStr);
       }
-    }, 100);
+    }
     
-    return true;
-  }
-  
-  console.log('No pending tasks found from previous days');
-  return false;
-};
+    // If we found any dates with pending tasks
+    if (datesWithPendingTasks.length > 0) {
+      console.log(`Found pending tasks from dates: ${datesWithPendingTasks.join(', ')}`);
+      
+      // Use the most recent date with pending tasks for the modal
+      // (it will scan back from there in the component)
+      datesWithPendingTasks.sort((a, b) => new Date(b) - new Date(a));
+      const mostRecentDate = datesWithPendingTasks[0];
+      
+      // Set state for the pending tasks modal
+      setPendingTasksDate(mostRecentDate);
+      setPendingTasksForDate(currentDate);
+      
+      // Show the modal
+      setTimeout(() => {
+        const modal = document.getElementById('pending-tasks-modal');
+        if (modal) {
+          modal.showModal();
+        } else {
+          console.error('Pending tasks modal not found');
+        }
+      }, 100);
+      
+      return true;
+    }
+    
+    console.log('No pending tasks found from previous days');
+    return false;
+  };
 
 // 2. This helper function checks if a specific date has pending tasks
 // Similar to logic in findPreviousTaskDate but for a specific date
+// Update the hasPendingTasksOnDate function in App.jsx
 const hasPendingTasksOnDate = (dateToCheck, targetDate) => {
   const storage = getStorage();
   const dayData = storage[dateToCheck];
@@ -183,13 +183,18 @@ const hasPendingTasksOnDate = (dateToCheck, targetDate) => {
   const taskCategories = dayData.customTasks || dayData.aiTasks || dayData.defaultTasks;
   if (!taskCategories || !Array.isArray(taskCategories)) return false;
   
+  // Helper function to check if a task is from a habit
+  const isHabitTask = (taskText) => {
+    return taskText.startsWith('[') && taskText.includes(']');
+  };
+  
   // Check if any tasks on this date are uncompleted
   let hasUncompletedTasks = false;
   
   for (const category of taskCategories) {
     for (const task of category.items) {
-      // If task exists in checked map and is false (uncompleted)
-      if (dayData.checked[task] === false) {
+      // If task exists in checked map, is false (uncompleted), and is not a habit task
+      if (dayData.checked[task] === false && !isHabitTask(task)) {
         hasUncompletedTasks = true;
         break;
       }

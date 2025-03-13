@@ -1,4 +1,3 @@
-// Update the PendingTasksModal.jsx component
 import React from 'react';
 import PendingTasksPrompt from './PendingTasksPrompt';
 import { X } from 'lucide-react';
@@ -22,12 +21,8 @@ export const PendingTasksModal = ({ currentDate, previousDate, onAction }) => {
               })}
             </h3>
             <p className="modal-subtitle">
-  {previousDate && `Pending Tasks from ${new Date(previousDate).toLocaleDateString('default', { 
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric'
-  })}`}
-</p>
+              Pending Tasks from Previous Days
+            </p>
           </div>
           <button
             onClick={() => onAction('skip')}

@@ -622,13 +622,17 @@ if (allTasksCompleted) {
                 >
                   {isEditing ? <Save size={14} /> : <Edit2 size={14} />}
                 </button>
-                {/* New Import Tasks Button */}
+                {/* Import Tasks Button */}
   <button
     onClick={openImportTasksModal}
-    className="text-purple-500 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 p-1 rounded-md transition-colors"
+    className="text-purple-500 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 p-1 rounded-md transition-colors group relative"
     title="Import unfinished tasks from previous days"
   >
     <Clock size={14} />
+    {/* Tooltip explaining task import */}
+    <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 translate-y-full w-64 bg-slate-800 dark:bg-slate-700 text-white text-xs rounded p-2 hidden group-hover:block z-10">
+      Import unfinished tasks from up to 7 days ago. Habit tasks are excluded since they're designed for specific days.
+    </div>
   </button>
                 <button
                   onClick={openAIGenerator}

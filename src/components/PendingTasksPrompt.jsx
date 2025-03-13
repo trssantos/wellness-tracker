@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar,Clock, AlertCircle, Check, X, ArrowRight, TrendingUp } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, Check, X, ArrowRight, TrendingUp, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { getStorage } from '../utils/storage';
 
 const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) => {
@@ -7,93 +7,140 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
   const [selectedTasks, setSelectedTasks] = useState({});
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ count: 0, oldestDays: 0, averageDays: 0 });
-
+  const [taskSources, setTaskSources] = useState([]);
+  const [expandedCategories, setExpandedCategories] = useState({}); // Track expanded state
+  const [searchQuery, setSearchQuery] = useState(''); // For search/filter
+  
   useEffect(() => {
-    if (date && previousDate) {
-      loadPendingTasks();
+    if (date) {
+      loadPendingTasksFromMultipleDays();
     }
   }, [date, previousDate]);
 
-  const loadPendingTasks = () => {
+  const loadPendingTasksFromMultipleDays = () => {
     setLoading(true);
     const storage = getStorage();
-    const prevDayData = storage[previousDate] || {};
     
-    // Find uncompleted tasks from previous day
-    const uncompletedTasks = [];
+    // Look back up to 7 days
+    const currentDate = new Date(date);
+    const allUncompletedTasks = [];
+    const processedTaskTexts = new Set(); // Track unique task texts
+    const sourceDates = new Set(); // Track days we found tasks from
+    
     let oldestTaskDays = 0;
     let totalDeferDays = 0;
     
-    if (prevDayData.checked) {
-      // Calculate time difference between previous date and target date
-      const prevDateObj = new Date(previousDate);
-      const targetDateObj = new Date(date);
-      const daysDifference = Math.round((targetDateObj - prevDateObj) / (1000 * 60 * 60 * 24));
+    // Helper function to check if a task is from a habit
+    const isHabitTask = (taskText) => {
+      return taskText.startsWith('[') && taskText.includes(']');
+    };
+    
+    // Check each of the past 7 days
+    for (let i = 1; i <= 7; i++) {
+      const pastDate = new Date(currentDate);
+      pastDate.setDate(currentDate.getDate() - i);
+      const pastDateStr = pastDate.toISOString().split('T')[0];
       
-      // Format previous date for display
-      const formattedPrevDate = prevDateObj.toLocaleDateString('default', { 
+      const dayData = storage[pastDateStr];
+      if (!dayData || !dayData.checked) continue;
+      
+      // Format date for display
+      const formattedPastDate = pastDate.toLocaleDateString('default', { 
         weekday: 'short',
         month: 'short',
         day: 'numeric'
       });
       
-      // Collect tasks from custom or AI tasks
-      const taskCategories = prevDayData.customTasks || prevDayData.aiTasks || prevDayData.defaultTasks;
+      // Calculate days difference
+      const daysDifference = i;
+      
+      // Collect tasks from custom, AI, or default tasks
+      const taskCategories = dayData.customTasks || dayData.aiTasks || dayData.defaultTasks;
+      if (!taskCategories || !Array.isArray(taskCategories)) continue;
+      
+      let foundTasksInThisDay = false;
+      
       taskCategories.forEach(category => {
         category.items.forEach(task => {
-          // Only include if task exists in checked and is false (incomplete)
-          if (prevDayData.checked[task] === false) {
+          // Skip if:
+          // 1. Task is completed
+          // 2. Task is a habit task 
+          // 3. We've already processed this exact task text (duplicate)
+          if (dayData.checked[task] === false && !isHabitTask(task) && !processedTaskTexts.has(task)) {
+            processedTaskTexts.add(task); // Mark as processed
+            
             // Check if the task has a deferral history
-            const deferHistory = prevDayData.taskDeferHistory?.[task] || { count: 0, firstDate: previousDate };
+            const deferHistory = dayData.taskDeferHistory?.[task] || { count: 0, firstDate: pastDateStr };
             const deferCount = deferHistory.count;
             
             // Calculate days since first deferral
             const firstDeferDate = new Date(deferHistory.firstDate);
-            const currentDate = new Date(date);
             const daysSinceFirstDefer = Math.ceil((currentDate - firstDeferDate) / (1000 * 60 * 60 * 24));
             
-            uncompletedTasks.push({
+            allUncompletedTasks.push({
               text: task,
               category: category.title,
               deferCount: deferCount,
               daysSinceFirstDefer: daysSinceFirstDefer > 0 ? daysSinceFirstDefer : 0,
               firstDate: deferHistory.firstDate,
-              daysAgo: daysDifference, // Add how many days ago this task is from
-              sourceDate: formattedPrevDate // Add formatted date for display
+              daysAgo: daysDifference,
+              sourceDate: formattedPastDate,
+              sourceDateStr: pastDateStr
             });
             
-            // Track oldest task for stats
+            // Track stats
             if (daysSinceFirstDefer > oldestTaskDays) {
               oldestTaskDays = daysSinceFirstDefer;
             }
-            
-            // Add to total days for average calculation
             totalDeferDays += daysSinceFirstDefer;
+            foundTasksInThisDay = true;
           }
         });
       });
+      
+      if (foundTasksInThisDay) {
+        sourceDates.add(formattedPastDate);
+      }
     }
+    
+    // Sort by most recent first, then by category
+    allUncompletedTasks.sort((a, b) => {
+      // First sort by days ago (ascending)
+      if (a.daysAgo !== b.daysAgo) {
+        return a.daysAgo - b.daysAgo;
+      }
+      // Then sort by category
+      return a.category.localeCompare(b.category);
+    });
     
     // Initialize all tasks as selected
     const initialSelected = {};
-    uncompletedTasks.forEach(task => {
+    allUncompletedTasks.forEach(task => {
       initialSelected[task.text] = true;
     });
     
-    setPendingTasks(uncompletedTasks);
+    // Initialize all categories as expanded
+    const initialExpanded = {};
+    allUncompletedTasks.forEach(task => {
+      initialExpanded[task.category] = true;
+    });
+    
+    setPendingTasks(allUncompletedTasks);
     setSelectedTasks(initialSelected);
+    setExpandedCategories(initialExpanded);
+    setTaskSources(Array.from(sourceDates));
     
     // Calculate stats
-    const avgDays = uncompletedTasks.length > 0 ? (totalDeferDays / uncompletedTasks.length).toFixed(1) : 0;
+    const avgDays = allUncompletedTasks.length > 0 ? (totalDeferDays / allUncompletedTasks.length).toFixed(1) : 0;
     setStats({
-      count: uncompletedTasks.length,
+      count: allUncompletedTasks.length,
       oldestDays: oldestTaskDays,
-      averageDays: avgDays
+      averageDays: avgDays,
+      sourceDaysCount: sourceDates.size
     });
     
     setLoading(false);
   };
-  
 
   const handleToggleTask = (taskText) => {
     setSelectedTasks(prev => ({
@@ -104,18 +151,32 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
 
   const handleSelectAll = () => {
     const allSelected = {};
-    pendingTasks.forEach(task => {
+    getFilteredTasks().forEach(task => {
       allSelected[task.text] = true;
     });
-    setSelectedTasks(allSelected);
+    setSelectedTasks(prevSelected => ({
+      ...prevSelected,
+      ...allSelected
+    }));
   };
 
   const handleSelectNone = () => {
     const noneSelected = {};
-    pendingTasks.forEach(task => {
+    getFilteredTasks().forEach(task => {
       noneSelected[task.text] = false;
     });
-    setSelectedTasks(noneSelected);
+    setSelectedTasks(prevSelected => ({
+      ...prevSelected,
+      ...noneSelected
+    }));
+  };
+
+  // Toggle category expansion
+  const toggleCategory = (category) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
   };
 
   const handleImport = () => {
@@ -133,11 +194,25 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
     onImport(tasksToImport);
   };
 
-  // Get tasks grouped by category
-  const getTasksByCategory = () => {
+  // Filter tasks based on search query
+  const getFilteredTasks = () => {
+    if (!searchQuery.trim()) {
+      return pendingTasks;
+    }
+    
+    const query = searchQuery.toLowerCase();
+    return pendingTasks.filter(task => 
+      task.text.toLowerCase().includes(query) || 
+      task.category.toLowerCase().includes(query)
+    );
+  };
+
+  // Get filtered tasks grouped by category
+  const getFilteredTasksByCategory = () => {
+    const filteredTasks = getFilteredTasks();
     const categorized = {};
     
-    pendingTasks.forEach(task => {
+    filteredTasks.forEach(task => {
       const category = task.category || 'Uncategorized';
       if (!categorized[category]) {
         categorized[category] = [];
@@ -148,8 +223,28 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
     return categorized;
   };
 
-  const categorizedTasks = getTasksByCategory();
+  // Highlight matching text in search results
+  const highlightMatchingText = (text, query) => {
+    if (!query.trim()) return text;
+    
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    
+    return (
+      <>
+        {parts.map((part, i) => 
+          regex.test(part) ? 
+            <span key={i} className="bg-yellow-200 dark:bg-yellow-900">{part}</span> : 
+            part
+        )}
+      </>
+    );
+  };
+
+  const categorizedTasks = getFilteredTasksByCategory();
+  const filteredTasksCount = getFilteredTasks().length;
   const selectedCount = Object.values(selectedTasks).filter(Boolean).length;
+  const selectedFilteredCount = getFilteredTasks().filter(task => selectedTasks[task.text]).length;
 
   if (loading) {
     return (
@@ -167,7 +262,7 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
         </div>
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-2">No pending tasks!</h3>
         <p className="text-slate-600 dark:text-slate-400 mb-4">
-          You completed all tasks from yesterday. Great job!
+          You've completed all tasks from the past 7 days. Great job!
         </p>
         <button
           onClick={onSkip}
@@ -188,11 +283,15 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
           </div>
           <div>
             <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-1">
-              You have {pendingTasks.length} pending tasks from yesterday
+              You have {pendingTasks.length} pending tasks from the past {stats.sourceDaysCount} day{stats.sourceDaysCount !== 1 ? 's' : ''}
             </h3>
-            <p className="text-slate-600 dark:text-slate-400">
-              Would you like to add these tasks to your new list?
+            <p className="text-slate-600 dark:text-slate-400 mb-2">
+              Would you like to add these incomplete tasks to your current list?
             </p>
+            <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <Calendar size={12} />
+              <span>Tasks from: {taskSources.join(', ')}</span>
+            </div>
           </div>
         </div>
         
@@ -220,23 +319,59 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
           </div>
         )}
         
+        {/* Habit Tasks Exclusion Notice */}
+        <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-lg p-3 mb-4">
+          <div className="flex items-start gap-2">
+            <AlertCircle size={18} className="text-indigo-500 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
+            <div className="text-xs text-indigo-700 dark:text-indigo-300">
+              <strong>Note:</strong> Habit-related tasks (starting with "[Habit Name]") are not included, as they are designed for specific days based on your habit schedule.
+            </div>
+          </div>
+        </div>
+        
+        {/* Search box */}
+        <div className="relative mb-4">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <Search size={16} className="text-slate-400 dark:text-slate-500" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+          />
+          {searchQuery && (
+            <button 
+              className="absolute inset-y-0 right-3 flex items-center"
+              onClick={() => setSearchQuery('')}
+            >
+              <X size={16} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300" />
+            </button>
+          )}
+        </div>
+        
         {/* Selection Controls */}
         <div className="flex justify-between items-center mb-2">
           <div className="text-sm text-slate-700 dark:text-slate-300">
-            Selected: <span className="font-medium">{selectedCount}</span> of {pendingTasks.length}
+            {searchQuery ? (
+              <>Selected: <span className="font-medium">{selectedFilteredCount}</span> of {filteredTasksCount} (filtered)</>
+            ) : (
+              <>Selected: <span className="font-medium">{selectedCount}</span> of {pendingTasks.length}</>
+            )}
           </div>
           <div className="flex gap-2">
             <button
               onClick={handleSelectAll}
               className="text-xs px-2 py-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
             >
-              Select All
+              Select All {searchQuery && "(Filtered)"}
             </button>
             <button
               onClick={handleSelectNone}
               className="text-xs px-2 py-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
             >
-              Select None
+              Select None {searchQuery && "(Filtered)"}
             </button>
           </div>
         </div>
@@ -244,60 +379,87 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
 
       {/* Task List */}
       <div className="max-h-60 overflow-y-auto mb-6 pr-1">
+        {Object.entries(categorizedTasks).length === 0 && (
+          <div className="text-center py-6 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-lg">
+            No tasks match your search
+          </div>
+        )}
+        
         {Object.entries(categorizedTasks).map(([category, tasks]) => (
           <div key={category} className="mb-4">
-            <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center">
-              <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mr-2"></div>
-              {category}
-            </h4>
-            <div className="space-y-2">
-              {tasks.map((task) => (
-                <div 
-                  key={task.text}
-                  className={`flex items-center gap-3 p-3 rounded-lg transition-all cursor-pointer
-                    ${selectedTasks[task.text] 
-                      ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800' 
-                      : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700'}
-                  `}
-                  onClick={() => handleToggleTask(task.text)}
-                >
-                  <div className="flex-shrink-0">
-                    <div 
-                      className={`w-5 h-5 rounded border flex items-center justify-center transition-colors
-                        ${selectedTasks[task.text] 
-                          ? 'bg-blue-500 border-blue-500 dark:bg-blue-600 dark:border-blue-600' 
-                          : 'border-slate-300 dark:border-slate-600'}
-                      `}
-                    >
-                      {selectedTasks[task.text] && <Check size={14} className="text-white" />}
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-slate-700 dark:text-slate-200 truncate">{task.text}</div>
-                    <div className="flex items-center gap-2 mt-1">
-                      {/* From date indicator - NEW */}
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300">
-        <Calendar size={12} className="mr-1" />
-        {task.sourceDate || 'Unknown'} 
-        ({task.daysAgo === 1 ? 'Yesterday' : `${task.daysAgo} days ago`})
-      </span>
-                      {task.deferCount > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">
-                          <Clock size={12} className="mr-1" />
-                          Deferred {task.deferCount} time{task.deferCount !== 1 ? 's' : ''}
-                        </span>
-                      )}
-                      {task.daysSinceFirstDefer > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300">
-                          <AlertCircle size={12} className="mr-1" />
-                          {task.daysSinceFirstDefer} day{task.daysSinceFirstDefer !== 1 ? 's' : ''} old
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+            {/* Category header with toggle */}
+            <div 
+              className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors mb-2"
+              onClick={() => toggleCategory(category)}
+            >
+              <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center">
+                {expandedCategories[category] ? 
+                  <ChevronDown size={16} className="mr-1" /> : 
+                  <ChevronRight size={16} className="mr-1" />}
+                {searchQuery ? 
+                  highlightMatchingText(category, searchQuery) : 
+                  category} ({tasks.length})
+              </h4>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                {tasks.filter(t => selectedTasks[t.text]).length} selected
+              </div>
             </div>
+            
+            {/* Tasks in this category */}
+            {expandedCategories[category] && (
+              <div className="space-y-2 ml-2 pl-2 border-l-2 border-slate-200 dark:border-slate-700 transition-all">
+                {tasks.map((task) => (
+                  <div 
+                    key={`${task.text}-${task.sourceDateStr}`}
+                    className={`flex items-center gap-3 p-3 rounded-lg transition-all cursor-pointer
+                      ${selectedTasks[task.text] 
+                        ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800' 
+                        : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700'}
+                    `}
+                    onClick={() => handleToggleTask(task.text)}
+                  >
+                    <div className="flex-shrink-0">
+                      <div 
+                        className={`w-5 h-5 rounded border flex items-center justify-center transition-colors
+                          ${selectedTasks[task.text] 
+                            ? 'bg-blue-500 border-blue-500 dark:bg-blue-600 dark:border-blue-600' 
+                            : 'border-slate-300 dark:border-slate-600'}
+                        `}
+                      >
+                        {selectedTasks[task.text] && <Check size={14} className="text-white" />}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-slate-700 dark:text-slate-200">
+                        {searchQuery ? 
+                          highlightMatchingText(task.text, searchQuery) : 
+                          task.text}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {/* From date indicator */}
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300">
+                          <Calendar size={12} className="mr-1" />
+                          {task.sourceDate || 'Unknown'} 
+                          ({task.daysAgo === 1 ? 'Yesterday' : `${task.daysAgo} days ago`})
+                        </span>
+                        {task.deferCount > 0 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">
+                            <Clock size={12} className="mr-1" />
+                            Deferred {task.deferCount} time{task.deferCount !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {task.daysSinceFirstDefer > 0 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300">
+                            <AlertCircle size={12} className="mr-1" />
+                            {task.daysSinceFirstDefer} day{task.daysSinceFirstDefer !== 1 ? 's' : ''} old
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>

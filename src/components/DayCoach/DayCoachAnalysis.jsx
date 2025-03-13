@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Calendar, RefreshCw, Book, TrendingUp, AlertTriangle,
   Smile, Brain, Zap, Dumbbell, Clock, FileText, Loader, 
-  BarChart2, ChevronDown, Menu
+  BarChart2, ChevronDown, Info, Sparkles
 } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
 import { generateContent } from '../../utils/ai-service';
@@ -15,10 +15,23 @@ const DayCoachAnalysis = () => {
   const [timeRange, setTimeRange] = useState('week');
   const [lastUpdated, setLastUpdated] = useState(null);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const [hasEnoughData, setHasEnoughData] = useState(true);
+  const [error, setError] = useState(null);
+  const [forceUpdate, setForceUpdate] = useState(0); // Added to force re-renders
   
   // Reference to track if component is mounted
   const isMounted = useRef(true);
   const dropdownRef = useRef(null);
+  const generationCompleted = useRef(false);
+  
+  // Force re-render if generation completed flag is set
+  useEffect(() => {
+    if (generationCompleted.current) {
+      console.log("Generation completed, forcing reload of analysis");
+      loadSavedAnalysis();
+      generationCompleted.current = false;
+    }
+  }, [forceUpdate]);
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -38,81 +51,279 @@ const DayCoachAnalysis = () => {
   // Load saved analysis when component mounts or tab/range changes
   useEffect(() => {
     loadSavedAnalysis();
+    checkDataAvailability();
   }, [activeTab, timeRange]);
   
-  // Existing functions (loadSavedAnalysis, generateReport, etc.) remain unchanged
-  
-  const loadSavedAnalysis = () => {
+  const loadSavedAnalysis = useCallback(() => {
     try {
+      console.log("Loading saved analysis for", activeTab, timeRange);
       const storage = getStorage();
       const savedAnalytics = storage.dayCoachAnalytics || {};
       
-      setAnalysis(savedAnalytics);
+      console.log("Current analysis state:", savedAnalytics[activeTab]?.[timeRange] ? "Found" : "Not found");
+      
+      // Set analysis state with a fresh copy to ensure React detects the change
+      setAnalysis({...savedAnalytics});
       
       if (savedAnalytics[activeTab]?.[timeRange]?.timestamp) {
         setLastUpdated(savedAnalytics[activeTab][timeRange].timestamp);
       } else {
         setLastUpdated(null);
       }
+      
+      // Clear loading state if it was set
+      setIsLoading(false);
     } catch (error) {
       console.error('Error loading saved analysis:', error);
+      setError(`Error loading saved analysis: ${error.message}`);
+      setIsLoading(false);
+    }
+  }, [activeTab, timeRange]);
+
+  // Check if there's enough data to generate a report
+  const checkDataAvailability = () => {
+    try {
+      const storage = getStorage();
+      
+      // Get date ranges based on timeframe
+      const today = new Date();
+      const dates = getDateRangeForTimeframe(today, timeRange);
+      
+      // Check if there's sufficient data based on the active category
+      const hasData = checkCategoryDataAvailability(storage, dates, activeTab);
+      
+      setHasEnoughData(hasData);
+    } catch (error) {
+      console.error('Error checking data availability:', error);
+      setError(`Error checking data availability: ${error.message}`);
+      setHasEnoughData(false);
+    }
+  };
+
+  // Get a list of dates for the selected timeframe
+  const getDateRangeForTimeframe = (today, timeframe) => {
+    const dates = [];
+    let startDate;
+    
+    switch (timeframe) {
+      case 'day':
+        // For daily reports, we only need today
+        return [today.toISOString().split('T')[0]];
+      
+      case 'week':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+        break;
+      
+      case 'month':
+        startDate = new Date(today);
+        startDate.setMonth(today.getMonth() - 1);
+        break;
+      
+      default:
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+    }
+    
+    // Generate array of dates in the range
+    for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split('T')[0]);
+    }
+    
+    return dates;
+  };
+
+  // Check if there's enough data for a specific category
+  const checkCategoryDataAvailability = (storage, dates, category) => {
+    // For each category, define what counts as "enough data"
+    switch (category) {
+      case 'overview':
+        // For overview, check if there's any data in any relevant category
+        return (
+          checkCategoryDataAvailability(storage, dates, 'mood') ||
+          checkCategoryDataAvailability(storage, dates, 'focus') ||
+          checkCategoryDataAvailability(storage, dates, 'habits') ||
+          checkCategoryDataAvailability(storage, dates, 'workouts')
+        );
+      
+      case 'mood':
+        // Check if there are any mood entries in the timeframe
+        return dates.some(date => {
+          const dayData = storage[date];
+          return dayData && (dayData.morningMood || dayData.eveningMood || dayData.mood);
+        });
+      
+      case 'focus':
+        // Check if there are focus sessions in the timeframe
+        if (!storage.focusSessions || storage.focusSessions.length === 0) {
+          return false;
+        }
+        
+        const startDate = new Date(dates[0]);
+        const endDate = new Date(dates[dates.length - 1]);
+        endDate.setHours(23, 59, 59, 999); // End of the day
+        
+        return storage.focusSessions.some(session => {
+          const sessionDate = new Date(session.startTime);
+          return sessionDate >= startDate && sessionDate <= endDate;
+        });
+      
+      case 'habits':
+        // Check if there are habit entries in the timeframe
+        if (!storage.habits || storage.habits.length === 0) {
+          return false;
+        }
+        
+        // Check if any habits have data in the timeframe
+        return dates.some(date => {
+          const dayData = storage[date];
+          return dayData && dayData.habitProgress && Object.keys(dayData.habitProgress).length > 0;
+        });
+      
+      case 'workouts':
+        // Check if there are workout entries in the timeframe
+        if (storage.completedWorkouts && storage.completedWorkouts.length > 0) {
+          const startDate = new Date(dates[0]);
+          const endDate = new Date(dates[dates.length - 1]);
+          endDate.setHours(23, 59, 59, 999); // End of the day
+          
+          return storage.completedWorkouts.some(workout => {
+            const workoutDate = new Date(workout.date);
+            return workoutDate >= startDate && workoutDate <= endDate;
+          });
+        }
+        
+        // Also check daily workout entries
+        return dates.some(date => {
+          const dayData = storage[date];
+          return dayData && (dayData.workout || (dayData.workouts && dayData.workouts.length > 0));
+        });
+      
+      default:
+        return false;
     }
   };
   
   const generateReport = async (tab, range) => {
     setIsLoading(true);
+    setError(null);
     
     try {
+      console.log(`Generating report for ${tab} - ${range}...`);
+      
       const storage = getStorage();
       const userData = collectUserData(storage, range);
-      const prompt = generatePrompt(userData, tab, range);
-      const result = await generateContent(prompt);
       
-      if (!isMounted.current) return;
-      
-      const existingAnalytics = storage.dayCoachAnalytics || {};
-      if (!existingAnalytics[tab]) {
-        existingAnalytics[tab] = {};
+      // Check if userData is valid
+      if (!userData || Object.keys(userData).length === 0) {
+        throw new Error('No user data available for analysis');
       }
       
-      existingAnalytics[tab][range] = {
-        text: result,
-        timestamp: new Date().toISOString()
-      };
+      const prompt = generatePrompt(userData, tab, range);
       
-      storage.dayCoachAnalytics = existingAnalytics;
-      setStorage(storage);
+      console.log(`Sending AI request for ${tab} ${range} analysis...`);
       
-      setAnalysis(existingAnalytics);
-      setLastUpdated(existingAnalytics[tab][range].timestamp);
+      // Wrap the AI request in its own try-catch for specific error handling
+      const result = await generateContent(prompt);
       
-      return true;
+      console.log(`Received ${result?.length || 0} characters from AI`);
+      
+      if (!result || typeof result !== 'string' || result.trim().length === 0) {
+        throw new Error('AI returned empty response');
+      }
+      
+      // CRITICAL FIX: Simplify the storage update logic
+      try {
+        console.log("Saving report to storage");
+        
+        // Create a simpler storage structure
+        let savedAnalytics = storage.dayCoachAnalytics || {};
+        
+        // Make sure the tab object exists
+        if (!savedAnalytics[tab]) {
+          savedAnalytics[tab] = {};
+        }
+        
+        // Create the report object
+        const newReport = {
+          text: result.trim(),
+          timestamp: new Date().toISOString()
+        };
+        
+        // Update the specific entry with direct assignment
+        savedAnalytics[tab][range] = newReport;
+        
+        // Save to storage with the new data
+        storage.dayCoachAnalytics = savedAnalytics;
+        setStorage(storage);
+        
+        // Update generation timestamp
+        storage.dayCoachAnalyticsLastGeneration = new Date().toISOString();
+        setStorage(storage);
+        
+        // Update component state directly
+        setAnalysis(savedAnalytics);
+        setLastUpdated(newReport.timestamp);
+        
+        console.log("Report saved successfully");
+        return true;
+      } catch (storageError) {
+        console.error("Error saving to storage:", storageError);
+        
+        // Even if storage fails, try to update the UI state directly
+        setAnalysis(prev => {
+          const updated = {...prev};
+          if (!updated[tab]) updated[tab] = {};
+          updated[tab][range] = {
+            text: result.trim(),
+            timestamp: new Date().toISOString()
+          };
+          return updated;
+        });
+        
+        throw new Error(`Storage error: ${storageError.message}`);
+      }
     } catch (error) {
       console.error(`Error generating ${tab} ${range} report:`, error);
+      setError(`Error: ${error.message}`);
       return false;
     } finally {
-      setIsLoading(false);
+      // Use a short timeout to ensure state updates have time to process
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300);
     }
   };
   
-  const handleGenerateCurrentReport = async () => {
-    await generateReport(activeTab, timeRange);
+  const handleGenerateCurrentReport = () => {
+    // First set loading state
+    setIsLoading(true);
+    setError(null);
     
-    const storage = getStorage();
-    storage.dayCoachAnalyticsLastGeneration = new Date().toISOString();
-    setStorage(storage);
+    // Use a timeout to separate state updates
+    setTimeout(async () => {
+      try {
+        await generateReport(activeTab, timeRange);
+      } catch (err) {
+        console.error('Error during report generation:', err);
+        setError(`Failed to generate report: ${err.message}`);
+      } finally {
+        // Final safety to ensure loading state is cleared
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 300);
+      }
+    }, 100);
   };
   
-  // Rest of your utility functions (collectUserData, generatePrompt, etc.)
-  
   const collectUserData = (storage, range) => {
-    // Existing implementation
     const today = new Date();
     const result = {};
     
     let startDate;
     switch (range) {
       case 'day':
+        // For daily reports, get today and yesterday
         startDate = new Date(today);
         startDate.setDate(today.getDate() - 1);
         break;
@@ -129,6 +340,7 @@ const DayCoachAnalysis = () => {
         startDate.setDate(today.getDate() - 7);
     }
     
+    // Collect daily data
     for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
       if (storage[dateStr]) {
@@ -136,46 +348,151 @@ const DayCoachAnalysis = () => {
       }
     }
     
+    // Add global data
     if (storage.habits) result.habits = storage.habits;
-    if (storage.focusSessions) result.focusSessions = storage.focusSessions;
-    if (storage.completedWorkouts) result.workouts = storage.completedWorkouts;
+    
+    // Add focus sessions, filtered by date range
+    if (storage.focusSessions && Array.isArray(storage.focusSessions)) {
+      const startTime = startDate.getTime();
+      const endTime = today.getTime();
+      
+      result.focusSessions = storage.focusSessions.filter(session => {
+        if (!session.startTime) return false;
+        const sessionTime = new Date(session.startTime).getTime();
+        return sessionTime >= startTime && sessionTime <= endTime;
+      });
+    }
+    
+    // Add workouts, filtered by date range
+    if (storage.completedWorkouts && Array.isArray(storage.completedWorkouts)) {
+      const startTime = startDate.getTime();
+      const endTime = today.getTime();
+      
+      result.workouts = storage.completedWorkouts.filter(workout => {
+        if (!workout.date) return false;
+        const workoutTime = new Date(workout.date).getTime();
+        return workoutTime >= startTime && workoutTime <= endTime;
+      });
+    }
     
     return result;
   };
   
   const generatePrompt = (userData, tab, range) => {
-    // Existing implementation
-    // (keeping this unchanged)
-    const basePrompt = `Analyze the following user data for the last ${range === 'day' ? 'day' : range === 'week' ? 'week' : 'month'} and provide insights, patterns, and personalized recommendations. 
+    // Common prompt elements
+    const timeframeText = range === 'day' ? 'day' : range === 'week' ? 'week' : 'month';
+    const basePrompt = `Analyze the following user data for the last ${timeframeText} and provide FOCUSED insights ONLY about ${tab}.
     
-IMPORTANT: Address the user directly using "you" and "your" (not "the user" or "they"). Keep your tone warm, friendly and conversational as if you're talking directly to them.
+IMPORTANT FORMATTING REQUIREMENTS:
+1. Keep your analysis BRIEF (max 150 words)
+2. Address the user directly using "you" and "your" (not "the user" or "they")
+3. Use a warm, conversational tone
+4. Format with Markdown: use ## for section headers and bullet points where appropriate
+5. Use 1-2 emojis per section to make it visually engaging
+6. Do NOT include generic advice that could apply to anyone
 
-Format your response using Markdown with clear sections for Observations, Patterns, and Recommendations. Use emojis at the beginning of each point to make it visually engaging.
-
-Keep your analysis conversational, helpful, and actionable.`;
+CRITICAL: Focus EXCLUSIVELY on ${tab} information. DO NOT discuss other categories unless they directly impact ${tab}.`;
     
     let specificPrompt = '';
     switch (tab) {
       case 'overview':
-        specificPrompt = `Provide a comprehensive overview of all aspects of your wellbeing, including mood, energy, tasks, workouts, and habits. Highlight the most significant insights and opportunities for improvement.`;
+        specificPrompt = `Provide a brief overview highlighting only the most significant insights from different aspects of wellbeing (mood, energy, tasks, workouts, habits).
+
+For this overview:
+- Highlight only 2-3 key insights that stand out the most
+- Note any meaningful correlations between different data points
+- Focus on patterns instead of individual data points
+- Keep sections very short (1-2 sentences each)`;
         break;
+        
       case 'mood':
-        specificPrompt = `Focus on your mood and energy patterns. Identify factors that seem to positively or negatively impact your emotional wellbeing. Look for correlations between activities, journal entries, and mood changes.`;
+        specificPrompt = `Focus EXCLUSIVELY on mood and energy patterns. DO NOT discuss other areas unless they directly correlate with mood changes.
+
+For this mood analysis:
+- Identify clear mood patterns and fluctuations
+- Note factors that appear to positively or negatively impact emotional wellbeing
+- Look for correlations between specific activities and mood changes
+- Analyze both morning and evening mood entries to identify daily patterns
+- Keep your analysis focused solely on emotional wellbeing`;
         break;
+        
       case 'focus':
-        specificPrompt = `Analyze your focus sessions and productivity patterns. Identify optimal times for focus, factors affecting your concentration, and suggestions for improving productivity.`;
+        specificPrompt = `Focus EXCLUSIVELY on focus sessions and productivity patterns. DO NOT discuss other areas unless they directly impact focus.
+
+For this focus analysis:
+- Analyze focus session duration, frequency, and effectiveness
+- Identify optimal times of day for concentration
+- Note any factors that appear to help or hinder focus
+- Examine patterns in task completion during focus periods
+- Keep your analysis specifically about productivity and concentration`;
         break;
+        
       case 'habits':
-        specificPrompt = `Evaluate your habit tracking and consistency. Identify successful habit streaks, patterns in habit completion, and recommendations for building stronger habits.`;
+        specificPrompt = `Focus EXCLUSIVELY on habit tracking and consistency. DO NOT discuss other areas unless they directly relate to habit formation.
+
+For this habit analysis:
+- Evaluate habit streaks and consistency
+- Identify patterns in habit completion
+- Note which habits are strongest and which need improvement
+- Analyze how different days of the week affect habit adherence
+- Keep your analysis specifically about habit formation and maintenance`;
         break;
+        
       case 'workouts':
-        specificPrompt = `Analyze your workout patterns, including types, intensity, duration, and frequency. Suggest improvements to your fitness routine based on consistency and variety.`;
+        specificPrompt = `Focus EXCLUSIVELY on workout patterns and physical activity. DO NOT discuss other areas unless they directly impact exercise habits.
+
+For this workout analysis:
+- Analyze workout frequency, types, duration, and intensity
+- Identify patterns in physical activity throughout the ${timeframeText}
+- Note rest days and recovery patterns
+- Examine consistency and variety in the exercise routine
+- Keep your analysis specifically about physical activity and fitness`;
         break;
+        
       default:
-        specificPrompt = `Provide general insights based on all available data about your wellbeing.`;
+        specificPrompt = `Provide concise insights about user's wellbeing, focusing on the most relevant data points.`;
     }
     
-    return `${basePrompt}\n\n${specificPrompt}\n\nUser Data: ${JSON.stringify(userData, null, 2)}`;
+    // Data is too large to log the entire object, so we'll summarize it
+    const dataKeys = Object.keys(userData);
+    console.log(`Generated prompt includes ${dataKeys.length} data keys: ${dataKeys.join(', ')}`);
+    
+    // Create a simplified dataset with just dates as keys to keep the prompt shorter
+    const simplifiedUserData = {};
+    for (const key in userData) {
+      if (key.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Only include data that's relevant to the current tab
+        const relevantData = {};
+        
+        if (tab === 'overview' || tab === 'mood') {
+          if (userData[key].morningMood) relevantData.morningMood = userData[key].morningMood;
+          if (userData[key].eveningMood) relevantData.eveningMood = userData[key].eveningMood;
+          if (userData[key].mood) relevantData.mood = userData[key].mood;
+          if (userData[key].morningEnergy) relevantData.morningEnergy = userData[key].morningEnergy;
+          if (userData[key].eveningEnergy) relevantData.eveningEnergy = userData[key].eveningEnergy;
+          if (userData[key].energyLevel) relevantData.energyLevel = userData[key].energyLevel;
+        }
+        
+        if (tab === 'overview' || tab === 'habits') {
+          if (userData[key].habitProgress) relevantData.habitProgress = userData[key].habitProgress;
+        }
+        
+        if (tab === 'overview' || tab === 'workouts') {
+          if (userData[key].workout) relevantData.workout = userData[key].workout;
+          if (userData[key].workouts) relevantData.workouts = userData[key].workouts;
+        }
+        
+        simplifiedUserData[key] = relevantData;
+      } else if (key === 'habits' && (tab === 'overview' || tab === 'habits')) {
+        simplifiedUserData.habits = userData.habits;
+      } else if (key === 'focusSessions' && (tab === 'overview' || tab === 'focus')) {
+        simplifiedUserData.focusSessions = userData.focusSessions;
+      } else if (key === 'workouts' && (tab === 'overview' || tab === 'workouts')) {
+        simplifiedUserData.workouts = userData.workouts;
+      }
+    }
+    
+    return `${basePrompt}\n\n${specificPrompt}\n\nUser Data: ${JSON.stringify(simplifiedUserData, null, 2)}`;
   };
   
   const formatLastUpdated = (timestamp) => {
@@ -223,82 +540,148 @@ Keep your analysis conversational, helpful, and actionable.`;
   
   // Get properties for active category
   const activeCategory = getCategoryProperties(activeTab);
+
+  // Generate empty state message based on data availability
+  const getEmptyStateMessage = () => {
+    const categoryName = activeCategory.name.toLowerCase();
+    
+    if (!hasEnoughData) {
+      switch (timeRange) {
+        case 'day':
+          return `No ${categoryName} data available for today. Add some ${categoryName.toLowerCase()} data in the corresponding section before generating an analysis.`;
+        case 'week':
+          return `No ${categoryName} data available for the past week. Add some ${categoryName.toLowerCase()} data in the corresponding section before generating an analysis.`;
+        case 'month':
+          return `No ${categoryName} data available for the past month. Add some ${categoryName.toLowerCase()} data in the corresponding section before generating an analysis.`;
+        default:
+          return `No ${categoryName} data available for this period. Please add data in the ${categoryName.toLowerCase()} section first.`;
+      }
+    } else {
+      switch (timeRange) {
+        case 'day':
+          return `Daily ${categoryName} analysis hasn't been generated yet.`;
+        case 'week':
+          return `Weekly ${categoryName} analysis hasn't been generated yet.`;
+        case 'month':
+          return `Monthly ${categoryName} analysis hasn't been generated yet.`;
+        default:
+          return `No ${categoryName} analysis available for this time period.`;
+      }
+    }
+  };
+
+  // Generate appropriate empty state title
+  const getEmptyStateTitle = () => {
+    if (!hasEnoughData) {
+      return "Not Enough Data";
+    }
+    
+    switch (timeRange) {
+      case 'day':
+        return "Today's Analysis";
+      case 'week':
+        return "This Week's Analysis";
+      case 'month':
+        return "This Month's Analysis";
+      default:
+        return "Analysis";
+    }
+  };
+
+  // Get appropriate empty state icon
+  const getEmptyStateIcon = () => {
+    if (error) {
+      return <AlertTriangle size={48} className="text-red-300 dark:text-red-600 mx-auto mb-4" />;
+    }
+    if (!hasEnoughData) {
+      return <Info size={48} className="text-blue-300 dark:text-blue-600 mx-auto mb-4" />;
+    }
+    return <FileText size={48} className="text-slate-300 dark:text-slate-600 mx-auto mb-4" />;
+  };
+
+  // Check if we have an analysis to display
+  const hasAnalysis = () => {
+    return analysis && 
+           analysis[activeTab] && 
+           analysis[activeTab][timeRange] && 
+           analysis[activeTab][timeRange].text;
+  };
   
   return (
     <div className="p-2 sm:p-4 h-full overflow-auto">
       {/* Compact Mobile Header */}
-<div className="sm:hidden mb-3">
-  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-slate-800 dark:to-indigo-900/20 rounded-lg p-3 flex flex-col shadow-sm">
-    {/* Category Dropdown */}
-    <div className="mb-3">
-      <div className="relative" ref={dropdownRef}>
-        <button 
-          onClick={() => setShowCategoryMenu(!showCategoryMenu)}
-          className={`w-full flex items-center justify-between gap-2 p-2.5 rounded-lg bg-gradient-to-r from-${activeCategory.color}-500 to-${activeCategory.color}-600 text-white transition-colors shadow-sm`}
-        >
-          <span className="flex items-center gap-2">
-            {activeCategory.icon}
-            <span className="font-medium">{activeCategory.name}</span>
-          </span>
-          <ChevronDown size={16} />
-        </button>
-        
-        {/* Dropdown Menu */}
-        {showCategoryMenu && (
-          <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-slate-700 rounded-lg shadow-lg border border-slate-200 dark:border-slate-600 z-10 overflow-hidden">
-            {['overview', 'mood', 'focus', 'habits', 'workouts'].map(cat => {
-              const {icon, name, color} = getCategoryProperties(cat);
-              return (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setActiveTab(cat);
-                    setShowCategoryMenu(false);
-                  }}
-                  className={`flex items-center gap-2 w-full p-3 hover:bg-slate-100 dark:hover:bg-slate-600 ${cat === activeTab ? `text-${color}-500` : 'text-slate-700 dark:text-slate-300'}`}
-                >
-                  {icon}
-                  <span>{name}</span>
-                </button>
-              );
-            })}
+      <div className="sm:hidden mb-3">
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-slate-800 dark:to-indigo-900/20 rounded-lg p-3 flex flex-col shadow-sm">
+          {/* Category Dropdown */}
+          <div className="mb-3">
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                onClick={() => setShowCategoryMenu(!showCategoryMenu)}
+                className={`w-full flex items-center justify-between gap-2 p-2.5 rounded-lg bg-gradient-to-r from-${activeCategory.color}-500 to-${activeCategory.color}-600 text-white transition-colors shadow-sm`}
+              >
+                <span className="flex items-center gap-2">
+                  {activeCategory.icon}
+                  <span className="font-medium">{activeCategory.name}</span>
+                </span>
+                <ChevronDown size={16} />
+              </button>
+              
+              {/* Dropdown Menu */}
+              {showCategoryMenu && (
+                <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-slate-700 rounded-lg shadow-lg border border-slate-200 dark:border-slate-600 z-10 overflow-hidden">
+                  {['overview', 'mood', 'focus', 'habits', 'workouts'].map(cat => {
+                    const {icon, name, color} = getCategoryProperties(cat);
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => {
+                          setActiveTab(cat);
+                          setShowCategoryMenu(false);
+                        }}
+                        className={`flex items-center gap-2 w-full p-3 hover:bg-slate-100 dark:hover:bg-slate-600 ${cat === activeTab ? `text-${color}-500` : 'text-slate-700 dark:text-slate-300'}`}
+                      >
+                        {icon}
+                        <span>{name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
-        )}
+          
+          {/* Time Range Selector - Now below dropdown */}
+          <div className="mb-2">
+            <label className="text-xs text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
+              <Calendar size={12} />
+              <span>Time Period:</span>
+            </label>
+            <div className="grid grid-cols-3 gap-1 rounded-lg overflow-hidden bg-white dark:bg-slate-700 shadow-sm border border-slate-200 dark:border-slate-600">
+              {['day', 'week', 'month'].map(range => (
+                <button
+                  key={range}
+                  onClick={() => setTimeRange(range)}
+                  className={`py-2 text-xs font-medium ${
+                    timeRange === range 
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' 
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
+                  } transition-colors`}
+                >
+                  {range === 'day' ? 'Daily' : range === 'week' ? 'Weekly' : 'Monthly'}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Last Updated Info */}
+          {lastUpdated && (
+            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1 justify-end">
+              <Clock size={12} />
+              <span>Updated: {formatLastUpdated(lastUpdated)}</span>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-    
-    {/* Time Range Selector - Now below dropdown */}
-    <div className="mb-2">
-      <label className="text-xs text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
-        <Calendar size={12} />
-        <span>Time Period:</span>
-      </label>
-      <div className="grid grid-cols-3 gap-1 rounded-lg overflow-hidden bg-white dark:bg-slate-700 shadow-sm border border-slate-200 dark:border-slate-600">
-        {['day', 'week', 'month'].map(range => (
-          <button
-            key={range}
-            onClick={() => setTimeRange(range)}
-            className={`py-2 text-xs font-medium ${
-              timeRange === range 
-                ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' 
-                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
-            } transition-colors`}
-          >
-            {range === 'day' ? 'Daily' : range === 'week' ? 'Weekly' : 'Monthly'}
-          </button>
-        ))}
-      </div>
-    </div>
-    
-    {/* Last Updated Info */}
-    {lastUpdated && (
-      <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1 justify-end">
-        <Clock size={12} />
-        <span>Updated: {formatLastUpdated(lastUpdated)}</span>
-      </div>
-    )}
-  </div>
-</div>
       
       {/* Desktop Header */}
       <div className="hidden sm:flex justify-between items-center mb-6">
@@ -358,7 +741,7 @@ Keep your analysis conversational, helpful, and actionable.`;
         </div>
       </div>
       
-      {/* Content Container - more vertical space on mobile */}
+      {/* Content Container */}
       <div className="bg-white dark:bg-slate-700 p-4 sm:p-6 rounded-xl shadow-sm h-[calc(100vh-110px)] sm:h-auto flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
@@ -389,8 +772,18 @@ Keep your analysis conversational, helpful, and actionable.`;
               <p className="text-slate-600 dark:text-slate-300">Generating your analysis...</p>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">This may take a minute</p>
             </div>
-          ) : analysis[activeTab]?.[timeRange] ? (
+          ) : hasAnalysis() ? (
             <div className="prose prose-sm max-w-none text-slate-700 dark:text-slate-300">
+              {/* Show error if any */}
+              {error && (
+                <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg mb-4 text-sm text-red-800 dark:text-red-200">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle size={16} />
+                    <span>{error}</span>
+                  </div>
+                </div>
+              )}
+              
               <ReactMarkdown
                 components={{
                   h1: ({node, ...props}) => <h1 className="text-lg xs:text-xl font-bold text-slate-800 dark:text-slate-100 mb-4 break-words" {...props} />,
@@ -408,31 +801,64 @@ Keep your analysis conversational, helpful, and actionable.`;
               >
                 {analysis[activeTab][timeRange].text}
               </ReactMarkdown>
+              
+              {/* Fallback raw text if markdown fails */}
+              {error && (
+                <div className="mt-4">
+                  <p className="font-medium text-slate-600 dark:text-slate-300 mb-2">Raw content:</p>
+                  <pre className="whitespace-pre-wrap text-xs bg-slate-100 dark:bg-slate-800 p-4 rounded-lg overflow-auto">
+                    {analysis[activeTab][timeRange].text}
+                  </pre>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-12">
-              <FileText size={48} className="text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-              <h4 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">No analysis available</h4>
+              {getEmptyStateIcon()}
+              <h4 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">{getEmptyStateTitle()}</h4>
               <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
-                {timeRange === 'day' 
-                  ? "Daily analysis hasn't been generated yet for this category." 
-                  : timeRange === 'week'
-                    ? "Weekly analysis hasn't been generated yet for this category."
-                    : "Monthly analysis hasn't been generated yet for this category."}
+                {getEmptyStateMessage()}
               </p>
-              <button
-                onClick={handleGenerateCurrentReport}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 mx-auto"
-              >
-                <RefreshCw size={16} />
-                <span>Generate {activeCategory.name} analysis</span>
-              </button>
+              
+              {/* Show error if any */}
+              {error && (
+                <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg mb-4 text-sm text-red-800 dark:text-red-200 max-w-md mx-auto">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle size={16} />
+                    <span>{error}</span>
+                  </div>
+                </div>
+              )}
+              
+              {hasEnoughData && !error && (
+                <button
+                  onClick={handleGenerateCurrentReport}
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 mx-auto"
+                >
+                  <RefreshCw size={16} />
+                  <span>Generate {activeCategory.name} analysis</span>
+                </button>
+              )}
+              
+              {/* Add retry button when error occurs */}
+              {error && (
+                <button
+                  onClick={() => {
+                    setError(null);
+                    handleGenerateCurrentReport();
+                  }}
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 mx-auto"
+                >
+                  <RefreshCw size={16} />
+                  <span>Retry Analysis</span>
+                </button>
+              )}
             </div>
           )}
         </div>
 
         {/* Refresh button when analysis exists */}
-        {analysis[activeTab]?.[timeRange] && !isLoading && (
+        {hasAnalysis() && !isLoading && (
           <div className="mt-4 flex justify-end">
             <button
               onClick={handleGenerateCurrentReport}

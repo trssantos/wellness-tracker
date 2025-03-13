@@ -355,10 +355,30 @@ export const handleDataChange = (dateStr, moduleType, data) => {
   try {
     const storage = getStorage();
     
-    // Get previous data for this date
-    const previousData = storage.dayCoach?.lastCheckedData?.[dateStr] || {};
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
     
-    // Get current data for this date
+    // Skip triggering for past dates (dateStr is before today)
+    if (dateStr < today) {
+      console.log(`Skipping proactive message for past date: ${dateStr}`);
+      
+      // Still update the last checked data
+      if (!storage.dayCoach) {
+        initializeDayCoach();
+      }
+      
+      if (!storage.dayCoach.lastCheckedData) {
+        storage.dayCoach.lastCheckedData = {};
+      }
+      
+      storage.dayCoach.lastCheckedData[dateStr] = { ...data };
+      setStorage(storage);
+      
+      return false;
+    }
+    
+    // Rest of the existing function remains unchanged
+    const previousData = storage.dayCoach?.lastCheckedData?.[dateStr] || {};
     const currentData = storage[dateStr] || {};
     
     // Check for significant changes

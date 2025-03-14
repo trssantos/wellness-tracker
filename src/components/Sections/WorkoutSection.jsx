@@ -5,12 +5,13 @@ import WorkoutDetails from '../Workout/WorkoutDetails';
 import WorkoutForm from '../Workout/WorkoutForm';
 import WorkoutAnalytics from '../Workout/WorkoutAnalytics';
 import AiWorkoutGenerator from '../Workout/AiWorkoutGenerator';
+import WorkoutHistory from '../Workout/WorkoutHistory'; // Import the new component
 
 const WorkoutSection = () => {
   // Main view state
   const [workouts, setWorkouts] = useState([]);
   const [activeWorkout, setActiveWorkout] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'detail', 'create', 'edit', 'ai', 'analytics'
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'detail', 'create', 'edit', 'ai', 'analytics', 'history'
   
   // Initialize and load workouts
   useEffect(() => {
@@ -25,6 +26,12 @@ const WorkoutSection = () => {
   // Handle viewing analytics dashboard
   const handleViewAnalytics = () => {
     setViewMode('analytics');
+    setActiveWorkout(null);
+  };
+  
+  // Handle viewing workout history
+  const handleViewHistory = () => {
+    setViewMode('history');
     setActiveWorkout(null);
   };
 
@@ -56,6 +63,12 @@ const WorkoutSection = () => {
 
   // Handle editing an existing workout
   const handleEditWorkout = () => {
+    setViewMode('edit');
+  };
+  
+  // Handle editing a workout from history
+  const handleEditWorkoutFromHistory = (workout) => {
+    setActiveWorkout(workout);
     setViewMode('edit');
   };
 
@@ -126,6 +139,13 @@ const WorkoutSection = () => {
             onBack={handleBackToList}
           />
         );
+      case 'history':
+        return (
+          <WorkoutHistory 
+            onBack={handleBackToList}
+            onEditWorkout={handleEditWorkoutFromHistory}
+          />
+        );
       case 'list':
       default:
         return (
@@ -135,6 +155,7 @@ const WorkoutSection = () => {
             onCreateWorkout={handleCreateWorkout}
             onCreateWithAI={handleCreateWithAI}
             onViewAnalytics={handleViewAnalytics}
+            onViewHistory={handleViewHistory} // Add new history button handler
           />
         );
     }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, BarChart2, Activity, Clock, Calendar, ChevronRight, Dumbbell, Sparkles } from 'lucide-react';
+import { History, Plus, BarChart2, Activity, Clock, Calendar, ChevronRight, Dumbbell, Sparkles } from 'lucide-react';
 import { getWorkoutTypes } from '../../utils/workoutUtils';
 
 // Helper function to get icon for workout type
@@ -23,7 +23,7 @@ const getWorkoutTypeLabel = (type) => {
   return foundType ? foundType.label : 'Workout';
 };
 
-const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onCreateWithAI, onViewAnalytics }) => {
+const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onCreateWithAI, onViewAnalytics,onViewHistory }) => {
   return (
     <div className="px-2 sm:px-0 w-full overflow-hidden">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2 sm:gap-0">
@@ -38,6 +38,14 @@ const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onCreateWithA
               <span className="hidden sm:inline">Analytics</span>
             </button>
           )}
+<button
+            onClick={onViewHistory}
+            className="text-sm sm:text-base bg-violet-500 hover:bg-violet-600 dark:bg-violet-600 dark:hover:bg-violet-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1"
+          >
+            <History size={16} />
+            <span className="hidden sm:inline">History</span>
+          </button>
+
           <button 
             onClick={onCreateWithAI}
             className="text-sm sm:text-base bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1"

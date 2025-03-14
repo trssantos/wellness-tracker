@@ -11,9 +11,11 @@ export const MonthlyHighlights = ({ currentMonth, storageData }) => {
     let moodCounts = Object.keys(MOODS).reduce((acc, mood) => ({ ...acc, [mood]: 0 }), {});
     let progressDays = 0;
     let notesDays = 0;
-    let workoutDays = 0;
+    let workoutDays = 0;  // Days with workouts
+    let totalWorkouts = 0; // Total number of workouts
     let daysWithData = new Set(); // Track unique days with any data
     
+    // Process each day in the current month
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
       const dayData = storageData[dateStr];
@@ -35,25 +37,42 @@ export const MonthlyHighlights = ({ currentMonth, storageData }) => {
           moodCounts[dayData.mood]++;
           daysWithData.add(dateStr);
         }
-
+  
         // Track notes
         if (dayData.notes) {
           notesDays++;
           daysWithData.add(dateStr);
         }
-
-        // Track workouts
+  
+        // Track workouts - both days and total count
+        let dayHasWorkout = false;
+        
+        // Check for single workout
         if (dayData.workout) {
-          workoutDays++;
+          totalWorkouts++; // Count each workout
+          dayHasWorkout = true;
           daysWithData.add(dateStr);
+        }
+  
+        // Check for workouts array
+        if (dayData.workouts && Array.isArray(dayData.workouts)) {
+          totalWorkouts += dayData.workouts.length; // Count all workouts in the array
+          dayHasWorkout = true;
+          daysWithData.add(dateStr);
+        }
+        
+        // Increment workout days count if this day had any workouts
+        if (dayHasWorkout) {
+          workoutDays++;
         }
       }
     }
     
+    // Calculate additional metrics
     const totalDaysTracked = daysWithData.size;
     const avgProgress = progressDays > 0 ? Math.round(totalProgress / progressDays) : 0;
     
-    // Find predominant mood, if there are any moods
+    // Find predominant mood
     const totalMoods = Object.values(moodCounts).reduce((sum, count) => sum + count, 0);
     const predominantMood = totalMoods > 0 
       ? Object.entries(moodCounts).sort(([, a], [, b]) => b - a)[0][0]
@@ -66,7 +85,8 @@ export const MonthlyHighlights = ({ currentMonth, storageData }) => {
       predominantMood, 
       notesDays, 
       progressDays,
-      workoutDays
+      workoutDays, 
+      totalWorkouts // Add this new metric
     };
   };
 

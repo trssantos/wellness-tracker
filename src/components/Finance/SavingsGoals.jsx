@@ -8,14 +8,16 @@ import {
 } from '../../utils/financeUtils';
 import EditSavingsGoalModal from './EditSavingsGoalModal';
 import ContributeModal from './ContributeModal';
+import ConfirmationModal from './ConfirmationModal';
 import './SavingsGoals.css'; // We'll create this file for the animations
 
-const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
+const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency = '$' }) => {
   // State variables
   const [goals, setGoals] = useState([]);
   const [editingGoal, setEditingGoal] = useState(null);
   const [contributingGoal, setContributingGoal] = useState(null);
   const [animatingGoal, setAnimatingGoal] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   // Fetch savings goals on initial render and when refreshTrigger changes
   useEffect(() => {
@@ -24,9 +26,15 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
   }, [refreshTrigger]);
 
   // Handle delete goal
-  const handleDeleteGoal = (id) => {
-    if (window.confirm('Are you sure you want to delete this savings goal?')) {
-      deleteSavingsGoal(id);
+  const handleDeleteGoal = (goal) => {
+    setConfirmDelete(goal);
+  };
+
+  // Confirm deletion
+  const confirmDeleteGoal = () => {
+    if (confirmDelete) {
+      deleteSavingsGoal(confirmDelete.id);
+      setConfirmDelete(null);
       if (onRefresh) onRefresh();
     }
   };
@@ -62,7 +70,7 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
 
   // Format currency amount
   const formatCurrency = (amount) => {
-    return `$${parseFloat(amount).toFixed(2)}`;
+    return `${currency}${parseFloat(amount).toFixed(2)}`;
   };
 
   // Calculate percentage of goal completed
@@ -89,11 +97,11 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
             const color = goal.color || 'blue';
             
             return (
-              <div key={goal.id} className={`bg-${color}-50 dark:bg-${color}-900/30 rounded-lg p-4 border border-${color}-200 dark:border-${color}-800/50 relative overflow-hidden ${animatingGoal === goal.id ? 'goal-contributing' : ''}`}>
+              <div key={goal.id} className={`finance-bg-${color}-900/30 dark:finance-bg-${color}-900/30 rounded-lg p-4 border finance-border-${color}-800/50 dark:finance-border-${color}-800/50 relative overflow-hidden ${animatingGoal === goal.id ? 'goal-contributing' : ''}`}>
                 {/* Piggy bank animation */}
                 {animatingGoal === goal.id && (
                   <div className="piggy-animation">
-                    <PiggyBank size={40} className="piggy" />
+                    <PiggyBank size={40} className={`piggy finance-text-${color}-400 dark:finance-text-${color}-400`} />
                     <div className="coins">
                       <div className="coin"></div>
                       <div className="coin"></div>
@@ -104,31 +112,31 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
                 
                 {/* Visual coin pile - static view */}
                 <div className="absolute right-4 bottom-4 opacity-10">
-                  <PiggyBank size={60} className={`text-${color}-500 dark:text-${color}-400`} />
+                  <PiggyBank size={60} className={`finance-text-${color}-500 dark:finance-text-${color}-400`} />
                 </div>
                 
                 <div className="flex justify-between items-start mb-2">
-                  <h5 className="font-medium text-slate-700 dark:text-slate-200">{goal.name}</h5>
+                  <h5 className="font-medium text-white dark:text-white">{goal.name}</h5>
                   <div className="text-right">
-                    <div className="font-bold text-lg text-amber-600 dark:text-amber-400">
+                    <div className="font-bold text-lg finance-text-amber-400 dark:finance-text-amber-400">
                       {formatCurrency(goal.current)}
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                    <div className="text-xs text-slate-400 dark:text-slate-400">
                       of {formatCurrency(goal.target)} goal
                     </div>
                   </div>
                 </div>
                 
-                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-2">
+                <div className="h-4 bg-slate-700 dark:bg-slate-700 rounded-full overflow-hidden mb-2">
                   <div 
-                    className={`h-full bg-${color}-500 dark:bg-${color}-600 rounded-full relative shimmer-effect`}
+                    className={`h-full finance-bg-${color}-500 dark:finance-bg-${color}-600 rounded-full relative shimmer-effect`}
                     style={{ width: `${percentage}%` }}
                   ></div>
                 </div>
                 
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600 dark:text-slate-400">{percentage}% complete</span>
-                  <span className="text-slate-600 dark:text-slate-400">
+                  <span className="text-slate-300 dark:text-slate-400">{percentage}% complete</span>
+                  <span className="text-slate-300 dark:text-slate-400">
                     {formatCurrency(goal.target - goal.current)} to go
                   </span>
                 </div>
@@ -136,14 +144,14 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
             );
           })
         ) : (
-          <div className="text-center text-slate-500 dark:text-slate-400 p-2">
+          <div className="text-center text-slate-400 dark:text-slate-400 p-2">
             No savings goals found
           </div>
         )}
         
         <button
           onClick={onRefresh}
-          className="w-full py-2 border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-lg text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+          className="w-full py-2 border-2 border-dashed border-amber-700 dark:border-amber-700 rounded-lg finance-text-amber-400 dark:finance-text-amber-400 flex items-center justify-center hover:finance-bg-amber-900/20 dark:hover:finance-bg-amber-900/20 transition-colors"
         >
           <Plus size={18} className="mr-2" />
           View All Savings Goals
@@ -156,20 +164,10 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h4 className="text-lg font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-          <PiggyBank className="text-amber-500 dark:text-amber-400" size={20} />
+        <h4 className="text-lg font-medium text-white dark:text-white flex items-center gap-2">
+          <PiggyBank className="finance-text-amber-400 dark:finance-text-amber-400" size={20} />
           Savings Goals
         </h4>
-        
-        <div className="flex gap-2">
-          <button
-            onClick={onRefresh}
-            className="px-4 py-2 bg-amber-500 dark:bg-amber-600 hover:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg inline-flex items-center gap-2"
-          >
-            <Plus size={18} />
-            Add Goal
-          </button>
-        </div>
       </div>
       
       {/* Savings Goals Grid */}
@@ -183,7 +181,7 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
             return (
               <div 
                 key={goal.id} 
-                className={`bg-${color}-50 dark:bg-${color}-900/30 rounded-lg p-5 border border-${color}-200 dark:border-${color}-800/50 relative overflow-hidden ${animatingGoal === goal.id ? 'goal-contributing' : ''}`}
+                className={`finance-bg-${color}-900/30 dark:finance-bg-${color}-900/30 rounded-lg p-5 border finance-border-${color}-800/50 dark:finance-border-${color}-800/50 relative overflow-hidden ${animatingGoal === goal.id ? 'goal-contributing' : ''}`}
               >
                 {/* Completed badge */}
                 {isComplete && (
@@ -209,12 +207,12 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
                 
                 {/* Visual coin pile - static view */}
                 <div className="absolute right-6 bottom-6 opacity-10">
-                  <PiggyBank size={80} className={`text-${color}-500 dark:text-${color}-400`} />
+                  <PiggyBank size={80} className={`finance-text-${color}-500 dark:finance-text-${color}-400`} />
                 </div>
                 
                 <div className="mb-4">
-                  <h5 className="text-xl font-medium text-slate-800 dark:text-slate-200 mb-1">{goal.name}</h5>
-                  <div className="flex items-center text-sm text-slate-500 dark:text-slate-400">
+                  <h5 className="text-xl font-medium text-white dark:text-white mb-1">{goal.name}</h5>
+                  <div className="flex items-center text-sm text-slate-400 dark:text-slate-400">
                     <Calendar size={14} className="mr-1" />
                     <span>Started {formatDate(goal.createdAt)}</span>
                     
@@ -229,44 +227,44 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
                 
                 <div className="mb-6">
                   <div className="flex justify-between items-end mb-2">
-                    <div className="text-sm text-slate-500 dark:text-slate-400">Progress</div>
-                    <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <div className="text-sm text-slate-400 dark:text-slate-400">Progress</div>
+                    <div className="text-sm font-medium text-white dark:text-white">
                       {percentage}%
                     </div>
                   </div>
                   
-                  <div className="h-6 bg-white dark:bg-slate-700 rounded-full overflow-hidden relative">
+                  <div className="h-6 bg-slate-700 dark:bg-slate-700 rounded-full overflow-hidden relative">
                     <div 
-                      className={`h-full bg-${color}-500 dark:bg-${color}-600 rounded-full shimmer-effect`}
+                      className={`h-full finance-bg-${color}-500 dark:finance-bg-${color}-600 rounded-full shimmer-effect`}
                       style={{ width: `${percentage}%` }}
                     ></div>
                     
                     {/* Milestone markers (example at 25%, 50%, 75%) */}
                     <div className="absolute inset-0 flex items-center">
-                      <div className="h-6 w-px bg-white dark:bg-slate-600 opacity-50" style={{ marginLeft: '25%' }}></div>
-                      <div className="h-6 w-px bg-white dark:bg-slate-600 opacity-50" style={{ marginLeft: '25%' }}></div>
-                      <div className="h-6 w-px bg-white dark:bg-slate-600 opacity-50" style={{ marginLeft: '25%' }}></div>
+                      <div className="h-6 w-px bg-slate-600 dark:bg-slate-600 opacity-50" style={{ marginLeft: '25%' }}></div>
+                      <div className="h-6 w-px bg-slate-600 dark:bg-slate-600 opacity-50" style={{ marginLeft: '25%' }}></div>
+                      <div className="h-6 w-px bg-slate-600 dark:bg-slate-600 opacity-50" style={{ marginLeft: '25%' }}></div>
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex justify-between items-end mb-4">
                   <div>
-                    <div className="text-sm text-slate-500 dark:text-slate-400">Saved</div>
-                    <div className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+                    <div className="text-sm text-slate-400 dark:text-slate-400">Saved</div>
+                    <div className="text-2xl font-bold text-white dark:text-white">
                       {formatCurrency(goal.current)}
                     </div>
                   </div>
                   
                   <div className="text-right">
-                    <div className="text-sm text-slate-500 dark:text-slate-400">Target</div>
-                    <div className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+                    <div className="text-sm text-slate-400 dark:text-slate-400">Target</div>
+                    <div className="text-2xl font-bold text-white dark:text-white">
                       {formatCurrency(goal.target)}
                     </div>
                   </div>
                 </div>
                 
-                <div className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                <div className="text-sm text-slate-300 dark:text-slate-400 mb-4">
                   {formatCurrency(goal.target - goal.current)} left to reach your goal
                 </div>
                 
@@ -274,7 +272,7 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleContribute(goal)}
-                    className={`px-3 py-1.5 bg-${color}-500 dark:bg-${color}-600 hover:bg-${color}-600 dark:hover:bg-${color}-700 text-white rounded-lg text-sm flex items-center`}
+                    className={`px-3 py-1.5 finance-bg-${color}-600 dark:finance-bg-${color}-600 hover:finance-bg-${color}-700 dark:hover:finance-bg-${color}-700 text-white rounded-lg text-sm flex items-center`}
                     disabled={isComplete}
                   >
                     <Banknote size={14} className="mr-1" /> Add Funds
@@ -282,14 +280,14 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
                   
                   <button
                     onClick={() => handleEditGoal(goal)}
-                    className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm flex items-center"
+                    className="px-3 py-1.5 bg-slate-700 dark:bg-slate-700 hover:bg-slate-600 dark:hover:bg-slate-600 text-white dark:text-white rounded-lg text-sm flex items-center"
                   >
                     <Settings size={14} className="mr-1" /> Edit Goal
                   </button>
                   
                   <button
-                    onClick={() => handleDeleteGoal(goal.id)}
-                    className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded-lg text-sm flex items-center"
+                    onClick={() => handleDeleteGoal(goal)}
+                    className="px-3 py-1.5 finance-bg-red-900/30 dark:finance-bg-red-900/30 hover:finance-bg-red-900/50 dark:hover:finance-bg-red-900/50 finance-text-red-400 dark:finance-text-red-400 rounded-lg text-sm flex items-center"
                   >
                     <Trash2 size={14} className="mr-1" /> Delete
                   </button>
@@ -298,28 +296,21 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
             );
           })
         ) : (
-          <div className="md:col-span-2 text-center p-10 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-            <div className="inline-block p-4 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 mb-4">
+          <div className="md:col-span-2 text-center p-10 bg-slate-700/50 dark:bg-slate-700/50 rounded-lg">
+            <div className="inline-block p-4 rounded-full finance-bg-amber-900/40 dark:finance-bg-amber-900/40 finance-text-amber-400 dark:finance-text-amber-400 mb-4">
               <PiggyBank size={40} />
             </div>
-            <h5 className="text-xl font-medium text-slate-700 dark:text-slate-300 mb-2">No Savings Goals Yet</h5>
-            <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
+            <h5 className="text-xl font-medium text-white dark:text-white mb-2">No Savings Goals Yet</h5>
+            <p className="text-slate-300 dark:text-slate-400 mb-6 max-w-md mx-auto">
               Start saving for your future by creating a savings goal. Track your progress and stay motivated.
             </p>
-            <button
-              onClick={onRefresh}
-              className="px-4 py-2 bg-amber-500 dark:bg-amber-600 hover:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg inline-flex items-center gap-2"
-            >
-              <Plus size={18} />
-              Create Your First Goal
-            </button>
           </div>
         )}
       </div>
       
       {/* Achievement Card - show if there are completed goals */}
       {goals.filter(g => g.current >= g.target).length > 0 && (
-        <div className="bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 rounded-lg p-4 mt-8 text-white flex items-center justify-between">
+        <div className="bg-gradient-to-r from-amber-600 to-amber-700 dark:from-amber-600 dark:to-amber-700 rounded-lg p-4 mt-8 text-white">
           <div className="flex items-center">
             <div className="p-3 bg-white/20 rounded-full mr-4">
               <Award size={24} className="text-white" />
@@ -331,12 +322,6 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
               </p>
             </div>
           </div>
-          <button 
-            className="px-4 py-2 bg-white text-amber-600 rounded-lg font-medium hover:bg-white/90 transition-colors"
-            onClick={() => alert('Congratulations on achieving your financial goals!')}
-          >
-            Celebrate
-          </button>
         </div>
       )}
       
@@ -346,6 +331,7 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
           goal={editingGoal}
           onClose={() => setEditingGoal(null)}
           onGoalUpdated={handleEditComplete}
+          currency={currency}
         />
       )}
       
@@ -355,6 +341,20 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
           goal={contributingGoal}
           onClose={() => setContributingGoal(null)}
           onContribute={handleContributionComplete}
+          currency={currency}
+        />
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmDelete && (
+        <ConfirmationModal
+          isOpen={true}
+          title="Delete Savings Goal"
+          message={`Are you sure you want to delete the "${confirmDelete.name}" savings goal (${formatCurrency(confirmDelete.target)})? This action cannot be undone.`}
+          onConfirm={confirmDeleteGoal}
+          onCancel={() => setConfirmDelete(null)}
+          confirmButtonClass="bg-red-600 hover:bg-red-700"
+          confirmText="Delete"
         />
       )}
     </div>

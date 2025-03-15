@@ -16,6 +16,8 @@ import UpcomingBills from './UpcomingBills';
 import CalendarView from './CalendarView';
 import SettingsModal from './SettingsModal';
 import TransactionModal from './TransactionModal';
+import AddBudgetModal from './AddBudgetModal';
+import AddSavingsGoalModal from './AddSavingsGoalModal';
 import ConfirmationModal from './ConfirmationModal';
 import ModalContainer from './ModalContainer';
 
@@ -48,6 +50,10 @@ const FinanceSection = () => {
   
   // Data states
   const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const [selectedDateRange, setSelectedDateRange] = useState({
+    start: new Date(new Date().setMonth(new Date().getMonth() - 1)),
+    end: new Date()
+  });
   const [insights, setInsights] = useState({ score: 0, insights: [] });
   const [correlations, setCorrelations] = useState([]);
   const [chartData, setChartData] = useState([]);
@@ -287,7 +293,7 @@ const FinanceSection = () => {
         )}
         
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <button 
             onClick={() => setShowAddTransaction(true)}
             className="flex items-center justify-center gap-1 bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700 text-white py-2 rounded-lg transition-colors"
@@ -310,14 +316,6 @@ const FinanceSection = () => {
           >
             <PiggyBank size={16} />
             <span className="text-sm">Add Savings Goal</span>
-          </button>
-          
-          <button 
-            onClick={() => setShowAddTransaction(true)}
-            className="flex items-center justify-center gap-1 bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700 text-white py-2 rounded-lg transition-colors"
-          >
-            <Calendar size={16} />
-            <span className="text-sm">Add Recurring</span>
           </button>
         </div>
       </div>
@@ -415,6 +413,7 @@ const FinanceSection = () => {
                 <div className="mb-4">
                   <UpcomingBills 
                     bills={bills}
+                    currency={currency}
                     onBillClick={(bill) => {
                       // Show details or mark as paid logic
                       console.log('Bill clicked:', bill);
@@ -451,7 +450,13 @@ const FinanceSection = () => {
               
               {expandedSections.transactions && (
                 <div className="mb-4">
-                  <ExpenseTracker compact refreshTrigger={refreshTrigger} onRefresh={handleRefresh} />
+                  <ExpenseTracker 
+                    compact 
+                    refreshTrigger={refreshTrigger} 
+                    onRefresh={handleRefresh} 
+                    hideActions={true}
+                    currency={currency}
+                  />
                   
                   <div className="mt-4 text-center">
                     <button 
@@ -483,7 +488,12 @@ const FinanceSection = () => {
               
               {expandedSections.budget && (
                 <div className="mb-4">
-                  <BudgetManager compact refreshTrigger={refreshTrigger} onRefresh={() => navigateToTab('budget')} />
+                  <BudgetManager 
+                    compact 
+                    refreshTrigger={refreshTrigger} 
+                    onRefresh={() => navigateToTab('budget')}
+                    currency={currency}
+                  />
                 </div>
               )}
             </div>
@@ -505,7 +515,12 @@ const FinanceSection = () => {
               
               {expandedSections.savings && (
                 <div className="mb-4">
-                  <SavingsGoals compact refreshTrigger={refreshTrigger} onRefresh={() => navigateToTab('savings')} />
+                  <SavingsGoals 
+                    compact 
+                    refreshTrigger={refreshTrigger} 
+                    onRefresh={() => navigateToTab('savings')}
+                    currency={currency}
+                  />
                 </div>
               )}
             </div>
@@ -527,8 +542,11 @@ const FinanceSection = () => {
               
               {expandedSections.insights && (
                 <div className="mb-4">
-                  {/* Fixed Chart Component */}
-                  <SpendingChart data={chartData} />
+                  {/* Updated Chart Component */}
+                  <SpendingChart 
+                    data={chartData} 
+                    currency={currency}
+                  />
                   
                   <div className="mt-4 text-center">
                     <button 
@@ -546,7 +564,11 @@ const FinanceSection = () => {
         )}
         
         {activeTab === 'transactions' && (
-          <ExpenseTracker refreshTrigger={refreshTrigger} onRefresh={handleRefresh} />
+          <ExpenseTracker 
+            refreshTrigger={refreshTrigger} 
+            onRefresh={handleRefresh}
+            currency={currency}
+          />
         )}
         
         {activeTab === 'budget' && (
@@ -577,13 +599,18 @@ const FinanceSection = () => {
             </div>
             <BudgetManager 
               refreshTrigger={refreshTrigger} 
-              onRefresh={handleRefresh} 
+              onRefresh={handleRefresh}
+              currency={currency}
             />
           </div>
         )}
         
         {activeTab === 'savings' && (
-          <SavingsGoals refreshTrigger={refreshTrigger} onRefresh={handleRefresh} />
+          <SavingsGoals 
+            refreshTrigger={refreshTrigger} 
+            onRefresh={handleRefresh}
+            currency={currency}
+          />
         )}
         
         {activeTab === 'upcoming' && (
@@ -620,6 +647,7 @@ const FinanceSection = () => {
               <CalendarView 
                 transactions={transactions}
                 bills={bills}
+                currency={currency}
                 onDateClick={(date) => {
                   console.log('Date clicked:', date);
                   // Show transactions for this date
@@ -628,6 +656,7 @@ const FinanceSection = () => {
             ) : (
               <UpcomingBills 
                 bills={bills}
+                currency={currency}
                 onBillClick={(bill) => {
                   // Show details or mark as paid logic
                   console.log('Bill clicked:', bill);
@@ -643,6 +672,9 @@ const FinanceSection = () => {
             onRefresh={handleRefresh}
             insights={insights}
             correlations={correlations}
+            currency={currency}
+            selectedDateRange={selectedDateRange}
+            setSelectedDateRange={setSelectedDateRange}
           />
         )}
       </div>
@@ -724,68 +756,32 @@ const FinanceSection = () => {
             setShowAddTransaction(false);
             handleRefresh();
           }}
+          currency={currency}
         />
       )}
       
+      {/* Add Budget Modal */}
       {showAddBudget && (
-        <div>
-          {/* Add Budget Modal Implementation */}
-          <ModalContainer title="Add Budget" onClose={() => setShowAddBudget(false)}>
-            <p className="text-white mb-4">Form implementation for adding a budget</p>
-            
-            <div className="flex justify-end">
-              <button
-                onClick={() => {
-                  // Example budget to add
-                  const sampleBudget = {
-                    category: 'expense-food',
-                    allocated: 500,
-                    spent: 0,
-                    notes: 'Sample budget'
-                  };
-                  
-                  addBudget(sampleBudget);
-                  setShowAddBudget(false);
-                  handleRefresh();
-                }}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg"
-              >
-                Add Sample Budget
-              </button>
-            </div>
-          </ModalContainer>
-        </div>
+        <AddBudgetModal
+          onClose={() => setShowAddBudget(false)}
+          onBudgetAdded={() => {
+            setShowAddBudget(false);
+            handleRefresh();
+          }}
+          currency={currency}
+        />
       )}
       
+      {/* Add Savings Goal Modal */}
       {showAddSavings && (
-        <div>
-          {/* Add Savings Goal Modal Implementation */}
-          <ModalContainer title="Add Savings Goal" onClose={() => setShowAddSavings(false)}>
-            <p className="text-white mb-4">Form implementation for adding a savings goal</p>
-            
-            <div className="flex justify-end">
-              <button
-                onClick={() => {
-                  // Example goal to add
-                  const sampleGoal = {
-                    name: 'Emergency Fund',
-                    target: 1000,
-                    current: 0,
-                    color: 'blue',
-                    notes: 'Sample savings goal'
-                  };
-                  
-                  addSavingsGoal(sampleGoal);
-                  setShowAddSavings(false);
-                  handleRefresh();
-                }}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg"
-              >
-                Add Sample Goal
-              </button>
-            </div>
-          </ModalContainer>
-        </div>
+        <AddSavingsGoalModal
+          onClose={() => setShowAddSavings(false)}
+          onSavingsAdded={() => {
+            setShowAddSavings(false);
+            handleRefresh();
+          }}
+          currency={currency}
+        />
       )}
       
       {/* Settings Modal */}

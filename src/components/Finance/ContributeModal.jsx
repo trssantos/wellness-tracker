@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import { X, DollarSign, Calendar, FileText } from 'lucide-react';
 import { contributeSavingsGoal } from '../../utils/financeUtils';
+import ModalContainer from './ModalContainer';
+import InputField from './InputField';
 
-const ContributeModal = ({ goal, onClose, onContribute }) => {
+const ContributeModal = ({ goal, onClose, onContribute, currency = '$' }) => {
   // State variables
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
+
+  // Format currency amount
+  const formatCurrency = (amount) => {
+    return `${currency}${parseFloat(amount).toFixed(2)}`;
+  };
 
   // Handle form submission
   const handleSubmit = (e) => {
@@ -33,89 +40,65 @@ const ContributeModal = ({ goal, onClose, onContribute }) => {
   };
 
   return (
-    <dialog 
-      className="modal-base fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-      open
-    >
-      <div 
-        className="modal-content max-w-md w-full"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <h3 className="modal-title">Contribute to {goal.name}</h3>
+    <ModalContainer title={`Contribute to ${goal.name}`} onClose={onClose}>
+      {error && (
+        <div className="bg-red-900/30 text-red-400 p-3 rounded-lg mb-4">
+          {error}
+        </div>
+      )}
+      
+      <div className="mb-6">
+        <div className="p-4 rounded-lg bg-slate-700/50 dark:bg-slate-700/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <div className="text-sm text-slate-400 dark:text-slate-400">Current Progress</div>
+            <div className="text-lg font-bold text-white dark:text-white">
+              {formatCurrency(goal.current)} / {formatCurrency(goal.target)}
+            </div>
+          </div>
+          <div>
+            <div className="text-sm text-slate-400 dark:text-slate-400">Remaining</div>
+            <div className="text-lg font-bold text-white dark:text-white">
+              {formatCurrency(Math.max(0, goal.target - goal.current))}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Contribution Amount */}
+        <div>
+          <label htmlFor="amount" className="block text-sm font-medium text-white dark:text-white mb-2">
+            Contribution Amount
+          </label>
+          <InputField
+            icon={DollarSign}
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0.00"
+            required
+            autoFocus
+          />
+        </div>
+        
+        {/* Form Actions */}
+        <div className="flex justify-end gap-3 pt-2">
           <button
+            type="button"
             onClick={onClose}
-            className="modal-close-button"
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
           >
-            <X size={20} />
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className={`px-4 py-2 rounded-lg font-medium text-white finance-bg-${goal.color || 'blue'}-600 hover:finance-bg-${goal.color || 'blue'}-700 dark:finance-bg-${goal.color || 'blue'}-600 dark:hover:finance-bg-${goal.color || 'blue'}-700`}
+          >
+            Make Contribution
           </button>
         </div>
-        
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-3 rounded-lg mb-4">
-            {error}
-          </div>
-        )}
-        
-        <div className="mb-6">
-          <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <div className="text-sm text-slate-500 dark:text-slate-400">Current Progress</div>
-              <div className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                ${goal.current.toFixed(2)} / ${goal.target.toFixed(2)}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-slate-500 dark:text-slate-400">Remaining</div>
-              <div className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                ${Math.max(0, goal.target - goal.current).toFixed(2)}
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Contribution Amount */}
-          <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Contribution Amount
-            </label>
-            <div className="relative">
-              <input
-                id="amount"
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="input-field pl-10"
-                placeholder="0.00"
-                min="0.01"
-                step="0.01"
-                required
-                autoFocus
-              />
-              <DollarSign className="absolute left-3 top-3 text-slate-400" size={18} />
-            </div>
-          </div>
-          
-          {/* Form Actions */}
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={`px-4 py-2 rounded-lg font-medium text-white bg-${goal.color || 'blue'}-500 hover:bg-${goal.color || 'blue'}-600 dark:bg-${goal.color || 'blue'}-600 dark:hover:bg-${goal.color || 'blue'}-700`}
-            >
-              Make Contribution
-            </button>
-          </div>
-        </form>
-      </div>
-    </dialog>
+      </form>
+    </ModalContainer>
   );
 };
 

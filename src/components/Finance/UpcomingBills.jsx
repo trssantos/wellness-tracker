@@ -1,7 +1,7 @@
 import React from 'react';
-import { Calendar, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 
-const UpcomingBills = ({ bills, onBillClick }) => {
+const UpcomingBills = ({ bills, onBillClick, currency = '$' }) => {
   if (!bills || bills.length === 0) {
     return (
       <div className="bg-slate-700/50 rounded-lg p-4 flex items-center justify-center h-40">
@@ -12,6 +12,11 @@ const UpcomingBills = ({ bills, onBillClick }) => {
       </div>
     );
   }
+
+  // Format currency amount
+  const formatCurrency = (amount) => {
+    return `${currency}${Math.abs(amount).toFixed(2)}`;
+  };
 
   // Group bills by due date
   const today = new Date();
@@ -52,7 +57,14 @@ const UpcomingBills = ({ bills, onBillClick }) => {
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <div className="font-medium text-white">{bill.name}</div>
+                    <div className="font-medium text-white flex items-center">
+                      {bill.name}
+                      {bill.amount > 0 ? (
+                        <TrendingUp size={14} className="ml-1 text-green-400" />
+                      ) : (
+                        <TrendingDown size={14} className="ml-1 text-red-400" />
+                      )}
+                    </div>
                     <div className="text-xs text-red-300 flex items-center gap-1 mt-1">
                       <Calendar size={12} />
                       <span>
@@ -60,8 +72,9 @@ const UpcomingBills = ({ bills, onBillClick }) => {
                       </span>
                     </div>
                   </div>
-                  <div className="text-lg font-bold text-white">
-                    ${Math.abs(bill.amount).toFixed(2)}
+                  <div className={`text-lg font-bold ${bill.amount > 0 ? 'text-green-400' : 'text-red-300'}`}>
+                    {bill.amount > 0 ? '+' : ''}
+                    {formatCurrency(bill.amount)}
                   </div>
                 </div>
               </div>
@@ -83,11 +96,21 @@ const UpcomingBills = ({ bills, onBillClick }) => {
               <div 
                 key={bill.id}
                 onClick={() => onBillClick && onBillClick(bill)}
-                className="bg-amber-900/30 border border-amber-800/50 rounded-lg p-3 cursor-pointer hover:bg-amber-900/40 transition-colors"
+                className={`${bill.amount > 0 
+                  ? 'bg-green-900/30 border border-green-800/50 hover:bg-green-900/40' 
+                  : 'bg-amber-900/30 border border-amber-800/50 hover:bg-amber-900/40'} 
+                  rounded-lg p-3 cursor-pointer transition-colors`}
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <div className="font-medium text-white">{bill.name}</div>
+                    <div className="font-medium text-white flex items-center">
+                      {bill.name}
+                      {bill.amount > 0 ? (
+                        <TrendingUp size={14} className="ml-1 text-green-400" />
+                      ) : (
+                        <TrendingDown size={14} className="ml-1 text-amber-400" />
+                      )}
+                    </div>
                     <div className="text-xs text-amber-300 flex items-center gap-1 mt-1">
                       <Calendar size={12} />
                       <span>
@@ -95,8 +118,9 @@ const UpcomingBills = ({ bills, onBillClick }) => {
                       </span>
                     </div>
                   </div>
-                  <div className="text-lg font-bold text-white">
-                    ${Math.abs(bill.amount).toFixed(2)}
+                  <div className={`text-lg font-bold ${bill.amount > 0 ? 'text-green-400' : 'text-amber-300'}`}>
+                    {bill.amount > 0 ? '+' : ''}
+                    {formatCurrency(bill.amount)}
                   </div>
                 </div>
               </div>
@@ -118,11 +142,21 @@ const UpcomingBills = ({ bills, onBillClick }) => {
               <div 
                 key={bill.id}
                 onClick={() => onBillClick && onBillClick(bill)}
-                className="bg-blue-900/30 border border-blue-800/50 rounded-lg p-3 cursor-pointer hover:bg-blue-900/40 transition-colors"
+                className={`${bill.amount > 0 
+                  ? 'bg-green-900/30 border border-green-800/50 hover:bg-green-900/40' 
+                  : 'bg-blue-900/30 border border-blue-800/50 hover:bg-blue-900/40'} 
+                  rounded-lg p-3 cursor-pointer transition-colors`}
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <div className="font-medium text-white">{bill.name}</div>
+                    <div className="font-medium text-white flex items-center">
+                      {bill.name}
+                      {bill.amount > 0 ? (
+                        <TrendingUp size={14} className="ml-1 text-green-400" />
+                      ) : (
+                        <TrendingDown size={14} className="ml-1 text-blue-400" />
+                      )}
+                    </div>
                     <div className="text-xs text-blue-300 flex items-center gap-1 mt-1">
                       <Calendar size={12} />
                       <span>
@@ -130,8 +164,9 @@ const UpcomingBills = ({ bills, onBillClick }) => {
                       </span>
                     </div>
                   </div>
-                  <div className="text-lg font-bold text-white">
-                    ${Math.abs(bill.amount).toFixed(2)}
+                  <div className={`text-lg font-bold ${bill.amount > 0 ? 'text-green-400' : 'text-blue-300'}`}>
+                    {bill.amount > 0 ? '+' : ''}
+                    {formatCurrency(bill.amount)}
                   </div>
                 </div>
               </div>

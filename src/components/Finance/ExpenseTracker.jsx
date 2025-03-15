@@ -1,12 +1,69 @@
 import React, { useState, useEffect } from 'react';
 import { 
   CreditCard, Search, Filter, TrendingUp, TrendingDown, X,
-  Edit, Trash2, Calendar, DollarSign, ArrowDown, ArrowUp, Download
+  Edit, Trash2, Calendar, DollarSign, ArrowDown, ArrowUp, Download,
+  Home, Utensils, Car, Zap, Heart, Film, ShoppingBag, BookOpen,
+  User, Repeat, CreditCard as CardIcon, MoreHorizontal, Banknote,
+  Laptop, Gift, PlusCircle
 } from 'lucide-react';
 import { getFinanceData, deleteTransaction, getCategoryById } from '../../utils/financeUtils';
 import EditTransactionModal from './EditTransactionModal';
+import ConfirmationModal from './ConfirmationModal';
+import './finance-styles.css';
 
-const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
+// Use these safe color mappings
+const SAFE_COLORS = {
+  'blue': 'blue',
+  'green': 'green',
+  'amber': 'yellow',
+  'red': 'red', 
+  'purple': 'purple',
+  'pink': 'pink',
+  'indigo': 'indigo',
+  'teal': 'blue',
+  'emerald': 'green',
+  'cyan': 'blue',
+  'violet': 'purple',
+  'fuchsia': 'pink',
+  'rose': 'pink',
+  'gray': 'gray'
+};
+
+// Map category IDs to icons
+const getCategoryIcon = (categoryId) => {
+  const icons = {
+    // Income categories
+    'income-salary': <Banknote size={12} />,
+    'income-freelance': <Laptop size={12} />,
+    'income-investments': <TrendingUp size={12} />,
+    'income-gifts': <Gift size={12} />,
+    'income-other': <PlusCircle size={12} />,
+    
+    // Expense categories
+    'expense-housing': <Home size={12} />,
+    'expense-food': <Utensils size={12} />,
+    'expense-transportation': <Car size={12} />,
+    'expense-utilities': <Zap size={12} />,
+    'expense-healthcare': <Heart size={12} />,
+    'expense-entertainment': <Film size={12} />,
+    'expense-shopping': <ShoppingBag size={12} />,
+    'expense-education': <BookOpen size={12} />,
+    'expense-personal': <User size={12} />,
+    'expense-subscriptions': <Repeat size={12} />,
+    'expense-debt': <CardIcon size={12} />,
+    'expense-other': <MoreHorizontal size={12} />
+  };
+  
+  return icons[categoryId] || <MoreHorizontal size={12} />;
+};
+
+const ExpenseTracker = ({ 
+  compact = false, 
+  refreshTrigger = 0, 
+  onRefresh,
+  hideActions = false,
+  currency = '$'
+}) => {
   // State variables
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -19,6 +76,7 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [categories, setCategories] = useState({});
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   // Fetch transactions and categories on initial render and when refreshTrigger changes
   useEffect(() => {
@@ -96,9 +154,19 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
   }, [transactions, searchTerm, dateFilter, typeFilter, categoryFilter, sortBy, sortOrder]);
 
   // Handle delete transaction
-  const handleDeleteTransaction = (id) => {
-    if (window.confirm('Are you sure you want to delete this transaction?')) {
-      deleteTransaction(id);
+  const handleDeleteTransaction = (transaction) => {
+    setConfirmDelete({
+      id: transaction.id,
+      name: transaction.name,
+      amount: transaction.amount
+    });
+  };
+
+  // Confirm deletion
+  const confirmDeleteTransaction = () => {
+    if (confirmDelete) {
+      deleteTransaction(confirmDelete.id);
+      setConfirmDelete(null);
       if (onRefresh) onRefresh();
     }
   };
@@ -130,6 +198,11 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
     return date.toLocaleDateString();
   };
 
+  // Format currency amount
+  const formatCurrency = (amount) => {
+    return `${currency}${Math.abs(amount).toFixed(2)}`;
+  };
+
   // Export transactions as CSV
   const exportTransactions = () => {
     // Create CSV content
@@ -159,7 +232,7 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
     const displayTransactions = filteredTransactions.slice(0, 5);
     
     return (
-      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg overflow-hidden transition-all">
+      <div className="bg-slate-700/50 dark:bg-slate-700/50 rounded-lg overflow-hidden transition-all">
         <div className="flex justify-between items-center px-4 py-2">
           <div className="flex items-center space-x-2">
             <input
@@ -167,11 +240,11 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
               placeholder="Search transactions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-3 py-1 text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:border-transparent transition-colors"
+              className="px-3 py-1 text-sm bg-slate-700 dark:bg-slate-700 border border-slate-600 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:border-transparent transition-colors text-white"
             />
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="p-1.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
+              className="p-1.5 rounded-lg bg-slate-700 dark:bg-slate-700 border border-slate-600 dark:border-slate-600 text-slate-300 dark:text-slate-300 hover:bg-slate-600 dark:hover:bg-slate-600 transition-colors"
             >
               <Filter size={16} />
             </button>
@@ -179,12 +252,12 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
         </div>
         
         {showFilters && (
-          <div className="px-4 py-2 bg-white dark:bg-slate-700 border-t border-b border-slate-200 dark:border-slate-600">
+          <div className="px-4 py-2 bg-slate-700 dark:bg-slate-700 border-t border-b border-slate-600 dark:border-slate-600">
             <div className="flex flex-wrap gap-2 text-xs">
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="p-1.5 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+                className="p-1.5 bg-slate-600 dark:bg-slate-600 border border-slate-500 dark:border-slate-500 rounded-lg text-slate-300 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
               >
                 <option value="all">All Dates</option>
                 <option value="today">Today</option>
@@ -195,7 +268,7 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="p-1.5 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+                className="p-1.5 bg-slate-600 dark:bg-slate-600 border border-slate-500 dark:border-slate-500 rounded-lg text-slate-300 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
               >
                 <option value="all">All Types</option>
                 <option value="income">Income</option>
@@ -206,95 +279,69 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
         )}
         
         <div className="overflow-x-auto">
-        <table className="w-full">
-  <thead className="bg-slate-700 text-xs text-white">
-    <tr>
-      <th className="p-3 text-left">Date</th>
-      <th className="p-3 text-left">Description</th>
-      <th className="p-3 text-left">Category</th>
-      <th className="p-3 text-right">Amount</th>
-      <th className="p-3 text-center">Actions</th>
-    </tr>
-  </thead>
-  <tbody className="divide-y divide-slate-600">
-    {filteredTransactions.length > 0 ? (
-      filteredTransactions.map(transaction => {
-        const category = getCategoryById(transaction.category);
-        
-        return (
-          <tr key={transaction.id} className="hover:bg-slate-700/50 transition-colors">
-            <td className="p-3 text-white">
-              {formatDate(transaction.timestamp)}
-            </td>
-            <td className="p-3">
-              <div className="font-medium text-white">{transaction.name}</div>
-              {transaction.notes && (
-                <div className="text-xs text-slate-400 mt-1 line-clamp-1">
-                  {transaction.notes}
-                </div>
+          <table className="w-full">
+            <thead className="bg-slate-700 text-xs text-white">
+              <tr>
+                <th className="p-3 text-left">Date</th>
+                <th className="p-3 text-left">Description</th>
+                <th className="p-3 text-left">Category</th>
+                <th className="p-3 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-600">
+              {filteredTransactions.length > 0 ? (
+                filteredTransactions.slice(0, 5).map(transaction => {
+                  const category = getCategoryById(transaction.category);
+                  const safeColor = category ? SAFE_COLORS[category.color] || 'gray' : 'gray';
+                  
+                  return (
+                    <tr key={transaction.id} className="hover:bg-slate-700/50 transition-colors">
+                      <td className="p-3 text-white">
+                        {formatDate(transaction.timestamp)}
+                      </td>
+                      <td className="p-3">
+                        <div className="font-medium text-white">{transaction.name}</div>
+                        {transaction.notes && (
+                          <div className="text-xs text-slate-400 mt-1 line-clamp-1">
+                            {transaction.notes}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {category && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-${safeColor}-500/20 text-${safeColor}-300`}>
+                            {getCategoryIcon(category.id)}
+                            <span>{category.name}</span>
+                          </span>
+                        )}
+                      </td>
+                      <td className={`p-3 text-right font-medium ${
+                        transaction.amount > 0 
+                          ? 'text-green-400' 
+                          : 'text-red-400'
+                      }`}>
+                        <div className="flex items-center justify-end">
+                          {transaction.amount > 0 ? (
+                            <TrendingUp size={16} className="mr-1 text-green-500" />
+                          ) : (
+                            <TrendingDown size={16} className="mr-1 text-red-500" />
+                          )}
+                          {transaction.amount > 0 ? '+' : '-'}
+                          {formatCurrency(transaction.amount)}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="4" className="p-6 text-center text-slate-400">
+                    No transactions found
+                  </td>
+                </tr>
               )}
-            </td>
-            <td className="p-3">
-              {category && (
-                <span className={`inline-block px-2 py-0.5 rounded-full text-xs bg-${category.color}-900/30 text-${category.color}-300`}>
-                  {category.name}
-                </span>
-              )}
-            </td>
-            <td className={`p-3 text-right font-medium ${
-              transaction.amount > 0 
-                ? 'text-green-400' 
-                : 'text-red-400'
-            }`}>
-              <div className="flex items-center justify-end">
-                {transaction.amount > 0 ? (
-                  <TrendingUp size={16} className="mr-1 text-green-500" />
-                ) : (
-                  <TrendingDown size={16} className="mr-1 text-red-500" />
-                )}
-                {transaction.amount > 0 ? '+' : ''}
-                ${Math.abs(transaction.amount).toFixed(2)}
-              </div>
-            </td>
-            <td className="p-3 text-center">
-              <div className="flex items-center justify-center space-x-2">
-                <button
-                  onClick={() => handleEditTransaction(transaction)}
-                  className="p-1 rounded-full bg-slate-600 text-blue-400 hover:bg-blue-900/30 transition-colors"
-                  title="Edit"
-                >
-                  <Edit size={16} />
-                </button>
-                <button
-                  onClick={() => handleDeleteTransaction(transaction.id)}
-                  className="p-1 rounded-full bg-slate-600 text-red-400 hover:bg-red-900/30 transition-colors"
-                  title="Delete"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </td>
-          </tr>
-        );
-      })
-    ) : (
-      <tr>
-        <td colSpan="5" className="p-6 text-center text-slate-400">
-          No transactions found
-        </td>
-      </tr>
-    )}
-  </tbody>
-</table>
-        </div>
-        
-        <div className="p-2 text-center border-t border-slate-200 dark:border-slate-700">
-          <button 
-            onClick={() => onRefresh()}
-            className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300"
-          >
-            View All Transactions
-          </button>
+            </tbody>
+          </table>
         </div>
       </div>
     );
@@ -304,8 +351,8 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h4 className="text-lg font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-          <CreditCard className="text-amber-500 dark:text-amber-400" size={20} />
+        <h4 className="text-lg font-medium text-white dark:text-white flex items-center gap-2">
+          <CreditCard className="text-amber-400 dark:text-amber-400" size={20} />
           Transactions
         </h4>
         
@@ -316,14 +363,14 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
               placeholder="Search transactions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-3 py-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:border-transparent transition-colors"
+              className="pl-9 pr-3 py-2 bg-slate-700 dark:bg-slate-700 border border-slate-600 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:border-transparent transition-colors text-white"
             />
             <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
           </div>
           
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="px-3 py-2 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors flex items-center gap-1"
+            className="px-3 py-2 rounded-lg bg-slate-700 dark:bg-slate-700 border border-slate-600 dark:border-slate-600 text-slate-300 dark:text-slate-300 hover:bg-slate-600 dark:hover:bg-slate-600 transition-colors flex items-center gap-1"
           >
             <Filter size={16} />
             <span>Filter</span>
@@ -331,7 +378,7 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
           
           <button
             onClick={exportTransactions}
-            className="px-3 py-2 rounded-lg bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-700 transition-colors flex items-center gap-1"
+            className="px-3 py-2 rounded-lg bg-amber-600 dark:bg-amber-600 text-white hover:bg-amber-700 dark:hover:bg-amber-700 transition-colors flex items-center gap-1"
           >
             <Download size={16} />
             <span>Export</span>
@@ -340,16 +387,16 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
       </div>
       
       {showFilters && (
-        <div className="bg-white dark:bg-slate-700 rounded-lg p-4 mb-4 border border-slate-200 dark:border-slate-600">
+        <div className="bg-slate-700 dark:bg-slate-700 rounded-lg p-4 mb-4 border border-slate-600 dark:border-slate-600">
           <div className="flex flex-wrap gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-sm font-medium text-slate-400 dark:text-slate-400 mb-1">
                 Date Range
               </label>
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full p-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+                className="w-full p-2 bg-slate-600 dark:bg-slate-600 border border-slate-500 dark:border-slate-500 rounded-lg text-slate-300 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
               >
                 <option value="all">All Dates</option>
                 <option value="today">Today</option>
@@ -359,13 +406,13 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-sm font-medium text-slate-400 dark:text-slate-400 mb-1">
                 Transaction Type
               </label>
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full p-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+                className="w-full p-2 bg-slate-600 dark:bg-slate-600 border border-slate-500 dark:border-slate-500 rounded-lg text-slate-300 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
               >
                 <option value="all">All Types</option>
                 <option value="income">Income</option>
@@ -374,13 +421,13 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-sm font-medium text-slate-400 dark:text-slate-400 mb-1">
                 Category
               </label>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full p-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+                className="w-full p-2 bg-slate-600 dark:bg-slate-600 border border-slate-500 dark:border-slate-500 rounded-lg text-slate-300 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
               >
                 <option value="all">All Categories</option>
                 <optgroup label="Income">
@@ -397,14 +444,14 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-sm font-medium text-slate-400 dark:text-slate-400 mb-1">
                 Sort By
               </label>
               <div className="flex items-center">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-32 p-2 bg-slate-50 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-l-lg text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+                  className="w-32 p-2 bg-slate-600 dark:bg-slate-600 border border-slate-500 dark:border-slate-500 rounded-l-lg text-slate-300 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
                 >
                   <option value="date">Date</option>
                   <option value="amount">Amount</option>
@@ -412,7 +459,7 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
                 </select>
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="p-2 bg-slate-50 dark:bg-slate-600 border border-l-0 border-slate-200 dark:border-slate-500 rounded-r-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-500"
+                  className="p-2 bg-slate-600 dark:bg-slate-600 border border-l-0 border-slate-500 dark:border-slate-500 rounded-r-lg text-slate-300 dark:text-slate-300 hover:bg-slate-500 dark:hover:bg-slate-500"
                 >
                   {sortOrder === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
                 </button>
@@ -430,7 +477,7 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
                 setSortBy('date');
                 setSortOrder('desc');
               }}
-              className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300"
+              className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300"
             >
               Reset Filters
             </button>
@@ -438,17 +485,17 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
         </div>
       )}
       
-      <div className="bg-white dark:bg-slate-800 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+      <div className="bg-slate-800 dark:bg-slate-800 rounded-lg overflow-hidden border border-slate-700 dark:border-slate-700">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-slate-100 dark:bg-slate-700">
+            <thead className="bg-slate-700 dark:bg-slate-700">
               <tr>
                 <th 
-                  className="p-3 text-left cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                  className="p-3 text-left cursor-pointer hover:bg-slate-600 dark:hover:bg-slate-600 transition-colors text-white text-sm"
                   onClick={() => handleSort('date')}
                 >
                   <div className="flex items-center">
-                    <Calendar size={16} className="mr-1 text-slate-500 dark:text-slate-400" />
+                    <Calendar size={16} className="mr-1 text-slate-400 dark:text-slate-400" />
                     <span>Date</span>
                     {sortBy === 'date' && (
                       sortOrder === 'asc' ? <ArrowUp size={14} className="ml-1" /> : <ArrowDown size={14} className="ml-1" />
@@ -456,7 +503,7 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
                   </div>
                 </th>
                 <th 
-                  className="p-3 text-left cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                  className="p-3 text-left cursor-pointer hover:bg-slate-600 dark:hover:bg-slate-600 transition-colors text-white text-sm"
                   onClick={() => handleSort('name')}
                 >
                   <div className="flex items-center">
@@ -466,34 +513,37 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
                     )}
                   </div>
                 </th>
-                <th className="p-3 text-left">Category</th>
+                <th className="p-3 text-left text-white text-sm">Category</th>
                 <th 
-                  className="p-3 text-right cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                  className="p-3 text-right cursor-pointer hover:bg-slate-600 dark:hover:bg-slate-600 transition-colors text-white text-sm"
                   onClick={() => handleSort('amount')}
                 >
                   <div className="flex items-center justify-end">
-                    <DollarSign size={16} className="mr-1 text-slate-500 dark:text-slate-400" />
+                    <DollarSign size={16} className="mr-1 text-slate-400 dark:text-slate-400" />
                     <span>Amount</span>
                     {sortBy === 'amount' && (
                       sortOrder === 'asc' ? <ArrowUp size={14} className="ml-1" /> : <ArrowDown size={14} className="ml-1" />
                     )}
                   </div>
                 </th>
-                <th className="p-3 text-center">Actions</th>
+                {!hideActions && (
+                  <th className="p-3 text-center text-white text-sm">Actions</th>
+                )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+            <tbody className="divide-y divide-slate-700 dark:divide-slate-700">
               {filteredTransactions.length > 0 ? (
                 filteredTransactions.map(transaction => {
                   const category = getCategoryById(transaction.category);
+                  const safeColor = category ? SAFE_COLORS[category.color] || 'gray' : 'gray';
                   
                   return (
-                    <tr key={transaction.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                      <td className="p-3 text-slate-600 dark:text-slate-400">
+                    <tr key={transaction.id} className="hover:bg-slate-700/50 dark:hover:bg-slate-700/50 transition-colors">
+                      <td className="p-3 text-slate-400 dark:text-slate-400">
                         {formatDate(transaction.timestamp)}
                       </td>
                       <td className="p-3">
-                        <div className="font-medium text-slate-800 dark:text-slate-200">{transaction.name}</div>
+                        <div className="font-medium text-white dark:text-white">{transaction.name}</div>
                         {transaction.notes && (
                           <div className="text-xs text-slate-500 dark:text-slate-500 mt-1 line-clamp-1">
                             {transaction.notes}
@@ -502,15 +552,16 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
                       </td>
                       <td className="p-3">
                         {category && (
-                          <span className={`inline-block px-2 py-0.5 rounded-full text-xs bg-${category.color}-100 dark:bg-${category.color}-900/30 text-${category.color}-800 dark:text-${category.color}-300`}>
-                            {category.name}
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-${safeColor}-500/20 text-${safeColor}-300`}>
+                            {getCategoryIcon(category.id)}
+                            <span>{category.name}</span>
                           </span>
                         )}
                       </td>
                       <td className={`p-3 text-right font-medium ${
                         transaction.amount > 0 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : 'text-red-600 dark:text-red-400'
+                          ? 'text-green-400 dark:text-green-400' 
+                          : 'text-red-400 dark:text-red-400'
                       }`}>
                         <div className="flex items-center justify-end">
                           {transaction.amount > 0 ? (
@@ -518,34 +569,36 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
                           ) : (
                             <TrendingDown size={16} className="mr-1 text-red-500" />
                           )}
-                          {transaction.amount > 0 ? '+' : ''}
-                          ${Math.abs(transaction.amount).toFixed(2)}
+                          {transaction.amount > 0 ? '+' : '-'}
+                          {formatCurrency(transaction.amount)}
                         </div>
                       </td>
-                      <td className="p-3 text-center">
-                        <div className="flex items-center justify-center space-x-2">
-                          <button
-                            onClick={() => handleEditTransaction(transaction)}
-                            className="p-1 rounded-full bg-slate-100 dark:bg-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                            title="Edit"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTransaction(transaction.id)}
-                            className="p-1 rounded-full bg-slate-100 dark:bg-slate-700 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
+                      {!hideActions && (
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center space-x-2">
+                            <button
+                              onClick={() => handleEditTransaction(transaction)}
+                              className="p-1 rounded-full bg-slate-700 dark:bg-slate-700 text-blue-400 dark:text-blue-400 hover:bg-blue-900/30 dark:hover:bg-blue-900/30 transition-colors"
+                              title="Edit"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTransaction(transaction)}
+                              className="p-1 rounded-full bg-slate-700 dark:bg-slate-700 text-red-400 dark:text-red-400 hover:bg-red-900/30 dark:hover:bg-red-900/30 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan="5" className="p-6 text-center text-slate-500 dark:text-slate-400">
+                  <td colSpan={hideActions ? "4" : "5"} className="p-6 text-center text-slate-500 dark:text-slate-400">
                     No transactions found
                   </td>
                 </tr>
@@ -561,6 +614,20 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
           transaction={editingTransaction}
           onClose={() => setEditingTransaction(null)}
           onTransactionUpdated={handleEditComplete}
+          currency={currency}
+        />
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmDelete && (
+        <ConfirmationModal
+          isOpen={true}
+          title="Delete Transaction"
+          message={`Are you sure you want to delete "${confirmDelete.name}" (${confirmDelete.amount > 0 ? '+' : '-'}${formatCurrency(confirmDelete.amount)})? This action cannot be undone.`}
+          onConfirm={confirmDeleteTransaction}
+          onCancel={() => setConfirmDelete(null)}
+          confirmButtonClass="bg-red-600 hover:bg-red-700"
+          confirmText="Delete"
         />
       )}
     </div>

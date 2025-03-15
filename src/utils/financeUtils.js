@@ -10,7 +10,12 @@ export const getFinanceData = () => {
       budgets: [],
       savingsGoals: [],
       recurringTransactions: [],
-      categories: getDefaultCategories()
+      categories: getDefaultCategories(),
+      settings: {
+        currency: 'EUR',
+        currencySymbol: '€',
+        dateFormat: 'DD/MM/YYYY'
+      }
     };
     setStorage(storage);
   }
@@ -40,6 +45,14 @@ export const addTransaction = (transaction) => {
   // Add to transactions array
   financeData.transactions.unshift(transaction);
   
+  // Update budget spent amounts automatically
+  if (transaction.amount < 0) {
+    const budget = financeData.budgets.find(b => b.category === transaction.category);
+    if (budget) {
+      budget.spent = (parseFloat(budget.spent) || 0) + Math.abs(transaction.amount);
+    }
+  }
+  
   // Save updated data
   saveFinanceData(financeData);
   
@@ -52,9 +65,33 @@ export const updateTransaction = (transactionId, updatedData) => {
   const index = financeData.transactions.findIndex(t => t.id === transactionId);
   
   if (index !== -1) {
+    const oldTransaction = financeData.transactions[index];
+    
     // Update the transaction, converting amount to number if needed
     if (updatedData.amount !== undefined) {
       updatedData.amount = parseFloat(updatedData.amount);
+    }
+    
+    // If category or amount changed, adjust budgets
+    if ((updatedData.category && updatedData.category !== oldTransaction.category) || 
+        (updatedData.amount !== undefined && updatedData.amount !== oldTransaction.amount)) {
+        
+      // If old transaction was an expense, remove its amount from the old budget
+      if (oldTransaction.amount < 0) {
+        const oldBudget = financeData.budgets.find(b => b.category === oldTransaction.category);
+        if (oldBudget) {
+          oldBudget.spent = Math.max(0, (parseFloat(oldBudget.spent) || 0) - Math.abs(oldTransaction.amount));
+        }
+      }
+      
+      // If new transaction is an expense, add its amount to the new budget
+      if (updatedData.amount < 0) {
+        const categoryToUse = updatedData.category || oldTransaction.category;
+        const newBudget = financeData.budgets.find(b => b.category === categoryToUse);
+        if (newBudget) {
+          newBudget.spent = (parseFloat(newBudget.spent) || 0) + Math.abs(updatedData.amount);
+        }
+      }
     }
     
     financeData.transactions[index] = {
@@ -72,11 +109,21 @@ export const updateTransaction = (transactionId, updatedData) => {
 // Delete a transaction
 export const deleteTransaction = (transactionId) => {
   const financeData = getFinanceData();
+  const transaction = financeData.transactions.find(t => t.id === transactionId);
+  
+  if (transaction && transaction.amount < 0) {
+    // If it was an expense, remove its amount from the budget
+    const budget = financeData.budgets.find(b => b.category === transaction.category);
+    if (budget) {
+      budget.spent = Math.max(0, (parseFloat(budget.spent) || 0) - Math.abs(transaction.amount));
+    }
+  }
+  
   financeData.transactions = financeData.transactions.filter(t => t.id !== transactionId);
   saveFinanceData(financeData);
 };
 
-// Get default expense/income categories
+// Get default expense/income categories with unique colors
 export const getDefaultCategories = () => {
   return {
     income: [
@@ -112,6 +159,7 @@ export const addBudget = (budget) => {
   
   // Make sure amount is stored as a number
   budget.allocated = parseFloat(budget.allocated);
+  budget.spent = parseFloat(budget.spent || 0);
   
   // Add to budgets array
   financeData.budgets.push(budget);
@@ -131,6 +179,10 @@ export const updateBudget = (budgetId, updatedData) => {
     // Update the budget, converting amount to number if needed
     if (updatedData.allocated !== undefined) {
       updatedData.allocated = parseFloat(updatedData.allocated);
+    }
+    
+    if (updatedData.spent !== undefined) {
+      updatedData.spent = parseFloat(updatedData.spent);
     }
     
     financeData.budgets[index] = {
@@ -240,6 +292,18 @@ export const deleteSavingsGoal = (goalId) => {
   const financeData = getFinanceData();
   financeData.savingsGoals = financeData.savingsGoals.filter(g => g.id !== goalId);
   saveFinanceData(financeData);
+};
+
+// Reset all budgets
+export const resetAllBudgets = () => {
+  const financeData = getFinanceData();
+  
+  financeData.budgets.forEach(budget => {
+    budget.spent = 0;
+  });
+  
+  saveFinanceData(financeData);
+  return financeData.budgets;
 };
 
 // Add a recurring transaction
@@ -611,7 +675,7 @@ export const calculateFinancialStats = (period = 'month') => {
   
   // Calculate budget progress
   const budgets = financeData.budgets.map(budget => {
-    // Sum transactions in this category
+    // Sum transactions in this category for the current period
     const spent = periodTransactions
       .filter(t => t.amount < 0 && t.category === budget.category)
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);

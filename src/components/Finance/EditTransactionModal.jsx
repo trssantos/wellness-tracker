@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, DollarSign, Tag, FileText, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, Calendar, DollarSign, Tag, FileText, TrendingUp, TrendingDown, ChevronDown } from 'lucide-react';
 import { updateTransaction, getFinanceData, getCategoryById } from '../../utils/financeUtils';
+import ModalContainer from './ModalContainer';
+import InputField from './InputField';
 
-const EditTransactionModal = ({ transaction, onClose, onTransactionUpdated }) => {
+const EditTransactionModal = ({ transaction, onClose, onTransactionUpdated, currency = '$' }) => {
   // State variables
   const [name, setName] = useState(transaction.name || '');
   const [amount, setAmount] = useState(Math.abs(transaction.amount) || '');
@@ -64,186 +66,161 @@ const EditTransactionModal = ({ transaction, onClose, onTransactionUpdated }) =>
   };
 
   return (
-    <dialog 
-      className="modal-base fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-      open
-    >
-      <div 
-        className="modal-content max-w-lg w-full"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <h3 className="modal-title">Edit Transaction</h3>
-          <button
-            onClick={onClose}
-            className="modal-close-button"
-          >
-            <X size={20} />
-          </button>
+    <ModalContainer title="Edit Transaction" onClose={onClose}>
+      {error && (
+        <div className="bg-red-900/30 text-red-400 p-3 rounded-lg mb-4">
+          {error}
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit}>
+        {/* Transaction Type */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-white dark:text-white mb-2">
+            Transaction Type
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setType('income')}
+              className={`py-3 rounded-lg flex items-center justify-center gap-2 ${
+                type === 'income'
+                  ? 'bg-green-600 dark:bg-green-600 text-white'
+                  : 'bg-slate-700 dark:bg-slate-700 text-slate-300 dark:text-slate-300'
+              }`}
+            >
+              <TrendingUp size={18} />
+              <span>Income</span>
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => setType('expense')}
+              className={`py-3 rounded-lg flex items-center justify-center gap-2 ${
+                type === 'expense'
+                  ? 'bg-red-600 dark:bg-red-600 text-white'
+                  : 'bg-slate-700 dark:bg-slate-700 text-slate-300 dark:text-slate-300'
+              }`}
+            >
+              <TrendingDown size={18} />
+              <span>Expense</span>
+            </button>
+          </div>
         </div>
         
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-3 rounded-lg mb-4">
-            {error}
-          </div>
-        )}
+        {/* Description */}
+        <div className="mb-4">
+          <label htmlFor="name" className="block text-sm font-medium text-white dark:text-white mb-2">
+            Description
+          </label>
+          <InputField
+            icon={FileText}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="E.g., Grocery shopping"
+            required
+          />
+        </div>
         
-        <form onSubmit={handleSubmit}>
-          {/* Transaction Type */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Transaction Type
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setType('income')}
-                className={`py-3 rounded-lg flex items-center justify-center gap-2 ${
-                  type === 'income'
-                    ? 'bg-green-500 dark:bg-green-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                <TrendingUp size={18} />
-                <span>Income</span>
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setType('expense')}
-                className={`py-3 rounded-lg flex items-center justify-center gap-2 ${
-                  type === 'expense'
-                    ? 'bg-red-500 dark:bg-red-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                <TrendingDown size={18} />
-                <span>Expense</span>
-              </button>
+        {/* Amount */}
+        <div className="mb-4">
+          <label htmlFor="amount" className="block text-sm font-medium text-white dark:text-white mb-2">
+            Amount
+          </label>
+          <InputField
+            icon={DollarSign}
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0.00"
+            required
+          />
+        </div>
+        
+        {/* Category */}
+        <div className="mb-4">
+          <label htmlFor="category" className="block text-sm font-medium text-white dark:text-white mb-2">
+            Category
+          </label>
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
+              <Tag size={18} />
+            </div>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full pl-10 pr-10 py-3 bg-slate-700 dark:bg-slate-700 text-white dark:text-white border border-slate-600 dark:border-slate-600 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+              required
+            >
+              <option value="">Select a category</option>
+              <optgroup label="Income">
+                {categories.income && categories.income.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Expense">
+                {categories.expense && categories.expense.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </optgroup>
+            </select>
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
+              <ChevronDown size={18} />
             </div>
           </div>
-          
-          {/* Transaction Description */}
-          <div className="mb-4">
-            <label htmlFor="name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Description
-            </label>
-            <div className="relative">
-              <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="input-field pl-10"
-                placeholder="E.g., Grocery shopping"
-                required
-              />
-              <FileText className="absolute left-3 top-3 text-slate-400" size={18} />
+        </div>
+        
+        {/* Date */}
+        <div className="mb-4">
+          <label htmlFor="date" className="block text-sm font-medium text-white dark:text-white mb-2">
+            Date
+          </label>
+          <InputField
+            icon={Calendar}
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+          />
+        </div>
+        
+        {/* Notes */}
+        <div className="mb-6">
+          <label htmlFor="notes" className="block text-sm font-medium text-white dark:text-white mb-2">
+            Notes (Optional)
+          </label>
+          <div className="relative">
+            <div className="absolute left-3 top-3 text-slate-400 pointer-events-none">
+              <FileText size={18} />
             </div>
-          </div>
-          
-          {/* Amount */}
-          <div className="mb-4">
-            <label htmlFor="amount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Amount
-            </label>
-            <div className="relative">
-              <input
-                id="amount"
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="input-field pl-10"
-                placeholder="0.00"
-                min="0.01"
-                step="0.01"
-                required
-              />
-              <DollarSign className="absolute left-3 top-3 text-slate-400" size={18} />
-            </div>
-          </div>
-          
-          {/* Category */}
-          <div className="mb-4">
-            <label htmlFor="category" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Category
-            </label>
-            <div className="relative">
-              <select
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="input-field pl-10 appearance-none"
-                required
-              >
-                <option value="">Select a category</option>
-                <optgroup label="Income">
-                  {categories.income && categories.income.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </optgroup>
-                <optgroup label="Expense">
-                  {categories.expense && categories.expense.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </optgroup>
-              </select>
-              <Tag className="absolute left-3 top-3 text-slate-400" size={18} />
-            </div>
-          </div>
-          
-          {/* Date */}
-          <div className="mb-4">
-            <label htmlFor="date" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Date
-            </label>
-            <div className="relative">
-              <input
-                id="date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="input-field pl-10"
-                required
-              />
-              <Calendar className="absolute left-3 top-3 text-slate-400" size={18} />
-            </div>
-          </div>
-          
-          {/* Notes */}
-          <div className="mb-6">
-            <label htmlFor="notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Notes (Optional)
-            </label>
             <textarea
-              id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="textarea-field"
+              className="w-full pl-10 py-3 bg-slate-700 dark:bg-slate-700 text-white dark:text-white border border-slate-600 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
               placeholder="Add more details about this transaction"
               rows="3"
             ></textarea>
           </div>
-          
-          {/* Form Actions */}
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </div>
-    </dialog>
+        </div>
+        
+        {/* Form Actions */}
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg"
+          >
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </ModalContainer>
   );
 };
 

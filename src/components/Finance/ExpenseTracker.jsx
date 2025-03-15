@@ -6,56 +6,15 @@ import {
   User, Repeat, CreditCard as CardIcon, MoreHorizontal, Banknote,
   Laptop, Gift, PlusCircle
 } from 'lucide-react';
-import { getFinanceData, deleteTransaction, getCategoryById } from '../../utils/financeUtils';
 import EditTransactionModal from './EditTransactionModal';
 import ConfirmationModal from './ConfirmationModal';
 import './finance-styles.css';
+import { 
+  getFinanceData, deleteTransaction, getCategoryById, 
+  getCategoryIconComponent, CATEGORY_ICONS 
+} from '../../utils/financeUtils';
 
-// Use these safe color mappings
-const SAFE_COLORS = {
-  'blue': 'blue',
-  'green': 'green',
-  'amber': 'yellow',
-  'red': 'red', 
-  'purple': 'purple',
-  'pink': 'pink',
-  'indigo': 'indigo',
-  'teal': 'blue',
-  'emerald': 'green',
-  'cyan': 'blue',
-  'violet': 'purple',
-  'fuchsia': 'pink',
-  'rose': 'pink',
-  'gray': 'gray'
-};
 
-// Map category IDs to icons
-const getCategoryIcon = (categoryId) => {
-  const icons = {
-    // Income categories
-    'income-salary': <Banknote size={12} />,
-    'income-freelance': <Laptop size={12} />,
-    'income-investments': <TrendingUp size={12} />,
-    'income-gifts': <Gift size={12} />,
-    'income-other': <PlusCircle size={12} />,
-    
-    // Expense categories
-    'expense-housing': <Home size={12} />,
-    'expense-food': <Utensils size={12} />,
-    'expense-transportation': <Car size={12} />,
-    'expense-utilities': <Zap size={12} />,
-    'expense-healthcare': <Heart size={12} />,
-    'expense-entertainment': <Film size={12} />,
-    'expense-shopping': <ShoppingBag size={12} />,
-    'expense-education': <BookOpen size={12} />,
-    'expense-personal': <User size={12} />,
-    'expense-subscriptions': <Repeat size={12} />,
-    'expense-debt': <CardIcon size={12} />,
-    'expense-other': <MoreHorizontal size={12} />
-  };
-  
-  return icons[categoryId] || <MoreHorizontal size={12} />;
-};
 
 const ExpenseTracker = ({ 
   compact = false, 
@@ -160,6 +119,10 @@ const ExpenseTracker = ({
       name: transaction.name,
       amount: transaction.amount
     });
+  };
+
+  const getCategoryIcon = (categoryId, size = 12) => {
+    return getCategoryIconComponent(categoryId, size);
   };
 
   // Confirm deletion
@@ -292,8 +255,6 @@ const ExpenseTracker = ({
               {filteredTransactions.length > 0 ? (
                 filteredTransactions.slice(0, 5).map(transaction => {
                   const category = getCategoryById(transaction.category);
-                  const safeColor = category ? SAFE_COLORS[category.color] || 'gray' : 'gray';
-                  
                   return (
                     <tr key={transaction.id} className="hover:bg-slate-700/50 transition-colors">
                       <td className="p-3 text-white">
@@ -309,7 +270,7 @@ const ExpenseTracker = ({
                       </td>
                       <td className="p-3">
                         {category && (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-${safeColor}-500/20 text-${safeColor}-300`}>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-${category.color}-500/20 text-${category.color}-300`}>
                             {getCategoryIcon(category.id)}
                             <span>{category.name}</span>
                           </span>
@@ -535,7 +496,6 @@ const ExpenseTracker = ({
               {filteredTransactions.length > 0 ? (
                 filteredTransactions.map(transaction => {
                   const category = getCategoryById(transaction.category);
-                  const safeColor = category ? SAFE_COLORS[category.color] || 'gray' : 'gray';
                   
                   return (
                     <tr key={transaction.id} className="hover:bg-slate-700/50 dark:hover:bg-slate-700/50 transition-colors">
@@ -552,7 +512,7 @@ const ExpenseTracker = ({
                       </td>
                       <td className="p-3">
                         {category && (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-${safeColor}-500/20 text-${safeColor}-300`}>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-${category.color}-500/20 text-${category.color}-300`}>
                             {getCategoryIcon(category.id)}
                             <span>{category.name}</span>
                           </span>

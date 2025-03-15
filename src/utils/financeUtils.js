@@ -1,4 +1,10 @@
 import { getStorage, setStorage } from './storage';
+import { 
+  Banknote, Laptop, TrendingUp, Gift, PlusCircle,
+  Home, Utensils, Car, Zap, Heart, Film, ShoppingBag,
+  BookOpen, User, Repeat, CreditCard, MoreHorizontal
+} from 'lucide-react';
+
 
 // Get finance data
 export const getFinanceData = () => {
@@ -123,6 +129,30 @@ export const deleteTransaction = (transactionId) => {
   saveFinanceData(financeData);
 };
 
+export const CATEGORY_ICONS = {
+  // Income categories
+  'income-salary': { icon: 'banknote', component: Banknote },
+  'income-freelance': { icon: 'laptop', component: Laptop },
+  'income-investments': { icon: 'trending-up', component: TrendingUp },
+  'income-gifts': { icon: 'gift', component: Gift },
+  'income-other': { icon: 'plus-circle', component: PlusCircle },
+  
+  // Expense categories
+  'expense-housing': { icon: 'home', component: Home },
+  'expense-food': { icon: 'utensils', component: Utensils },
+  'expense-transportation': { icon: 'car', component: Car },
+  'expense-utilities': { icon: 'zap', component: Zap },
+  'expense-healthcare': { icon: 'heart', component: Heart },
+  'expense-entertainment': { icon: 'film', component: Film },
+  'expense-shopping': { icon: 'shopping-bag', component: ShoppingBag },
+  'expense-education': { icon: 'book-open', component: BookOpen },
+  'expense-personal': { icon: 'user', component: User },
+  'expense-subscriptions': { icon: 'repeat', component: Repeat },
+  'expense-debt': { icon: 'credit-card', component: CreditCard },
+  'expense-other': { icon: 'more-horizontal', component: MoreHorizontal }
+};
+
+
 // Get default expense/income categories with unique colors
 export const getDefaultCategories = () => {
   return {
@@ -148,6 +178,15 @@ export const getDefaultCategories = () => {
       { id: 'expense-other', name: 'Other Expenses', color: 'gray', icon: 'more-horizontal' }
     ]
   };
+};
+
+// Add a helper function to get category icon component
+export const getCategoryIconComponent = (categoryId, size = 16) => {
+  const category = CATEGORY_ICONS[categoryId];
+  if (!category) return <MoreHorizontal size={size} />;
+  
+  const IconComponent = category.component;
+  return <IconComponent size={size} />;
 };
 
 // Add a budget

@@ -318,25 +318,25 @@ const AddRecurringModal = ({ onClose, onRecurringAdded }) => {
           </div>
           
           {/* Form Actions */}
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={`px-4 py-2 rounded-lg font-medium text-white ${
-                type === 'income'
-                  ? 'bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700'
-                  : 'bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700'
-              }`}
-            >
-              Add Recurring {type === 'income' ? 'Income' : 'Expense'}
-            </button>
-          </div>
+          <div className="flex flex-col xs:flex-row justify-end gap-3 pt-2">
+  <button
+    type="button"
+    onClick={onClose}
+    className="w-full xs:w-auto mb-2 xs:mb-0 btn-secondary"
+  >
+    Cancel
+  </button>
+  <button
+    type="submit"
+    className={`w-full xs:w-auto px-4 py-2 rounded-lg font-medium text-white ${
+      type === 'income'
+        ? 'bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700'
+        : 'bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700'
+    }`}
+  >
+    Add Recurring {type === 'income' ? 'Income' : 'Expense'}
+  </button>
+</div>
         </form>
       </div>
     </dialog>

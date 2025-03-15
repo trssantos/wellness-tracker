@@ -170,15 +170,15 @@ const SettingsModal = ({ onClose, onSettingsUpdated }) => {
         </div>
       </div>
       
-      <div className="flex justify-end mt-6">
-        <button
-          onClick={handleSave}
-          className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg flex items-center gap-2"
-        >
-          <Save size={18} />
-          Save Settings
-        </button>
-      </div>
+      <div className="flex flex-col xs:flex-row justify-end gap-3 mt-6">
+  <button
+    onClick={handleSave}
+    className="w-full xs:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg flex items-center justify-center gap-2"
+  >
+    <Save size={18} />
+    Save Settings
+  </button>
+</div>
     </ModalContainer>
   );
 };

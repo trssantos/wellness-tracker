@@ -1,3 +1,4 @@
+// InputField.jsx - Fix the position of the icon
 import React from 'react';
 
 const InputField = ({ 

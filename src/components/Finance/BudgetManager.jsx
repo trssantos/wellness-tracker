@@ -151,7 +151,8 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
       {/* Budget Overview */}
       <div className="bg-slate-800 dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-700 dark:border-slate-700">
         <div className="flex flex-wrap gap-4 mb-6">
-          <div className="flex-1 min-w-[200px] bg-amber-900/30 dark:bg-amber-900/30 p-4 rounded-lg border border-amber-800/50 dark:border-amber-800/50">
+        <div className="flex-1 min-w-[250px] xs:min-w-[200px] bg-amber-900/30 dark:bg-amber-900/30 p-4 rounded-lg border border-amber-800/50 dark:border-amber-800/50">
+    {/* Card content */}
             <h5 className="font-medium text-white dark:text-white mb-1">Total Budget</h5>
             <div className="text-2xl font-bold text-amber-300 dark:text-amber-300">
               {formatCurrency(budgetProgress.reduce((sum, b) => sum + b.allocated, 0))}

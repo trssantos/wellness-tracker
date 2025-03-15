@@ -27,15 +27,15 @@ const ModalContainer = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
       <div 
-        className={`bg-slate-800 dark:bg-slate-800 rounded-xl w-full max-w-${maxWidth} shadow-xl`}
+        className={`bg-slate-800 dark:bg-slate-800 rounded-xl w-full max-w-${maxWidth} shadow-xl overflow-auto max-h-[90vh]`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-5 border-b border-slate-700">
-          <h3 className="text-xl font-semibold text-white dark:text-white">{title}</h3>
+        <div className="flex justify-between items-center p-4 sm:p-5 border-b border-slate-700">
+          <h3 className="text-lg sm:text-xl font-semibold text-white dark:text-white">{title}</h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-slate-700 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-400 dark:text-slate-400"
@@ -43,7 +43,7 @@ const ModalContainer = ({
             <X size={20} />
           </button>
         </div>
-        <div className="p-5">
+        <div className="p-4 sm:p-5 overflow-auto">
           {children}
         </div>
       </div>

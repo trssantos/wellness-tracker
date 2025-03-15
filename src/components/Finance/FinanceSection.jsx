@@ -220,7 +220,7 @@ const FinanceSection = () => {
         
         {/* Stats Summary */}
         {stats && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
             {/* Balance */}
             <div className="bg-amber-900/30 dark:bg-amber-900/30 p-4 rounded-lg border border-amber-800/50 dark:border-amber-800/50">
               <div className="flex items-center justify-between mb-2">
@@ -293,47 +293,47 @@ const FinanceSection = () => {
         )}
         
         {/* Action Buttons */}
-        <div className="grid grid-cols-3 gap-2">
-          <button 
-            onClick={() => setShowAddTransaction(true)}
-            className="flex items-center justify-center gap-1 bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700 text-white py-2 rounded-lg transition-colors"
-          >
-            <Plus size={16} />
-            <span className="text-sm">Add Transaction</span>
-          </button>
-          
-          <button 
-            onClick={handleAddBudget}
-            className="flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
-          >
-            <Wallet size={16} />
-            <span className="text-sm">Add Budget</span>
-          </button>
-          
-          <button 
-            onClick={handleAddSavingsGoal}
-            className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white py-2 rounded-lg transition-colors"
-          >
-            <PiggyBank size={16} />
-            <span className="text-sm">Add Savings Goal</span>
-          </button>
-        </div>
+        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-2">
+  <button 
+    onClick={() => setShowAddTransaction(true)}
+    className="flex items-center justify-center gap-1 bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700 text-white py-2 rounded-lg transition-colors"
+  >
+    <Plus size={16} />
+    <span className="text-xs xs:text-sm">Add Transaction</span>
+  </button>
+  
+  <button 
+    onClick={handleAddBudget}
+    className="flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
+  >
+    <Wallet size={16} />
+    <span className="text-xs xs:text-sm">Add Budget</span>
+  </button>
+  
+  <button 
+    onClick={handleAddSavingsGoal}
+    className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white py-2 rounded-lg transition-colors"
+  >
+    <PiggyBank size={16} />
+    <span className="text-xs xs:text-sm">Add Savings Goal</span>
+  </button>
+</div>
       </div>
       
       {/* Financial Dashboard */}
       <div className="bg-slate-800 dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
         {/* Tab Navigation */}
         <div className="flex overflow-x-auto pb-2 mb-6 no-scrollbar">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 rounded-lg mr-2 whitespace-nowrap transition-colors ${
-              activeTab === 'overview' 
-                ? 'bg-amber-600 dark:bg-amber-600 text-white' 
-                : 'bg-slate-700 dark:bg-slate-700 text-white dark:text-white hover:bg-slate-600 dark:hover:bg-slate-600'
-            }`}
-          >
-            Dashboard
-          </button>
+  <button
+    onClick={() => setActiveTab('overview')}
+    className={`px-4 py-2 rounded-lg mr-2 whitespace-nowrap transition-colors ${
+      activeTab === 'overview' 
+        ? 'bg-amber-600 dark:bg-amber-600 text-white' 
+        : 'bg-slate-700 dark:bg-slate-700 text-white dark:text-white hover:bg-slate-600 dark:hover:bg-slate-600'
+    }`}
+  >
+    Dashboard
+  </button>
           
           <button
             onClick={() => setActiveTab('transactions')}

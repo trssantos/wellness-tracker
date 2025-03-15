@@ -184,31 +184,38 @@ const TransactionModal = ({ onClose, onTransactionAdded }) => {
           <label htmlFor="category" className="block text-sm font-medium text-white dark:text-white mb-2">
             Category
           </label>
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
-              <Tag size={18} />
-            </div>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full pl-10 pr-10 py-3 bg-slate-700 dark:bg-slate-700 text-white dark:text-white border border-slate-600 dark:border-slate-600 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
-              required
-            >
-              <option value="">Select a category</option>
-              {type === 'income' ? (
-                categories.income && categories.income.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))
-              ) : (
-                categories.expense && categories.expense.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))
-              )}
-            </select>
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
-              <ChevronDown size={18} />
-            </div>
-          </div>
+        
+<div className="relative">
+  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
+    <Tag size={18} />
+  </div>
+  <select
+    value={category}
+    onChange={(e) => setCategory(e.target.value)}
+    className="w-full pl-10 pr-10 py-3 bg-slate-700 dark:bg-slate-700 text-white dark:text-white border border-slate-600 dark:border-slate-600 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+    required
+  >
+    <option value="">Select a category</option>
+    {type === 'income' ? (
+      categories.income && categories.income.map(cat => (
+        <option key={cat.id} value={cat.id} className="flex items-center">
+          <div className={`inline-block w-2 h-2 rounded-full bg-${cat.color}-500 mr-2`}></div>
+          {cat.name}
+        </option>
+      ))
+    ) : (
+      categories.expense && categories.expense.map(cat => (
+        <option key={cat.id} value={cat.id} className="flex items-center">
+          <div className={`inline-block w-2 h-2 rounded-full bg-${cat.color}-500 mr-2`}></div>
+          {cat.name}
+        </option>
+      ))
+    )}
+  </select>
+  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
+    <ChevronDown size={18} />
+  </div>
+</div>
         </div>
         
         {/* Date */}
@@ -311,25 +318,25 @@ const TransactionModal = ({ onClose, onTransactionAdded }) => {
         </div>
         
         {/* Form Actions */}
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className={`px-4 py-2 rounded-lg font-medium text-white ${
-              type === 'income'
-                ? 'bg-green-600 hover:bg-green-700'
-                : 'bg-red-600 hover:bg-red-700'
-            }`}
-          >
-            {isRecurring ? 'Add Recurring' : 'Add'} {type === 'income' ? 'Income' : 'Expense'}
-          </button>
-        </div>
+        <div className="flex flex-col xs:flex-row justify-end gap-3 pt-2">
+  <button
+    type="button"
+    onClick={onClose}
+    className="w-full xs:w-auto mb-2 xs:mb-0 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
+  >
+    Cancel
+  </button>
+  <button
+    type="submit"
+    className={`w-full xs:w-auto px-4 py-2 rounded-lg font-medium text-white ${
+      type === 'income'
+        ? 'bg-green-600 hover:bg-green-700'
+        : 'bg-red-600 hover:bg-red-700'
+    }`}
+  >
+    {isRecurring ? 'Add Recurring' : 'Add'} {type === 'income' ? 'Income' : 'Expense'}
+  </button>
+</div>
       </form>
     </ModalContainer>
   );

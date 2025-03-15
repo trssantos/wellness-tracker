@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Tag, DollarSign, FileText } from 'lucide-react';
-import { addBudget, getFinanceData } from '../../utils/financeUtils';
+import { addBudget, getFinanceData, getCategoryById, CATEGORY_ICONS, getCategoryIconComponent } from '../../utils/financeUtils';
 
 const AddBudgetModal = ({ onClose, onBudgetAdded }) => {
   // State variables
@@ -68,7 +68,7 @@ const AddBudgetModal = ({ onClose, onBudgetAdded }) => {
       open
     >
       <div 
-        className="modal-content max-w-md w-full"
+        className="modal-content max-w-md w-full overflow-auto max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
@@ -94,11 +94,14 @@ const AddBudgetModal = ({ onClose, onBudgetAdded }) => {
               Category
             </label>
             <div className="relative">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
+                <Tag size={18} />
+              </div>
               <select
                 id="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="input-field pl-10 appearance-none"
+                className="input-field pl-10 appearance-none w-full"
                 required
               >
                 <option value="">Select a category</option>
@@ -112,7 +115,6 @@ const AddBudgetModal = ({ onClose, onBudgetAdded }) => {
                   </option>
                 ))}
               </select>
-              <Tag className="absolute left-3 top-3 text-slate-400" size={18} />
             </div>
           </div>
           
@@ -122,18 +124,20 @@ const AddBudgetModal = ({ onClose, onBudgetAdded }) => {
               Budget Amount
             </label>
             <div className="relative">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
+                <DollarSign size={18} />
+              </div>
               <input
                 id="allocated"
                 type="number"
                 value={allocated}
                 onChange={(e) => setAllocated(e.target.value)}
-                className="input-field pl-10"
+                className="input-field pl-10 w-full"
                 placeholder="0.00"
                 min="0.01"
                 step="0.01"
                 required
               />
-              <DollarSign className="absolute left-3 top-3 text-slate-400" size={18} />
             </div>
           </div>
           
@@ -143,34 +147,36 @@ const AddBudgetModal = ({ onClose, onBudgetAdded }) => {
               Notes (Optional)
             </label>
             <div className="relative">
+              <div className="absolute left-3 top-3 text-slate-400 pointer-events-none">
+                <FileText size={18} />
+              </div>
               <textarea
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="textarea-field pl-10"
+                className="textarea-field pl-10 w-full"
                 placeholder="Add notes about this budget"
                 rows="3"
               ></textarea>
-              <FileText className="absolute left-3 top-3 text-slate-400" size={18} />
             </div>
           </div>
           
           {/* Form Actions */}
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary"
-            >
-              Add Budget
-            </button>
-          </div>
+          <div className="flex flex-col xs:flex-row justify-end gap-3 pt-2">
+  <button
+    type="button"
+    onClick={onClose}
+    className="w-full xs:w-auto mb-2 xs:mb-0 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
+  >
+    Cancel
+  </button>
+  <button
+    type="submit"
+    className="w-full xs:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg"
+  >
+    Save Changes
+  </button>
+</div>
         </form>
       </div>
     </dialog>

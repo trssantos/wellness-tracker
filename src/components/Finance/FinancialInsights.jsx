@@ -28,8 +28,6 @@ const CHART_COLORS = [
 const FinancialInsights = ({ 
   refreshTrigger = 0, 
   onRefresh, 
-  insights, 
-  correlations,
   currency = '$',
   selectedDateRange = { 
     start: new Date(new Date().setMonth(new Date().getMonth() - 1)), 
@@ -49,6 +47,9 @@ const FinancialInsights = ({
   const [customDateRange, setCustomDateRange] = useState(false);
   const [startDate, setStartDate] = useState(selectedDateRange.start.toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(selectedDateRange.end.toISOString().split('T')[0]);
+  const [insights, setInsights] = useState({ score: 0, insights: [] });
+  const [correlations, setCorrelations] = useState([]);
+  const [bills, setBills] = useState([]);
 
   // Fetch data on initial render and when refreshTrigger changes
   useEffect(() => {
@@ -107,6 +108,9 @@ const FinancialInsights = ({
     
     setTransactions(filteredTransactions);
     
+    // Get recurring transactions as bills
+    setBills(financeData.recurringTransactions || []);
+    
     // Calculate financial stats based on filtered transactions
     calculateStats(filteredTransactions);
     
@@ -115,6 +119,14 @@ const FinancialInsights = ({
     
     // Generate income vs expenses data
     generateIncomeVsExpenses(filteredTransactions);
+    
+    // Get financial insights
+    const financialInsights = getFinancialInsights();
+    setInsights(financialInsights);
+    
+    // Get mood correlations
+    const moodCorrelations = getSpendingMoodCorrelation();
+    setCorrelations(moodCorrelations);
   };
 
   // Calculate financial stats from transactions
@@ -150,14 +162,14 @@ const FinancialInsights = ({
     
     // Prepare chart data for category breakdown
     const categoryData = [];
-    Object.entries(breakdown).forEach(([categoryId, amount], index) => {
+    Object.entries(breakdown).forEach(([categoryId, amount]) => {
       const category = getCategoryById(categoryId);
       if (category) {
         categoryData.push({
           id: categoryId,
           name: category.name,
           value: amount,
-          color: CHART_COLORS[index % CHART_COLORS.length] // Assign unique colors
+          color: category.color // Use the color from category definition
         });
       }
     });
@@ -270,31 +282,79 @@ const FinancialInsights = ({
           });
         }
       } else if (periodType === 'week') {
-        for (let i = periods - 1; i >= 0; i--) {
-          const weekStart = new Date();
-          weekStart.setDate(weekStart.getDate() - (i * 7 + 6));
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
+        // For quarter range - fix to create evenly spaced weeks
+        if (timeRange === 'quarter') {
+          // Start 3 months ago
+          const startDate = new Date(now);
+          startDate.setMonth(now.getMonth() - 3);
           
-          periodArray.push({
-            label: `${weekStart.toLocaleDateString('default', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('default', { day: 'numeric' })}`,
-            start: new Date(weekStart.setHours(0, 0, 0, 0)),
-            end: new Date(weekEnd.setHours(23, 59, 59, 999))
-          });
+          for (let i = 0; i < 12; i++) {
+            const weekStart = new Date(startDate);
+            weekStart.setDate(startDate.getDate() + (i * 7));
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            
+            const isLastWeek = i === 11;
+            const endDate = isLastWeek ? now : weekEnd;
+            
+            periodArray.push({
+              label: `Week ${i+1}`,
+              start: new Date(weekStart.setHours(0, 0, 0, 0)),
+              end: new Date(endDate.setHours(23, 59, 59, 999))
+            });
+          }
+        } else {
+          // Regular week range
+          for (let i = periods - 1; i >= 0; i--) {
+            const weekStart = new Date();
+            weekStart.setDate(weekStart.getDate() - (i * 7 + 6));
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            
+            periodArray.push({
+              label: `${weekStart.toLocaleDateString('default', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('default', { day: 'numeric' })}`,
+              start: new Date(weekStart.setHours(0, 0, 0, 0)),
+              end: new Date(weekEnd.setHours(23, 59, 59, 999))
+            });
+          }
         }
-      } else {
-        for (let i = periods - 1; i >= 0; i--) {
-          const month = new Date();
-          month.setMonth(month.getMonth() - i);
+      } else if (periodType === 'month') {
+        // For year range - fix to create all 12 months
+        if (timeRange === 'year') {
+          const startYear = now.getFullYear() - 1;
+          const startMonth = now.getMonth() + 1;
           
-          const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
-          const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0, 23, 59, 59, 999);
-          
-          periodArray.push({
-            label: month.toLocaleDateString('default', { month: 'short' }),
-            start: monthStart,
-            end: monthEnd
-          });
+          for (let i = 0; i < 12; i++) {
+            const monthIdx = (startMonth + i) % 12;
+            const year = startYear + Math.floor((startMonth + i) / 12);
+            
+            const monthStart = new Date(year, monthIdx, 1);
+            const monthEnd = new Date(year, monthIdx + 1, 0, 23, 59, 59, 999);
+            
+            const isLastMonth = i === 11;
+            const endDate = isLastMonth ? now : monthEnd;
+            
+            periodArray.push({
+              label: monthStart.toLocaleDateString('default', { month: 'short' }),
+              start: monthStart,
+              end: endDate
+            });
+          }
+        } else {
+          // Regular month range
+          for (let i = periods - 1; i >= 0; i--) {
+            const month = new Date();
+            month.setMonth(month.getMonth() - i);
+            
+            const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
+            const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0, 23, 59, 59, 999);
+            
+            periodArray.push({
+              label: month.toLocaleDateString('default', { month: 'short' }),
+              start: monthStart,
+              end: monthEnd
+            });
+          }
         }
       }
     }
@@ -852,9 +912,24 @@ const FinancialInsights = ({
                   // Determine if the arc should be drawn larger than 180 degrees
                   const largeArcFlag = percentage > 50 ? 1 : 0;
                   
-                  // Fixed color for each segment
-                  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#EC4899', '#6366F1', '#14B8A6'];
-                  const color = colors[index % colors.length];
+                  // Use the category's color directly
+                  const fixedColors = {
+                    'blue': '#3B82F6', 
+                    'green': '#10B981',
+                    'amber': '#F59E0B',
+                    'purple': '#8B5CF6', 
+                    'red': '#EF4444',
+                    'pink': '#EC4899',
+                    'indigo': '#6366F1',
+                    'teal': '#14B8A6',
+                    'emerald': '#10B981',
+                    'cyan': '#06B6D4',
+                    'violet': '#8B5CF6',
+                    'fuchsia': '#D946EF',
+                    'gray': '#6B7280'
+                  };
+                  
+                  const color = fixedColors[category.color] || fixedColors['gray'];
                   
                   return percentage > 0 ? (
                     <path
@@ -886,9 +961,24 @@ const FinancialInsights = ({
               const totalValue = chartData.reduce((sum, cat) => sum + cat.value, 0);
               const percentage = totalValue > 0 ? (category.value / totalValue) * 100 : 0;
               
-              // Fixed color for each segment (matching the pie chart)
-              const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#EC4899', '#6366F1', '#14B8A6'];
-              const color = colors[index % colors.length];
+              // Use the category's color
+              const fixedColors = {
+                'blue': '#3B82F6', 
+                'green': '#10B981',
+                'amber': '#F59E0B',
+                'purple': '#8B5CF6', 
+                'red': '#EF4444',
+                'pink': '#EC4899',
+                'indigo': '#6366F1',
+                'teal': '#14B8A6',
+                'emerald': '#10B981',
+                'cyan': '#06B6D4',
+                'violet': '#8B5CF6',
+                'fuchsia': '#D946EF',
+                'gray': '#6B7280'
+              };
+              
+              const color = fixedColors[category.color] || fixedColors['gray'];
               
               return (
                 <div key={category.id} className="flex items-center justify-between">

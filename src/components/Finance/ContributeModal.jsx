@@ -82,21 +82,21 @@ const ContributeModal = ({ goal, onClose, onContribute, currency = '$' }) => {
         </div>
         
         {/* Form Actions */}
-        <div className="flex justify-end gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className={`px-4 py-2 rounded-lg font-medium text-white finance-bg-${goal.color || 'blue'}-600 hover:finance-bg-${goal.color || 'blue'}-700 dark:finance-bg-${goal.color || 'blue'}-600 dark:hover:finance-bg-${goal.color || 'blue'}-700`}
-          >
-            Make Contribution
-          </button>
-        </div>
+        <div className="flex flex-col xs:flex-row justify-end gap-3 pt-2">
+  <button
+    type="button"
+    onClick={onClose}
+    className="w-full xs:w-auto mb-2 xs:mb-0 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
+  >
+    Cancel
+  </button>
+  <button
+    type="submit"
+    className={`w-full xs:w-auto px-4 py-2 rounded-lg font-medium text-white finance-bg-${goal.color || 'blue'}-600 hover:finance-bg-${goal.color || 'blue'}-700 dark:finance-bg-${goal.color || 'blue'}-600 dark:hover:finance-bg-${goal.color || 'blue'}-700`}
+  >
+    Make Contribution
+  </button>
+</div>
       </form>
     </ModalContainer>
   );

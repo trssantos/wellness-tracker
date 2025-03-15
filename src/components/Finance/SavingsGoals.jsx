@@ -171,7 +171,7 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
       </div>
       
       {/* Savings Goals Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {goals.length > 0 ? (
           goals.map((goal) => {
             const percentage = calculatePercentage(goal.current, goal.target);
@@ -269,14 +269,14 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
                 </div>
                 
                 {/* Action buttons */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleContribute(goal)}
-                    className={`px-3 py-1.5 finance-bg-${color}-600 dark:finance-bg-${color}-600 hover:finance-bg-${color}-700 dark:hover:finance-bg-${color}-700 text-white rounded-lg text-sm flex items-center`}
-                    disabled={isComplete}
-                  >
-                    <Banknote size={14} className="mr-1" /> Add Funds
-                  </button>
+                <div className="flex flex-wrap gap-2">
+  <button
+    onClick={() => handleContribute(goal)}
+    className="flex-1 xs:flex-none px-3 py-1.5 finance-bg-${color}-600 dark:finance-bg-${color}-600 hover:finance-bg-${color}-700 dark:hover:finance-bg-${color}-700 text-white rounded-lg text-sm flex items-center justify-center"
+    disabled={isComplete}
+  >
+    <Banknote size={14} className="mr-1" /> Add Funds
+  </button>
                   
                   <button
                     onClick={() => handleEditGoal(goal)}

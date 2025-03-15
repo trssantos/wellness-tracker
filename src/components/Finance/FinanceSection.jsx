@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Zap, Coins, DollarSign, PiggyBank, TrendingUp, BarChart2, CreditCard, 
   Calendar, Wallet, ChevronUp, ChevronDown, Settings, Tag, Clock, BadgePercent, 
-  TrendingDown, Award, Plus, Filter, Search, ArrowRight, Download, RefreshCw
+  TrendingDown, Award, Plus, Filter, Search, ArrowRight, Download, RefreshCw,
+  LayoutDashboard, FileText, LineChart
 } from 'lucide-react';
 
 // Import components
@@ -59,10 +60,20 @@ const FinanceSection = () => {
   const [chartData, setChartData] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [bills, setBills] = useState([]);
-  const [currency, setCurrency] = useState('$');
+  const [currency, setCurrency] = useState('€');
   
   // Calendar mode for upcoming tab
   const [calendarMode, setCalendarMode] = useState(false);
+
+  // Define tab items with icons and labels
+  const tabItems = [
+    { id: 'overview', icon: <LayoutDashboard size={16} />, label: 'Dashboard' },
+    { id: 'transactions', icon: <FileText size={16} />, label: 'Transactions' },
+    { id: 'budget', icon: <Wallet size={16} />, label: 'Budget' },
+    { id: 'savings', icon: <PiggyBank size={16} />, label: 'Savings' },
+    { id: 'upcoming', icon: <Calendar size={16} />, label: 'Upcoming' },
+    { id: 'insights', icon: <LineChart size={16} />, label: 'Insights' }
+  ];
 
   // Process recurring transactions on first load and when page refreshes
   useEffect(() => {
@@ -90,7 +101,7 @@ const FinanceSection = () => {
     
     // Get settings
     if (financeData.settings) {
-      setCurrency(financeData.settings.currencySymbol || '$');
+      setCurrency(financeData.settings.currencySymbol || '€');
     }
     
     // Get transactions
@@ -187,11 +198,11 @@ const FinanceSection = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Finance Header */}
-      <div className="bg-slate-800 dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-white dark:text-white flex items-center gap-2 transition-colors">
+      <div className="bg-slate-800 dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-semibold text-white dark:text-white flex items-center gap-2 transition-colors">
             <Coins className="text-amber-500 dark:text-amber-400" size={24} />
             Finance
           </h2>
@@ -200,7 +211,7 @@ const FinanceSection = () => {
             <select 
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="bg-slate-700 dark:bg-slate-700 text-white dark:text-white rounded-lg px-3 py-1.5 text-sm border-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+              className="bg-slate-700 dark:bg-slate-700 text-white dark:text-white rounded-lg px-2 py-1 text-xs border-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
             >
               <option value="week">This Week</option>
               <option value="month">This Month</option>
@@ -220,72 +231,78 @@ const FinanceSection = () => {
         
         {/* Stats Summary */}
         {stats && (
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-2 gap-2 mb-3">
             {/* Balance */}
-            <div className="bg-amber-900/30 dark:bg-amber-900/30 p-4 rounded-lg border border-amber-800/50 dark:border-amber-800/50">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <DollarSign size={18} className="text-amber-400 dark:text-amber-400" />
-                  <h4 className="font-medium text-white dark:text-white">Balance</h4>
+            <div className="bg-amber-900/30 dark:bg-amber-900/30 p-3 rounded-lg border border-amber-800/50 dark:border-amber-800/50">
+              <div className="flex items-center mb-1">
+                <div className="flex items-center gap-1">
+                  <DollarSign size={16} className="text-amber-400 dark:text-amber-400" />
+                  <h4 className="font-medium text-white dark:text-white text-sm">Balance</h4>
                 </div>
-                <span className="font-bold text-xl text-amber-300 dark:text-amber-300">
-                  {formatCurrency(stats.balance)}
-                </span>
               </div>
-              <div className="flex justify-between text-xs text-slate-400 dark:text-slate-400">
-                <span>Change</span>
-                <span className={`flex items-center ${stats.monthlyChange >= 0 
-                  ? 'text-green-400 dark:text-green-400' 
-                  : 'text-red-400 dark:text-red-400'}`}>
-                  {stats.monthlyChange >= 0 ? (
-                    <TrendingUp size={14} className="mr-1" />
-                  ) : (
-                    <TrendingDown size={14} className="mr-1" />
-                  )}
-                  {formatCurrency(Math.abs(stats.monthlyChange))}
+              <div className="flex justify-between items-end">
+                <div className="text-xs text-slate-400 dark:text-slate-400">
+                  Change
+                  <span className={`ml-1 flex items-center ${stats.monthlyChange >= 0 
+                    ? 'text-red-400 dark:text-red-400' 
+                    : 'text-red-400 dark:text-red-400'}`}>
+                    {stats.monthlyChange <= 0 ? (
+                      <TrendingDown size={10} className="mr-0.5" />
+                    ) : (
+                      <TrendingUp size={10} className="mr-0.5" />
+                    )}
+                    {formatCurrency(Math.abs(stats.monthlyChange))}
+                  </span>
+                </div>
+                <span className="font-bold text-lg text-amber-300 dark:text-amber-300 break-words">
+                  {formatCurrency(stats.balance)}
                 </span>
               </div>
             </div>
             
             {/* Income */}
-            <div className="bg-green-900/30 dark:bg-green-900/30 p-4 rounded-lg border border-green-800/50 dark:border-green-800/50">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <TrendingUp size={18} className="text-green-400 dark:text-green-400" />
-                  <h4 className="font-medium text-white dark:text-white">Income</h4>
+            <div className="bg-green-900/30 dark:bg-green-900/30 p-3 rounded-lg border border-green-800/50 dark:border-green-800/50">
+              <div className="flex items-center mb-1">
+                <div className="flex items-center gap-1">
+                  <TrendingUp size={16} className="text-green-400 dark:text-green-400" />
+                  <h4 className="font-medium text-white dark:text-white text-sm">Income</h4>
                 </div>
-                <span className="font-bold text-xl text-green-300 dark:text-green-300">
-                  {formatCurrency(stats.income)}
-                </span>
               </div>
-              <div className="flex justify-between text-xs text-slate-400 dark:text-slate-400">
-                <span>Savings Rate</span>
-                <span className="text-white dark:text-white">
-                  {stats.income > 0 ? 
-                    Math.round(((stats.income - stats.expenses) / stats.income) * 100) 
-                    : 0}%
+              <div className="flex justify-between items-end">
+                <div className="text-xs text-slate-400 dark:text-slate-400">
+                  Savings Rate
+                  <span className="ml-1 text-white dark:text-white">
+                    {stats.income > 0 ? 
+                      Math.round(((stats.income - stats.expenses) / stats.income) * 100) 
+                      : 0}%
+                  </span>
+                </div>
+                <span className="font-bold text-lg text-green-300 dark:text-green-300 break-words">
+                  {formatCurrency(stats.income)}
                 </span>
               </div>
             </div>
             
-            {/* Expenses */}
-            <div className="bg-red-900/30 dark:bg-red-900/30 p-4 rounded-lg border border-red-800/50 dark:border-red-800/50">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <TrendingDown size={18} className="text-red-400 dark:text-red-400" />
-                  <h4 className="font-medium text-white dark:text-white">Expenses</h4>
+            {/* Expenses (Full Width) */}
+            <div className="bg-red-900/30 dark:bg-red-900/30 p-3 rounded-lg border border-red-800/50 dark:border-red-800/50 col-span-2 mb-1">
+              <div className="flex items-center mb-1">
+                <div className="flex items-center gap-1">
+                  <TrendingDown size={16} className="text-red-400 dark:text-red-400" />
+                  <h4 className="font-medium text-white dark:text-white text-sm">Expenses</h4>
                 </div>
-                <span className="font-bold text-xl text-red-300 dark:text-red-300">
-                  {formatCurrency(stats.expenses)}
-                </span>
               </div>
-              <div className="flex justify-between text-xs text-slate-400 dark:text-slate-400">
-                <span>Budget Utilization</span>
-                <span className="text-white dark:text-white">
-                  {stats.budgets.length > 0 ? 
-                    Math.round((stats.budgets.reduce((sum, b) => sum + b.spent, 0) / 
-                    stats.budgets.reduce((sum, b) => sum + b.allocated, 0)) * 100) 
-                    : 0}%
+              <div className="flex justify-between items-end">
+                <div className="text-xs text-slate-400 dark:text-slate-400">
+                  Budget Utilization
+                  <span className="ml-1 text-white dark:text-white">
+                    {stats.budgets.length > 0 ? 
+                      Math.round((stats.budgets.reduce((sum, b) => sum + b.spent, 0) / 
+                      stats.budgets.reduce((sum, b) => sum + b.allocated, 0)) * 100) 
+                      : 0}%
+                  </span>
+                </div>
+                <span className="font-bold text-lg text-red-300 dark:text-red-300 break-words">
+                  {formatCurrency(stats.expenses)}
                 </span>
               </div>
             </div>
@@ -293,112 +310,64 @@ const FinanceSection = () => {
         )}
         
         {/* Action Buttons */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-2">
-  <button 
-    onClick={() => setShowAddTransaction(true)}
-    className="flex items-center justify-center gap-1 bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700 text-white py-2 rounded-lg transition-colors"
-  >
-    <Plus size={16} />
-    <span className="text-xs xs:text-sm">Add Transaction</span>
-  </button>
-  
-  <button 
-    onClick={handleAddBudget}
-    className="flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
-  >
-    <Wallet size={16} />
-    <span className="text-xs xs:text-sm">Add Budget</span>
-  </button>
-  
-  <button 
-    onClick={handleAddSavingsGoal}
-    className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white py-2 rounded-lg transition-colors"
-  >
-    <PiggyBank size={16} />
-    <span className="text-xs xs:text-sm">Add Savings Goal</span>
-  </button>
-</div>
+        <div className="flex flex-col gap-2">
+          <button 
+            onClick={() => setShowAddTransaction(true)}
+            className="flex items-center justify-center gap-1 bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700 text-white py-2 rounded-lg transition-colors"
+          >
+            <Plus size={16} />
+            <span className="text-sm">Add Transaction</span>
+          </button>
+          
+          <div className="grid grid-cols-2 gap-2">
+            <button 
+              onClick={handleAddBudget}
+              className="flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
+            >
+              <Wallet size={16} />
+              <span className="text-sm">Add Budget</span>
+            </button>
+            
+            <button 
+              onClick={handleAddSavingsGoal}
+              className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white py-2 rounded-lg transition-colors"
+            >
+              <PiggyBank size={16} />
+              <span className="text-sm">Add Savings Goal</span>
+            </button>
+          </div>
+        </div>
       </div>
       
-      {/* Financial Dashboard */}
-      <div className="bg-slate-800 dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-        {/* Tab Navigation */}
-        <div className="flex overflow-x-auto pb-2 mb-6 no-scrollbar">
-  <button
-    onClick={() => setActiveTab('overview')}
-    className={`px-4 py-2 rounded-lg mr-2 whitespace-nowrap transition-colors ${
-      activeTab === 'overview' 
-        ? 'bg-amber-600 dark:bg-amber-600 text-white' 
-        : 'bg-slate-700 dark:bg-slate-700 text-white dark:text-white hover:bg-slate-600 dark:hover:bg-slate-600'
-    }`}
-  >
-    Dashboard
-  </button>
-          
-          <button
-            onClick={() => setActiveTab('transactions')}
-            className={`px-4 py-2 rounded-lg mr-2 whitespace-nowrap transition-colors ${
-              activeTab === 'transactions' 
-                ? 'bg-amber-600 dark:bg-amber-600 text-white' 
-                : 'bg-slate-700 dark:bg-slate-700 text-white dark:text-white hover:bg-slate-600 dark:hover:bg-slate-600'
-            }`}
-          >
-            Transactions
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('budget')}
-            className={`px-4 py-2 rounded-lg mr-2 whitespace-nowrap transition-colors ${
-              activeTab === 'budget' 
-                ? 'bg-amber-600 dark:bg-amber-600 text-white' 
-                : 'bg-slate-700 dark:bg-slate-700 text-white dark:text-white hover:bg-slate-600 dark:hover:bg-slate-600'
-            }`}
-          >
-            Budget
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('savings')}
-            className={`px-4 py-2 rounded-lg mr-2 whitespace-nowrap transition-colors ${
-              activeTab === 'savings' 
-                ? 'bg-amber-600 dark:bg-amber-600 text-white' 
-                : 'bg-slate-700 dark:bg-slate-700 text-white dark:text-white hover:bg-slate-600 dark:hover:bg-slate-600'
-            }`}
-          >
-            Savings Goals
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('upcoming')}
-            className={`px-4 py-2 rounded-lg mr-2 whitespace-nowrap transition-colors ${
-              activeTab === 'upcoming' 
-                ? 'bg-amber-600 dark:bg-amber-600 text-white' 
-                : 'bg-slate-700 dark:bg-slate-700 text-white dark:text-white hover:bg-slate-600 dark:hover:bg-slate-600'
-            }`}
-          >
-            Upcoming Bills
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('insights')}
-            className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-              activeTab === 'insights' 
-                ? 'bg-amber-600 dark:bg-amber-600 text-white' 
-                : 'bg-slate-700 dark:bg-slate-700 text-white dark:text-white hover:bg-slate-600 dark:hover:bg-slate-600'
-            }`}
-          >
-            Insights
-          </button>
+      {/* Tab Navigation */}
+      <div className="bg-slate-800 dark:bg-slate-800 rounded-xl overflow-hidden">
+        <div className="flex justify-between">
+          {tabItems.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-2 flex flex-col items-center gap-1 transition-colors ${
+                activeTab === tab.id 
+                  ? 'bg-amber-600 dark:bg-amber-600 text-white' 
+                  : 'bg-slate-700 dark:bg-slate-700 text-white dark:text-white hover:bg-slate-600 dark:hover:bg-slate-600'
+              }`}
+            >
+              {tab.icon}
+              <span className="text-[10px] hidden sm:block">{tab.label}</span>
+            </button>
+          ))}
         </div>
-        
-        {/* Main Content Area */}
+      </div>
+      
+      {/* Main Content Area */}
+      <div className="bg-slate-800 dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
         {activeTab === 'overview' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Upcoming Bills Section */}
-            <div className="mb-6">
+            <div>
               <div 
                 onClick={() => toggleSection('upcoming')} 
-                className="flex items-center justify-between mb-3 cursor-pointer"
+                className="flex items-center justify-between mb-2 cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   <Calendar size={18} className="text-amber-400 dark:text-amber-400" />
@@ -410,17 +379,23 @@ const FinanceSection = () => {
               </div>
               
               {expandedSections.upcoming && (
-                <div className="mb-4">
-                  <UpcomingBills 
-                    bills={bills}
-                    currency={currency}
-                    onBillClick={(bill) => {
-                      // Show details or mark as paid logic
-                      console.log('Bill clicked:', bill);
-                    }}
-                  />
+                <div className="mb-3">
+                  {bills.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
+                      <Calendar size={42} className="text-slate-500 mb-2" />
+                      <p>No upcoming bills</p>
+                    </div>
+                  ) : (
+                    <UpcomingBills 
+                      bills={bills}
+                      currency={currency}
+                      onBillClick={(bill) => {
+                        console.log('Bill clicked:', bill);
+                      }}
+                    />
+                  )}
                   
-                  <div className="mt-4 text-center">
+                  <div className="mt-2 text-center">
                     <button 
                       onClick={() => navigateToTab('upcoming')}
                       className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
@@ -434,10 +409,10 @@ const FinanceSection = () => {
             </div>
             
             {/* Recent Transactions */}
-            <div className="mb-6">
+            <div>
               <div 
                 onClick={() => toggleSection('transactions')} 
-                className="flex items-center justify-between mb-3 cursor-pointer"
+                className="flex items-center justify-between mb-2 cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   <CreditCard size={18} className="text-amber-400 dark:text-amber-400" />
@@ -449,16 +424,58 @@ const FinanceSection = () => {
               </div>
               
               {expandedSections.transactions && (
-                <div className="mb-4">
-                  <ExpenseTracker 
-                    compact 
-                    refreshTrigger={refreshTrigger} 
-                    onRefresh={handleRefresh} 
-                    hideActions={true}
-                    currency={currency}
-                  />
+                <div className="mb-3">
+                  {transactions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
+                      <FileText size={42} className="text-slate-500 mb-2" />
+                      <p>No transactions found</p>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg overflow-hidden">
+                      <table className="w-full">
+                        <thead className="bg-slate-700 text-xs text-white">
+                          <tr>
+                            <th className="p-2 text-left">Date</th>
+                            <th className="p-2 text-left">Description</th>
+                            <th className="p-2 text-left">Category</th>
+                            <th className="p-2 text-right">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-600 bg-slate-700/50">
+                          {transactions.slice(0, 5).map((transaction, index) => {
+                            const category = getCategoryById(transaction.category);
+                            return (
+                              <tr key={transaction.id || index} className="hover:bg-slate-700/70 transition-colors">
+                                <td className="p-2 text-white text-xs">
+                                  {new Date(transaction.timestamp).toLocaleDateString(undefined, {month: 'numeric', day: 'numeric', year: 'numeric'})}
+                                </td>
+                                <td className="p-2 text-white text-xs max-w-[80px] truncate">
+                                  {transaction.name}
+                                </td>
+                                <td className="p-2 text-xs">
+                                  {category && (
+                                    <span className="inline-block px-1.5 py-0.5 rounded-full text-xs bg-slate-600 text-white">
+                                      {category.name}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className={`p-2 text-right font-medium text-xs ${
+                                  transaction.amount > 0 
+                                    ? 'text-green-400' 
+                                    : 'text-red-400'
+                                }`}>
+                                  {transaction.amount > 0 ? '+' : ''}
+                                  {formatCurrency(transaction.amount)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                   
-                  <div className="mt-4 text-center">
+                  <div className="mt-2 text-center">
                     <button 
                       onClick={() => navigateToTab('transactions')}
                       className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
@@ -472,10 +489,10 @@ const FinanceSection = () => {
             </div>
             
             {/* Budget Overview */}
-            <div className="mb-6">
+            <div>
               <div 
                 onClick={() => toggleSection('budget')} 
-                className="flex items-center justify-between mb-3 cursor-pointer"
+                className="flex items-center justify-between mb-2 cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   <Wallet size={18} className="text-amber-400 dark:text-amber-400" />
@@ -487,22 +504,62 @@ const FinanceSection = () => {
               </div>
               
               {expandedSections.budget && (
-                <div className="mb-4">
-                  <BudgetManager 
-                    compact 
-                    refreshTrigger={refreshTrigger} 
-                    onRefresh={() => navigateToTab('budget')}
-                    currency={currency}
-                  />
+                <div className="mb-3">
+                  <div className="space-y-3 mb-3">
+                    {stats && stats.budgets && stats.budgets.length > 0 ? (
+                      <>
+                        {stats.budgets.slice(0, 3).map((budget) => {
+                          const category = getCategoryById(budget.category);
+                          const percentage = Math.min(100, Math.round((budget.spent / budget.allocated) * 100));
+                          
+                          return (
+                            <div key={budget.id || budget.category}>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span className="text-white">{category ? category.name : 'Budget'}</span>
+                                <span className="text-white">
+                                  {formatCurrency(budget.spent)} / {formatCurrency(budget.allocated)}
+                                </span>
+                              </div>
+                              <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-blue-500 rounded-full"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        
+                        <div className="flex justify-between items-center pt-2 border-t border-slate-600">
+                          <div className="text-xs text-slate-300">
+                            <div>Total Budget: {formatCurrency(stats.budgets.reduce((sum, b) => sum + b.allocated, 0))}</div>
+                            <div>Spent: {formatCurrency(stats.budgets.reduce((sum, b) => sum + b.spent, 0))} ({Math.round((stats.budgets.reduce((sum, b) => sum + b.spent, 0) / stats.budgets.reduce((sum, b) => sum + b.allocated, 0)) * 100)}%)</div>
+                          </div>
+                          
+                          <button 
+                            onClick={() => navigateToTab('budget')}
+                            className="px-3 py-1 bg-amber-600 text-white text-xs rounded-lg"
+                          >
+                            View All
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
+                        <Wallet size={42} className="text-slate-500 mb-2" />
+                        <p>No budgets created yet</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
             
             {/* Savings Goals */}
-            <div className="mb-6">
+            <div>
               <div 
                 onClick={() => toggleSection('savings')} 
-                className="flex items-center justify-between mb-3 cursor-pointer"
+                className="flex items-center justify-between mb-2 cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   <PiggyBank size={18} className="text-amber-400 dark:text-amber-400" />
@@ -514,7 +571,7 @@ const FinanceSection = () => {
               </div>
               
               {expandedSections.savings && (
-                <div className="mb-4">
+                <div className="mb-3">
                   <SavingsGoals 
                     compact 
                     refreshTrigger={refreshTrigger} 
@@ -529,7 +586,7 @@ const FinanceSection = () => {
             <div>
               <div 
                 onClick={() => toggleSection('insights')} 
-                className="flex items-center justify-between mb-3 cursor-pointer"
+                className="flex items-center justify-between mb-2 cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   <BarChart2 size={18} className="text-amber-400 dark:text-amber-400" />
@@ -541,14 +598,22 @@ const FinanceSection = () => {
               </div>
               
               {expandedSections.insights && (
-                <div className="mb-4">
-                  {/* Updated Chart Component */}
-                  <SpendingChart 
-                    data={chartData} 
-                    currency={currency}
-                  />
+                <div className="mb-3">
+                  {chartData.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
+                      <BarChart2 size={42} className="text-slate-500 mb-2" />
+                      <p>No spending data to display</p>
+                    </div>
+                  ) : (
+                    <>
+                      <SpendingChart 
+                        data={chartData} 
+                        currency={currency}
+                      />
+                    </>
+                  )}
                   
-                  <div className="mt-4 text-center">
+                  <div className="mt-2 text-center">
                     <button 
                       onClick={() => navigateToTab('insights')}
                       className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
@@ -573,27 +638,27 @@ const FinanceSection = () => {
         
         {activeTab === 'budget' && (
           <div>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <h4 className="text-lg font-medium text-white dark:text-white flex items-center gap-2">
-                <Wallet className="text-amber-400 dark:text-amber-400" size={20} />
+            <div className="flex justify-between items-center gap-2 mb-4">
+              <h4 className="text-base font-medium text-white dark:text-white flex items-center gap-2">
+                <Wallet className="text-amber-400 dark:text-amber-400" size={18} />
                 Budget Management
               </h4>
               
               <div className="flex gap-2">
                 <button
                   onClick={handleRefresh}
-                  className="px-3 py-2 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors flex items-center gap-1"
+                  className="p-1.5 rounded-lg bg-slate-700 dark:bg-slate-700 text-white hover:bg-slate-600 dark:hover:bg-slate-600 transition-colors"
+                  title="Refresh"
                 >
                   <RefreshCw size={16} />
-                  <span>Refresh</span>
                 </button>
                 
                 <button
                   onClick={handleResetBudgets}
-                  className="px-3 py-2 rounded-lg bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors flex items-center gap-1"
+                  className="px-2 py-1 rounded-lg bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors flex items-center gap-1 text-xs"
                 >
-                  <Clock size={16} />
-                  <span>Reset Budgets</span>
+                  <Clock size={14} />
+                  <span>Reset</span>
                 </button>
               </div>
             </div>
@@ -615,30 +680,31 @@ const FinanceSection = () => {
         
         {activeTab === 'upcoming' && (
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="text-lg font-medium text-white dark:text-white flex items-center gap-2">
-                <Calendar className="text-amber-400 dark:text-amber-400" size={20} />
+            <div className="flex justify-between items-center gap-2 mb-4">
+              <h4 className="text-base font-medium text-white dark:text-white flex items-center gap-2">
+                <Calendar className="text-amber-400 dark:text-amber-400" size={18} />
                 Upcoming Bills
               </h4>
               
               <div className="flex gap-2">
                 <button
                   onClick={() => setCalendarMode(!calendarMode)}
-                  className={`px-3 py-2 rounded-lg ${
+                  className={`p-1.5 rounded-lg ${
                     calendarMode 
                       ? 'bg-amber-600 dark:bg-amber-600 text-white' 
                       : 'bg-slate-700 dark:bg-slate-700 text-white hover:bg-slate-600'
-                  } transition-colors flex items-center gap-1`}
+                  } transition-colors`}
+                  title="Calendar View"
                 >
                   <Calendar size={16} />
-                  <span>Calendar View</span>
                 </button>
                 
                 <button
                   onClick={handleRefresh}
-                  className="p-2 rounded-lg bg-slate-700 dark:bg-slate-700 text-white hover:bg-slate-600 transition-colors"
+                  className="p-1.5 rounded-lg bg-slate-700 dark:bg-slate-700 text-white hover:bg-slate-600 transition-colors"
+                  title="Refresh"
                 >
-                  <RefreshCw size={18} />
+                  <RefreshCw size={16} />
                 </button>
               </div>
             </div>
@@ -654,14 +720,23 @@ const FinanceSection = () => {
                 }}
               />
             ) : (
-              <UpcomingBills 
-                bills={bills}
-                currency={currency}
-                onBillClick={(bill) => {
-                  // Show details or mark as paid logic
-                  console.log('Bill clicked:', bill);
-                }}
-              />
+              <>
+                {bills.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
+                    <Calendar size={42} className="text-slate-500 mb-2" />
+                    <p>No upcoming bills</p>
+                  </div>
+                ) : (
+                  <UpcomingBills 
+                    bills={bills}
+                    currency={currency}
+                    onBillClick={(bill) => {
+                      // Show details or mark as paid logic
+                      console.log('Bill clicked:', bill);
+                    }}
+                  />
+                )}
+              </>
             )}
           </div>
         )}
@@ -681,32 +756,32 @@ const FinanceSection = () => {
       
       {/* Wellbeing Integration Section */}
       {activeTab === 'overview' && correlations.length > 0 && (
-        <div className="bg-slate-800 dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-          <h3 className="text-lg font-medium text-white dark:text-white mb-4 transition-colors flex items-center gap-2">
-            <Zap className="text-amber-400 dark:text-amber-400" size={20} />
+        <div className="bg-slate-800 dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
+          <h3 className="text-base font-medium text-white dark:text-white mb-3 transition-colors flex items-center gap-2">
+            <Zap className="text-amber-400 dark:text-amber-400" size={18} />
             Financial Wellbeing Insights
           </h3>
           
-          <div className="bg-amber-900/30 dark:bg-amber-900/30 rounded-lg p-4 mb-5">
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="flex-shrink-0 bg-slate-800 dark:bg-slate-800 p-4 rounded-lg shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
-                  <DollarSign size={18} className="text-amber-400 dark:text-amber-400" />
-                  <p className="font-medium text-white dark:text-white">Spending Pattern</p>
+          <div className="bg-amber-900/30 dark:bg-amber-900/30 rounded-lg p-3 mb-3">
+            <div className="flex flex-col gap-3">
+              <div className="bg-slate-800 dark:bg-slate-800 p-3 rounded-lg shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign size={16} className="text-amber-400 dark:text-amber-400" />
+                  <p className="font-medium text-white dark:text-white text-sm">Spending Pattern</p>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp size={14} className={correlations[0].type === 'negative' ? 
+                <div className="space-y-1 text-xs">
+                  <div className="flex items-center gap-1">
+                    <TrendingUp size={12} className={correlations[0].type === 'negative' ? 
                       "text-red-400 dark:text-red-400" : "text-green-400 dark:text-green-400"} />
-                    <span className="text-sm text-white dark:text-white">
+                    <span className="text-white dark:text-white break-words">
                       {correlations[0].categoryName 
                         ? `Higher spending on ${correlations[0].categoryName}`
                         : `Overall spending of ${formatCurrency(correlations[0].spending)}`}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Tag size={14} className="text-slate-400 dark:text-slate-400" />
-                    <span className="text-sm text-white dark:text-white">
+                  <div className="flex items-center gap-1">
+                    <Tag size={12} className="text-slate-400 dark:text-slate-400" />
+                    <span className="text-white dark:text-white break-words">
                       {correlations[0].categoryName 
                         ? `Category: ${correlations[0].categoryName}`
                         : `Date: ${new Date(correlations[0].date).toLocaleDateString()}`}
@@ -715,32 +790,29 @@ const FinanceSection = () => {
                 </div>
               </div>
               
-              <div className="text-amber-400 dark:text-amber-400">
-                <ArrowRight size={24} className="hidden sm:block" />
-                <ArrowRight size={24} className="sm:hidden rotate-90" />
+              <div className="text-amber-400 dark:text-amber-400 text-center">
+                <ArrowRight size={18} className="hidden xs:inline-block rotate-90 xs:rotate-0 mx-auto" />
               </div>
               
-              <div className="flex-1 bg-slate-800 dark:bg-slate-800 p-4 rounded-lg shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
-                  <BarChart2 size={18} className="text-purple-400 dark:text-purple-400" />
-                  <p className="font-medium text-white dark:text-white">Mood Correlation</p>
+              <div className="bg-slate-800 dark:bg-slate-800 p-3 rounded-lg shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <BarChart2 size={16} className="text-purple-400 dark:text-purple-400" />
+                  <p className="font-medium text-white dark:text-white text-sm">Mood Correlation</p>
                 </div>
-                <p className="text-sm text-white dark:text-white mb-3">
+                <p className="text-xs text-white dark:text-white mb-2 break-words">
                   {correlations[0].categoryName 
                     ? `There's a pattern between your spending on ${correlations[0].categoryName} and lower mood scores the following day.`
                     : `Days with higher overall spending tend to be followed by lower mood scores the next day.`}
                 </p>
-                <div className="text-xs text-teal-400 dark:text-teal-400 font-medium">
-                  {correlations[0].categoryName 
-                    ? `Try reducing discretionary spending on ${correlations[0].categoryName} to see if your mood improves!`
-                    : `Try setting a daily spending limit to improve your financial wellbeing and mood.`}
+                <div className="text-xs text-teal-400 dark:text-teal-400 font-medium break-words">
+                  Try reducing spending to improve mood
                 </div>
               </div>
             </div>
           </div>
           
-          <p className="text-sm text-white dark:text-white">
-            The finance module connects with your mood tracking, habits, and focus sessions to provide deeper insights into how your financial health affects your overall wellbeing. Discover patterns and make meaningful changes to improve both your financial and mental health.
+          <p className="text-xs text-white dark:text-white break-words">
+            The finance module connects with your mood tracking to provide insights into how financial health affects your overall wellbeing.
           </p>
         </div>
       )}

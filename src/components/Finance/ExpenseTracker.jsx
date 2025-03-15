@@ -206,54 +206,86 @@ const ExpenseTracker = ({ compact = false, refreshTrigger = 0, onRefresh }) => {
         )}
         
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-100 dark:bg-slate-700 text-xs text-slate-600 dark:text-slate-300">
-              <tr>
-                <th className="p-2 text-left">Date</th>
-                <th className="p-2 text-left">Description</th>
-                <th className="p-2 text-left">Category</th>
-                <th className="p-2 text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              {displayTransactions.length > 0 ? (
-                displayTransactions.map(transaction => {
-                  const category = getCategoryById(transaction.category);
-                  return (
-                    <tr key={transaction.id} className="text-sm">
-                      <td className="p-2 text-slate-500 dark:text-slate-400">
-                        {formatDate(transaction.timestamp)}
-                      </td>
-                      <td className="p-2 text-slate-700 dark:text-slate-300">
-                        {transaction.name}
-                      </td>
-                      <td className="p-2">
-                        {category && (
-                          <span className={`inline-block px-2 py-0.5 rounded-full text-xs bg-${category.color}-100 dark:bg-${category.color}-900/30 text-${category.color}-800 dark:text-${category.color}-300`}>
-                            {category.name}
-                          </span>
-                        )}
-                      </td>
-                      <td className={`p-2 text-right font-medium ${
-                        transaction.amount > 0 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : 'text-red-600 dark:text-red-400'
-                      }`}>
-                        {transaction.amount > 0 ? '+' : ''}
-                        ${Math.abs(transaction.amount).toFixed(2)}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="4" className="p-4 text-center text-slate-500 dark:text-slate-400">
-                    No transactions found
-                  </td>
-                </tr>
+        <table className="w-full">
+  <thead className="bg-slate-700 text-xs text-white">
+    <tr>
+      <th className="p-3 text-left">Date</th>
+      <th className="p-3 text-left">Description</th>
+      <th className="p-3 text-left">Category</th>
+      <th className="p-3 text-right">Amount</th>
+      <th className="p-3 text-center">Actions</th>
+    </tr>
+  </thead>
+  <tbody className="divide-y divide-slate-600">
+    {filteredTransactions.length > 0 ? (
+      filteredTransactions.map(transaction => {
+        const category = getCategoryById(transaction.category);
+        
+        return (
+          <tr key={transaction.id} className="hover:bg-slate-700/50 transition-colors">
+            <td className="p-3 text-white">
+              {formatDate(transaction.timestamp)}
+            </td>
+            <td className="p-3">
+              <div className="font-medium text-white">{transaction.name}</div>
+              {transaction.notes && (
+                <div className="text-xs text-slate-400 mt-1 line-clamp-1">
+                  {transaction.notes}
+                </div>
               )}
-            </tbody>
-          </table>
+            </td>
+            <td className="p-3">
+              {category && (
+                <span className={`inline-block px-2 py-0.5 rounded-full text-xs bg-${category.color}-900/30 text-${category.color}-300`}>
+                  {category.name}
+                </span>
+              )}
+            </td>
+            <td className={`p-3 text-right font-medium ${
+              transaction.amount > 0 
+                ? 'text-green-400' 
+                : 'text-red-400'
+            }`}>
+              <div className="flex items-center justify-end">
+                {transaction.amount > 0 ? (
+                  <TrendingUp size={16} className="mr-1 text-green-500" />
+                ) : (
+                  <TrendingDown size={16} className="mr-1 text-red-500" />
+                )}
+                {transaction.amount > 0 ? '+' : ''}
+                ${Math.abs(transaction.amount).toFixed(2)}
+              </div>
+            </td>
+            <td className="p-3 text-center">
+              <div className="flex items-center justify-center space-x-2">
+                <button
+                  onClick={() => handleEditTransaction(transaction)}
+                  className="p-1 rounded-full bg-slate-600 text-blue-400 hover:bg-blue-900/30 transition-colors"
+                  title="Edit"
+                >
+                  <Edit size={16} />
+                </button>
+                <button
+                  onClick={() => handleDeleteTransaction(transaction.id)}
+                  className="p-1 rounded-full bg-slate-600 text-red-400 hover:bg-red-900/30 transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </td>
+          </tr>
+        );
+      })
+    ) : (
+      <tr>
+        <td colSpan="5" className="p-6 text-center text-slate-400">
+          No transactions found
+        </td>
+      </tr>
+    )}
+  </tbody>
+</table>
         </div>
         
         <div className="p-2 text-center border-t border-slate-200 dark:border-slate-700">

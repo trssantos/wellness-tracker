@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, DollarSign, Tag } from 'lucide-react';
+import { ChevronDown,X, DollarSign, Tag } from 'lucide-react';
 import { addTransaction, getFinanceData } from '../../utils/financeUtils';
 
 const QuickTransactionModal = ({ type = 'expense', onClose, onTransactionAdded }) => {
@@ -74,9 +74,9 @@ const QuickTransactionModal = ({ type = 'expense', onClose, onTransactionAdded }
       open
     >
       <div 
-        className="modal-content max-w-md w-full"
-        onClick={(e) => e.stopPropagation()}
-      >
+    className="modal-content max-w-md w-full bg-slate-800"
+    onClick={(e) => e.stopPropagation()}
+  >
         <div className="modal-header">
           <h3 className="modal-title">Quick {type === 'income' ? 'Income' : 'Expense'}</h3>
           <button
@@ -111,54 +111,51 @@ const QuickTransactionModal = ({ type = 'expense', onClose, onTransactionAdded }
             />
           </div>
           
-          {/* Amount */}
-          <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Amount
-            </label>
-            <div className="relative">
-              <input
-                id="amount"
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="input-field pl-10"
-                placeholder="0.00"
-                min="0.01"
-                step="0.01"
-                required
-              />
-              <DollarSign className="absolute left-3 top-3 text-slate-400" size={18} />
-            </div>
-          </div>
           
-          {/* Category */}
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Category
-            </label>
-            <div className="relative">
-              <select
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="input-field pl-10 appearance-none"
-                required
-              >
-                <option value="">Select a category</option>
-                {type === 'income' ? (
-                  categories.income && categories.income.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))
-                ) : (
-                  categories.expense && categories.expense.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))
-                )}
-              </select>
-              <Tag className="absolute left-3 top-3 text-slate-400" size={18} />
-            </div>
-          </div>
+<div className="relative">
+  <div className="absolute left-3 top-3 text-slate-400 pointer-events-none">
+    <DollarSign size={18} />
+  </div>
+  <input
+    id="amount"
+    type="number"
+    value={amount}
+    onChange={(e) => setAmount(e.target.value)}
+    className="w-full pl-10 py-3 bg-slate-700 dark:bg-slate-700 text-white dark:text-white border border-slate-600 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+    placeholder="0.00"
+    min="0.01"
+    step="0.01"
+    required
+  />
+</div>
+
+
+<div className="relative">
+  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
+    <Tag size={18} />
+  </div>
+  <select
+    id="category"
+    value={category}
+    onChange={(e) => setCategory(e.target.value)}
+    className="w-full pl-10 pr-10 py-3 bg-slate-700 dark:bg-slate-700 text-white dark:text-white border border-slate-600 dark:border-slate-600 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+    required
+  >
+    <option value="">Select a category</option>
+    {type === 'income' ? (
+      categories.income && categories.income.map(cat => (
+        <option key={cat.id} value={cat.id}>{cat.name}</option>
+      ))
+    ) : (
+      categories.expense && categories.expense.map(cat => (
+        <option key={cat.id} value={cat.id}>{cat.name}</option>
+      ))
+    )}
+  </select>
+  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
+    <ChevronDown size={18} />
+  </div>
+</div>
           
           {/* Form Actions */}
           <div className="flex justify-end gap-3 pt-2">

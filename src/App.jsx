@@ -8,7 +8,7 @@ import SleepTracker from './components/SleepTracker';
 import TemplatesSection from './components/Sections/TemplatesSection';
 import HabitsPlaceholder from './components/Sections/HabitsPlaceholder';
 import FinancePlaceholder from './components/Finance/FinancePlaceholder';
-
+import FinanceSection from './components/Finance/FinanceSection';
 import FocusPlaceholder from './components/Sections/FocusPlaceholder';
 import FocusSection from './components/Sections/FocusSection';
 import { FlowGuide } from './components/FlowGuide';
@@ -561,6 +561,10 @@ const handlePendingTasksAction = (action, tasks = []) => {
   <FocusSection 
     onFullscreenChange={setIsFullscreenActive} 
   />
+</SectionContainer>
+
+<SectionContainer id="finance" isActive={activeSection === 'finance'}>
+  <FinanceSection />
 </SectionContainer>
 
 

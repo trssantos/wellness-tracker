@@ -7,6 +7,8 @@ import { MeditationSection, DayCoachSection } from './components/Sections/Placeh
 import SleepTracker from './components/SleepTracker';
 import TemplatesSection from './components/Sections/TemplatesSection';
 import HabitsPlaceholder from './components/Sections/HabitsPlaceholder';
+import FinancePlaceholder from './components/Finance/FinancePlaceholder';
+
 import FocusPlaceholder from './components/Sections/FocusPlaceholder';
 import FocusSection from './components/Sections/FocusSection';
 import { FlowGuide } from './components/FlowGuide';
@@ -561,6 +563,7 @@ const handlePendingTasksAction = (action, tasks = []) => {
   />
 </SectionContainer>
 
+
               <SectionContainer id="templates" isActive={activeSection === 'templates'}>
                 <TemplatesSection />
               </SectionContainer>
@@ -572,6 +575,11 @@ const handlePendingTasksAction = (action, tasks = []) => {
 </SectionContainer>
 <SectionContainer id="focusShowcase" isActive={activeSection === 'focusShowcase'}>
   <FocusPlaceholder />
+</SectionContainer>
+
+
+<SectionContainer id="financeShowcase" isActive={activeSection === 'financeShowcase'}>
+  <FinancePlaceholder />
 </SectionContainer>
               
             </div>

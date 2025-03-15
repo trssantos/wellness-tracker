@@ -1,7 +1,7 @@
 // components/Navigation/Sidebar.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Focus, Menu, X, Home, BarChart2, Brain, Dumbbell, 
+  Coins,Focus, Menu, X, Home, BarChart2, Brain, Dumbbell, 
   MessageCircle, Layout, Bell, Settings, HelpCircle, Moon, Sun, Zap
 } from 'lucide-react';
 import { useTheme } from '../ThemeProvider';
@@ -152,9 +152,11 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
     { id: 'workout', label: 'Workout', icon: <Dumbbell size={20} /> },
     { id: 'coach', label: 'Day Coach', icon: <MessageCircle size={20} /> },
     { id: 'focus', label: 'Focus', icon: <Focus size={20} /> },
+    { id: 'finance', label: 'Finance', icon: <Coins size={20} /> },
     { id: 'templates', label: 'Templates', icon: <Layout size={20} /> },
     { id: 'habitsShowcase', label: 'Habits - Showcase', icon: <Zap size={20} /> },
     { id: 'focusShowcase', label: 'Focus - Showcase', icon: <Focus size={20} /> },
+    { id: 'financeShowcase', label: 'Finance - Showcase', icon: <Coins size={20} /> },
   ];
 
   return (

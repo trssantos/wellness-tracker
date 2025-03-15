@@ -109,6 +109,11 @@ const FocusSection = ({ onFullscreenChange }) => {
   const [showTaskCompleteModal, setShowTaskCompleteModal] = useState(false);
   const [selectedTaskToComplete, setSelectedTaskToComplete] = useState(null);
   const [tasksTimingData, setTasksTimingData] = useState({});
+
+  // Add these after your other state declarations
+const [lastUserActivity, setLastUserActivity] = useState(Date.now());
+const [isScreenLocked, setIsScreenLocked] = useState(false);
+const inactivityThreshold = 60000; // 1 minute of inactivity suggests screen lock
   
   // Session history
   const [sessionHistory, setSessionHistory] = useState([]);
@@ -158,6 +163,33 @@ const FocusSection = ({ onFullscreenChange }) => {
     timerType, selectedPreset, objective, selectedTasks, completedTaskIds, 
     tasksTimingData, timerStartTime, untilTime, interruptionsCount, totalPauseDuration, lastPauseTime
   ]);
+
+  // Add this effect to track user activity
+useEffect(() => {
+  const handleUserActivity = () => {
+    setLastUserActivity(Date.now());
+    
+    // If we thought screen was locked but user is active, update state
+    if (isScreenLocked) {
+      setIsScreenLocked(false);
+    }
+  };
+  
+  // Track various user activities
+  document.addEventListener('mousemove', handleUserActivity);
+  document.addEventListener('mousedown', handleUserActivity);
+  document.addEventListener('keypress', handleUserActivity);
+  document.addEventListener('touchstart', handleUserActivity);
+  document.addEventListener('scroll', handleUserActivity);
+  
+  return () => {
+    document.removeEventListener('mousemove', handleUserActivity);
+    document.removeEventListener('mousedown', handleUserActivity);
+    document.removeEventListener('keypress', handleUserActivity);
+    document.removeEventListener('touchstart', handleUserActivity);
+    document.removeEventListener('scroll', handleUserActivity);
+  };
+}, [isScreenLocked]);
   
   // Load saved session on first render
   useEffect(() => {
@@ -220,6 +252,11 @@ const FocusSection = ({ onFullscreenChange }) => {
     
     // Initialize audio
     audioRef.current = new Audio('/sounds/timer-complete.mp3');
+
+    // Add this cleanup for background timer
+  localStorage.removeItem('focus_background_start');
+  localStorage.removeItem('focus_timer_type');
+  localStorage.removeItem('focus_current_time');
     
     return () => {
       // Clean up
@@ -297,8 +334,32 @@ const FocusSection = ({ onFullscreenChange }) => {
     
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        handleNavigationAway();
-        saveCurrentSessionState();
+        // Check if this might be due to screen lock (inactivity)
+        const timeSinceLastActivity = Date.now() - lastUserActivity;
+        
+        if (timeSinceLastActivity > inactivityThreshold) {
+          // Likely a screen lock due to inactivity
+          console.log('Screen likely locked due to inactivity - continuing timer');
+          setIsScreenLocked(true);
+          
+          // Save state but don't pause
+          saveCurrentSessionState();
+          
+          // Set up background timing
+          setupBackgroundTimer();
+        } else {
+          // This is likely an actual navigation away
+          console.log('User navigated away - pausing timer');
+          handleNavigationAway();
+          saveCurrentSessionState();
+        }
+      } else {
+        // Document became visible again
+        if (isScreenLocked) {
+          console.log('Screen unlocked - syncing timer');
+          setIsScreenLocked(false);
+          syncTimerWithRealElapsedTime();
+        }
       }
     };
     
@@ -959,6 +1020,47 @@ const handleSessionSubmit = (completedData) => {
       />
     );
   };
+
+  // Add background timer tracking
+const setupBackgroundTimer = () => {
+  // Store current time in localStorage
+  localStorage.setItem('focus_background_start', Date.now().toString());
+  localStorage.setItem('focus_timer_type', timerType);
+  localStorage.setItem('focus_current_time', 
+    timerType === 'countdown' ? timeRemaining.toString() : elapsedTime.toString());
+};
+
+// Sync timer with actual elapsed time
+const syncTimerWithRealElapsedTime = () => {
+  const startTimeStr = localStorage.getItem('focus_background_start');
+  const savedTimerType = localStorage.getItem('focus_timer_type');
+  const savedTimeStr = localStorage.getItem('focus_current_time');
+  
+  if (startTimeStr && savedTimeStr && focusActive && !isPaused) {
+    const startTime = parseInt(startTimeStr);
+    const savedTime = parseInt(savedTimeStr);
+    const elapsedMs = Date.now() - startTime;
+    const elapsedSeconds = Math.floor(elapsedMs / 1000);
+    
+    console.log(`Syncing timer after screen lock: ${elapsedSeconds} seconds elapsed`);
+    
+    if (savedTimerType === 'countdown') {
+      setTimeRemaining(Math.max(0, savedTime - elapsedSeconds));
+      
+      // If timer hit zero while screen was locked, trigger completion
+      if (savedTime - elapsedSeconds <= 0) {
+        handleTimerComplete();
+      }
+    } else if (savedTimerType === 'countup') {
+      setElapsedTime(savedTime + elapsedSeconds);
+    }
+    
+    // Clean up
+    localStorage.removeItem('focus_background_start');
+    localStorage.removeItem('focus_timer_type');
+    localStorage.removeItem('focus_current_time');
+  }
+};
   
   // Render the active focus session
   const renderFocusSession = () => {

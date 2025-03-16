@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Clock, Target, Calendar, CheckSquare, ArrowLeft, Star, MessageCircle, AlertTriangle, Timer, HelpCircle, Info, Trash2 } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
+import { getTechniqueName, getTechniqueColor, getTechniqueIcon } from '../../utils/focusUtils';
 
 // Simple tooltip component
 const Tooltip = ({ content, children }) => {
@@ -58,21 +59,6 @@ const FocusHistory = ({ sessions, onSessionsUpdate }) => {
     }
   };
   
-  // Helper function to get a readable name for a technique
-  const getTechniqueName = (techniqueId) => {
-    const techniqueMap = {
-      'pomodoro': 'Pomodoro Technique',
-      'flowtime': 'Flowtime Method',
-      '5217': '52/17 Method',
-      'desktime': '90-Minute Focus',
-      'custom': 'Custom Timer',
-      'shortBreak': 'Short Break',
-      'longBreak': 'Long Break',
-      'stopwatch': 'Stopwatch'
-    };
-    
-    return techniqueMap[techniqueId] || techniqueId;
-  };
   
   // Format date for display
   const formatDate = (dateString) => {
@@ -521,9 +507,9 @@ const FocusHistory = ({ sessions, onSessionsUpdate }) => {
                             <span>{formatTime(session.startTime || session.timestamp)}</span>
                           </span>
                           <span className="flex items-center gap-1">
-                            <Target size={14} />
-                            <span>{getTechniqueName(session.technique || session.preset || 'custom')}</span>
-                          </span>
+  {getTechniqueIcon(session.technique || session.preset || 'custom', 14)}
+  <span>{getTechniqueName(session.technique || session.preset || 'custom')}</span>
+</span>
                         </div>
                       </div>
                       

@@ -20,53 +20,11 @@ import { handleDataChange } from '../../utils/dayCoachUtils';
 
 // Import the CSS file for nature animations
 import '../Focus/focusNature.css';
-
-// Productivity technique presets
-const FOCUS_PRESETS = [
-  { 
-    id: 'pomodoro', 
-    name: 'Pomodoro Technique', 
-    description: 'Focus for 25 minutes, then take a 5-minute break. After 4 rounds, take a longer break.',
-    duration: 25 * 60,
-    color: 'from-red-500 to-orange-500 dark:from-red-600 dark:to-orange-600',
-    icon: <Clock />
-  },
-  { 
-    id: 'flowtime', 
-    name: 'Flowtime', 
-    description: 'Work until your focus naturally wanes, then take a proportionate break (1:5 ratio).',
-    duration: 0, // stopwatch mode
-    color: 'from-blue-500 to-purple-500 dark:from-blue-600 dark:to-purple-600',
-    icon: <Target />
-  },
-  { 
-    id: '5217', 
-    name: '52/17 Method', 
-    description: 'Work for 52 minutes then rest for 17 minutes for optimal productivity.',
-    duration: 52 * 60,
-    color: 'from-green-500 to-teal-500 dark:from-green-600 dark:to-teal-600',
-    icon: <Moon />
-  },
-  { 
-    id: 'desktime', 
-    name: '90-Minute Focus', 
-    description: 'Based on natural ultradian rhythms - focus for 90 minutes, then rest for 20.',
-    duration: 90 * 60,
-    color: 'from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600',
-    icon: <Sun />
-  },
-  { 
-    id: 'custom', 
-    name: 'Custom Timer', 
-    description: 'Set your own duration and approach.',
-    duration: 30 * 60,
-    color: 'from-slate-400 to-slate-500 dark:from-slate-600 dark:to-slate-700',
-    icon: <Clock />
-  }
-];
+import { getFocusPresets, getTechniqueConfig, getTechniqueIcon } from '../../utils/focusUtils';
 
 const FocusSection = ({ onFullscreenChange }) => {
   // Main state variables
+  const FOCUS_PRESETS = getFocusPresets();
   const [activeTab, setActiveTab] = useState('focus'); // focus, analytics, history
   const [focusActive, setFocusActive] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
@@ -109,11 +67,6 @@ const FocusSection = ({ onFullscreenChange }) => {
   const [showTaskCompleteModal, setShowTaskCompleteModal] = useState(false);
   const [selectedTaskToComplete, setSelectedTaskToComplete] = useState(null);
   const [tasksTimingData, setTasksTimingData] = useState({});
-
-  // Add these after your other state declarations
-const [lastUserActivity, setLastUserActivity] = useState(Date.now());
-const [isScreenLocked, setIsScreenLocked] = useState(false);
-const inactivityThreshold = 60000; // 1 minute of inactivity suggests screen lock
   
   // Session history
   const [sessionHistory, setSessionHistory] = useState([]);
@@ -133,6 +86,143 @@ const inactivityThreshold = 60000; // 1 minute of inactivity suggests screen loc
     config: { tension: 280, friction: 120 }
   });
 
+  const [currentPeriodType, setCurrentPeriodType] = useState('focus'); // 'focus' or 'break'
+  const [currentCycle, setCurrentCycle] = useState(1);
+  const [totalCycles, setTotalCycles] = useState(1); 
+  const [showCycleTransitionModal, setShowCycleTransitionModal] = useState(false);
+  const [showAddTasksModal, setShowAddTasksModal] = useState(false);
+  const [restoredFromState, setRestoredFromState] = useState(false);
+
+  // Key component lifecycle effect - consolidated to avoid conflicts
+  useEffect(() => {
+    console.log('🔄 Component mount effect running');
+    
+    // Check for saved session state
+    const savedState = loadFocusSessionState();
+    
+    if (savedState && savedState.focusActive) {
+      console.log('📝 Found saved session state:', savedState);
+      console.log('✅ Session active:', savedState.focusActive);
+      console.log('⏸️ Is paused:', savedState.isPaused);
+      
+      // Restore all state from saved session
+      setFocusActive(savedState.focusActive);
+      setSessionComplete(savedState.sessionComplete || false);
+      setIsPaused(true); // Always set to paused when restoring
+      setTimeRemaining(savedState.timeRemaining);
+      setElapsedTime(savedState.elapsedTime);
+      setTimerType(savedState.timerType);
+      setSelectedPreset(savedState.selectedPreset);
+      setObjective(savedState.objective || '');
+      setSelectedTasks(savedState.selectedTasks || []);
+      setCompletedTaskIds(savedState.completedTaskIds || []);
+      setTasksTimingData(savedState.tasksTimingData || {});
+      setInterruptionsCount(savedState.interruptionsCount || 0);
+      setTotalPauseDuration(savedState.totalPauseDuration || 0);
+      
+      if (savedState.lastPauseTime) {
+        setLastPauseTime(new Date(savedState.lastPauseTime));
+      } else {
+        // If no pause time is recorded, set it to now
+        setLastPauseTime(new Date());
+      }
+      
+      if (savedState.timerStartTime) {
+        setTimerStartTime(new Date(savedState.timerStartTime));
+      }
+      
+      if (savedState.untilTime) {
+        setUntilTime(savedState.untilTime);
+      }
+      
+      // Restore cycle state
+      if (savedState.currentPeriodType) {
+        setCurrentPeriodType(savedState.currentPeriodType);
+      }
+      
+      if (savedState.currentCycle) {
+        setCurrentCycle(savedState.currentCycle);
+      }
+      
+      if (savedState.totalCycles) {
+        setTotalCycles(savedState.totalCycles);
+      }
+      
+      // Show the pause modal with a delay to ensure the component has rendered
+      setRestoredFromState(true);
+      setTimeout(() => {
+        console.log('🔔 Showing pause modal after restoration');
+        setShowPauseModal(true);
+      }, 500);
+    } else {
+      console.log('❌ No saved session state or session not active');
+    }
+    
+    // Load session history
+    const storage = getStorage();
+    if (storage.focusSessions) {
+      setSessionHistory(storage.focusSessions);
+    }
+    
+    // Initialize audio
+    audioRef.current = new Audio('/sounds/timer-complete.mp3');
+    
+    // Cleanup on unmount
+    return () => {
+      console.log('🔄 Component unmount effect running');
+      
+      // Clean up timers
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current);
+      }
+      
+      // If we have an active session, save its state
+      if (focusActive && !sessionComplete) {
+        console.log('💾 Saving session state on unmount');
+        
+        const sessionState = {
+          focusActive: true,
+          sessionComplete: false,
+          isPaused: true, // Force paused when navigating away
+          timeRemaining,
+          elapsedTime,
+          timerType,
+          selectedPreset,
+          objective,
+          selectedTasks,
+          completedTaskIds,
+          tasksTimingData,
+          timerStartTime: timerStartTime?.toISOString(),
+          untilTime,
+          interruptionsCount,
+          totalPauseDuration,
+          lastPauseTime: new Date().toISOString(),
+          currentPeriodType,
+          currentCycle,
+          totalCycles,
+          lastSaveTime: new Date().toISOString()
+        };
+        
+        saveFocusSessionState(sessionState);
+      }
+    };
+  }, []); // Only run on mount/unmount
+  
+  // Show pause modal after restoration
+  useEffect(() => {
+    if (restoredFromState && focusActive && !sessionComplete) {
+      setTimeout(() => {
+        console.log('🔔 Showing pause modal after state update');
+        setShowPauseModal(true);
+        setRestoredFromState(false);
+      }, 300);
+    }
+  }, [restoredFromState, focusActive, sessionComplete]);
+  
   // Use this to expose the current focus state to the parent component
   useEffect(() => {
     // Only update window.currentFocusState if we have an active session
@@ -163,112 +253,6 @@ const inactivityThreshold = 60000; // 1 minute of inactivity suggests screen loc
     timerType, selectedPreset, objective, selectedTasks, completedTaskIds, 
     tasksTimingData, timerStartTime, untilTime, interruptionsCount, totalPauseDuration, lastPauseTime
   ]);
-
-  // Add this effect to track user activity
-useEffect(() => {
-  const handleUserActivity = () => {
-    setLastUserActivity(Date.now());
-    
-    // If we thought screen was locked but user is active, update state
-    if (isScreenLocked) {
-      setIsScreenLocked(false);
-    }
-  };
-  
-  // Track various user activities
-  document.addEventListener('mousemove', handleUserActivity);
-  document.addEventListener('mousedown', handleUserActivity);
-  document.addEventListener('keypress', handleUserActivity);
-  document.addEventListener('touchstart', handleUserActivity);
-  document.addEventListener('scroll', handleUserActivity);
-  
-  return () => {
-    document.removeEventListener('mousemove', handleUserActivity);
-    document.removeEventListener('mousedown', handleUserActivity);
-    document.removeEventListener('keypress', handleUserActivity);
-    document.removeEventListener('touchstart', handleUserActivity);
-    document.removeEventListener('scroll', handleUserActivity);
-  };
-}, [isScreenLocked]);
-  
-  // Load saved session on first render
-  useEffect(() => {
-    if (isFirstRender.current) {
-      console.log('First render, checking for saved session state');
-      const savedState = loadFocusSessionState();
-      
-      if (savedState && savedState.focusActive) {
-        console.log('Found saved session state, restoring...');
-        
-        // Restore all session state
-        setFocusActive(savedState.focusActive);
-        setSessionComplete(savedState.sessionComplete);
-        setIsPaused(savedState.isPaused);
-        setTimeRemaining(savedState.timeRemaining);
-        setElapsedTime(savedState.elapsedTime);
-        setTimerType(savedState.timerType);
-        setSelectedPreset(savedState.selectedPreset);
-        setObjective(savedState.objective);
-        setSelectedTasks(savedState.selectedTasks || []);
-        setCompletedTaskIds(savedState.completedTaskIds || []);
-        setTasksTimingData(savedState.tasksTimingData || {});
-        setInterruptionsCount(savedState.interruptionsCount || 0);
-        setTotalPauseDuration(savedState.totalPauseDuration || 0);
-        
-        if (savedState.lastPauseTime) {
-          setLastPauseTime(new Date(savedState.lastPauseTime));
-        }
-        
-        if (savedState.timerStartTime) {
-          setTimerStartTime(new Date(savedState.timerStartTime));
-        }
-        
-        if (savedState.untilTime) {
-          setUntilTime(savedState.untilTime);
-        }
-        
-        // Show pause modal if the session was active
-        if (savedState.focusActive && !savedState.sessionComplete) {
-          setTimeout(() => {
-            setShowPauseModal(true);
-          }, 300);
-        }
-        
-        console.log('Session state restored successfully');
-      } else {
-        console.log('No saved session state found or session was not active');
-      }
-      
-      isFirstRender.current = false;
-    }
-  }, []);
-  
-  // Load session history on mount
-  useEffect(() => {
-    const storage = getStorage();
-    if (storage.focusSessions) {
-      setSessionHistory(storage.focusSessions);
-    }
-    
-    // Initialize audio
-    audioRef.current = new Audio('/sounds/timer-complete.mp3');
-
-    // Add this cleanup for background timer
-  localStorage.removeItem('focus_background_start');
-  localStorage.removeItem('focus_timer_type');
-  localStorage.removeItem('focus_current_time');
-    
-    return () => {
-      // Clean up
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
-      }
-    };
-  }, []);
 
   // Auto-save interval setup
   useEffect(() => {
@@ -316,6 +300,9 @@ useEffect(() => {
         interruptionsCount,
         totalPauseDuration,
         lastPauseTime: lastPauseTime?.toISOString(),
+        currentPeriodType,
+        currentCycle,
+        totalCycles,
         lastSaveTime: new Date().toISOString()
       };
       
@@ -334,31 +321,28 @@ useEffect(() => {
     
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // Check if this might be due to screen lock (inactivity)
-        const timeSinceLastActivity = Date.now() - lastUserActivity;
-        
-        if (timeSinceLastActivity > inactivityThreshold) {
-          // Likely a screen lock due to inactivity
-          console.log('Screen likely locked due to inactivity - continuing timer');
-          setIsScreenLocked(true);
+        // The app is losing focus - always pause, regardless of reason
+        if (focusActive && !sessionComplete && !isPaused) {
+          console.log('App lost focus - pausing timer');
           
-          // Save state but don't pause
-          saveCurrentSessionState();
+          // Pause the timer
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+          }
           
-          // Set up background timing
-          setupBackgroundTimer();
-        } else {
-          // This is likely an actual navigation away
-          console.log('User navigated away - pausing timer');
-          handleNavigationAway();
+          // Update state
+          setIsPaused(true);
+          setLastPauseTime(new Date());
+          setInterruptionsCount(prev => prev + 1);
+          
+          // Save session state
           saveCurrentSessionState();
         }
       } else {
-        // Document became visible again
-        if (isScreenLocked) {
-          console.log('Screen unlocked - syncing timer');
-          setIsScreenLocked(false);
-          syncTimerWithRealElapsedTime();
+        // App regained focus - if paused due to visibility change, show the resume modal
+        if (focusActive && !sessionComplete && isPaused) {
+          console.log('App regained focus - showing resume options');
+          setShowPauseModal(true);
         }
       }
     };
@@ -420,9 +404,14 @@ useEffect(() => {
   }, [focusActive, isPaused, timerType, untilTime]);
 
   // Add session update handler
-const handleSessionsUpdate = (updatedSessions) => {
-  setSessionHistory(updatedSessions);
-};
+  const handleSessionsUpdate = (updatedSessions) => {
+    setSessionHistory(updatedSessions);
+  };
+
+  const calculatePauseDuration = () => {
+    if (!lastPauseTime) return 0;
+    return Math.floor((new Date() - lastPauseTime) / 1000);
+  };
 
   // Fullscreen change events
   useEffect(() => {
@@ -489,7 +478,10 @@ const handleSessionsUpdate = (updatedSessions) => {
         untilTime,
         interruptionsCount,
         totalPauseDuration,
-        lastPauseTime: new Date().toISOString()
+        lastPauseTime: new Date().toISOString(),
+        currentPeriodType,
+        currentCycle,
+        totalCycles
       };
       
       saveFocusSessionState(sessionState);
@@ -537,12 +529,38 @@ const handleSessionsUpdate = (updatedSessions) => {
     }, 1000);
   };
 
-  // Resume a paused session
-  const resumeSession = () => {
-    // When resuming from a pause modal, calculate pause duration and add to total
+  const resumeSession = (countAsFocusTime = false) => {
+    // When resuming from a pause modal, calculate pause duration
     if (lastPauseTime) {
       const pauseDuration = Math.floor((new Date() - lastPauseTime) / 1000);
-      setTotalPauseDuration(prev => prev + pauseDuration);
+      
+      if (countAsFocusTime) {
+        // Don't count this as an interruption
+        if (interruptionsCount > 0) {
+          setInterruptionsCount(prev => prev - 1);
+        }
+        
+        // Don't add to total pause duration - instead adjust the timer accordingly
+        console.log("Counting pause time as focus time:", pauseDuration, "seconds");
+        
+        // Adjust the timer based on the type
+        if (timerType === 'countdown') {
+          // For countdown, we need to reduce the time remaining to account for the elapsed time
+          setTimeRemaining(prev => Math.max(0, prev - pauseDuration));
+          
+          // If timer would have completed during this time, trigger completion
+          if (timeRemaining - pauseDuration <= 0) {
+            handleTimerComplete();
+            return; // Exit early to prevent timer restart
+          }
+        } else if (timerType === 'countup') {
+          // For countup, we add the elapsed time
+          setElapsedTime(prev => prev + pauseDuration);
+        }
+      } else {
+        // Standard behavior - count as interruption
+        setTotalPauseDuration(prev => prev + pauseDuration);
+      }
     }
     
     setIsPaused(false);
@@ -596,32 +614,120 @@ const handleSessionsUpdate = (updatedSessions) => {
     
     // Show notification if supported
     if (Notification.permission === 'granted') {
-      new Notification('Focus Session Complete', {
-        body: 'Your focus session has ended. Great job!',
+      const notificationTitle = currentPeriodType === 'focus' ? 'Focus Time Complete' : 'Break Time Complete';
+      const notificationBody = currentPeriodType === 'focus' 
+        ? 'Your focus session has ended. Time for a break!' 
+        : 'Break time is over. Ready to focus again?';
+        
+      new Notification(notificationTitle, {
+        body: notificationBody,
         icon: '/logo192.png'
       });
     }
     
-    // First, exit fullscreen if active
-    // This ensures the user isn't stuck in fullscreen
+    // Exit fullscreen if active
     if (isFullscreen) {
       try {
         exitFullscreen();
       } catch (err) {
         console.error('Error exiting fullscreen on timer completion:', err);
-        // Force update the state even if the API call fails
         setIsFullscreen(false);
         if (onFullscreenChange) onFullscreenChange(false);
       }
     }
     
-    // Then set session complete
+    // Get the technique configuration
+    const techniqueConfig = getTechniqueConfig(selectedPreset.id);
+    
+    // Check if technique uses cycles
+    if (techniqueConfig.hasCycles) {
+      if (currentPeriodType === 'focus') {
+        // Focus period just ended - transition to break
+        setCurrentPeriodType('break');
+        
+        // Determine break duration based on cycle
+        let nextBreakDuration;
+        if (techniqueConfig.longBreakAfter && currentCycle % techniqueConfig.longBreakAfter === 0) {
+          // Use long break duration
+          nextBreakDuration = techniqueConfig.longBreakDuration || techniqueConfig.breakDuration;
+        } else {
+          // Standard break
+          nextBreakDuration = techniqueConfig.breakDuration;
+        }
+        
+        // Set the timer for the break period
+        setTimeRemaining(nextBreakDuration);
+        setShowCycleTransitionModal(true);
+      } else {
+        // Break period just ended
+        if (currentCycle >= totalCycles) {
+          // All cycles complete - end the session
+          setSessionComplete(true);
+        } else {
+          // More cycles to go - increment cycle counter
+          setCurrentCycle(currentCycle + 1);
+          setCurrentPeriodType('focus');
+          
+          // Reset focus timer based on technique
+          setTimeRemaining(techniqueConfig.focusDuration);
+          
+          setShowCycleTransitionModal(true);
+        }
+      }
+    } else {
+      // Standard non-cycle technique - simply end the session
+      setSessionComplete(true);
+    }
+  };
+
+  // Function to handle continuing the next period
+  const continueNextPeriod = (addMoreTasks = false) => {
+    setShowCycleTransitionModal(false);
+    
+    if (addMoreTasks) {
+      // Show task selector modal
+      setShowAddTasksModal(true);
+      setIsPaused(true);
+    } else {
+      // Start the next period immediately
+      setIsPaused(false);
+      startTimer();
+    }
+  };
+
+  // Function to finish adding tasks and continue
+  const finishAddingTasks = () => {
+    setShowAddTasksModal(false);
+    setIsPaused(false);
+    startTimer();
+  };
+
+  // Function to skip to session complete
+  const skipToSessionComplete = () => {
+    setShowCycleTransitionModal(false);
     setSessionComplete(true);
   };
   
   // Start new focus session
   const startFocusSession = () => {
-    // Calculate duration if "until" mode
+    // Get technique configuration
+    const techniqueConfig = getTechniqueConfig(selectedPreset.id);
+    
+    // Reset cycle-related variables
+    setCurrentPeriodType('focus');
+    setCurrentCycle(1);
+    
+    // Set timer type from technique config
+    setTimerType(techniqueConfig.timerType || 'countdown');
+    
+    // Set cycles if applicable
+    if (techniqueConfig.hasCycles) {
+      setTotalCycles(techniqueConfig.defaultCycles || 1);
+    } else {
+      setTotalCycles(1);
+    }
+    
+    // Calculate duration based on timer type
     if (timerType === 'until' && untilTime) {
       const now = new Date();
       const target = new Date();
@@ -636,11 +742,11 @@ const handleSessionsUpdate = (updatedSessions) => {
       const diff = Math.max(0, Math.floor((target - now) / 1000));
       setTimeRemaining(diff);
     } else if (timerType === 'countdown') {
-      // Use preset duration or custom
+      // Use technique duration or custom
       if (selectedPreset.id === 'custom') {
         setTimeRemaining(customDuration * 60);
       } else {
-        setTimeRemaining(selectedPreset.duration);
+        setTimeRemaining(techniqueConfig.focusDuration);
       }
     } else {
       // Countup starts at 0
@@ -748,72 +854,82 @@ const handleSessionsUpdate = (updatedSessions) => {
     return Math.max(0, Math.min(100, Math.round(score - interruptionPenalty)));
   };
   
-  // Handle session submission with interruption data
-  // Handle session submission with interruption data
-const handleSessionSubmit = (completedData) => {
-  // Calculate actual elapsed time between start and end
-  const startTime = timerStartTime || new Date();
-  const endTime = new Date();
-  const actualElapsedTime = Math.floor((endTime - startTime) / 1000);
-  
-  // Remove pauses from the duration calculation
-  const actualDuration = Math.max(0, actualElapsedTime - totalPauseDuration);
-  
-  // Create session record
-  const sessionData = {
-    id: `focus-${Date.now()}`,
-    startTime: startTime.toISOString(),
-    endTime: endTime.toISOString(),
-    technique: selectedPreset.id,
-    // Use the more accurate duration calculation
-    duration: actualDuration,
-    objective,
-    allTasks: selectedTasks, // Store ALL tasks
-    tasks: selectedTasks.filter(task => 
-      completedData.tasks && completedData.tasks.some(t => t.id === task.id)
-    ), // Completed tasks
-    notes: completedData.notes,
-    // Add new metrics:
-    interruptionsCount,
-    totalPauseDuration,
-    focusScore: calculateFocusScore(
-      actualDuration,  // Use the corrected duration 
+  // Complete handleSessionSubmit function with technique support
+  const handleSessionSubmit = (completedData) => {
+    // Calculate actual elapsed time between start and end
+    const startTime = timerStartTime || new Date();
+    const endTime = new Date();
+    const actualElapsedTime = Math.floor((endTime - startTime) / 1000);
+    
+    // Remove pauses from the duration calculation
+    const actualDuration = Math.max(0, actualElapsedTime - totalPauseDuration);
+    
+    // Get technique configuration
+    const techniqueConfig = getTechniqueConfig(selectedPreset.id);
+    
+    // Create session record
+    const sessionData = {
+      id: `focus-${Date.now()}`,
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      technique: selectedPreset.id,
+      
+      // Add these fields to track cycle information
+      hasCycles: techniqueConfig.hasCycles || false,
+      completedCycles: currentCycle,
+      totalCycles: totalCycles,
+      focusDuration: techniqueConfig.focusDuration || 0,
+      breakDuration: techniqueConfig.breakDuration || 0,
+      
+      // Standard fields
+      duration: actualDuration,
+      objective,
+      allTasks: selectedTasks, // Store ALL tasks
+      tasks: selectedTasks.filter(task => 
+        completedData.tasks && completedData.tasks.some(t => t.id === task.id)
+      ), // Completed tasks
+      notes: completedData.notes,
+      // Add new metrics:
       interruptionsCount,
-      totalPauseDuration
-    ),
-    productivityRating: completedData.productivityRating,
-    energyLevel: completedData.energyLevel,
-    taskTimeData: selectedTasks.map(task => ({
-      id: task.id,
-      text: task.text,
-      completed: completedData.tasks && completedData.tasks.some(t => t.id === task.id),
-      timeSpent: tasksTimingData[task.id] || 0
-    }))
-  };
-  
-  // Update storage
-  const storage = getStorage();
-  
-  // Save session to history
-  if (!storage.focusSessions) {
-    storage.focusSessions = [];
-  }
-  
-  storage.focusSessions.push(sessionData);
-  setStorage(storage);
-  
-  // Update local session history
-  setSessionHistory([...sessionHistory, sessionData]);
-  
-  // Clear saved session state
-  clearFocusSessionState();
-  console.log('Session completed, cleared saved state');
-  
-  // Reset all states
-  resetStates();
+      totalPauseDuration,
+      focusScore: calculateFocusScore(
+        actualDuration,  // Use the corrected duration 
+        interruptionsCount,
+        totalPauseDuration
+      ),
+      productivityRating: completedData.productivityRating,
+      energyLevel: completedData.energyLevel,
+      taskTimeData: selectedTasks.map(task => ({
+        id: task.id,
+        text: task.text,
+        completed: completedData.tasks && completedData.tasks.some(t => t.id === task.id),
+        timeSpent: tasksTimingData[task.id] || 0
+      }))
+    };
+    
+    // Update storage
+    const storage = getStorage();
+    
+    // Save session to history
+    if (!storage.focusSessions) {
+      storage.focusSessions = [];
+    }
+    
+    storage.focusSessions.push(sessionData);
+    setStorage(storage);
+    
+    // Update local session history
+    setSessionHistory([...sessionHistory, sessionData]);
+    
+    // Clear saved session state
+    clearFocusSessionState();
+    console.log('Session completed, cleared saved state');
+    
+    // Reset all states
+    resetStates();
 
-  handleDataChange(new Date().toISOString(), 'focus', { sessionData });
-};
+    handleDataChange(new Date().toISOString(), 'focus', { sessionData });
+  };
   
   // Reset all states
   const resetStates = () => {
@@ -1020,49 +1136,9 @@ const handleSessionSubmit = (completedData) => {
       />
     );
   };
-
-  // Add background timer tracking
-const setupBackgroundTimer = () => {
-  // Store current time in localStorage
-  localStorage.setItem('focus_background_start', Date.now().toString());
-  localStorage.setItem('focus_timer_type', timerType);
-  localStorage.setItem('focus_current_time', 
-    timerType === 'countdown' ? timeRemaining.toString() : elapsedTime.toString());
-};
-
-// Sync timer with actual elapsed time
-const syncTimerWithRealElapsedTime = () => {
-  const startTimeStr = localStorage.getItem('focus_background_start');
-  const savedTimerType = localStorage.getItem('focus_timer_type');
-  const savedTimeStr = localStorage.getItem('focus_current_time');
-  
-  if (startTimeStr && savedTimeStr && focusActive && !isPaused) {
-    const startTime = parseInt(startTimeStr);
-    const savedTime = parseInt(savedTimeStr);
-    const elapsedMs = Date.now() - startTime;
-    const elapsedSeconds = Math.floor(elapsedMs / 1000);
-    
-    console.log(`Syncing timer after screen lock: ${elapsedSeconds} seconds elapsed`);
-    
-    if (savedTimerType === 'countdown') {
-      setTimeRemaining(Math.max(0, savedTime - elapsedSeconds));
-      
-      // If timer hit zero while screen was locked, trigger completion
-      if (savedTime - elapsedSeconds <= 0) {
-        handleTimerComplete();
-      }
-    } else if (savedTimerType === 'countup') {
-      setElapsedTime(savedTime + elapsedSeconds);
-    }
-    
-    // Clean up
-    localStorage.removeItem('focus_background_start');
-    localStorage.removeItem('focus_timer_type');
-    localStorage.removeItem('focus_current_time');
-  }
-};
   
   // Render the active focus session
+  const techniqueConfig = getTechniqueConfig(selectedPreset.id);
   const renderFocusSession = () => {
     return (
       <div className="focus-session w-full h-full flex flex-col items-center justify-center">
@@ -1173,6 +1249,22 @@ const syncTimerWithRealElapsedTime = () => {
                   <Clock size={14} />
                   <span>{isPaused ? 'Paused' : 'In Progress'}</span>
                 </div>
+                
+                {/* Add technique and cycle information */}
+                {techniqueConfig.hasCycles && (
+                  <div className="mt-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full text-xs text-blue-700 dark:text-blue-300 flex items-center gap-1">
+                    <span>
+                      {currentPeriodType === 'focus' ? 'Focus' : 'Break'} - Cycle {currentCycle}/{totalCycles}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Show indicator for break periods */}
+                {currentPeriodType === 'break' && (
+                  <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {currentCycle < totalCycles ? 'Next: Focus period' : 'Last break!'}
+                  </div>
+                )}
 
                 {interruptionsCount > 0 && (
                   <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">
@@ -1328,9 +1420,9 @@ const syncTimerWithRealElapsedTime = () => {
   // Render session completion screen
   const renderSessionComplete = () => {
     // Calculate actual duration for display in the session complete screen
-  const actualDuration = timerType === 'countdo\wn' 
-  ? Math.max(0, Math.floor((new Date() - timerStartTime) / 1000) - totalPauseDuration)
-  : elapsedTime;
+    const actualDuration = timerType === 'countdown' 
+      ? Math.max(0, Math.floor((new Date() - timerStartTime) / 1000) - totalPauseDuration)
+      : elapsedTime;
     return (
       <div className="h-full w-full flex items-center justify-center">
         <FocusSessionComplete
@@ -1365,27 +1457,47 @@ const syncTimerWithRealElapsedTime = () => {
                 </h3>
               </div>
               
+              {lastPauseTime && (
+                <div className="mb-4 bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                  <p className="text-slate-600 dark:text-slate-400">
+                    <span className="font-medium">Pause duration:</span> {formatTime(calculatePauseDuration())}
+                  </p>
+                </div>
+              )}
+              
               <p className="text-slate-600 dark:text-slate-400 mb-6">
-                Your focus session has been automatically paused because you navigated away. Would you like to resume or cancel the session?
+                Your focus session was paused. This could be due to screen lock or navigating away. How would you like to continue?
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-3 justify-end">
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => resumeSession(true)}
+                  className="px-4 py-2 rounded-lg bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Play size={20} />
+                  Resume as Focus Time
+                </button>
+                
+                <div className="text-xs text-slate-500 dark:text-slate-400 mb-2 italic">
+                  Use this option if your screen was locked but you were still focused on your task.
+                </div>
+                
+                <button
+                  onClick={() => resumeSession(false)}
+                  className="px-4 py-2 rounded-lg bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Play size={20} />
+                  Resume as Interruption
+                </button>
+                
                 <button
                   onClick={() => {
                     setShowPauseModal(false);
                     setShowCancelConfirmModal(true);
                   }}
-                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors order-1 sm:order-none"
+                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
                   Cancel Session
-                </button>
-                
-                <button
-                  onClick={resumeSession}
-                  className="px-4 py-2 rounded-lg bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Play size={20} />
-                  Resume Focus
                 </button>
               </div>
             </div>
@@ -1512,6 +1624,107 @@ const syncTimerWithRealElapsedTime = () => {
             </div>
           </div>
         )}
+
+        {/* Cycle Transition Modal */}
+        {showCycleTransitionModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+                  {currentPeriodType === 'focus' 
+                    ? <Target size={24} /> 
+                    : <Clock size={24} />
+                  }
+                </div>
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+                  {currentPeriodType === 'focus' 
+                    ? `Focus Time - Cycle ${currentCycle}/${totalCycles}`
+                    : `Break Time - After Cycle ${currentCycle}/${totalCycles}`
+                  }
+                </h3>
+              </div>
+              
+              <div className="mb-4 bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                <p className="text-slate-600 dark:text-slate-400">
+                  {currentPeriodType === 'focus' 
+                    ? 'Time to focus! Your break is over.'
+                    : 'Nice work! Time to take a short break.'
+                  }
+                </p>
+              </div>
+              
+              <p className="text-slate-600 dark:text-slate-400 mb-6">
+                {currentPeriodType === 'focus'
+                  ? `Ready to begin your next ${formatTime(timeRemaining)} focus period?`
+                  : `Ready to start your ${formatTime(timeRemaining)} break?`
+                }
+              </p>
+              
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => continueNextPeriod(false)}
+                  className="px-4 py-2 rounded-lg bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Play size={20} />
+                  Continue
+                </button>
+                
+                {currentPeriodType === 'focus' && (
+                  <button
+                    onClick={() => continueNextPeriod(true)}
+                    className="px-4 py-2 rounded-lg bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Play size={20} />
+                    Continue & Add Tasks
+                  </button>
+                )}
+                
+                <button
+                  onClick={skipToSessionComplete}
+                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Finish Session Now
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Tasks Modal */}
+        {showAddTasksModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+                  Add Tasks
+                </h3>
+                <button 
+                  onClick={() => finishAddingTasks()}
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-slate-600 dark:text-slate-300" />
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <FocusTaskSelector 
+                  selectedTasks={selectedTasks}
+                  onTasksChange={setSelectedTasks}
+                />
+              </div>
+              
+              <div className="flex justify-end">
+                <button
+                  onClick={() => finishAddingTasks()}
+                  className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 flex items-center gap-2"
+                >
+                  <Play size={16} />
+                  Continue Focus Session
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </>
     );
   };
@@ -1595,9 +1808,10 @@ const syncTimerWithRealElapsedTime = () => {
                     </svg>
                     
                     {/* Time display */}
+                    {/* Time Display */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <motion.div 
-                        className="text-6xl sm:text-7xl font-bold text-white"
+                        className="text-5xl sm:text-6xl font-bold text-slate-800 dark:text-slate-100 transition-colors"
                         key={isPaused ? 'paused' : 'running'}
                         animate={isPaused ? { scale: [1, 1.05, 1] } : {}}
                         transition={{ duration: 2, repeat: isPaused ? Infinity : 0, ease: "easeInOut" }}
@@ -1607,13 +1821,30 @@ const syncTimerWithRealElapsedTime = () => {
                           : formatTime(elapsedTime)}
                       </motion.div>
                       
-                      <div className="text-sm text-white/80 mt-2 flex items-center gap-1">
+                      <div className="text-sm text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1 transition-colors">
                         <Clock size={14} />
                         <span>{isPaused ? 'Paused' : 'In Progress'}</span>
                       </div>
+
+                      {/* Add technique and cycle information */}
+                      {techniqueConfig.hasCycles && (
+                        <div className="mt-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full text-xs text-blue-700 dark:text-blue-300 flex items-center gap-1">
+                          <span>
+                            {currentPeriodType === 'focus' ? 'Focus' : 'Break'} - Cycle {currentCycle}/{totalCycles}
+                          </span>
+                        </div>
+                      )}
                       
+                      {/* Show indicator for break periods */}
+                      {currentPeriodType === 'break' && (
+                        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          {currentCycle < totalCycles ? 'Next: Focus period' : 'Last break!'}
+                        </div>
+                      )}
+
+                      {/* Other timer display elements */}
                       {interruptionsCount > 0 && (
-                        <div className="text-xs text-white/60 mt-1">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">
                           {interruptionsCount} {interruptionsCount === 1 ? 'interruption' : 'interruptions'} ({formatTime(totalPauseDuration)} paused)
                         </div>
                       )}
@@ -1846,7 +2077,7 @@ const syncTimerWithRealElapsedTime = () => {
                 <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
                   Finish Focus Session Early?
                 </h3>
-              </div>
+                </div>
               
               <p className="text-slate-600 dark:text-slate-400 mb-6">
                 Are you sure you want to end your focus session early? Your progress will be saved and you can review your completed tasks.
@@ -1881,50 +2112,50 @@ const syncTimerWithRealElapsedTime = () => {
     <div className="focus-section w-full h-full flex flex-col">
       {/* Header with navigation buttons - only shown when not in active focus session */}
       {!focusActive && !sessionComplete && !isSetupMode && (
-  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2 sm:gap-0">
-    <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-      My Focus
-    </h1>
-    
-    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-      <button
-        onClick={() => setActiveTab('analytics')}
-        className="text-sm sm:text-base bg-teal-500 hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1"
-      >
-        <BarChart2 size={16} />
-        <span className="hidden sm:inline">Analytics</span>
-      </button>
-      
-      <button
-        onClick={() => setActiveTab('history')}
-        className="text-sm sm:text-base bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1"
-      >
-        <History size={16} />
-        <span className="hidden sm:inline">History</span>
-      </button>
-      
-      {activeTab !== 'focus' && (
-        <button
-          onClick={() => setActiveTab('focus')}
-          className="text-sm sm:text-base bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1"
-        >
-          <Clock size={16} />
-          <span className="hidden sm:inline">Focus</span>
-        </button>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2 sm:gap-0">
+          <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+            My Focus
+          </h1>
+          
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className="text-sm sm:text-base bg-teal-500 hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1"
+            >
+              <BarChart2 size={16} />
+              <span className="hidden sm:inline">Analytics</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('history')}
+              className="text-sm sm:text-base bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1"
+            >
+              <History size={16} />
+              <span className="hidden sm:inline">History</span>
+            </button>
+            
+            {activeTab !== 'focus' && (
+              <button
+                onClick={() => setActiveTab('focus')}
+                className="text-sm sm:text-base bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1"
+              >
+                <Clock size={16} />
+                <span className="hidden sm:inline">Focus</span>
+              </button>
+            )}
+            
+            {activeTab === 'focus' && (
+              <button
+                onClick={handleSetupFocus}
+                className="text-sm sm:text-base bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1"
+              >
+                <Play size={16} />
+                <span className="hidden sm:inline">Start Session</span>
+              </button>
+            )}
+          </div>
+        </div>
       )}
-      
-      {activeTab === 'focus' && (
-        <button
-          onClick={handleSetupFocus}
-          className="text-sm sm:text-base bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1"
-        >
-          <Play size={16} />
-          <span className="hidden sm:inline">Start Session</span>
-        </button>
-      )}
-    </div>
-  </div>
-)}
       
       {/* Main content area */}
       <div className="flex-grow bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors overflow-auto">
@@ -1961,13 +2192,13 @@ const syncTimerWithRealElapsedTime = () => {
               <FocusAnalytics sessions={sessionHistory} />
             ) : activeTab === 'history' ? (
               <FocusHistory 
-    sessions={sessionHistory} 
-    onSessionsUpdate={handleSessionsUpdate} 
-  />
+                sessions={sessionHistory} 
+                onSessionsUpdate={handleSessionsUpdate} 
+              />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center py-10">
-    <AnimatedPlayButton onClick={handleSetupFocus} />
-  </div>
+                <AnimatedPlayButton onClick={handleSetupFocus} />
+              </div>
             )}
           </>
         )}

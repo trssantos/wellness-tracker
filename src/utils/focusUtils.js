@@ -1,4 +1,6 @@
 import { getStorage, setStorage } from './storage';
+import { Clock, Target, Moon, Sun, Clock4, Zap, Brain } from 'lucide-react';
+
 
 /**
  * Get all focus sessions from storage
@@ -16,49 +18,113 @@ export const getFocusSessions = () => {
   return storage.focusSessions;
 };
 
-/**
- * Get timer presets from storage
- * @returns {Array} Array of timer presets
- */
-export const getTimerPresets = () => {
-  return [
-    {
-      key: 'pomodoro',
-      name: 'Pomodoro',
-      duration: 25 * 60,
-      mode: 'countdown',
-      description: 'Focus for 25 minutes'
-    },
-    {
-      key: 'shortBreak',
-      name: 'Short Break',
-      duration: 5 * 60,
-      mode: 'countdown',
-      description: 'Take a quick 5-minute break'
-    },
-    {
-      key: 'longBreak',
-      name: 'Long Break',
-      duration: 15 * 60,
-      mode: 'countdown',
-      description: 'Take a longer 15-minute break'
-    },
-    {
-      key: 'custom',
-      name: 'Custom Timer',
-      duration: 30 * 60,
-      mode: 'countdown',
-      description: 'Set your own duration'
-    },
-    {
-      key: 'stopwatch',
-      name: 'Stopwatch',
-      duration: 0,
-      mode: 'countup',
-      description: 'Count up from zero'
-    }
-  ];
+// Comprehensive focus technique definitions
+export const FOCUS_TECHNIQUES = [
+  { 
+    id: 'pomodoro', 
+    name: 'Pomodoro Technique', 
+    description: 'Focus for 25 minutes, then take a 5-minute break. After 4 rounds, take a longer break.',
+    timerType: 'countdown',
+    focusDuration: 25 * 60, // 25 minutes in seconds
+    breakDuration: 5 * 60,  // 5 minutes in seconds
+    longBreakDuration: 15 * 60, // 15 minutes for long break
+    hasCycles: true,
+    defaultCycles: 4,      // 4 pomodoro cycles by default
+    longBreakAfter: 4,     // Long break after 4 cycles
+    color: 'red',
+    colorGradient: 'from-red-500 to-orange-500 dark:from-red-600 dark:to-orange-600',
+    icon: 'clock'
+  },
+  { 
+    id: 'flowtime', 
+    name: 'Flowtime Method', 
+    description: 'Work until your focus naturally wanes, then take a proportionate break (1:5 ratio).',
+    timerType: 'countup',
+    hasCycles: false,      // No predefined cycles
+    color: 'blue',
+    colorGradient: 'from-blue-500 to-purple-500 dark:from-blue-600 dark:to-purple-600',
+    icon: 'target'
+  },
+  { 
+    id: '5217', 
+    name: '52/17 Method', 
+    description: 'Work for 52 minutes then rest for 17 minutes for optimal productivity.',
+    timerType: 'countdown',
+    focusDuration: 52 * 60, // 52 minutes
+    breakDuration: 17 * 60, // 17 minutes
+    hasCycles: true,
+    defaultCycles: 4,      // Default to 4 cycles
+    color: 'green',
+    colorGradient: 'from-green-500 to-teal-500 dark:from-green-600 dark:to-teal-600',
+    icon: 'moon'
+  },
+  { 
+    id: 'desktime', 
+    name: '90-Minute Focus', 
+    description: 'Based on natural ultradian rhythms - focus for 90 minutes, then rest for 20.',
+    timerType: 'countdown',
+    focusDuration: 90 * 60, // 90 minutes
+    breakDuration: 20 * 60, // 20 minutes
+    hasCycles: true,
+    defaultCycles: 2,      // Default to 2 90-minute cycles
+    color: 'amber',
+    colorGradient: 'from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600',
+    icon: 'sun'
+  },
+  { 
+    id: 'ultradian',
+    name: 'Ultradian Rhythm', 
+    description: 'Work for 90 minutes, then rest for 20 minutes, based on natural body cycles.',
+    timerType: 'countdown',
+    focusDuration: 90 * 60,
+    breakDuration: 20 * 60,
+    hasCycles: true,
+    defaultCycles: 4,
+    color: 'purple',
+    colorGradient: 'from-purple-500 to-indigo-500 dark:from-purple-600 dark:to-indigo-600',
+    icon: 'brain'
+  },
+  { 
+    id: 'custom', 
+    name: 'Custom Timer', 
+    description: 'Set your own duration and approach.',
+    timerType: 'countdown',
+    focusDuration: 30 * 60, // 30 minutes default
+    hasCycles: false,      // No cycles by default
+    color: 'slate',
+    colorGradient: 'from-slate-400 to-slate-500 dark:from-slate-600 dark:to-slate-700',
+    icon: 'clock'
+  }
+];
+
+
+// Helper function to get technique configuration by ID
+export const getTechniqueConfig = (techniqueId) => {
+  return FOCUS_TECHNIQUES.find(technique => technique.id === techniqueId) || FOCUS_TECHNIQUES[0];
 };
+
+// Helper to get icon component from icon name
+export const getTechniqueIcon = (iconName, size = 24) => {
+  switch (iconName) {
+    case 'clock':
+      return <Clock size={size} />;
+    case 'target':
+      return <Target size={size} />;
+    case 'moon':
+      return <Moon size={size} />;
+    case 'sun':
+      return <Sun size={size} />;
+    case 'brain':
+      return <Brain size={size} />;
+    case 'zap':
+      return <Zap size={size} />;
+    case 'clock4':
+      return <Clock4 size={size} />;
+    default:
+      return <Clock size={size} />; 
+  }
+};
+
 
 /**
  * Update a timer preset
@@ -100,6 +166,27 @@ export const saveFocusSession = (sessionData) => {
   setStorage(storage);
   
   return session;
+};
+
+/**
+ * Get focus presets for UI display
+ * @returns {Array} Array of focus presets with UI details
+ */
+export const getFocusPresets = () => {
+  return FOCUS_TECHNIQUES.map(technique => ({
+    id: technique.id,
+    name: technique.name,
+    description: technique.description,
+    duration: technique.focusDuration || 0,
+    color: technique.colorGradient,
+    icon: getTechniqueIcon(technique.icon),
+    hasCycles: technique.hasCycles,
+    cycles: technique.defaultCycles,
+    restDuration: technique.breakDuration,
+    longRestDuration: technique.longBreakDuration,
+    longBreakAfter: technique.longBreakAfter,
+    timerType: technique.timerType
+  }));
 };
 
 /**
@@ -430,17 +517,32 @@ export const getTopFocusTasks = () => {
   return tasksArray.sort((a, b) => b.timeSpent - a.timeSpent);
 };
 
-// Helper function to get a readable name for a technique
 export const getTechniqueName = (techniqueId) => {
+  // First, check if the techniqueId matches one of our new configurations
+  const technique = FOCUS_TECHNIQUES.find(t => t.id === techniqueId);
+  if (technique) {
+    return technique.name;
+  }
+  
+  // Fallback for backward compatibility with existing data
   const techniqueMap = {
     'pomodoro': 'Pomodoro Technique',
     'flowtime': 'Flowtime Method',
     '5217': '52/17 Method',
     'desktime': '90-Minute Focus',
-    'custom': 'Custom Timer'
+    'custom': 'Custom Timer',
+    'shortBreak': 'Short Break',
+    'longBreak': 'Long Break',
+    'stopwatch': 'Stopwatch'
   };
   
   return techniqueMap[techniqueId] || techniqueId;
+};
+
+// Also add this helper function to get technique color
+export const getTechniqueColor = (techniqueId) => {
+  const technique = FOCUS_TECHNIQUES.find(t => t.id === techniqueId);
+  return technique?.color || 'gray';
 };
 
 // Export all the functions
@@ -451,7 +553,7 @@ export default {
   getFocusStats,
   getFocusStreak,
   getTopFocusTasks,
-  getTimerPresets,
   updateTimerPreset,
-  getTechniqueName
+  getTechniqueName,
+  getFocusPresets
 };

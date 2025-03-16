@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Info,Clock, Calendar, BarChart2, Zap, CheckSquare, Award, Target, ArrowUp, ArrowDown, AlertTriangle, 
+import { Info, Clock, Calendar, BarChart2, Zap, CheckSquare, Award, Target, ArrowUp, ArrowDown, AlertTriangle, 
          Dumbbell, ChevronLeft, ChevronRight, Sparkles, Sun, Moon, Lightbulb } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, 
          Pie, Cell, Legend, ComposedChart, Line } from 'recharts';
+import { 
+  getTechniqueName, 
+  getTechniqueColor,
+  getTechniqueIcon,
+  getTechniqueConfig,
+  FOCUS_TECHNIQUES
+} from '../../utils/focusUtils';
 
 const FocusAnalytics = ({ sessions }) => {
   const [timeframe, setTimeframe] = useState('week'); // 'day', 'week', 'month', 'year'
@@ -20,7 +27,9 @@ const FocusAnalytics = ({ sessions }) => {
     totalPauseDuration: 0,
     avgFocusScore: 0,
     hourlyInterruptionData: [],
-    sessionsWithInterruptionData: 0
+    sessionsWithInterruptionData: 0,
+    // Technique analysis
+    techniqueAnalysis: []
   });
   
   // Process statistics on sessions change or timeframe change
@@ -79,7 +88,8 @@ const FocusAnalytics = ({ sessions }) => {
         totalPauseDuration: 0,
         avgFocusScore: 0,
         hourlyInterruptionData: [],
-        sessionsWithInterruptionData: 0
+        sessionsWithInterruptionData: 0,
+        techniqueAnalysis: []
       });
       return;
     }
@@ -101,6 +111,9 @@ const FocusAnalytics = ({ sessions }) => {
     const dailyMap = Array(7).fill(0);
     const weeklyMap = {};
     const presetMap = {};
+    
+    // Initialize technique stats
+    const techniqueStats = {};
     
     // Process each session
     sessionList.forEach(session => {
@@ -155,6 +168,32 @@ const FocusAnalytics = ({ sessions }) => {
           totalFocusScore += session.focusScore;
         }
       }
+      
+      // Process technique stats
+      const technique = session.technique || 'custom';
+      
+      if (!techniqueStats[technique]) {
+        techniqueStats[technique] = {
+          id: technique,
+          name: getTechniqueName(technique),
+          sessions: 0,
+          totalDuration: 0,
+          totalFocusTime: 0,
+          totalBreakTime: 0,
+          completedCycles: 0,
+          averageScore: 0,
+          scoreSum: 0
+        };
+      }
+      
+      techniqueStats[technique].sessions += 1;
+      techniqueStats[technique].totalDuration += session.duration || 0;
+      techniqueStats[technique].completedCycles += session.completedCycles || 0;
+      
+      // Track focus score
+      if (session.focusScore !== undefined) {
+        techniqueStats[technique].scoreSum += session.focusScore;
+      }
     });
     
     // Calculate averages
@@ -182,6 +221,14 @@ const FocusAnalytics = ({ sessions }) => {
       interruptions: hourlyInterruptionMap[hour]
     }));
     
+    // Calculate averages for technique stats
+    Object.values(techniqueStats).forEach(stats => {
+      stats.averageScore = stats.sessions > 0 ? Math.round(stats.scoreSum / stats.sessions) : 0;
+    });
+    
+    // Sort techniques by usage
+    const techniqueAnalysis = Object.values(techniqueStats).sort((a, b) => b.totalDuration - a.totalDuration);
+    
     // Update state
     setStatsData({
       totalDuration,
@@ -197,24 +244,41 @@ const FocusAnalytics = ({ sessions }) => {
       totalPauseDuration,
       avgFocusScore,
       hourlyInterruptionData,
-      sessionsWithInterruptionData
+      sessionsWithInterruptionData,
+      // Technique analysis
+      techniqueAnalysis
     });
   };
-  
-  // Helper function to get a readable name for a technique
-  const getTechniqueName = (techniqueId) => {
-    const techniqueMap = {
-      'pomodoro': 'Pomodoro Technique',
-      'flowtime': 'Flowtime Method',
-      '5217': '52/17 Method',
-      'desktime': '90-Minute Focus',
-      'custom': 'Custom Timer',
-      'shortBreak': 'Short Break',
-      'longBreak': 'Long Break',
-      'stopwatch': 'Stopwatch'
+
+  // Get color for a technique
+  const getPresetColor = (techniqueId) => {
+    const technique = FOCUS_TECHNIQUES.find(t => t.id === techniqueId);
+    if (technique) {
+      // Map technique colors to chart colors
+      switch (technique.color) {
+        case 'red': return '#ef4444';
+        case 'blue': return '#3b82f6';
+        case 'green': return '#10b981';
+        case 'amber': return '#f59e0b';
+        case 'purple': return '#8b5cf6';
+        case 'slate': return '#64748b';
+        default: return '#9ca3af';
+      }
+    }
+    
+    // Fallback to previous mapping for backward compatibility
+    const PRESET_COLORS = {
+      pomodoro: '#ef4444', // red
+      shortBreak: '#3b82f6', // blue
+      longBreak: '#8b5cf6', // purple
+      stopwatch: '#f59e0b', // amber
+      custom: '#10b981', // emerald
+      flowtime: '#0ea5e9', // sky
+      '5217': '#ec4899', // pink
+      desktime: '#14b8a6' // teal
     };
     
-    return techniqueMap[techniqueId] || techniqueId;
+    return PRESET_COLORS[techniqueId] || '#9ca3af'; // Default gray
   };
   
   // Format seconds to readable time
@@ -241,23 +305,6 @@ const FocusAnalytics = ({ sessions }) => {
     if (value === 0) return '12am';
     if (value === 12) return '12pm';
     return value < 12 ? `${value}am` : `${value-12}pm`;
-  };
-  
-  // Colors for preset distribution chart
-  const PRESET_COLORS = {
-    pomodoro: '#ef4444', // red
-    shortBreak: '#3b82f6', // blue
-    longBreak: '#8b5cf6', // purple
-    stopwatch: '#f59e0b', // amber
-    custom: '#10b981', // emerald
-    flowtime: '#0ea5e9', // sky
-    '5217': '#ec4899', // pink
-    desktime: '#14b8a6' // teal
-  };
-  
-  // Get color for a technique
-  const getPresetColor = (techniqueId) => {
-    return PRESET_COLORS[techniqueId] || '#9ca3af'; // Default gray
   };
   
   // Format tooltip value
@@ -391,7 +438,63 @@ const FocusAnalytics = ({ sessions }) => {
         </div>
       </div>
       
-      {/* Interruption Analytics - NEW */}
+      {/* Technique Analysis Section - NEW */}
+      <div className="mt-6 bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors mb-6">
+        <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
+          <Sparkles size={16} className="text-purple-500 dark:text-purple-400" />
+          Focus Technique Analysis
+        </h4>
+        
+        {statsData.techniqueAnalysis && statsData.techniqueAnalysis.length > 0 ? (
+          <div className="space-y-4">
+            {/* Most effective technique */}
+            {statsData.techniqueAnalysis.length > 1 && (
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
+                <p className="text-sm text-slate-700 dark:text-slate-300">
+                  <span className="font-medium">Most effective technique: </span>
+                  {statsData.techniqueAnalysis.sort((a, b) => b.averageScore - a.averageScore)[0].name}
+                  <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
+                    (Avg. Focus Score: {statsData.techniqueAnalysis.sort((a, b) => b.averageScore - a.averageScore)[0].averageScore}/100)
+                  </span>
+                </p>
+              </div>
+            )}
+            
+            {/* Technique breakdown */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {statsData.techniqueAnalysis.map(technique => (
+                <div 
+                  key={technique.id} 
+                  className="p-3 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-3"
+                >
+                  <div 
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white" 
+                    style={{ backgroundColor: getPresetColor(technique.id) }}
+                  >
+                    {getTechniqueIcon(technique.id, 18)}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-slate-800 dark:text-slate-200">{technique.name}</p>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap gap-x-3">
+                      <span>{technique.sessions} sessions</span>
+                      <span>{formatDuration(technique.totalDuration)} total</span>
+                      {technique.completedCycles > 0 && (
+                        <span>{technique.completedCycles} cycles</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
+            Complete more sessions to see technique analysis.
+          </div>
+        )}
+      </div>
+      
+      {/* Interruption Analytics */}
       <div className="mb-6 bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
         <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
           <AlertTriangle size={16} className="text-amber-500 dark:text-amber-400" />
@@ -430,61 +533,61 @@ const FocusAnalytics = ({ sessions }) => {
             </div>
             
             <div className="h-64 mt-6">
-  <h5 className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-    Interruptions by Hour of Day
-  </h5>
-  {timeframe === 'day' || statsData.hourlyInterruptionData.filter(hour => hour.interruptions > 0).length <= 1 ? (
-    <div className="h-full flex flex-col items-center justify-center">
-      <p className="text-slate-500 dark:text-slate-400 text-center">
-        Not enough interruption data to display chart.
-      </p>
-      <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
-        Complete more focus sessions with interruption tracking.
-      </p>
-    </div>
-  ) : (
-    <ResponsiveContainer width="100%" height="100%">
-      <ComposedChart data={statsData.hourlyInterruptionData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
-        <XAxis 
-          dataKey="hour" 
-          tickFormatter={formatHourLabel} 
-          tick={{ fill: '#6b7280' }} 
-          interval={3}
-        />
-        <YAxis 
-          yAxisId="left"
-          label={{ value: 'Focus Time (min)', angle: -90, position: 'insideLeft', offset: -10, fill: '#6b7280' }}
-          tick={{ fill: '#6b7280' }}
-          tickFormatter={(value) => Math.floor(value / 60)}
-        />
-        <YAxis 
-          yAxisId="right"
-          orientation="right"
-          label={{ value: 'Interruptions', angle: 90, position: 'insideRight', offset: -5, fill: '#6b7280' }}
-          tick={{ fill: '#6b7280' }}
-        />
-        <Tooltip 
-          formatter={(value, name) => {
-            if (name === 'Focus Time') return formatDuration(value);
-            return value;
-          }}
-          labelFormatter={(value) => `${formatHourLabel(value)} - ${formatHourLabel((value + 1) % 24)}`}
-        />
-        <Bar yAxisId="left" dataKey="duration" name="Focus Time" fill="#10b981" radius={[4, 4, 0, 0]} />
-        <Line 
-          yAxisId="right" 
-          type="monotone" 
-          dataKey="interruptions" 
-          name="Interruptions" 
-          stroke="#ef4444" 
-          strokeWidth={2} 
-          dot={{ r: 4 }} 
-        />
-      </ComposedChart>
-    </ResponsiveContainer>
-  )}
-</div>
+              <h5 className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
+                Interruptions by Hour of Day
+              </h5>
+              {timeframe === 'day' || statsData.hourlyInterruptionData.filter(hour => hour.interruptions > 0).length <= 1 ? (
+                <div className="h-full flex flex-col items-center justify-center">
+                  <p className="text-slate-500 dark:text-slate-400 text-center">
+                    Not enough interruption data to display chart.
+                  </p>
+                  <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
+                    Complete more focus sessions with interruption tracking.
+                  </p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={statsData.hourlyInterruptionData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
+                    <XAxis 
+                      dataKey="hour" 
+                      tickFormatter={formatHourLabel} 
+                      tick={{ fill: '#6b7280' }} 
+                      interval={3}
+                    />
+                    <YAxis 
+                      yAxisId="left"
+                      label={{ value: 'Focus Time (min)', angle: -90, position: 'insideLeft', offset: -10, fill: '#6b7280' }}
+                      tick={{ fill: '#6b7280' }}
+                      tickFormatter={(value) => Math.floor(value / 60)}
+                    />
+                    <YAxis 
+                      yAxisId="right"
+                      orientation="right"
+                      label={{ value: 'Interruptions', angle: 90, position: 'insideRight', offset: -5, fill: '#6b7280' }}
+                      tick={{ fill: '#6b7280' }}
+                    />
+                    <Tooltip 
+                      formatter={(value, name) => {
+                        if (name === 'Focus Time') return formatDuration(value);
+                        return value;
+                      }}
+                      labelFormatter={(value) => `${formatHourLabel(value)} - ${formatHourLabel((value + 1) % 24)}`}
+                    />
+                    <Bar yAxisId="left" dataKey="duration" name="Focus Time" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Line 
+                      yAxisId="right" 
+                      type="monotone" 
+                      dataKey="interruptions" 
+                      name="Interruptions" 
+                      stroke="#ef4444" 
+                      strokeWidth={2} 
+                      dot={{ r: 4 }} 
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              )}
+            </div>
             
             <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
               <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
@@ -511,190 +614,189 @@ const FocusAnalytics = ({ sessions }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
         {/* Time Distribution by Day of Week */}
         <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
-  <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
-    <Calendar size={16} className="text-blue-500 dark:text-blue-400" />
-    Focus Time by Day of Week
-  </h4>
-  
-  <div className="h-64">
-    {timeframe === 'day' ? (
-      <div className="h-full flex flex-col items-center justify-center">
-        <p className="text-slate-500 dark:text-slate-400 text-center">
-          Daily view shows summary information only.
-        </p>
-        <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
-          Switch to week, month, or year view for detailed charts.
-        </p>
-      </div>
-    ) : statsData.dailyData.filter(day => day.duration > 0).length <= 1 ? (
-      <div className="h-full flex flex-col items-center justify-center">
-        <p className="text-slate-500 dark:text-slate-400 text-center">
-          Not enough data to display daily chart.
-        </p>
-        <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
-          Complete more focus sessions across different days.
-        </p>
-      </div>
-    ) : (
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={statsData.dailyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
-          <XAxis 
-            dataKey="day" 
-            tickFormatter={formatDayLabel} 
-            tick={{ fill: '#6b7280' }} 
-          />
-          <YAxis 
-            label={{ value: 'Duration (min)', angle: -90, position: 'insideLeft', offset: -10, fill: '#6b7280' }}
-            tick={{ fill: '#6b7280' }}
-            tickFormatter={(value) => Math.floor(value / 60)}
-          />
-          <Tooltip 
-            formatter={(value) => [`${formatDuration(value)}`, 'Focus Time']}
-            labelFormatter={(value) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][value]}
-          />
-          <Bar dataKey="duration" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
-    )}
-  </div>
-</div>
+          <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
+            <Calendar size={16} className="text-blue-500 dark:text-blue-400" />
+            Focus Time by Day of Week
+          </h4>
+          
+          <div className="h-64">
+            {timeframe === 'day' ? (
+              <div className="h-full flex flex-col items-center justify-center">
+                <p className="text-slate-500 dark:text-slate-400 text-center">
+                  Daily view shows summary information only.
+                </p>
+                <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
+                  Switch to week, month, or year view for detailed charts.
+                </p>
+              </div>
+            ) : statsData.dailyData.filter(day => day.duration > 0).length <= 1 ? (
+              <div className="h-full flex flex-col items-center justify-center">
+                <p className="text-slate-500 dark:text-slate-400 text-center">
+                  Not enough data to display daily chart.
+                </p>
+                <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
+                  Complete more focus sessions across different days.
+                </p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={statsData.dailyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
+                  <XAxis 
+                    dataKey="day" 
+                    tickFormatter={formatDayLabel} 
+                    tick={{ fill: '#6b7280' }} 
+                  />
+                  <YAxis 
+                    label={{ value: 'Duration (min)', angle: -90, position: 'insideLeft', offset: -10, fill: '#6b7280' }}
+                    tick={{ fill: '#6b7280' }}
+                    tickFormatter={(value) => Math.floor(value / 60)}
+                  />
+                  <Tooltip 
+                    formatter={(value) => [`${formatDuration(value)}`, 'Focus Time']}
+                    labelFormatter={(value) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][value]}
+                  />
+                  <Bar dataKey="duration" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
         
         {/* Time Distribution by Hour of Day */}
         <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
-  <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
-    <Clock size={16} className="text-green-500 dark:text-green-400" />
-    Focus Time by Hour of Day
-  </h4>
-  
-  <div className="h-64">
-    {timeframe === 'day' ? (
-      <div className="h-full flex flex-col items-center justify-center">
-        <p className="text-slate-500 dark:text-slate-400 text-center">
-          Daily view shows summary information only.
-        </p>
-        <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
-          Switch to week, month, or year view for detailed charts.
-        </p>
-      </div>
-    ) : statsData.hourlyData.filter(hour => hour.duration > 0).length <= 1 ? (
-      <div className="h-full flex flex-col items-center justify-center">
-        <p className="text-slate-500 dark:text-slate-400 text-center">
-          Not enough data to display hourly chart.
-        </p>
-        <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
-          Complete more focus sessions at different times of day.
-        </p>
-      </div>
-    ) : (
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={statsData.hourlyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
-          <XAxis 
-            dataKey="hour" 
-            tickFormatter={formatHourLabel} 
-            tick={{ fill: '#6b7280' }} 
-            interval={3}
-          />
-          <YAxis 
-            label={{ value: 'Duration (min)', angle: -90, position: 'insideLeft', offset: -10, fill: '#6b7280' }}
-            tick={{ fill: '#6b7280' }}
-            tickFormatter={(value) => Math.floor(value / 60)}
-          />
-          <Tooltip 
-            formatter={(value) => [`${formatDuration(value)}`, 'Focus Time']}
-            labelFormatter={(value) => `${formatHourLabel(value)} - ${formatHourLabel((value + 1) % 24)}`}
-          />
-          <Bar dataKey="duration" fill="#10b981" radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
-    )}
-  </div>
-</div>
-
+          <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
+            <Clock size={16} className="text-green-500 dark:text-green-400" />
+            Focus Time by Hour of Day
+          </h4>
+          
+          <div className="h-64">
+            {timeframe === 'day' ? (
+              <div className="h-full flex flex-col items-center justify-center">
+                <p className="text-slate-500 dark:text-slate-400 text-center">
+                  Daily view shows summary information only.
+                </p>
+                <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
+                  Switch to week, month, or year view for detailed charts.
+                </p>
+              </div>
+            ) : statsData.hourlyData.filter(hour => hour.duration > 0).length <= 1 ? (
+              <div className="h-full flex flex-col items-center justify-center">
+                <p className="text-slate-500 dark:text-slate-400 text-center">
+                  Not enough data to display hourly chart.
+                </p>
+                <p className="text-slate-500 dark:text-slate-400 text-center mt-2">
+                  Complete more focus sessions at different times of day.
+                </p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={statsData.hourlyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#9ca3af" strokeOpacity={0.2} />
+                  <XAxis 
+                    dataKey="hour" 
+                    tickFormatter={formatHourLabel} 
+                    tick={{ fill: '#6b7280' }} 
+                    interval={3}
+                  />
+                  <YAxis 
+                    label={{ value: 'Duration (min)', angle: -90, position: 'insideLeft', offset: -10, fill: '#6b7280' }}
+                    tick={{ fill: '#6b7280' }}
+                    tickFormatter={(value) => Math.floor(value / 60)}
+                  />
+                  <Tooltip 
+                    formatter={(value) => [`${formatDuration(value)}`, 'Focus Time']}
+                    labelFormatter={(value) => `${formatHourLabel(value)} - ${formatHourLabel((value + 1) % 24)}`}
+                  />
+                  <Bar dataKey="duration" fill="#10b981" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
       </div>
       
       {/* Secondary charts */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* Focus Session Technique Distribution */}
         <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
-  <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
-    <Target size={16} className="text-red-500 dark:text-red-400" />
-    Focus Technique Distribution
-    <Tooltip content={
-      <div>
-        <p className="font-medium mb-1">Technique Distribution</p>
-        <p>Shows which focus methods you use most frequently, by total time spent.</p>
-      </div>
-    }>
-      <Info size={14} className="text-slate-400 dark:text-slate-500 ml-1" />
-    </Tooltip>
-  </h4>
-  
-  <div className="h-64 flex items-center justify-center mobile-pie-chart">
-    {statsData.presetDistribution.length > 0 ? (
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart margin={{ top: 0, right: 0, bottom: 30, left: 0 }}>
-          <Pie
-            data={statsData.presetDistribution}
-            cx="50%"
-            cy="50%"
-            innerRadius={40}
-            outerRadius={80}
-            paddingAngle={2}
-            dataKey="value"
-            label={({ cx, cy, midAngle, innerRadius, outerRadius, value, index }) => {
-              // Only show labels on desktop
-              if (window.innerWidth < 640) return null;
-              const RADIAN = Math.PI / 180;
-              const radius = 25 + innerRadius + (outerRadius - innerRadius);
-              const x = cx + radius * Math.cos(-midAngle * RADIAN);
-              const y = cy + radius * Math.sin(-midAngle * RADIAN);
-              return (
-                <text
-                  x={x}
-                  y={y}
-                  textAnchor={x > cx ? 'start' : 'end'}
-                  dominantBaseline="central"
-                  fill="#6b7280"
-                  fontSize={12}
-                >
-                  {statsData.presetDistribution[index].name}
-                </text>
-              );
-            }}
-          >
-            {statsData.presetDistribution.map((entry) => (
-              <Cell 
-                key={`cell-${entry.id}`} 
-                fill={getPresetColor(entry.id)} 
-                stroke="none"
-              />
-            ))}
-          </Pie>
-          <Tooltip 
-            formatter={(value, name, props) => [`${formatDuration(value)}`, props.payload.name]}
-          />
-          <Legend 
-            layout={window.innerWidth < 640 ? "horizontal" : "vertical"}
-            verticalAlign={window.innerWidth < 640 ? "bottom" : "middle"}
-            align={window.innerWidth < 640 ? "center" : "right"}
-            wrapperStyle={window.innerWidth < 640 ? { bottom: -20 } : {}}
-            formatter={(value, entry) => (
-              <span style={{ color: entry.color, fontSize: window.innerWidth < 640 ? '10px' : '12px' }}>
-                {entry.payload.name}
-              </span>
+          <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 transition-colors">
+            <Target size={16} className="text-red-500 dark:text-red-400" />
+            Focus Technique Distribution
+            <Tooltip content={
+              <div>
+                <p className="font-medium mb-1">Technique Distribution</p>
+                <p>Shows which focus methods you use most frequently, by total time spent.</p>
+              </div>
+            }>
+              <Info size={14} className="text-slate-400 dark:text-slate-500 ml-1" />
+            </Tooltip>
+          </h4>
+          
+          <div className="h-64 flex items-center justify-center mobile-pie-chart">
+            {statsData.presetDistribution.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart margin={{ top: 0, right: 0, bottom: 30, left: 0 }}>
+                  <Pie
+                    data={statsData.presetDistribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={({ cx, cy, midAngle, innerRadius, outerRadius, value, index }) => {
+                      // Only show labels on desktop
+                      if (window.innerWidth < 640) return null;
+                      const RADIAN = Math.PI / 180;
+                      const radius = 25 + innerRadius + (outerRadius - innerRadius);
+                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          textAnchor={x > cx ? 'start' : 'end'}
+                          dominantBaseline="central"
+                          fill="#6b7280"
+                          fontSize={12}
+                        >
+                          {statsData.presetDistribution[index].name}
+                        </text>
+                      );
+                    }}
+                  >
+                    {statsData.presetDistribution.map((entry) => (
+                      <Cell 
+                        key={`cell-${entry.id}`} 
+                        fill={getPresetColor(entry.id)} 
+                        stroke="none"
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value, name, props) => [`${formatDuration(value)}`, props.payload.name]}
+                  />
+                  <Legend 
+                    layout={window.innerWidth < 640 ? "horizontal" : "vertical"}
+                    verticalAlign={window.innerWidth < 640 ? "bottom" : "middle"}
+                    align={window.innerWidth < 640 ? "center" : "right"}
+                    wrapperStyle={window.innerWidth < 640 ? { bottom: -20 } : {}}
+                    formatter={(value, entry) => (
+                      <span style={{ color: entry.color, fontSize: window.innerWidth < 640 ? '10px' : '12px' }}>
+                        {entry.payload.name}
+                      </span>
+                    )}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center text-slate-500 dark:text-slate-400">
+                No preset data available.
+              </div>
             )}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-    ) : (
-      <div className="text-center text-slate-500 dark:text-slate-400">
-        No preset data available.
-      </div>
-    )}
-  </div>
-</div>
+          </div>
+        </div>
         
         {/* Weekly Trend */}
         <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
@@ -793,6 +895,38 @@ const FocusAnalytics = ({ sessions }) => {
               ) : (
                 <>
                   No interruption data available yet. Continue tracking focus sessions to reveal your interruption patterns.
+                </>
+              )}
+            </p>
+          </div>
+          
+          {/* Best technique insight - NEW */}
+          <div className="bg-white dark:bg-slate-800 p-3 rounded-lg flex flex-col shadow-sm transition-colors">
+            <div className="flex items-center gap-2 mb-2">
+              <Target size={16} className="text-blue-500 dark:text-blue-400" />
+              <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors">
+                Technique Insight
+              </h5>
+            </div>
+            <p className="text-slate-600 dark:text-slate-400 text-sm transition-colors">
+              {statsData.techniqueAnalysis && statsData.techniqueAnalysis.length > 1 ? (
+                <>
+                  Based on your history, the 
+                  <span className="font-medium text-blue-600 dark:text-blue-400 mx-1 transition-colors">
+                    {statsData.techniqueAnalysis.sort((a, b) => b.averageScore - a.averageScore)[0].name}
+                  </span>
+                  is your most effective focus technique with a score of 
+                  <span className="font-medium text-blue-600 dark:text-blue-400 mx-1 transition-colors">
+                    {statsData.techniqueAnalysis.sort((a, b) => b.averageScore - a.averageScore)[0].averageScore}/100
+                  </span>.
+                </>
+              ) : statsData.techniqueAnalysis && statsData.techniqueAnalysis.length === 1 ? (
+                <>
+                  Try different focus techniques to discover which one works best for your productivity style.
+                </>
+              ) : (
+                <>
+                  Complete more focus sessions using different techniques to see which works best for you.
                 </>
               )}
             </p>

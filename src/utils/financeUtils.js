@@ -53,14 +53,24 @@ export const addTransaction = (transaction) => {
   
   // Update budget spent amounts automatically
   if (transaction.amount < 0) {
-    const budget = financeData.budgets.find(b => b.category === transaction.category);
-    if (budget) {
-      budget.spent = (parseFloat(budget.spent) || 0) + Math.abs(transaction.amount);
+    // Only update the budget from past or today's transactions, not future ones
+    const txDate = new Date(transaction.date || transaction.timestamp);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (txDate <= today) {
+      const budget = financeData.budgets.find(b => b.category === transaction.category);
+      if (budget) {
+        budget.spent = (parseFloat(budget.spent) || 0) + Math.abs(transaction.amount);
+      }
     }
   }
   
   // Save updated data
   saveFinanceData(financeData);
+  
+  // Create task if it's a future transaction
+  createTaskFromTransaction(transaction);
   
   return transaction;
 };
@@ -72,41 +82,82 @@ export const updateTransaction = (transactionId, updatedData) => {
   
   if (index !== -1) {
     const oldTransaction = financeData.transactions[index];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Determine if old transaction was in the past or today
+    const oldTxDate = new Date(oldTransaction.date || oldTransaction.timestamp);
+    oldTxDate.setHours(0, 0, 0, 0);
+    const oldTxInPast = oldTxDate <= today;
+    
+    // Determine if new transaction will be in the past or today
+    let newTxDate = oldTxDate;
+    if (updatedData.date) {
+      newTxDate = new Date(updatedData.date);
+      newTxDate.setHours(0, 0, 0, 0);
+    }
+    const newTxInPast = newTxDate <= today;
     
     // Update the transaction, converting amount to number if needed
     if (updatedData.amount !== undefined) {
       updatedData.amount = parseFloat(updatedData.amount);
     }
     
+    // Handle budget adjustments
     // If category or amount changed, adjust budgets
     if ((updatedData.category && updatedData.category !== oldTransaction.category) || 
-        (updatedData.amount !== undefined && updatedData.amount !== oldTransaction.amount)) {
+        (updatedData.amount !== undefined && updatedData.amount !== oldTransaction.amount) ||
+        (oldTxInPast !== newTxInPast)) {
         
-      // If old transaction was an expense, remove its amount from the old budget
-      if (oldTransaction.amount < 0) {
-        const oldBudget = financeData.budgets.find(b => b.category === oldTransaction.category);
-        if (oldBudget) {
-          oldBudget.spent = Math.max(0, (parseFloat(oldBudget.spent) || 0) - Math.abs(oldTransaction.amount));
+      // Only process budget changes for past transactions
+      if (oldTxInPast) {
+        // If old transaction was an expense and in the past, remove its amount from the old budget
+        if (oldTransaction.amount < 0) {
+          const oldBudget = financeData.budgets.find(b => b.category === oldTransaction.category);
+          if (oldBudget) {
+            oldBudget.spent = Math.max(0, (parseFloat(oldBudget.spent) || 0) - Math.abs(oldTransaction.amount));
+          }
         }
       }
       
-      // If new transaction is an expense, add its amount to the new budget
-      if (updatedData.amount < 0) {
+      // If new transaction is an expense and in the past, add its amount to the new budget
+      if (newTxInPast && (updatedData.amount !== undefined ? updatedData.amount < 0 : oldTransaction.amount < 0)) {
+        const amount = updatedData.amount !== undefined ? updatedData.amount : oldTransaction.amount;
         const categoryToUse = updatedData.category || oldTransaction.category;
         const newBudget = financeData.budgets.find(b => b.category === categoryToUse);
+        
         if (newBudget) {
-          newBudget.spent = (parseFloat(newBudget.spent) || 0) + Math.abs(updatedData.amount);
+          newBudget.spent = (parseFloat(newBudget.spent) || 0) + Math.abs(amount);
         }
       }
     }
     
-    financeData.transactions[index] = {
-      ...financeData.transactions[index],
+    // Create the updated transaction by merging old data with updates
+    const updatedTransaction = {
+      ...oldTransaction,
       ...updatedData
     };
     
+    // Update timestamp for sorting if the date changed
+    if (updatedData.date && updatedData.date !== oldTransaction.date) {
+      // Keep the time portion of the original timestamp but update the date
+      const originalTime = new Date(oldTransaction.timestamp).toISOString().split('T')[1];
+      updatedTransaction.timestamp = `${updatedData.date}T${originalTime}`;
+    }
+    
+    // Save the updated transaction
+    financeData.transactions[index] = updatedTransaction;
     saveFinanceData(financeData);
-    return financeData.transactions[index];
+    
+    // If the transaction is now in the future, create a task for it
+    const updatedTxDate = new Date(updatedTransaction.date || updatedTransaction.timestamp);
+    updatedTxDate.setHours(0, 0, 0, 0);
+    
+    if (updatedTxDate > today) {
+      createTaskFromTransaction(updatedTransaction);
+    }
+    
+    return updatedTransaction;
   }
   
   return null;
@@ -622,9 +673,12 @@ export const deleteReminderForRecurring = (recurring) => {
 };
 
 // Calculate financial stats
+// Enhance your existing calculateFinancialStats function
 export const calculateFinancialStats = (period = 'month') => {
   const financeData = getFinanceData();
   const now = new Date();
+  now.setHours(0, 0, 0, 0);  // Normalize today's date to midnight
+  
   let startDate;
   
   // Calculate start date based on period
@@ -653,10 +707,27 @@ export const calculateFinancialStats = (period = 'month') => {
   const startDateIso = startDate.toISOString();
   
   // Filter transactions for the period
-  const periodTransactions = financeData.transactions.filter(t => 
+  const allTransactions = financeData.transactions || [];
+  
+  // Separate current (past + today) and future transactions
+  const currentTransactions = allTransactions.filter(t => {
+    const txDate = new Date(t.date || t.timestamp);
+    txDate.setHours(0, 0, 0, 0);
+    return txDate <= now;
+  });
+  
+  const futureTransactions = allTransactions.filter(t => {
+    const txDate = new Date(t.date || t.timestamp);
+    txDate.setHours(0, 0, 0, 0);
+    return txDate > now;
+  });
+  
+  // Filter period transactions (as before)
+  const periodTransactions = currentTransactions.filter(t => 
     new Date(t.timestamp) >= startDate
   );
   
+  // Calculate current stats (only transactions up to today)
   // Calculate total income
   const income = periodTransactions
     .filter(t => t.amount > 0)
@@ -670,7 +741,21 @@ export const calculateFinancialStats = (period = 'month') => {
   // Calculate balance
   const balance = income - expenses;
   
-  // Calculate category breakdown
+  // Calculate upcoming stats (future transactions)
+  const upcomingIncome = futureTransactions
+    .filter(t => t.amount > 0)
+    .reduce((sum, t) => sum + t.amount, 0);
+  
+  const upcomingExpenses = futureTransactions
+    .filter(t => t.amount < 0)
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  
+  const upcomingNet = upcomingIncome - upcomingExpenses;
+  
+  // Calculate projected balance (current + upcoming)
+  const projectedBalance = balance + upcomingNet;
+  
+  // Calculate category breakdown (using only current transactions)
   const categoryBreakdown = {};
   
   periodTransactions.forEach(transaction => {
@@ -695,7 +780,7 @@ export const calculateFinancialStats = (period = 'month') => {
     const previousMonthEnd = new Date(startDate);
     previousMonthEnd.setDate(previousMonthEnd.getDate() - 1);
     
-    const previousMonthTransactions = financeData.transactions.filter(t => 
+    const previousMonthTransactions = currentTransactions.filter(t => 
       new Date(t.timestamp) >= previousMonth && new Date(t.timestamp) <= previousMonthEnd
     );
     
@@ -727,7 +812,7 @@ export const calculateFinancialStats = (period = 'month') => {
     };
   });
   
-  // Return compiled stats
+  // Return compiled stats with both current and upcoming data
   return {
     period,
     income,
@@ -737,7 +822,21 @@ export const calculateFinancialStats = (period = 'month') => {
     categoryBreakdown,
     budgets,
     startDate: startDateIso,
-    endDate: now.toISOString()
+    endDate: now.toISOString(),
+    // New properties for upcoming transactions
+    current: {
+      income,
+      expenses,
+      balance
+    },
+    upcoming: {
+      income: upcomingIncome,
+      expenses: upcomingExpenses,
+      net: upcomingNet
+    },
+    projected: {
+      balance: projectedBalance
+    }
   };
 };
 
@@ -1044,4 +1143,89 @@ export const getSpendingMoodCorrelation = () => {
   correlations.sort((a, b) => b.moodChange - a.moodChange);
   
   return correlations.slice(0, 3); // Return top 3 correlations
+};
+
+
+export const createTaskFromTransaction = (transaction) => {
+  if (!transaction) return false;
+  
+  // Get transaction date
+  const txDate = new Date(transaction.date || transaction.timestamp);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Skip if transaction is not in the future
+  if (txDate <= today) return false;
+  
+  // Format the date as required for task storage
+  const dateKey = txDate.toISOString().split('T')[0];
+  
+  // Get existing storage
+  const storage = getStorage();
+  
+  // Prepare day data
+  if (!storage[dateKey]) {
+    storage[dateKey] = {
+      checked: {},
+      date: dateKey
+    };
+  }
+  
+  // Get existing tasks or create a default structure
+  let dayTasks = null;
+  
+  // Check for existing task lists in priority order
+  if (storage[dateKey].customTasks) {
+    dayTasks = storage[dateKey].customTasks;
+  } else if (storage[dateKey].aiTasks) {
+    dayTasks = storage[dateKey].aiTasks;
+  } else if (storage[dateKey].defaultTasks) {
+    dayTasks = storage[dateKey].defaultTasks;
+  }
+  
+  // Create the default tasks if none exists
+  if (!dayTasks) {
+    dayTasks = [
+      {
+        title: "Daily Tasks",
+        items: ["Complete morning routine", "Check email"]
+      }
+    ];
+  }
+  
+  // Find or create the Finance category
+  let financeCategory = dayTasks.find(category => category.title === "Finance");
+  
+  if (!financeCategory) {
+    financeCategory = {
+      title: "Finance",
+      items: []
+    };
+    dayTasks.push(financeCategory);
+  }
+  
+  // Create task text based on transaction type
+  const isExpense = transaction.amount < 0;
+  const formattedAmount = `$${Math.abs(transaction.amount).toFixed(2)}`;
+  const taskText = `${isExpense ? 'Pay' : 'Receive'}: ${transaction.name} (${isExpense ? '-' : '+'}${formattedAmount})`;
+  
+  // Check if this task already exists
+  if (!financeCategory.items.includes(taskText)) {
+    financeCategory.items.push(taskText);
+    
+    // Add to the checked status
+    if (!storage[dateKey].checked) {
+      storage[dateKey].checked = {};
+    }
+    
+    storage[dateKey].checked[taskText] = false;
+    
+    // Save the customTasks back to storage
+    storage[dateKey].customTasks = dayTasks;
+    setStorage(storage);
+    
+    return true;
+  }
+  
+  return false;
 };

@@ -2,19 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { 
   CreditCard, Search, Filter, TrendingUp, TrendingDown, X,
   Edit, Trash2, Calendar, DollarSign, ArrowDown, ArrowUp, Download,
-  Home, Utensils, Car, Zap, Heart, Film, ShoppingBag, BookOpen,
-  User, Repeat, CreditCard as CardIcon, MoreHorizontal, Banknote,
-  Laptop, Gift, PlusCircle
+  MoreHorizontal, ChevronDown
 } from 'lucide-react';
 import EditTransactionModal from './EditTransactionModal';
 import ConfirmationModal from './ConfirmationModal';
-import './finance-styles.css';
 import { 
   getFinanceData, deleteTransaction, getCategoryById, 
-  getCategoryIconComponent, CATEGORY_ICONS 
+  getCategoryIconComponent
 } from '../../utils/financeUtils';
-
-
 
 const ExpenseTracker = ({ 
   compact = false, 
@@ -36,8 +31,21 @@ const ExpenseTracker = ({
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [categories, setCategories] = useState({});
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showDetails, setShowDetails] = useState(null);
 
-  // Fetch transactions and categories on initial render and when refreshTrigger changes
+  // Check if we're on mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Fetch transactions and categories on mount
   useEffect(() => {
     const financeData = getFinanceData();
     setTransactions(financeData.transactions);
@@ -47,6 +55,17 @@ const ExpenseTracker = ({
   // Apply filters and search whenever related states change
   useEffect(() => {
     let filtered = [...transactions];
+
+    // Filter out future transactions
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+    
+    // Apply search term filter
+    filtered = filtered.filter(transaction => {
+      const txDate = new Date(transaction.date || transaction.timestamp);
+      txDate.setHours(0, 0, 0, 0);
+      return txDate <= today; // Only include past and today's transactions
+    });
     
     // Apply search term filter
     if (searchTerm) {
@@ -56,6 +75,7 @@ const ExpenseTracker = ({
         (transaction.notes && transaction.notes.toLowerCase().includes(term))
       );
     }
+    
     
     // Apply date filter
     const now = new Date();
@@ -108,7 +128,6 @@ const ExpenseTracker = ({
       return 0;
     });
     
-    // Update filtered transactions
     setFilteredTransactions(filtered);
   }, [transactions, searchTerm, dateFilter, typeFilter, categoryFilter, sortBy, sortOrder]);
 
@@ -119,10 +138,6 @@ const ExpenseTracker = ({
       name: transaction.name,
       amount: transaction.amount
     });
-  };
-
-  const getCategoryIcon = (categoryId, size = 12) => {
-    return getCategoryIconComponent(categoryId, size);
   };
 
   // Confirm deletion
@@ -166,9 +181,34 @@ const ExpenseTracker = ({
     return `${currency}${Math.abs(amount).toFixed(2)}`;
   };
 
+  // Get category badge color class
+  const getCategoryColorClass = (category) => {
+    if (!category) return 'bg-slate-600';
+    
+    // Map color names to Tailwind classes
+    const colorMap = {
+      'blue': 'bg-blue-500/20 text-blue-300',
+      'green': 'bg-green-500/20 text-green-300', 
+      'amber': 'bg-amber-500/20 text-amber-300',
+      'red': 'bg-red-500/20 text-red-300',
+      'purple': 'bg-purple-500/20 text-purple-300',
+      'pink': 'bg-pink-500/20 text-pink-300',
+      'indigo': 'bg-indigo-500/20 text-indigo-300',
+      'teal': 'bg-teal-500/20 text-teal-300',
+      'emerald': 'bg-emerald-500/20 text-emerald-300',
+      'cyan': 'bg-cyan-500/20 text-cyan-300',
+      'violet': 'bg-violet-500/20 text-violet-300',
+      'fuchsia': 'bg-fuchsia-500/20 text-fuchsia-300',
+      'rose': 'bg-rose-500/20 text-rose-300',
+      'slate': 'bg-slate-500/20 text-slate-300',
+      'gray': 'bg-gray-500/20 text-gray-300'
+    };
+    
+    return colorMap[category.color] || 'bg-slate-600 text-white';
+  };
+
   // Export transactions as CSV
   const exportTransactions = () => {
-    // Create CSV content
     let csv = 'Date,Name,Category,Amount,Notes\n';
     
     filteredTransactions.forEach(tx => {
@@ -192,8 +232,6 @@ const ExpenseTracker = ({
 
   // If compact mode, show only a few transactions with minimal filters
   if (compact) {
-    const displayTransactions = filteredTransactions.slice(0, 5);
-    
     return (
       <div className="bg-slate-700/50 dark:bg-slate-700/50 rounded-lg overflow-hidden transition-all">
         <div className="flex justify-between items-center px-4 py-2">
@@ -241,6 +279,7 @@ const ExpenseTracker = ({
           </div>
         )}
         
+        {/* Compact View - Always Table */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-700 text-xs text-white">
@@ -261,18 +300,13 @@ const ExpenseTracker = ({
                         {formatDate(transaction.timestamp)}
                       </td>
                       <td className="p-3">
-                        <div className="font-medium text-white">{transaction.name}</div>
-                        {transaction.notes && (
-                          <div className="text-xs text-slate-400 mt-1 line-clamp-1">
-                            {transaction.notes}
-                          </div>
-                        )}
+                        <div className="font-medium text-white max-w-[120px] truncate">{transaction.name}</div>
                       </td>
                       <td className="p-3">
                         {category && (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-${category.color}-500/20 text-${category.color}-300`}>
-                            {getCategoryIcon(category.id)}
-                            <span>{category.name}</span>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${getCategoryColorClass(category)}`}>
+                            {getCategoryIconComponent(category.id, 12)}
+                            {category.name}
                           </span>
                         )}
                       </td>
@@ -317,14 +351,14 @@ const ExpenseTracker = ({
           Transactions
         </h4>
         
-        <div className="flex flex-wrap gap-2">
-          <div className="relative">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+          <div className="relative flex-1 md:flex-auto">
             <input
               type="text"
               placeholder="Search transactions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-3 py-2 bg-slate-700 dark:bg-slate-700 border border-slate-600 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:border-transparent transition-colors text-white"
+              className="w-full md:w-auto pl-9 pr-3 py-2 bg-slate-700 dark:bg-slate-700 border border-slate-600 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:border-transparent transition-colors text-white"
             />
             <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
           </div>
@@ -337,13 +371,16 @@ const ExpenseTracker = ({
             <span>Filter</span>
           </button>
           
-          <button
-            onClick={exportTransactions}
-            className="px-3 py-2 rounded-lg bg-amber-600 dark:bg-amber-600 text-white hover:bg-amber-700 dark:hover:bg-amber-700 transition-colors flex items-center gap-1"
-          >
-            <Download size={16} />
-            <span>Export</span>
-          </button>
+          {/* Hide Export button on mobile */}
+          {!isMobile && (
+            <button
+              onClick={exportTransactions}
+              className="px-3 py-2 rounded-lg bg-amber-600 dark:bg-amber-600 text-white hover:bg-amber-700 dark:hover:bg-amber-700 transition-colors flex items-center gap-1"
+            >
+              <Download size={16} />
+              <span>Export</span>
+            </button>
+          )}
         </div>
       </div>
       
@@ -446,8 +483,9 @@ const ExpenseTracker = ({
         </div>
       )}
       
-      <div className="bg-slate-800 dark:bg-slate-800 rounded-lg overflow-hidden border border-slate-700 dark:border-slate-700">
-        <div className="overflow-x-auto">
+      {/* Desktop view - Table */}
+      {!isMobile && (
+        <div className="bg-slate-800 dark:bg-slate-800 rounded-lg overflow-hidden border border-slate-700 dark:border-slate-700">
           <table className="w-full">
             <thead className="bg-slate-700 dark:bg-slate-700">
               <tr>
@@ -512,9 +550,9 @@ const ExpenseTracker = ({
                       </td>
                       <td className="p-3">
                         {category && (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-${category.color}-500/20 text-${category.color}-300`}>
-                            {getCategoryIcon(category.id)}
-                            <span>{category.name}</span>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${getCategoryColorClass(category)}`}>
+                            {getCategoryIconComponent(category.id, 12)}
+                            {category.name}
                           </span>
                         )}
                       </td>
@@ -566,7 +604,105 @@ const ExpenseTracker = ({
             </tbody>
           </table>
         </div>
-      </div>
+      )}
+      
+      {/* Mobile view - Card based layout */}
+      {isMobile && (
+        <div className="space-y-2">
+          {filteredTransactions.length > 0 ? (
+            filteredTransactions.map(transaction => {
+              const category = getCategoryById(transaction.category);
+              const isShowing = showDetails === transaction.id;
+              
+              return (
+                <div 
+                  key={transaction.id}
+                  className="bg-slate-800 dark:bg-slate-800 rounded-lg border border-slate-700 dark:border-slate-700 overflow-hidden"
+                >
+                  <div 
+                    className="p-3 flex justify-between items-start cursor-pointer"
+                    onClick={() => setShowDetails(isShowing ? null : transaction.id)}
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium text-white mb-1 truncate">{transaction.name}</div>
+                      <div className="flex items-center">
+                        <Calendar size={12} className="text-slate-400 mr-1" />
+                        <span className="text-xs text-slate-400">
+                          {formatDate(transaction.timestamp)}
+                        </span>
+                      </div>
+                      
+                      {category && (
+                        <div className="mt-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${getCategoryColorClass(category)}`}>
+                            {getCategoryIconComponent(category.id, 12)}
+                            {category.name}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <div className={`text-right font-medium ${
+                        transaction.amount > 0 
+                          ? 'text-green-400' 
+                          : 'text-red-400'
+                      }`}>
+                        {transaction.amount > 0 ? (
+                          <TrendingUp size={14} className="inline mr-1" />
+                        ) : (
+                          <TrendingDown size={14} className="inline mr-1" />
+                        )}
+                        {transaction.amount > 0 ? '+' : '-'}
+                        {formatCurrency(transaction.amount)}
+                      </div>
+                      
+                      <ChevronDown 
+                        size={16} 
+                        className={`text-slate-400 transition-transform ${isShowing ? 'rotate-180' : ''}`} 
+                      />
+                    </div>
+                  </div>
+                  
+                  {isShowing && (
+                    <div className="px-3 pb-3 pt-1 border-t border-slate-700">
+                      {transaction.notes && (
+                        <div className="mb-3">
+                          <div className="text-xs text-slate-400 mb-1">Notes</div>
+                          <div className="text-sm text-white bg-slate-700/50 p-2 rounded">{transaction.notes}</div>
+                        </div>
+                      )}
+                      
+                      {!hideActions && (
+                        <div className="flex justify-end gap-2 mt-2">
+                          <button
+                            onClick={() => handleEditTransaction(transaction)}
+                            className="px-3 py-1 bg-blue-600/30 hover:bg-blue-600/50 text-blue-400 text-sm rounded-lg flex items-center gap-1"
+                          >
+                            <Edit size={14} />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTransaction(transaction)}
+                            className="px-3 py-1 bg-red-600/30 hover:bg-red-600/50 text-red-400 text-sm rounded-lg flex items-center gap-1"
+                          >
+                            <Trash2 size={14} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <div className="p-6 text-center text-slate-500 dark:text-slate-400 bg-slate-800 dark:bg-slate-800 rounded-lg">
+              No transactions found
+            </div>
+          )}
+        </div>
+      )}
       
       {/* Edit Transaction Modal */}
       {editingTransaction && (

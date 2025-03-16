@@ -26,7 +26,7 @@ import ModalContainer from './ModalContainer';
 import { 
   calculateFinancialStats, processRecurringTransactions, 
   getFinancialInsights, getSpendingMoodCorrelation, getFinanceData,
-  getCategoryById, addBudget, addSavingsGoal, updateBudget
+  getCategoryById, addBudget, addSavingsGoal, updateBudget,getCategoryIconComponent
 } from '../../utils/financeUtils';
 
 const FinanceSection = () => {
@@ -61,9 +61,37 @@ const FinanceSection = () => {
   const [transactions, setTransactions] = useState([]);
   const [bills, setBills] = useState([]);
   const [currency, setCurrency] = useState('€');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   
   // Calendar mode for upcoming tab
   const [calendarMode, setCalendarMode] = useState(false);
+
+  // Add this helper function to your FinanceSection.jsx
+const getCategoryColorClass = (category) => {
+  if (!category) return 'bg-slate-600';
+  
+  // Map color names to Tailwind classes
+  const colorMap = {
+    'blue': 'bg-blue-500/20 text-blue-300',
+    'green': 'bg-green-500/20 text-green-300', 
+    'amber': 'bg-amber-500/20 text-amber-300',
+    'red': 'bg-red-500/20 text-red-300',
+    'purple': 'bg-purple-500/20 text-purple-300',
+    'pink': 'bg-pink-500/20 text-pink-300',
+    'indigo': 'bg-indigo-500/20 text-indigo-300',
+    'teal': 'bg-teal-500/20 text-teal-300',
+    'emerald': 'bg-emerald-500/20 text-emerald-300',
+    'cyan': 'bg-cyan-500/20 text-cyan-300',
+    'violet': 'bg-violet-500/20 text-violet-300',
+    'fuchsia': 'bg-fuchsia-500/20 text-fuchsia-300',
+    'rose': 'bg-rose-500/20 text-rose-300',
+    'slate': 'bg-slate-500/20 text-slate-300',
+    'gray': 'bg-gray-500/20 text-gray-300'
+  };
+  
+  return colorMap[category.color] || 'bg-slate-600 text-white';
+};
+
 
   // Define tab items with icons and labels
   const tabItems = [
@@ -74,6 +102,15 @@ const FinanceSection = () => {
     { id: 'upcoming', icon: <Calendar size={16} />, label: 'Upcoming' },
     { id: 'insights', icon: <LineChart size={16} />, label: 'Insights' }
   ];
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Process recurring transactions on first load and when page refreshes
   useEffect(() => {
@@ -93,6 +130,24 @@ const FinanceSection = () => {
     
     return () => clearInterval(interval);
   }, []);
+
+  // Function to filter transactions by date (past or future)
+const filterTransactionsByDate = (transactions, futureOnly = false) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  return transactions.filter(transaction => {
+    const txDate = new Date(transaction.date || transaction.timestamp);
+    txDate.setHours(0, 0, 0, 0);
+    
+    if (futureOnly) {
+      return txDate > today; // Future transactions only
+    } else {
+      return txDate <= today; // Past and today's transactions only
+    }
+  });
+};
+
 
   // Calculate stats when period changes or data is refreshed
   useEffect(() => {
@@ -231,83 +286,79 @@ const FinanceSection = () => {
         
         {/* Stats Summary */}
         {stats && (
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            {/* Balance */}
-            <div className="bg-amber-900/30 dark:bg-amber-900/30 p-3 rounded-lg border border-amber-800/50 dark:border-amber-800/50">
-              <div className="flex items-center mb-1">
-                <div className="flex items-center gap-1">
-                  <DollarSign size={16} className="text-amber-400 dark:text-amber-400" />
-                  <h4 className="font-medium text-white dark:text-white text-sm">Balance</h4>
-                </div>
-              </div>
-              <div className="flex justify-between items-end">
-                <div className="text-xs text-slate-400 dark:text-slate-400">
-                  Change
-                  <span className={`ml-1 flex items-center ${stats.monthlyChange >= 0 
-                    ? 'text-red-400 dark:text-red-400' 
-                    : 'text-red-400 dark:text-red-400'}`}>
-                    {stats.monthlyChange <= 0 ? (
-                      <TrendingDown size={10} className="mr-0.5" />
-                    ) : (
-                      <TrendingUp size={10} className="mr-0.5" />
-                    )}
-                    {formatCurrency(Math.abs(stats.monthlyChange))}
-                  </span>
-                </div>
-                <span className="font-bold text-lg text-amber-300 dark:text-amber-300 break-words">
-                  {formatCurrency(stats.balance)}
-                </span>
-              </div>
-            </div>
-            
-            {/* Income */}
-            <div className="bg-green-900/30 dark:bg-green-900/30 p-3 rounded-lg border border-green-800/50 dark:border-green-800/50">
-              <div className="flex items-center mb-1">
-                <div className="flex items-center gap-1">
-                  <TrendingUp size={16} className="text-green-400 dark:text-green-400" />
-                  <h4 className="font-medium text-white dark:text-white text-sm">Income</h4>
-                </div>
-              </div>
-              <div className="flex justify-between items-end">
-                <div className="text-xs text-slate-400 dark:text-slate-400">
-                  Savings Rate
-                  <span className="ml-1 text-white dark:text-white">
-                    {stats.income > 0 ? 
-                      Math.round(((stats.income - stats.expenses) / stats.income) * 100) 
-                      : 0}%
-                  </span>
-                </div>
-                <span className="font-bold text-lg text-green-300 dark:text-green-300 break-words">
-                  {formatCurrency(stats.income)}
-                </span>
-              </div>
-            </div>
-            
-            {/* Expenses (Full Width) */}
-            <div className="bg-red-900/30 dark:bg-red-900/30 p-3 rounded-lg border border-red-800/50 dark:border-red-800/50 col-span-2 mb-1">
-              <div className="flex items-center mb-1">
-                <div className="flex items-center gap-1">
-                  <TrendingDown size={16} className="text-red-400 dark:text-red-400" />
-                  <h4 className="font-medium text-white dark:text-white text-sm">Expenses</h4>
-                </div>
-              </div>
-              <div className="flex justify-between items-end">
-                <div className="text-xs text-slate-400 dark:text-slate-400">
-                  Budget Utilization
-                  <span className="ml-1 text-white dark:text-white">
-                    {stats.budgets.length > 0 ? 
-                      Math.round((stats.budgets.reduce((sum, b) => sum + b.spent, 0) / 
-                      stats.budgets.reduce((sum, b) => sum + b.allocated, 0)) * 100) 
-                      : 0}%
-                  </span>
-                </div>
-                <span className="font-bold text-lg text-red-300 dark:text-red-300 break-words">
-                  {formatCurrency(stats.expenses)}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
+  <div className="grid grid-cols-2 gap-2 mb-3">
+    {/* Balance */}
+    <div className="bg-amber-900/30 dark:bg-amber-900/30 p-3 rounded-lg border border-amber-800/50 dark:border-amber-800/50">
+      <div className="flex items-center mb-1">
+        <div className="flex items-center gap-1">
+          <DollarSign size={16} className="text-amber-400 dark:text-amber-400" />
+          <h4 className="font-medium text-white dark:text-white text-sm">Balance</h4>
+        </div>
+      </div>
+      <div className="flex justify-between items-end">
+        <div className="text-xs text-slate-400 dark:text-slate-400">
+          Projected
+          <span className={`ml-1 flex items-center ${stats.upcoming.net >= 0 
+            ? 'text-green-400 dark:text-green-400' 
+            : 'text-red-400 dark:text-red-400'}`}>
+            {stats.upcoming.net <= 0 ? (
+              <TrendingDown size={10} className="mr-0.5" />
+            ) : (
+              <TrendingUp size={10} className="mr-0.5" />
+            )}
+            {formatCurrency(stats.projected.balance)}
+          </span>
+        </div>
+        <span className="font-bold text-lg text-amber-300 dark:text-amber-300 break-words">
+          {formatCurrency(stats.current.balance)}
+        </span>
+      </div>
+    </div>
+    
+    {/* Income */}
+    <div className="bg-green-900/30 dark:bg-green-900/30 p-3 rounded-lg border border-green-800/50 dark:border-green-800/50">
+      <div className="flex items-center mb-1">
+        <div className="flex items-center gap-1">
+          <TrendingUp size={16} className="text-green-400 dark:text-green-400" />
+          <h4 className="font-medium text-white dark:text-white text-sm">Income</h4>
+        </div>
+      </div>
+      <div className="flex justify-between items-end">
+        <div className="text-xs text-slate-400 dark:text-slate-400">
+          Upcoming
+          <span className="ml-1 text-green-400 dark:text-green-400">
+            +{formatCurrency(stats.upcoming.income)}
+          </span>
+        </div>
+        <span className="font-bold text-lg text-green-300 dark:text-green-300 break-words">
+          {formatCurrency(stats.current.income)}
+        </span>
+      </div>
+    </div>
+    
+    {/* Expenses (Full Width) */}
+    <div className="bg-red-900/30 dark:bg-red-900/30 p-3 rounded-lg border border-red-800/50 dark:border-red-800/50 col-span-2 mb-1">
+      <div className="flex items-center mb-1">
+        <div className="flex items-center gap-1">
+          <TrendingDown size={16} className="text-red-400 dark:text-red-400" />
+          <h4 className="font-medium text-white dark:text-white text-sm">Expenses</h4>
+        </div>
+      </div>
+      <div className="flex justify-between items-end">
+        <div className="text-xs text-slate-400 dark:text-slate-400">
+          Upcoming
+          <span className="ml-1 text-red-400 dark:text-red-400">
+            -{formatCurrency(stats.upcoming.expenses)}
+          </span>
+        </div>
+        <span className="font-bold text-lg text-red-300 dark:text-red-300 break-words">
+          {formatCurrency(stats.current.expenses)}
+        </span>
+      </div>
+    </div>
+  </div>
+)}
+
         
         {/* Action Buttons */}
         <div className="flex flex-col gap-2">
@@ -410,83 +461,102 @@ const FinanceSection = () => {
             
             {/* Recent Transactions */}
             <div>
-              <div 
-                onClick={() => toggleSection('transactions')} 
-                className="flex items-center justify-between mb-2 cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  <CreditCard size={18} className="text-amber-400 dark:text-amber-400" />
-                  <h4 className="font-medium text-white dark:text-white">Recent Transactions</h4>
-                </div>
-                {expandedSections.transactions ? 
-                  <ChevronUp size={18} className="text-slate-400 dark:text-slate-400" /> : 
-                  <ChevronDown size={18} className="text-slate-400 dark:text-slate-400" />}
-              </div>
-              
-              {expandedSections.transactions && (
-                <div className="mb-3">
-                  {transactions.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
-                      <FileText size={42} className="text-slate-500 mb-2" />
-                      <p>No transactions found</p>
-                    </div>
-                  ) : (
-                    <div className="rounded-lg overflow-hidden">
-                      <table className="w-full">
-                        <thead className="bg-slate-700 text-xs text-white">
-                          <tr>
-                            <th className="p-2 text-left">Date</th>
-                            <th className="p-2 text-left">Description</th>
-                            <th className="p-2 text-left">Category</th>
-                            <th className="p-2 text-right">Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-600 bg-slate-700/50">
-                          {transactions.slice(0, 5).map((transaction, index) => {
-                            const category = getCategoryById(transaction.category);
-                            return (
-                              <tr key={transaction.id || index} className="hover:bg-slate-700/70 transition-colors">
-                                <td className="p-2 text-white text-xs">
-                                  {new Date(transaction.timestamp).toLocaleDateString(undefined, {month: 'numeric', day: 'numeric', year: 'numeric'})}
-                                </td>
-                                <td className="p-2 text-white text-xs max-w-[80px] truncate">
-                                  {transaction.name}
-                                </td>
-                                <td className="p-2 text-xs">
-                                  {category && (
-                                    <span className="inline-block px-1.5 py-0.5 rounded-full text-xs bg-slate-600 text-white">
-                                      {category.name}
-                                    </span>
-                                  )}
-                                </td>
-                                <td className={`p-2 text-right font-medium text-xs ${
-                                  transaction.amount > 0 
-                                    ? 'text-green-400' 
-                                    : 'text-red-400'
-                                }`}>
-                                  {transaction.amount > 0 ? '+' : ''}
-                                  {formatCurrency(transaction.amount)}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                  
-                  <div className="mt-2 text-center">
-                    <button 
-                      onClick={() => navigateToTab('transactions')}
-                      className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
-                    >
-                      <span>View all transactions</span>
-                      <ArrowRight size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
+  <div 
+    onClick={() => toggleSection('transactions')} 
+    className="flex items-center justify-between mb-2 cursor-pointer"
+  >
+    <div className="flex items-center gap-2">
+      <CreditCard size={18} className="text-amber-400 dark:text-amber-400" />
+      <h4 className="font-medium text-white dark:text-white">Recent Transactions</h4>
+    </div>
+    {expandedSections.transactions ? 
+      <ChevronUp size={18} className="text-slate-400 dark:text-slate-400" /> : 
+      <ChevronDown size={18} className="text-slate-400 dark:text-slate-400" />}
+  </div>
+  
+  {expandedSections.transactions && (
+    <div className="mb-3">
+      {/* Filter to get only past and today's transactions */}
+      {(() => {
+        const recentTransactions = filterTransactionsByDate(transactions, false);
+        
+        if (recentTransactions.length === 0) {
+          return (
+            <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
+              <CreditCard size={42} className="text-slate-500 mb-2" />
+              <p>No transactions found</p>
             </div>
+          );
+        }
+        
+        return (
+          <div className="rounded-lg overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-700 text-xs text-white">
+                <tr>
+                  <th className="p-2 text-left">Date</th>
+                  <th className="p-2 text-left">Description</th>
+                  <th className="p-2 text-left">Category</th>
+                  <th className="p-2 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-600 bg-slate-700/50">
+                {/* Limit to just 3 most recent transactions */}
+                {recentTransactions.slice(0, 3).map((transaction, index) => {
+                  const category = getCategoryById(transaction.category);
+                  return (
+                    <tr key={transaction.id || index} className="hover:bg-slate-700/70 transition-colors">
+                      <td className="p-2 text-white text-xs">
+                        {new Date(transaction.timestamp).toLocaleDateString(undefined, {month: 'numeric', day: 'numeric', year: 'numeric'})}
+                      </td>
+                      <td className="p-2 text-white text-xs max-w-[80px] truncate">
+                        {transaction.name}
+                      </td>
+                      <td className="p-2 text-xs">
+                        {category && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${getCategoryColorClass(category)}`}>
+                            {getCategoryIconComponent(category.id, 12)}
+                            <span className="hidden sm:inline">{category.name}</span>
+                          </span>
+                        )}
+                      </td>
+                      <td className={`p-2 text-right font-medium text-xs ${
+                        transaction.amount > 0 
+                          ? 'text-green-400' 
+                          : 'text-red-400'
+                      }`}>
+                        <div className="flex items-center justify-end">
+                          {transaction.amount > 0 ? (
+                            <TrendingUp size={14} className="mr-1 text-green-500" />
+                          ) : (
+                            <TrendingDown size={14} className="mr-1 text-red-500" />
+                          )}
+                          {transaction.amount > 0 ? '+' : ''}
+                          {formatCurrency(transaction.amount)}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
+      
+      <div className="mt-2 text-center">
+        <button 
+          onClick={() => navigateToTab('transactions')}
+          className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
+        >
+          <span>View all transactions</span>
+          <ArrowRight size={16} />
+        </button>
+      </div>
+    </div>
+  )}
+</div>
+           
             
             {/* Budget Overview */}
             <div>

@@ -226,7 +226,19 @@ export const getHabitsForDate = (date) => {
   const dateObj = new Date(date);
   // Get day of week as 3-letter lowercase (mon, tue, etc.)
   const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
-  return getHabitsForDay(dayOfWeek);
+  
+  // Get habits for this day of week
+  const habitsForDay = getHabitsForDay(dayOfWeek);
+  
+  // Filter out habits that haven't started yet
+  return habitsForDay.filter(habit => {
+    const habitStartDate = new Date(habit.startDate);
+    // Reset time portion for accurate date comparison
+    habitStartDate.setHours(0, 0, 0, 0);
+    dateObj.setHours(0, 0, 0, 0);
+    
+    return habitStartDate <= dateObj;
+  });
 };
 
 /**
@@ -627,6 +639,17 @@ export const createHabitTaskCategory = (date) => {
 export const injectHabitTasks = (date) => {
   const storage = getStorage();
   const dayData = storage[date] || {};
+  
+  // Don't modify task lists for dates before today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const targetDate = new Date(date);
+  targetDate.setHours(0, 0, 0, 0);
+  
+  // Only allow modifications for today or future dates
+  if (targetDate < today) {
+    return false;
+  }
   
   // Check if there's already a task list
   const hasTaskList = 

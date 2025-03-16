@@ -25,6 +25,11 @@ const HabitList = ({ habits, onSelectHabit, onCreateHabit, onCreateWithAI, onVie
     );
   };
 
+  const truncateDescription = (text, maxLength = 30) => {
+    if (!text) return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
   return (
     <div className="px-2 sm:px-0 w-full overflow-hidden">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2 sm:gap-0">
@@ -90,78 +95,84 @@ const HabitList = ({ habits, onSelectHabit, onCreateHabit, onCreateWithAI, onVie
             
             return (
               <div 
-                key={habit.id}
-                className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => onSelectHabit(habit.id)}
-              >
-                <div className="flex items-center justify-between mb-2 sm:mb-3">
-                  <h3 className="font-medium text-slate-800 dark:text-slate-100 text-sm sm:text-base truncate pr-2">{habit.name}</h3>
-                  <div className="flex items-center">
-                    {renderStreakBubbles(habit.stats.streakCurrent)}
-                    <ChevronRight size={16} className="text-slate-400 ml-1 sm:ml-2" />
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between mb-2 sm:mb-3">
-                  <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate pr-2 max-w-[70%]">{habit.description}</div>
-                  <div className="text-xs text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                    {habit.stats.progress}% complete
-                  </div>
-                </div>
-                
-                <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 dark:bg-blue-600 rounded-full"
-                    style={{ width: `${habit.stats.progress}%` }}
-                  ></div>
-                </div>
-                
-                <div className="flex flex-wrap items-center justify-between mt-3 text-xs">
-                  <div className="flex flex-wrap gap-2 sm:gap-6 mb-2 sm:mb-0">
-                    <div className="flex items-center gap-1">
-                      <Zap size={14} className="text-amber-500" />
-                      <span className="text-slate-600 dark:text-slate-400">
-                        {habit.stats.streakCurrent} day{habit.stats.streakCurrent !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <TrendingUp size={14} className="text-green-500" />
-                      <span className="text-slate-600 dark:text-slate-400">
-                        {Math.round(habit.stats.completionRate * 100)}% completed
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {habit.frequency.map(day => (
-                      <span 
-                        key={day}
-                        className="w-5 h-5 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium"
-                      >
-                        {day[0].toUpperCase()}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Completion history dots */}
-                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 overflow-x-auto pb-1">
-                  <div className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">Last 7 days:</div>
-                  <div className="flex gap-1">
-                    {completionHistory.map((status, index) => (
-                      <div 
-                        key={index}
-                        className={`w-5 h-5 sm:w-6 sm:h-6 rounded-sm flex items-center justify-center text-xs font-medium flex-shrink-0
-                          ${status === 1 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 
-                            status === 0 ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400' :
-                            'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                          }`}
-                      >
-                        {status === 1 ? '✓' : status === 0 ? '-' : '✗'}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+  key={habit.id}
+  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+  onClick={() => onSelectHabit(habit.id)}
+>
+  <div className="flex items-center justify-between mb-2 sm:mb-3">
+    <h3 className="font-medium text-slate-800 dark:text-slate-100 text-sm sm:text-base truncate pr-2 max-w-[75%]">{habit.name}</h3>
+    <div className="flex items-center flex-shrink-0">
+      {renderStreakBubbles(habit.stats.streakCurrent)}
+      <ChevronRight size={16} className="text-slate-400 ml-1 sm:ml-2" />
+    </div>
+  </div>
+  
+  {/* Fix the description container */}
+  <div className="flex items-center justify-between mb-2 sm:mb-3">
+  <div className="max-w-[50%] sm:max-w-[60%]"> {/* Significantly reduced max width */}
+    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate overflow-hidden">
+    {truncateDescription(habit.description)}
+    </p>
+  </div>
+  <div className="text-xs text-blue-600 dark:text-blue-400 whitespace-nowrap">
+    {habit.stats.progress}% complete
+  </div>
+</div>
+  
+  {/* Rest of the habit card remains the same */}
+  <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+    <div 
+      className="h-full bg-blue-500 dark:bg-blue-600 rounded-full"
+      style={{ width: `${habit.stats.progress}%` }}
+    ></div>
+  </div>
+  
+  <div className="flex flex-wrap items-center justify-between mt-3 text-xs">
+    <div className="flex flex-wrap gap-2 sm:gap-6 mb-2 sm:mb-0">
+      <div className="flex items-center gap-1">
+        <Zap size={14} className="text-amber-500" />
+        <span className="text-slate-600 dark:text-slate-400">
+          {habit.stats.streakCurrent} day{habit.stats.streakCurrent !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <div className="flex items-center gap-1">
+        <TrendingUp size={14} className="text-green-500" />
+        <span className="text-slate-600 dark:text-slate-400">
+          {Math.round(habit.stats.completionRate * 100)}% completed
+        </span>
+      </div>
+    </div>
+    <div className="flex flex-wrap gap-1">
+      {habit.frequency.map(day => (
+        <span 
+          key={day}
+          className="w-5 h-5 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium"
+        >
+          {day[0].toUpperCase()}
+        </span>
+      ))}
+    </div>
+  </div>
+  
+  {/* Completion history dots */}
+  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 overflow-x-auto pb-1">
+    <div className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">Last 7 days:</div>
+    <div className="flex gap-1">
+      {completionHistory.map((status, index) => (
+        <div 
+          key={index}
+          className={`w-5 h-5 sm:w-6 sm:h-6 rounded-sm flex items-center justify-center text-xs font-medium flex-shrink-0
+            ${status === 1 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 
+              status === 0 ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400' :
+              'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+            }`}
+        >
+          {status === 1 ? '✓' : status === 0 ? '-' : '✗'}
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
             );
           })}
         </div>

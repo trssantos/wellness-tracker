@@ -21,6 +21,7 @@ import AddBudgetModal from './AddBudgetModal';
 import AddSavingsGoalModal from './AddSavingsGoalModal';
 import ConfirmationModal from './ConfirmationModal';
 import ModalContainer from './ModalContainer';
+import recurringTransactionService from '../../utils/RecurringTransactionService';
 
 // Import utilities
 import { 
@@ -102,6 +103,21 @@ const getCategoryColorClass = (category) => {
     { id: 'upcoming', icon: <Calendar size={16} />, label: 'Upcoming' },
     { id: 'insights', icon: <LineChart size={16} />, label: 'Insights' }
   ];
+
+  useEffect(() => {
+    // Use a setTimeout to delay initialization until after component rendering
+    const timer = setTimeout(() => {
+      // Wrap in try/catch for extra safety
+      try {
+        recurringTransactionService.init();
+      } catch (error) {
+        console.error("Failed to initialize recurring service:", error);
+      }
+    }, 2000); // 2 second delay to ensure full component mount
+    
+    // Clean up timer
+    return () => clearTimeout(timer);
+  }, []); // Empty dependency array ensures it runs only once
 
   useEffect(() => {
     const handleResize = () => {
@@ -430,33 +446,29 @@ const filterTransactionsByDate = (transactions, futureOnly = false) => {
               </div>
               
               {expandedSections.upcoming && (
-                <div className="mb-3">
-                  {bills.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
-                      <Calendar size={42} className="text-slate-500 mb-2" />
-                      <p>No upcoming bills</p>
-                    </div>
-                  ) : (
-                    <UpcomingBills 
-                      bills={bills}
-                      currency={currency}
-                      onBillClick={(bill) => {
-                        console.log('Bill clicked:', bill);
-                      }}
-                    />
-                  )}
-                  
-                  <div className="mt-2 text-center">
-                    <button 
-                      onClick={() => navigateToTab('upcoming')}
-                      className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
-                    >
-                      <span>View calendar</span>
-                      <ArrowRight size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
+  <div className="mb-3">
+    <UpcomingBills 
+      transactions={transactions}
+      bills={bills}
+      currency={currency}
+      onRefresh={handleRefresh}
+      onBillClick={(item) => {
+        console.log('Bill clicked:', item);
+      }}
+      compact={true} 
+    />
+    
+    <div className="mt-2 text-center">
+      <button 
+        onClick={() => navigateToTab('upcoming')}
+        className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
+      >
+        <span>View calendar</span>
+        <ArrowRight size={16} />
+      </button>
+    </div>
+  </div>
+)}
             </div>
             
             {/* Recent Transactions */}
@@ -749,67 +761,40 @@ const filterTransactionsByDate = (transactions, futureOnly = false) => {
         )}
         
         {activeTab === 'upcoming' && (
-          <div>
-            <div className="flex justify-between items-center gap-2 mb-4">
-              <h4 className="text-base font-medium text-white dark:text-white flex items-center gap-2">
-                <Calendar className="text-amber-400 dark:text-amber-400" size={18} />
-                Upcoming Bills
-              </h4>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCalendarMode(!calendarMode)}
-                  className={`p-1.5 rounded-lg ${
-                    calendarMode 
-                      ? 'bg-amber-600 dark:bg-amber-600 text-white' 
-                      : 'bg-slate-700 dark:bg-slate-700 text-white hover:bg-slate-600'
-                  } transition-colors`}
-                  title="Calendar View"
-                >
-                  <Calendar size={16} />
-                </button>
-                
-                <button
-                  onClick={handleRefresh}
-                  className="p-1.5 rounded-lg bg-slate-700 dark:bg-slate-700 text-white hover:bg-slate-600 transition-colors"
-                  title="Refresh"
-                >
-                  <RefreshCw size={16} />
-                </button>
-              </div>
-            </div>
-            
-            {calendarMode ? (
-              <CalendarView 
-                transactions={transactions}
-                bills={bills}
-                currency={currency}
-                onDateClick={(date) => {
-                  console.log('Date clicked:', date);
-                  // Show transactions for this date
-                }}
-              />
-            ) : (
-              <>
-                {bills.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
-                    <Calendar size={42} className="text-slate-500 mb-2" />
-                    <p>No upcoming bills</p>
-                  </div>
-                ) : (
-                  <UpcomingBills 
-                    bills={bills}
-                    currency={currency}
-                    onBillClick={(bill) => {
-                      // Show details or mark as paid logic
-                      console.log('Bill clicked:', bill);
-                    }}
-                  />
-                )}
-              </>
-            )}
+  <div>
+    {/* Header section remains the same */}
+    
+    {calendarMode ? (
+      <CalendarView 
+        transactions={transactions}
+        bills={bills}
+        currency={currency}
+        onDateClick={(date) => {
+          console.log('Date clicked:', date);
+        }}
+      />
+    ) : (
+      <>
+        {transactions.length === 0 && bills.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
+            <Calendar size={42} className="text-slate-500 mb-2" />
+            <p>No upcoming bills</p>
           </div>
+        ) : (
+          <UpcomingBills 
+            transactions={transactions}
+            bills={bills}
+            currency={currency}
+            onRefresh={handleRefresh} // Add this line
+            onBillClick={(item) => {
+              console.log('Bill clicked:', item);
+            }}
+          />
         )}
+      </>
+    )}
+  </div>
+)}
         
         {activeTab === 'insights' && (
           <FinancialInsights 

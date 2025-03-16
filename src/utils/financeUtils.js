@@ -521,41 +521,6 @@ const daysInMonth = (year, month) => {
 };
 
 // Process recurring transactions for today
-export const processRecurringTransactions = (date) => {
-  const today = date || new Date().toISOString().split('T')[0];
-  const financeData = getFinanceData();
-  const processed = [];
-  
-  financeData.recurringTransactions.forEach(recurring => {
-    if (recurring.nextDate === today) {
-      // Create actual transaction from the recurring one
-      const transaction = {
-        id: `tx-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        name: recurring.name,
-        amount: recurring.amount,
-        category: recurring.category,
-        date: today,
-        notes: `Auto-generated from recurring: ${recurring.name}`,
-        recurring: recurring.id,
-        timestamp: new Date().toISOString()
-      };
-      
-      // Add the transaction
-      financeData.transactions.unshift(transaction);
-      processed.push(transaction);
-      
-      // Calculate and update next occurrence
-      recurring.nextDate = calculateNextOccurrence(recurring.frequency, today);
-    }
-  });
-  
-  // Save updated data if any transactions were processed
-  if (processed.length > 0) {
-    saveFinanceData(financeData);
-  }
-  
-  return processed;
-};
 
 // Create a reminder for a recurring transaction
 export const createReminderForRecurring = (recurring) => {
@@ -838,6 +803,59 @@ export const calculateFinancialStats = (period = 'month') => {
       balance: projectedBalance
     }
   };
+};
+
+// Process recurring transactions for today and upcoming reminders
+export const processRecurringTransactions = (date) => {
+  const today = date ? new Date(date) : new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayString = today.toISOString().split('T')[0];
+  
+  const financeData = getFinanceData();
+  const processed = [];
+  
+  financeData.recurringTransactions.forEach(recurring => {
+    // Process transactions that are due today
+    if (recurring.nextDate === todayString) {
+      // Create actual transaction from the recurring one
+      const transaction = {
+        id: `tx-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        name: recurring.name,
+        amount: recurring.amount,
+        category: recurring.category,
+        date: todayString,
+        notes: `Auto-generated from recurring: ${recurring.name}`,
+        recurring: recurring.id,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Add the transaction
+      financeData.transactions.unshift(transaction);
+      processed.push(transaction);
+      
+      // Calculate and update next occurrence
+      recurring.nextDate = calculateNextOccurrence(recurring.frequency, todayString);
+    }
+    
+    // Process reminders for upcoming transactions
+    const reminderDays = recurring.reminderDays || 3;
+    const nextDueDate = new Date(recurring.nextDate);
+    const reminderDate = new Date(nextDueDate);
+    reminderDate.setDate(nextDueDate.getDate() - reminderDays);
+    
+    const reminderDateString = reminderDate.toISOString().split('T')[0];
+    if (reminderDateString === todayString && recurring.createReminder) {
+      // Create a reminder/task for this upcoming transaction
+      createReminderForRecurring(recurring);
+    }
+  });
+  
+  // Save updated data if any transactions were processed
+  if (processed.length > 0) {
+    saveFinanceData(financeData);
+  }
+  
+  return processed;
 };
 
 // Default task list for placeholders

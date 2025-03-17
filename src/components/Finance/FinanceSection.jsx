@@ -723,7 +723,7 @@ const filterTransactionsByDate = (transactions, futureOnly = false) => {
             <div className="flex justify-between items-center gap-2 mb-4">
               <h4 className="text-base font-medium text-white dark:text-white flex items-center gap-2">
                 <Wallet className="text-amber-400 dark:text-amber-400" size={18} />
-                Budget Management
+                Budget
               </h4>
               
               <div className="flex gap-2">

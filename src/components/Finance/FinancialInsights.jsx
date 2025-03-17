@@ -633,7 +633,7 @@ const FinancialInsights = ({
   {/* Header with title only */}
   <h4 className="text-lg font-medium text-white flex items-center gap-2 mb-3">
     <BarChart2 className="finance-text-amber-400" size={20} />
-    Financial Insights
+    Insights
   </h4>
   
   {/* Time frame selection - scrollable on mobile */}

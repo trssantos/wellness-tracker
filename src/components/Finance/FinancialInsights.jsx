@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  BarChart2, Award, AlertTriangle, AlertCircle, PiggyBank, Calendar, 
+  X,BarChart2, Award, AlertTriangle, AlertCircle, PiggyBank, Calendar, 
   TrendingUp, TrendingDown, DollarSign, PieChart, Info, 
-  ArrowRight, ArrowLeft, ChevronLeft, ChevronRight
+  ArrowRight, ArrowLeft, ChevronLeft, ChevronRight, Settings, Filter
 } from 'lucide-react';
 import { 
   getFinanceData, calculateFinancialStats, getFinancialInsights, 
@@ -43,68 +43,90 @@ const FinancialInsights = ({
   const [timeRange, setTimeRange] = useState('month');
   const [spendingTrend, setSpendingTrend] = useState([]);
   const [incomeVsExpenses, setIncomeVsExpenses] = useState([]);
-  const [hoveredMonth, setHoveredMonth] = useState(null);
+  const [hoveredBar, setHoveredBar] = useState(null);
   const [customDateRange, setCustomDateRange] = useState(false);
   const [startDate, setStartDate] = useState(selectedDateRange.start.toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(selectedDateRange.end.toISOString().split('T')[0]);
   const [insights, setInsights] = useState({ score: 0, insights: [] });
   const [correlations, setCorrelations] = useState([]);
   const [bills, setBills] = useState([]);
+  
+  // New state for selective chart application
+  const [chartSettings, setChartSettings] = useState({
+    showCustomDateSettings: false,
+    applyCustomToSpendingTrend: true,
+    applyCustomToIncomeExpenses: true,
+    applyCustomToCategoryBreakdown: true
+  });
 
   // Fetch data on initial render and when refreshTrigger changes
   useEffect(() => {
     fetchFinancialData();
   }, [refreshTrigger, timeRange, customDateRange, startDate, endDate]);
 
+  // Get date range based on current timeframe selection
+  const getDateRangeForTimeframe = (timeframe) => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    
+    const start = new Date();
+    
+    switch (timeframe) {
+      case 'week':
+        // Start from 6 days ago to include today (7 days total)
+        start.setDate(today.getDate() - 6);
+        break;
+      case 'month':
+        // Start from 6 months ago to include current month (7 months total)
+        start.setMonth(today.getMonth() - 6);
+        start.setDate(1); // First day of the month
+        break;
+      case 'quarter':
+        // Start from 6 quarters ago (18 months total)
+        start.setMonth(today.getMonth() - 18);
+        break;
+      case 'year':
+        // Start from 6 years ago to include current year (7 years total)
+        start.setFullYear(today.getFullYear() - 6);
+        start.setMonth(0); // January
+        start.setDate(1); // First day of the year
+        break;
+      default:
+        start.setMonth(today.getMonth() - 6);
+    }
+    
+    start.setHours(0, 0, 0, 0);
+    return { start, end: today };
+  };
+
   // Fetch financial data based on current filters
   const fetchFinancialData = () => {
     const financeData = getFinanceData();
     
-    // Filter transactions based on date range
+    // Start with all transactions
     let filteredTransactions = [...financeData.transactions];
     
-    if (customDateRange) {
-      // Use custom date range
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999); // Include the entire end date
+    // Standard date range based on selected timeframe
+    const standardDateRange = getDateRangeForTimeframe(timeRange);
+    
+    // Custom date range if active
+    const customRange = {
+      start: new Date(startDate),
+      end: new Date(endDate)
+    };
+    customRange.end.setHours(23, 59, 59, 999);
+    
+    // Filter transactions based on date range
+    filteredTransactions = filteredTransactions.filter(tx => {
+      const txDate = new Date(tx.timestamp);
       
-      filteredTransactions = filteredTransactions.filter(tx => {
-        const txDate = new Date(tx.timestamp);
-        return txDate >= start && txDate <= end;
-      });
-    } else {
-      // Use predefined time range
-      const end = new Date();
-      let start = new Date();
-      
-      switch (timeRange) {
-        case 'week':
-          start.setDate(end.getDate() - 7);
-          break;
-        case 'month':
-          start.setMonth(end.getMonth() - 1);
-          break;
-        case 'quarter':
-          start.setMonth(end.getMonth() - 3);
-          break;
-        case 'year':
-          start.setFullYear(end.getFullYear() - 1);
-          break;
-        default:
-          start.setMonth(end.getMonth() - 1);
+      // Use custom range only for transactions chart if enabled
+      if (customDateRange) {
+        return txDate >= customRange.start && txDate <= customRange.end;
+      } else {
+        return txDate >= standardDateRange.start && txDate <= standardDateRange.end;
       }
-      
-      filteredTransactions = filteredTransactions.filter(tx => {
-        const txDate = new Date(tx.timestamp);
-        return txDate >= start && txDate <= end;
-      });
-      
-      // Update selected date range for other components
-      if (setSelectedDateRange) {
-        setSelectedDateRange({ start, end });
-      }
-    }
+    });
     
     setTransactions(filteredTransactions);
     
@@ -114,11 +136,17 @@ const FinancialInsights = ({
     // Calculate financial stats based on filtered transactions
     calculateStats(filteredTransactions);
     
-    // Generate spending trend data
-    generateSpendingTrend(filteredTransactions);
+    // Generate spending trend data - this will use the standard range or custom range based on settings
+    generateSpendingTrend(
+      filteredTransactions, 
+      customDateRange && chartSettings.applyCustomToSpendingTrend ? customRange : standardDateRange
+    );
     
-    // Generate income vs expenses data
-    generateIncomeVsExpenses(filteredTransactions);
+    // Generate income vs expenses data - this will use the standard range or custom range based on settings
+    generateIncomeVsExpenses(
+      filteredTransactions, 
+      customDateRange && chartSettings.applyCustomToIncomeExpenses ? customRange : standardDateRange
+    );
     
     // Get financial insights
     const financialInsights = getFinancialInsights();
@@ -127,6 +155,11 @@ const FinancialInsights = ({
     // Get mood correlations
     const moodCorrelations = getSpendingMoodCorrelation();
     setCorrelations(moodCorrelations);
+    
+    // Update parent component's date range if available
+    if (setSelectedDateRange) {
+      setSelectedDateRange(customDateRange ? customRange : standardDateRange);
+    }
   };
 
   // Calculate financial stats from transactions
@@ -190,91 +223,107 @@ const FinancialInsights = ({
     });
   };
 
-  // Generate spending trend data based on timeframe
-  const generateSpendingTrend = (transactions) => {
-    const now = new Date();
+  // IMPROVED: Generate spending trend data based on timeframe - always showing 7 periods
+  const generateSpendingTrend = (transactions, dateRange) => {
+    // Define period type based on selected time range
+    let periodType = 'month'; // Default
     
-    // Determine number of periods based on timeframe
-    let periods = 6; // Default for month
-    let periodType = 'month';
-    
-    if (timeRange === 'week' || (customDateRange && (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24) <= 14)) {
-      periods = 7;
+    if (timeRange === 'week') {
       periodType = 'day';
-    } else if (timeRange === 'year' || (customDateRange && (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24) >= 180)) {
-      periods = 12;
+    } else if (timeRange === 'month') {
       periodType = 'month';
-    } else if (timeRange === 'quarter' || (customDateRange && (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24) >= 60)) {
-      periods = 12; // Show weeks for quarter
+    } else if (timeRange === 'quarter') {
       periodType = 'week';
+    } else if (timeRange === 'year') {
+      periodType = 'month';
     }
     
-    // Create array of periods
+    // Always show 7 periods (current + 6 previous)
+    const periods = 7;
+    
+    // Create array of period objects
     const periodArray = [];
     
-    if (customDateRange) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
+    if (customDateRange && chartSettings.applyCustomToSpendingTrend) {
+      const start = dateRange.start;
+      const end = dateRange.end;
       
-      if (periodType === 'day') {
-        // Calculate days between dates
-        const dayDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-        periods = Math.min(14, dayDiff); // Cap at 14 days
+      // Calculate appropriate periods based on the date range duration
+      const durationInDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+      
+      if (durationInDays <= 14) {
+        // For short ranges, use daily periods
+        const dayStep = Math.max(1, Math.floor(durationInDays / 7));
         
         for (let i = 0; i < periods; i++) {
-          const day = new Date(start);
-          day.setDate(start.getDate() + i);
+          const day = new Date(end);
+          day.setDate(day.getDate() - ((periods - 1 - i) * dayStep));
+          
+          // Skip days beyond the start date
+          if (day < start) continue;
+          
           periodArray.push({
             label: day.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
-            start: new Date(day.setHours(0, 0, 0, 0)),
-            end: new Date(day.setHours(23, 59, 59, 999))
+            start: new Date(new Date(day).setHours(0, 0, 0, 0)),
+            end: new Date(new Date(day).setHours(23, 59, 59, 999))
           });
         }
-      } else if (periodType === 'week') {
-        // Split date range into weeks
-        let currentWeekStart = new Date(start);
-        while (currentWeekStart <= end) {
-          const weekEnd = new Date(currentWeekStart);
-          weekEnd.setDate(weekEnd.getDate() + 6);
+      } else if (durationInDays <= 90) {
+        // For medium ranges, use weekly periods
+        const weekStep = Math.max(1, Math.floor(durationInDays / 7 / 7));
+        
+        for (let i = 0; i < periods; i++) {
+          const weekStart = new Date(end);
+          weekStart.setDate(weekStart.getDate() - ((periods - 1 - i) * 7 * weekStep));
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          
+          // Skip weeks beyond the start date
+          if (weekStart < start) continue;
           
           periodArray.push({
-            label: `${currentWeekStart.toLocaleDateString('default', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('default', { day: 'numeric' })}`,
-            start: new Date(currentWeekStart.setHours(0, 0, 0, 0)),
+            label: `${weekStart.toLocaleDateString('default', { month: 'short', day: 'numeric' })}`,
+            start: new Date(weekStart.setHours(0, 0, 0, 0)),
             end: new Date(Math.min(weekEnd.setHours(23, 59, 59, 999), end.getTime()))
           });
-          
-          // Move to next week
-          currentWeekStart = new Date(weekEnd);
-          currentWeekStart.setDate(currentWeekStart.getDate() + 1);
-          
-          // Limit to reasonable number of periods
-          if (periodArray.length >= 12) break;
         }
       } else {
-        // Split date range into months
-        let currentMonth = new Date(start.getFullYear(), start.getMonth(), 1);
-        while (currentMonth <= end) {
-          const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59, 999);
+        // For long ranges, use monthly periods
+        const monthStep = Math.max(1, Math.floor(durationInDays / 30 / 7));
+        
+        for (let i = 0; i < periods; i++) {
+          const monthStart = new Date(end);
+          monthStart.setMonth(monthStart.getMonth() - ((periods - 1 - i) * monthStep));
+          monthStart.setDate(1); // First day of month
+          
+          const monthEnd = new Date(monthStart);
+          monthEnd.setMonth(monthStart.getMonth() + 1);
+          monthEnd.setDate(0); // Last day of month
+          
+          // Skip months beyond the start date
+          if (monthStart < start) continue;
           
           periodArray.push({
-            label: currentMonth.toLocaleDateString('default', { month: 'short', year: 'numeric' }),
-            start: new Date(currentMonth),
-            end: new Date(Math.min(monthEnd.getTime(), end.getTime()))
+            label: monthStart.toLocaleDateString('default', { month: 'short', year: 'numeric' }),
+            start: new Date(monthStart.setHours(0, 0, 0, 0)),
+            end: new Date(Math.min(monthEnd.setHours(23, 59, 59, 999), end.getTime()))
           });
-          
-          // Move to next month
-          currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-          
-          // Limit to reasonable number of periods
-          if (periodArray.length >= 12) break;
         }
       }
     } else {
-      // Create predefined periods based on timeframe
+      // Use standard periods based on selected time range
+      const end = dateRange.end;
+      const start = dateRange.start;
+      
       if (periodType === 'day') {
-        for (let i = periods - 1; i >= 0; i--) {
-          const day = new Date();
-          day.setDate(day.getDate() - i);
+        // DAILY VIEW: Today + 6 previous days
+        for (let i = 0; i < periods; i++) {
+          const day = new Date(end);
+          day.setDate(day.getDate() - (periods - 1 - i));
+          
+          // Skip future days
+          if (day > end) continue;
+          
           periodArray.push({
             label: day.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
             start: new Date(day.setHours(0, 0, 0, 0)),
@@ -282,82 +331,54 @@ const FinancialInsights = ({
           });
         }
       } else if (periodType === 'week') {
-        // For quarter range - fix to create evenly spaced weeks
-        if (timeRange === 'quarter') {
-          // Start 3 months ago
-          const startDate = new Date(now);
-          startDate.setMonth(now.getMonth() - 3);
+        // WEEKLY VIEW: This week + 6 previous weeks
+        for (let i = 0; i < periods; i++) {
+          const weekStart = new Date(end);
+          // Adjust to go back by (periods - 1 - i) weeks
+          weekStart.setDate(weekStart.getDate() - 7 * (periods - 1 - i));
           
-          for (let i = 0; i < 12; i++) {
-            const weekStart = new Date(startDate);
-            weekStart.setDate(startDate.getDate() + (i * 7));
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6);
-            
-            const isLastWeek = i === 11;
-            const endDate = isLastWeek ? now : weekEnd;
-            
-            periodArray.push({
-              label: `Week ${i+1}`,
-              start: new Date(weekStart.setHours(0, 0, 0, 0)),
-              end: new Date(endDate.setHours(23, 59, 59, 999))
-            });
-          }
-        } else {
-          // Regular week range
-          for (let i = periods - 1; i >= 0; i--) {
-            const weekStart = new Date();
-            weekStart.setDate(weekStart.getDate() - (i * 7 + 6));
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6);
-            
-            periodArray.push({
-              label: `${weekStart.toLocaleDateString('default', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('default', { day: 'numeric' })}`,
-              start: new Date(weekStart.setHours(0, 0, 0, 0)),
-              end: new Date(weekEnd.setHours(23, 59, 59, 999))
-            });
-          }
+          // Adjust to the beginning of the week (Sunday or Monday depending on locale)
+          const dayOfWeek = weekStart.getDay();
+          const diff = weekStart.getDate() - dayOfWeek;
+          weekStart.setDate(diff);
+          
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          
+          // Skip weeks beyond the date range
+          if (weekStart < start) continue;
+          
+          periodArray.push({
+            label: `Week ${i+1}`,
+            start: new Date(weekStart.setHours(0, 0, 0, 0)),
+            end: new Date(Math.min(weekEnd.setHours(23, 59, 59, 999), end.getTime()))
+          });
         }
       } else if (periodType === 'month') {
-        // For year range - fix to create all 12 months
-        if (timeRange === 'year') {
-          const startYear = now.getFullYear() - 1;
-          const startMonth = now.getMonth() + 1;
+        // MONTHLY VIEW: This month + 6 previous months
+        for (let i = 0; i < periods; i++) {
+          const monthStart = new Date(end);
+          monthStart.setDate(1); // First day of month
+          monthStart.setMonth(monthStart.getMonth() - (periods - 1 - i));
           
-          for (let i = 0; i < 12; i++) {
-            const monthIdx = (startMonth + i) % 12;
-            const year = startYear + Math.floor((startMonth + i) / 12);
-            
-            const monthStart = new Date(year, monthIdx, 1);
-            const monthEnd = new Date(year, monthIdx + 1, 0, 23, 59, 59, 999);
-            
-            const isLastMonth = i === 11;
-            const endDate = isLastMonth ? now : monthEnd;
-            
-            periodArray.push({
-              label: monthStart.toLocaleDateString('default', { month: 'short' }),
-              start: monthStart,
-              end: endDate
-            });
-          }
-        } else {
-          // Regular month range
-          for (let i = periods - 1; i >= 0; i--) {
-            const month = new Date();
-            month.setMonth(month.getMonth() - i);
-            
-            const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
-            const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0, 23, 59, 59, 999);
-            
-            periodArray.push({
-              label: month.toLocaleDateString('default', { month: 'short' }),
-              start: monthStart,
-              end: monthEnd
-            });
-          }
+          const monthEnd = new Date(monthStart);
+          monthEnd.setMonth(monthStart.getMonth() + 1);
+          monthEnd.setDate(0); // Last day of month
+          
+          // Skip months beyond the date range
+          if (monthStart < start) continue;
+          
+          periodArray.push({
+            label: monthStart.toLocaleDateString('default', { month: 'short' }),
+            start: new Date(monthStart.setHours(0, 0, 0, 0)),
+            end: new Date(Math.min(monthEnd.setHours(23, 59, 59, 999), end.getTime()))
+          });
         }
       }
     }
+    
+    // Sort periods chronologically
+    periodArray.sort((a, b) => a.start - b.start);
     
     // Calculate spending for each period
     const trend = periodArray.map(period => {
@@ -368,100 +389,150 @@ const FinancialInsights = ({
       
       const spending = periodTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
       
+      // Add some analysis to each period
+      const topCategory = findTopCategory(periodTransactions);
+      
       return {
         ...period,
-        spending
+        spending,
+        topCategory
       };
     });
     
     setSpendingTrend(trend);
   };
   
-  // Generate income vs expenses data
-  const generateIncomeVsExpenses = (transactions) => {
-    const now = new Date();
+  // Helper function to find the top spending category for a set of transactions
+  const findTopCategory = (transactions) => {
+    const categories = {};
     
-    // Determine the period type based on time range
-    let periodType = 'month';
-    let periods = 6;
+    transactions.forEach(tx => {
+      if (!tx.category) return;
+      
+      if (!categories[tx.category]) {
+        categories[tx.category] = 0;
+      }
+      
+      categories[tx.category] += Math.abs(tx.amount);
+    });
     
-    if (timeRange === 'week' || (customDateRange && (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24) <= 14)) {
-      periodType = 'day';
-      periods = 7;
-    } else if (timeRange === 'year' || (customDateRange && (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24) >= 180)) {
-      periodType = 'month';
-      periods = 12;
-    } else if (timeRange === 'quarter' || (customDateRange && (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24) >= 60)) {
-      periodType = 'week';
-      periods = 12;
+    let topCategoryId = null;
+    let topAmount = 0;
+    
+    Object.entries(categories).forEach(([categoryId, amount]) => {
+      if (amount > topAmount) {
+        topCategoryId = categoryId;
+        topAmount = amount;
+      }
+    });
+    
+    if (topCategoryId) {
+      const category = getCategoryById(topCategoryId);
+      return {
+        name: category ? category.name : 'Unknown',
+        amount: topAmount
+      };
     }
     
-    // Create array of periods similar to spending trend
+    return null;
+  };
+  
+  // Generate income vs expenses data
+  const generateIncomeVsExpenses = (transactions, dateRange) => {
+    // Define period type based on selected time range
+    let periodType = 'month'; // Default
+    const periods = 7; // Always show 7 periods
+    
+    if (timeRange === 'week') {
+      periodType = 'day';
+    } else if (timeRange === 'month') {
+      periodType = 'month';
+    } else if (timeRange === 'quarter') {
+      periodType = 'week';
+    } else if (timeRange === 'year') {
+      periodType = 'month';
+    }
+    
+    // Create array of period objects (similar to spending trend function)
     const periodArray = [];
     
-    if (customDateRange) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
+    if (customDateRange && chartSettings.applyCustomToIncomeExpenses) {
+      // Logic similar to generateSpendingTrend for custom date range
+      const start = dateRange.start;
+      const end = dateRange.end;
       
-      if (periodType === 'day') {
-        // Calculate days between dates
-        const dayDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-        periods = Math.min(14, dayDiff); // Cap at 14 days
+      // Calculate appropriate periods based on the date range duration
+      const durationInDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+      
+      if (durationInDays <= 14) {
+        // For short ranges, use daily periods
+        const dayStep = Math.max(1, Math.floor(durationInDays / 7));
         
         for (let i = 0; i < periods; i++) {
-          const day = new Date(start);
-          day.setDate(start.getDate() + i);
+          const day = new Date(end);
+          day.setDate(day.getDate() - ((periods - 1 - i) * dayStep));
+          
+          // Skip days beyond the start date
+          if (day < start) continue;
+          
           periodArray.push({
             label: day.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
-            start: new Date(day.setHours(0, 0, 0, 0)),
-            end: new Date(day.setHours(23, 59, 59, 999))
+            start: new Date(new Date(day).setHours(0, 0, 0, 0)),
+            end: new Date(new Date(day).setHours(23, 59, 59, 999))
           });
         }
-      } else if (periodType === 'week') {
-        // Split date range into weeks
-        let currentWeekStart = new Date(start);
-        while (currentWeekStart <= end) {
-          const weekEnd = new Date(currentWeekStart);
-          weekEnd.setDate(weekEnd.getDate() + 6);
+      } else if (durationInDays <= 90) {
+        // For medium ranges, use weekly periods
+        const weekStep = Math.max(1, Math.floor(durationInDays / 7 / 7));
+        
+        for (let i = 0; i < periods; i++) {
+          const weekStart = new Date(end);
+          weekStart.setDate(weekStart.getDate() - ((periods - 1 - i) * 7 * weekStep));
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          
+          // Skip weeks beyond the start date
+          if (weekStart < start) continue;
           
           periodArray.push({
-            label: `${currentWeekStart.toLocaleDateString('default', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('default', { day: 'numeric' })}`,
-            start: new Date(currentWeekStart.setHours(0, 0, 0, 0)),
+            label: `${weekStart.toLocaleDateString('default', { month: 'short', day: 'numeric' })}`,
+            start: new Date(weekStart.setHours(0, 0, 0, 0)),
             end: new Date(Math.min(weekEnd.setHours(23, 59, 59, 999), end.getTime()))
           });
-          
-          // Move to next week
-          currentWeekStart = new Date(weekEnd);
-          currentWeekStart.setDate(currentWeekStart.getDate() + 1);
-          
-          // Limit to reasonable number of periods
-          if (periodArray.length >= 12) break;
         }
       } else {
-        // Split date range into months
-        let currentMonth = new Date(start.getFullYear(), start.getMonth(), 1);
-        while (currentMonth <= end) {
-          const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59, 999);
+        // For long ranges, use monthly periods
+        const monthStep = Math.max(1, Math.floor(durationInDays / 30 / 7));
+        
+        for (let i = 0; i < periods; i++) {
+          const monthStart = new Date(end);
+          monthStart.setMonth(monthStart.getMonth() - ((periods - 1 - i) * monthStep));
+          monthStart.setDate(1); // First day of month
+          
+          const monthEnd = new Date(monthStart);
+          monthEnd.setMonth(monthStart.getMonth() + 1);
+          monthEnd.setDate(0); // Last day of month
+          
+          // Skip months beyond the start date
+          if (monthStart < start) continue;
           
           periodArray.push({
-            label: currentMonth.toLocaleDateString('default', { month: 'short', year: 'numeric' }),
-            start: new Date(currentMonth),
-            end: new Date(Math.min(monthEnd.getTime(), end.getTime()))
+            label: monthStart.toLocaleDateString('default', { month: 'short', year: 'numeric' }),
+            start: new Date(monthStart.setHours(0, 0, 0, 0)),
+            end: new Date(Math.min(monthEnd.setHours(23, 59, 59, 999), end.getTime()))
           });
-          
-          // Move to next month
-          currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-          
-          // Limit to reasonable number of periods
-          if (periodArray.length >= 12) break;
         }
       }
     } else {
-      // Create predefined periods based on timeframe
+      // Use standard periods based on selected time range
+      const end = dateRange.end;
+      
       if (periodType === 'day') {
-        for (let i = periods - 1; i >= 0; i--) {
-          const day = new Date();
-          day.setDate(day.getDate() - i);
+        // Today + 6 previous days
+        for (let i = 0; i < periods; i++) {
+          const day = new Date(end);
+          day.setDate(day.getDate() - (periods - 1 - i));
+          
           periodArray.push({
             label: day.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
             start: new Date(day.setHours(0, 0, 0, 0)),
@@ -469,34 +540,47 @@ const FinancialInsights = ({
           });
         }
       } else if (periodType === 'week') {
-        for (let i = periods - 1; i >= 0; i--) {
-          const weekStart = new Date();
-          weekStart.setDate(weekStart.getDate() - (i * 7 + 6));
+        // This week + 6 previous weeks
+        for (let i = 0; i < periods; i++) {
+          const weekStart = new Date(end);
+          weekStart.setDate(weekStart.getDate() - 7 * (periods - 1 - i));
+          
+          // Adjust to the beginning of the week (Sunday or Monday depending on locale)
+          const dayOfWeek = weekStart.getDay();
+          const diff = weekStart.getDate() - dayOfWeek;
+          weekStart.setDate(diff);
+          
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
           
           periodArray.push({
-            label: `${weekStart.toLocaleDateString('default', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('default', { day: 'numeric' })}`,
+            label: `Week ${i+1}`,
             start: new Date(weekStart.setHours(0, 0, 0, 0)),
-            end: new Date(weekEnd.setHours(23, 59, 59, 999))
+            end: new Date(Math.min(weekEnd.setHours(23, 59, 59, 999), end.getTime()))
           });
         }
-      } else {
-        for (let i = periods - 1; i >= 0; i--) {
-          const month = new Date();
-          month.setMonth(month.getMonth() - i);
+      } else if (periodType === 'month') {
+        // This month + 6 previous months
+        for (let i = 0; i < periods; i++) {
+          const monthStart = new Date(end);
+          monthStart.setDate(1); // First day of month
+          monthStart.setMonth(monthStart.getMonth() - (periods - 1 - i));
           
-          const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
-          const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0, 23, 59, 59, 999);
+          const monthEnd = new Date(monthStart);
+          monthEnd.setMonth(monthStart.getMonth() + 1);
+          monthEnd.setDate(0); // Last day of month
           
           periodArray.push({
-            label: month.toLocaleDateString('default', { month: 'short' }),
-            start: monthStart,
-            end: monthEnd
+            label: monthStart.toLocaleDateString('default', { month: 'short' }),
+            start: new Date(monthStart.setHours(0, 0, 0, 0)),
+            end: new Date(Math.min(monthEnd.setHours(23, 59, 59, 999), end.getTime()))
           });
         }
       }
     }
+    
+    // Sort periods chronologically
+    periodArray.sort((a, b) => a.start - b.start);
     
     // Calculate income and expenses for each period
     const data = periodArray.map(period => {
@@ -516,7 +600,8 @@ const FinancialInsights = ({
       return {
         label: period.label,
         income,
-        expenses
+        expenses,
+        net: income - expenses
       };
     });
     
@@ -528,32 +613,64 @@ const FinancialInsights = ({
     setTimeRange(period);
     setCustomDateRange(false);
     
-    const end = new Date();
-    let start = new Date();
+    // Calculate appropriate date range
+    const dateRange = getDateRangeForTimeframe(period);
+    setStartDate(dateRange.start.toISOString().split('T')[0]);
+    setEndDate(dateRange.end.toISOString().split('T')[0]);
     
-    switch (period) {
-      case 'week':
-        start.setDate(end.getDate() - 7);
-        break;
-      case 'month':
-        start.setMonth(end.getMonth() - 1);
-        break;
-      case 'quarter':
-        start.setMonth(end.getMonth() - 3);
-        break;
-      case 'year':
-        start.setFullYear(end.getFullYear() - 1);
-        break;
-      default:
-        start.setMonth(end.getMonth() - 1);
-    }
-    
-    setStartDate(start.toISOString().split('T')[0]);
-    setEndDate(end.toISOString().split('T')[0]);
-    
+    // Update parent component's date range
     if (setSelectedDateRange) {
-      setSelectedDateRange({ start, end });
+      setSelectedDateRange(dateRange);
     }
+  };
+
+  // Handle navigation through time periods
+  const handleNavigatePrevious = () => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const timespan = end - start; // In milliseconds
+    
+    // Move the date range back by one full period
+    const newEnd = new Date(start);
+    newEnd.setDate(newEnd.getDate() - 1);
+    const newStart = new Date(newEnd - timespan);
+    
+    setStartDate(newStart.toISOString().split('T')[0]);
+    setEndDate(newEnd.toISOString().split('T')[0]);
+    
+    // Update parent component's date range
+    if (setSelectedDateRange) {
+      setSelectedDateRange({ start: newStart, end: newEnd });
+    }
+    
+    fetchFinancialData();
+  };
+
+  const handleNavigateNext = () => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const timespan = end - start; // In milliseconds
+    
+    // Move the date range forward by one full period
+    const newStart = new Date(end);
+    newStart.setDate(newStart.getDate() + 1);
+    const newEnd = new Date(newStart.getTime() + timespan);
+    
+    // Don't allow future dates beyond today
+    const today = new Date();
+    if (newEnd > today) {
+      newEnd.setTime(today.getTime());
+    }
+    
+    setStartDate(newStart.toISOString().split('T')[0]);
+    setEndDate(newEnd.toISOString().split('T')[0]);
+    
+    // Update parent component's date range
+    if (setSelectedDateRange) {
+      setSelectedDateRange({ start: newStart, end: newEnd });
+    }
+    
+    fetchFinancialData();
   };
 
   // Apply custom date range
@@ -567,7 +684,7 @@ const FinancialInsights = ({
     return `${currency}${parseFloat(amount).toFixed(2)}`;
   };
 
-  // Get tooltip color class based on insight type
+  // Get insight color class based on type
   const getInsightColorClass = (type) => {
     switch (type) {
       case 'positive':
@@ -619,206 +736,230 @@ const FinancialInsights = ({
     }
   };
 
-  // Calculate max value for chart scaling
-  const getMaxValue = (data, key) => {
-    return Math.max(...data.map(item => item[key]));
+  // Get color for spending trend bars
+  const getSpendingTrendBarColor = (index, spending, average) => {
+    // Use colors to indicate spending relative to average
+    if (spending > average * 1.5) {
+      return 'bg-red-500 dark:bg-red-600'; // Much higher than average
+    } else if (spending > average * 1.1) {
+      return 'bg-amber-500 dark:bg-amber-600'; // Higher than average
+    } else if (spending < average * 0.5) {
+      return 'bg-green-500 dark:bg-green-600'; // Much lower than average
+    } else {
+      return 'bg-blue-500 dark:bg-blue-600'; // Around average
+    }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 mb-6">
-      <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:justify-between w-full">
-  {/* Title and time range in first row on mobile, left column on desktop */}
-  <div className="mb-4">
-  {/* Header with title only */}
-  <h4 className="text-lg font-medium text-white flex items-center gap-2 mb-3">
-    <BarChart2 className="finance-text-amber-400" size={20} />
-    Insights
-  </h4>
-  
-  {/* Time frame selection - scrollable on mobile */}
-  <div className="flex flex-col gap-3">
-    <div className="overflow-x-auto no-scrollbar">
-      <div className="flex bg-slate-700 rounded-lg min-w-max">
-        <button 
-          onClick={() => handleDateRangeChange('week')} 
-          className={`px-3 py-1.5 whitespace-nowrap ${timeRange === 'week' && !customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
-        >
-          Week
-        </button>
-        <button 
-          onClick={() => handleDateRangeChange('month')} 
-          className={`px-3 py-1.5 whitespace-nowrap ${timeRange === 'month' && !customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
-        >
-          Month
-        </button>
-        <button 
-          onClick={() => handleDateRangeChange('quarter')} 
-          className={`px-3 py-1.5 whitespace-nowrap ${timeRange === 'quarter' && !customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
-        >
-          Quarter
-        </button>
-        <button 
-          onClick={() => handleDateRangeChange('year')} 
-          className={`px-3 py-1.5 whitespace-nowrap ${timeRange === 'year' && !customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
-        >
-          Year
-        </button>
-        <button 
-          onClick={() => setCustomDateRange(!customDateRange)} 
-          className={`px-3 py-1.5 whitespace-nowrap ${customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
-        >
-          Custom
-        </button>
-      </div>
-    </div>
-    
-    {/* Date navigation - separated and full width */}
-    {!customDateRange && (
-      <div className="flex items-center justify-between bg-slate-700/50 rounded-lg p-2">
-        <button 
-          onClick={() => {
-            /* Your existing code */
-          }}
-          className="p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300"
-        >
-          <ChevronLeft size={16} />
-        </button>
-        
-        <span className="text-xs text-slate-300 flex-1 text-center">
-          {new Date(startDate).toLocaleDateString()} — {new Date(endDate).toLocaleDateString()}
-        </span>
-        
-        <button 
-          onClick={() => {
-            /* Your existing code */
-          }}
-          className="p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300"
-          disabled={new Date(endDate) >= new Date()}
-        >
-          <ChevronRight size={16} />
-        </button>
-      </div>
-    )}
-  </div>
-</div>
+      {/* Header Section with improved Time Navigation */}
+      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <div>
+            <h4 className="text-lg font-medium text-white flex items-center gap-2 mb-2">
+              <BarChart2 className="finance-text-amber-400" size={20} />
+              Insights
+              <span className="text-sm text-slate-400 font-normal">
+                {customDateRange 
+                  ? `Custom Range` 
+                  : timeRange === 'week' 
+                    ? 'Daily View' 
+                    : timeRange === 'month' 
+                      ? 'Monthly View' 
+                      : timeRange === 'quarter' 
+                        ? 'Quarterly View' 
+                        : 'Yearly View'
+                }
+              </span>
+            </h4>
+            <p className="text-slate-400 text-sm hidden md:block">
+              Gain insights into your spending patterns and financial health to make better financial decisions.
+            </p>
+          </div>
           
-          {!customDateRange && (
-    <div className="flex items-center gap-2 self-start">
-      <button 
-        onClick={() => {
-                  let prevPeriod = new Date(selectedDateRange.start);
-                  let newEnd = new Date(selectedDateRange.start);
-                  newEnd.setDate(newEnd.getDate() - 1);
-                  
-                  switch (timeRange) {
-                    case 'week':
-                      prevPeriod.setDate(prevPeriod.getDate() - 7);
-                      break;
-                    case 'month':
-                      prevPeriod.setMonth(prevPeriod.getMonth() - 1);
-                      break;
-                    case 'quarter':
-                      prevPeriod.setMonth(prevPeriod.getMonth() - 3);
-                      break;
-                    case 'year':
-                      prevPeriod.setFullYear(prevPeriod.getFullYear() - 1);
-                      break;
-                  }
-                  
-                  setStartDate(prevPeriod.toISOString().split('T')[0]);
-                  setEndDate(newEnd.toISOString().split('T')[0]);
-                  
-                  if (setSelectedDateRange) {
-                    setSelectedDateRange({ start: prevPeriod, end: newEnd });
-                  }
-                  
-                  fetchFinancialData();
-                }}
-                className="p-1.5 xs:p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              
-              <span className="text-xs xs:text-sm text-slate-300 whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]">
-        {new Date(startDate).toLocaleDateString()} — {new Date(endDate).toLocaleDateString()}
-      </span>
-              
-              <button 
-                onClick={() => {
-                  let newStart = new Date(selectedDateRange.end);
-                  newStart.setDate(newStart.getDate() + 1);
-                  let newEnd = new Date(newStart);
-                  
-                  switch (timeRange) {
-                    case 'week':
-                      newEnd.setDate(newEnd.getDate() + 7);
-                      break;
-                    case 'month':
-                      newEnd.setMonth(newEnd.getMonth() + 1);
-                      break;
-                    case 'quarter':
-                      newEnd.setMonth(newEnd.getMonth() + 3);
-                      break;
-                    case 'year':
-                      newEnd.setFullYear(newEnd.getFullYear() + 1);
-                      break;
-                  }
-                  
-                  // Don't allow future dates to exceed current date
-                  const now = new Date();
-                  if (newEnd > now) {
-                    newEnd = now;
-                  }
-                  
-                  setStartDate(newStart.toISOString().split('T')[0]);
-                  setEndDate(newEnd.toISOString().split('T')[0]);
-                  
-                  if (setSelectedDateRange) {
-                    setSelectedDateRange({ start: newStart, end: newEnd });
-                  }
-                  
-                  fetchFinancialData();
-                }}
-                className="p-1.5 xs:p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300"
-        disabled={new Date(endDate) >= new Date()}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          )}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => handleDateRangeChange('week')}
+              className={`px-3 py-1.5 rounded-lg text-sm ${
+                timeRange === 'week' && !customDateRange 
+                  ? 'bg-amber-600 text-white' 
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              Week
+            </button>
+            <button
+              onClick={() => handleDateRangeChange('month')}
+              className={`px-3 py-1.5 rounded-lg text-sm ${
+                timeRange === 'month' && !customDateRange 
+                  ? 'bg-amber-600 text-white' 
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              Month
+            </button>
+            <button
+              onClick={() => handleDateRangeChange('quarter')}
+              className={`px-3 py-1.5 rounded-lg text-sm ${
+                timeRange === 'quarter' && !customDateRange 
+                  ? 'bg-amber-600 text-white' 
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              Quarter
+            </button>
+            <button
+              onClick={() => handleDateRangeChange('year')}
+              className={`px-3 py-1.5 rounded-lg text-sm ${
+                timeRange === 'year' && !customDateRange 
+                  ? 'bg-amber-600 text-white' 
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              Year
+            </button>
+            <button
+              onClick={() => setChartSettings(prev => ({
+                ...prev,
+                showCustomDateSettings: !prev.showCustomDateSettings
+              }))}
+              className={`px-3 py-1.5 rounded-lg text-sm ${
+                customDateRange || chartSettings.showCustomDateSettings
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              <Settings size={16} />
+            </button>
+          </div>
         </div>
         
-        {/* Custom date range selector */}
-        {customDateRange && (
-          <div className="flex flex-wrap items-center gap-4 p-4 bg-slate-700 rounded-lg">
-            <div>
-              <label className="block text-sm text-slate-300 mb-1">Start Date</label>
-              <input 
-                type="date" 
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="p-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm text-slate-300 mb-1">End Date</label>
-              <input 
-                type="date" 
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                max={new Date().toISOString().split('T')[0]}
-                className="p-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
-              />
-            </div>
-            
-            <div className="flex-1 flex justify-end">
-              <button 
-                onClick={applyCustomDateRange}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg"
+        {/* Time Navigation Controls */}
+        <div className="flex items-center justify-between bg-slate-700 rounded-lg p-2">
+          <button 
+            onClick={handleNavigatePrevious}
+            className="p-1.5 rounded-lg bg-slate-600 hover:bg-slate-500 text-slate-300"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          
+          <span className="text-sm text-slate-300">
+            {new Date(startDate).toLocaleDateString()} — {new Date(endDate).toLocaleDateString()}
+          </span>
+          
+          <button 
+            onClick={handleNavigateNext}
+            className="p-1.5 rounded-lg bg-slate-600 hover:bg-slate-500 text-slate-300"
+            disabled={new Date(endDate) >= new Date()}
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+        
+        {/* Custom Date Settings Panel */}
+        {chartSettings.showCustomDateSettings && (
+          <div className="mt-4 p-4 bg-slate-700 rounded-lg border border-slate-600">
+            <div className="flex justify-between items-center mb-4">
+              <h5 className="text-white font-medium">Custom Date Settings</h5>
+              <button
+                onClick={() => setChartSettings(prev => ({
+                  ...prev,
+                  showCustomDateSettings: false
+                }))}
+                className="p-1 rounded-full hover:bg-slate-600 text-slate-400"
               >
-                Apply Range
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="flex flex-wrap md:flex-nowrap gap-4 mb-4">
+              <div className="w-full md:w-1/2">
+                <label className="block text-sm text-slate-300 mb-1">Start Date</label>
+                <input 
+                  type="date" 
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full p-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                />
+              </div>
+              
+              <div className="w-full md:w-1/2">
+                <label className="block text-sm text-slate-300 mb-1">End Date</label>
+                <input 
+                  type="date" 
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="w-full p-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                />
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-2 mb-4">
+              <label className="text-sm text-white font-medium">Apply custom date range to:</label>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="applyToSpendingTrend"
+                  checked={chartSettings.applyCustomToSpendingTrend}
+                  onChange={() => setChartSettings(prev => ({
+                    ...prev,
+                    applyCustomToSpendingTrend: !prev.applyCustomToSpendingTrend
+                  }))}
+                  className="mr-2"
+                />
+                <label htmlFor="applyToSpendingTrend" className="text-slate-300 text-sm">
+                  Spending Trend Chart
+                </label>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="applyToIncomeExpenses"
+                  checked={chartSettings.applyCustomToIncomeExpenses}
+                  onChange={() => setChartSettings(prev => ({
+                    ...prev,
+                    applyCustomToIncomeExpenses: !prev.applyCustomToIncomeExpenses
+                  }))}
+                  className="mr-2"
+                />
+                <label htmlFor="applyToIncomeExpenses" className="text-slate-300 text-sm">
+                  Income vs Expenses Chart
+                </label>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="applyToCategoryBreakdown"
+                  checked={chartSettings.applyCustomToCategoryBreakdown}
+                  onChange={() => setChartSettings(prev => ({
+                    ...prev,
+                    applyCustomToCategoryBreakdown: !prev.applyCustomToCategoryBreakdown
+                  }))}
+                  className="mr-2"
+                />
+                <label htmlFor="applyToCategoryBreakdown" className="text-slate-300 text-sm">
+                  Category Breakdown
+                </label>
+              </div>
+            </div>
+            
+            <div className="flex justify-end">
+              <button 
+                onClick={() => {
+                  setCustomDateRange(true);
+                  fetchFinancialData();
+                  setChartSettings(prev => ({
+                    ...prev,
+                    showCustomDateSettings: false
+                  }));
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+              >
+                Apply Custom Range
               </button>
             </div>
           </div>
@@ -910,7 +1051,168 @@ const FinancialInsights = ({
         </div>
       </div>
       
-      {/* Chart Section */}
+      {/* ENHANCED: Spending Trend Chart */}
+      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <h5 className="font-medium text-white mb-4 flex items-center gap-2">
+          <BarChart2 className="finance-text-amber-400" size={18} />
+          Spending Trend
+          <span className="text-sm text-slate-400 font-normal">
+            {timeRange === 'week' ? 'Daily View' : timeRange === 'month' ? 'Monthly View' : 'Period View'}
+          </span>
+        </h5>
+        
+        <div className="h-64 relative">
+          {spendingTrend.length > 0 ? (
+            <div className="w-full h-full flex items-end justify-between">
+              {(() => {
+                // Calculate average spending across all periods
+                const totalSpending = spendingTrend.reduce((sum, item) => sum + item.spending, 0);
+                const averageSpending = totalSpending / spendingTrend.length;
+                
+                return spendingTrend.map((item, index) => {
+                  const maxSpending = Math.max(...spendingTrend.map(i => i.spending));
+                  const height = maxSpending > 0 ? (item.spending / maxSpending * 180) || 0 : 0;
+                  const barColor = getSpendingTrendBarColor(index, item.spending, averageSpending);
+                  
+                  return (
+                    <div 
+                      key={index} 
+                      className="flex flex-col items-center"
+                      onMouseEnter={() => setHoveredBar(index)}
+                      onMouseLeave={() => setHoveredBar(null)}
+                    >
+                      <div 
+                        className={`w-10 ${barColor} rounded-t-lg transition-all relative`}
+                        style={{ height: `${Math.max(20, height)}px` }}
+                      >
+                        {hoveredBar === index && (
+                          <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white p-2 rounded text-xs whitespace-nowrap z-10 min-w-[120px] border border-slate-700">
+                            <div className="font-bold mb-1">{formatCurrency(item.spending)}</div>
+                            {item.topCategory && (
+                              <div className="text-xs">
+                                Top: {item.topCategory.name} ({formatCurrency(item.topCategory.amount)})
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="w-full mt-2 text-center">
+                        <div className="text-xs text-slate-300 font-medium">{item.label}</div>
+                        
+                        {hoveredBar === index && (
+                          <div className="text-xs text-slate-400 absolute left-1/2 transform -translate-x-1/2">
+                            {item.spending > averageSpending * 1.1 
+                              ? '↑ Higher' 
+                              : item.spending < averageSpending * 0.9 
+                                ? '↓ Lower' 
+                                : '= Average'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <p className="text-slate-400">No spending data available</p>
+            </div>
+          )}
+        </div>
+        
+        <div className="mt-6 pt-4 border-t border-slate-700">
+          <div className="flex flex-col sm:flex-row justify-between gap-4">
+            <div className="text-sm">
+              <div className="text-slate-400">Average Spending</div>
+              <div className="text-lg font-bold text-white">
+                {formatCurrency(
+                  spendingTrend.length > 0 
+                    ? spendingTrend.reduce((sum, period) => sum + period.spending, 0) / spendingTrend.length
+                    : 0
+                )}
+              </div>
+            </div>
+            
+            <div className="text-sm text-right">
+              <div className="text-slate-400">Highest Period</div>
+              <div className="text-lg font-bold text-white">
+                {spendingTrend.length > 0
+                  ? formatCurrency(Math.max(...spendingTrend.map(period => period.spending)))
+                  : formatCurrency(0)
+                }
+              </div>
+            </div>
+            
+            <div className="text-sm">
+              <div className="text-slate-400">Total Spending</div>
+              <div className="text-lg font-bold text-white">
+                {formatCurrency(
+                  spendingTrend.reduce((sum, period) => sum + period.spending, 0)
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Spending Trend Analysis */}
+          {spendingTrend.length > 0 && (
+            <div className="mt-4 p-3 bg-slate-700/50 rounded-lg text-sm">
+              <div className="flex items-start gap-2">
+                <Info size={16} className="text-amber-400 mt-0.5" />
+                <div>
+                  {(() => {
+                    // Calculate trend analysis
+                    const firstHalf = spendingTrend.slice(0, Math.ceil(spendingTrend.length / 2));
+                    const secondHalf = spendingTrend.slice(Math.ceil(spendingTrend.length / 2));
+                    
+                    const firstHalfTotal = firstHalf.reduce((sum, period) => sum + period.spending, 0);
+                    const secondHalfTotal = secondHalf.reduce((sum, period) => sum + period.spending, 0);
+                    
+                    const percentChange = firstHalfTotal > 0 
+                      ? ((secondHalfTotal - firstHalfTotal) / firstHalfTotal) * 100
+                      : 0;
+                    
+                    // Find the highest spending period
+                    const highestPeriod = [...spendingTrend].sort((a, b) => b.spending - a.spending)[0];
+                    
+                    if (Math.abs(percentChange) < 5) {
+                      return (
+                        <span className="text-slate-300">
+                          Your spending has been relatively stable during this period. 
+                          {highestPeriod && highestPeriod.topCategory && (
+                            ` Your highest spending was in ${highestPeriod.label} with ${highestPeriod.topCategory.name} as the top category.`
+                          )}
+                        </span>
+                      );
+                    } else if (percentChange > 0) {
+                      return (
+                        <span className="text-slate-300">
+                          Your spending has increased by approximately {Math.abs(percentChange).toFixed(0)}% from earlier to later in this period.
+                          {highestPeriod && highestPeriod.topCategory && (
+                            ` Your highest spending was in ${highestPeriod.label} with ${highestPeriod.topCategory.name} as the top category.`
+                          )}
+                        </span>
+                      );
+                    } else {
+                      return (
+                        <span className="text-slate-300">
+                          Your spending has decreased by approximately {Math.abs(percentChange).toFixed(0)}% from earlier to later in this period.
+                          {highestPeriod && highestPeriod.topCategory && (
+                            ` Your highest spending was in ${highestPeriod.label} with ${highestPeriod.topCategory.name} as the top category.`
+                          )}
+                        </span>
+                      );
+                    }
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Chart Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Expense Breakdown */}
         <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
@@ -1038,168 +1340,168 @@ const FinancialInsights = ({
               );
             })}
           </div>
-        </div>
-        
-        {/* Spending Trend */}
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <h5 className="font-medium text-white mb-4 flex items-center gap-2">
-            <BarChart2 className="finance-text-amber-400" size={18} />
-            {timeRange === 'week' ? 'Daily' : timeRange === 'month' ? 'Monthly' : 'Period'} Spending Trend
-          </h5>
           
-          <div className="h-64 relative">
-            {spendingTrend.length > 0 ? (
-              <div className="w-full h-full flex items-end justify-between">
-                {spendingTrend.map((item, index) => {
-                  const maxSpending = Math.max(...spendingTrend.map(i => i.spending));
-                  const height = maxSpending > 0 ? (item.spending / maxSpending * 180) || 0 : 0;
-                  
-                  return (
-                    <div 
-                      key={index} 
-                      className="flex flex-col items-center"
-                      onMouseEnter={() => setHoveredMonth(index)}
-                      onMouseLeave={() => setHoveredMonth(null)}
-                    >
-                      <div 
-                        className="w-10 bg-amber-500 dark:bg-amber-600 rounded-t-lg transition-all relative"
-                        style={{ height: `${Math.max(20, height)}px` }}
-                      >
-                        {hoveredMonth === index && (
-                          <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-2 py-1 rounded text-xs whitespace-nowrap z-10">
-                            {formatCurrency(item.spending)}
-                          </div>
-                        )}
-                      </div>
-                      <span className="mt-2 text-xs text-slate-400">{item.label}</span>
-                    </div>
-                  );
-                })}
+          {/* Top spending category analysis */}
+          {chartData.length > 0 && (
+            <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
+              <div className="text-sm text-slate-300">
+                <span className="font-medium text-white">Spending Insight: </span>
+                Your highest spending category is {chartData[0].name} at {formatCurrency(chartData[0].value)} 
+                ({Math.round((chartData[0].value / (stats?.expenses || 1)) * 100)}% of total expenses).
+                {chartData.length > 1 && (
+                  ` This is ${Math.round((chartData[0].value / chartData[1].value) * 100) - 100}% higher than your second highest category, ${chartData[1].name}.`
+                )}
               </div>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <p className="text-slate-400">No spending data available</p>
-              </div>
-            )}
-          </div>
-          
-          <div className="mt-4 pt-4 border-t border-slate-700">
-            <div className="flex justify-between">
-              <div className="text-sm">
-                <div className="text-slate-400">Average Spending</div>
-                <div className="text-lg font-bold text-white">
-                  {formatCurrency(
-                    spendingTrend.length > 0 
-                      ? spendingTrend.reduce((sum, month) => sum + month.spending, 0) / spendingTrend.length
-                      : 0
-                  )}
-                </div>
-              </div>
-              
-              <div className="text-sm text-right">
-                <div className="text-slate-400">Highest Period</div>
-                <div className="text-lg font-bold text-white">
-                  {spendingTrend.length > 0
-                    ? formatCurrency(Math.max(...spendingTrend.map(m => m.spending)))
-                    : formatCurrency(0)
-                  }
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Income vs Expenses Chart */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <h5 className="font-medium text-white mb-4 flex items-center gap-2">
-          <TrendingUp className="finance-text-amber-400" size={18} />
-          Income vs Expenses
-        </h5>
-        
-        <div className="h-[300px] relative" style={{ marginBottom: "20px" }}>
-          {incomeVsExpenses.length > 0 ? (
-            <svg width="100%" height="100%" viewBox="0 0 600 240" preserveAspectRatio="none">
-              {/* Grid lines */}
-              <line x1="0" y1="0" x2="600" y2="0" stroke="#4B5563" strokeWidth="1" />
-              <line x1="0" y1="60" x2="600" y2="60" stroke="#4B5563" strokeWidth="1" />
-              <line x1="0" y1="120" x2="600" y2="120" stroke="#4B5563" strokeWidth="1" />
-              <line x1="0" y1="180" x2="600" y2="180" stroke="#4B5563" strokeWidth="1" />
-              <line x1="0" y1="240" x2="600" y2="240" stroke="#4B5563" strokeWidth="1" />
-              
-              {/* Income area */}
-              {(() => {
-                // Find max value for scaling
-                const maxIncome = Math.max(...incomeVsExpenses.map(item => item.income), ...incomeVsExpenses.map(item => item.expenses));
-                
-                // Calculate path coordinates
-                const xStep = 600 / (incomeVsExpenses.length - 1 || 1);
-                
-                // Income path
-                const incomePath = incomeVsExpenses.map((item, i) => {
-                  const x = i * xStep;
-                  const y = maxIncome > 0 ? 240 - (item.income / maxIncome * 240) : 240;
-                  return i === 0 ? `M${x},${y}` : `L${x},${y}`;
-                }).join(' ');
-                
-                // Expenses path
-                const expensesPath = incomeVsExpenses.map((item, i) => {
-                  const x = i * xStep;
-                  const y = maxIncome > 0 ? 240 - (item.expenses / maxIncome * 240) : 240;
-                  return i === 0 ? `M${x},${y}` : `L${x},${y}`;
-                }).join(' ');
-                
-                // Income area
-                const incomeArea = `${incomePath} L${(incomeVsExpenses.length - 1) * xStep},240 L0,240 Z`;
-                
-                // Expenses area
-                const expensesArea = `${expensesPath} L${(incomeVsExpenses.length - 1) * xStep},240 L0,240 Z`;
-                
-                return (
-                  <>
-                    <path 
-                      d={incomeArea}
-                      fill="rgba(52, 211, 153, 0.2)"
-                      stroke="#34D399"
-                      strokeWidth="2"
-                    />
-                    
-                    <path 
-                      d={expensesPath}
-                      fill="none"
-                      stroke="#F87171"
-                      strokeWidth="2"
-                    />
-                  </>
-                );
-              })()}
-              
-              {/* Month labels */}
-              {incomeVsExpenses.map((item, i) => {
-                const x = i * (600 / (incomeVsExpenses.length - 1 || 1));
-                return (
-                  <text key={i} x={x} y="255" fontSize="12" fill="#94A3B8" textAnchor="middle">
-                    {item.label}
-                  </text>
-                );
-              })}
-            </svg>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <p className="text-slate-400">No income vs expense data available</p>
             </div>
           )}
         </div>
         
-        <div className="flex justify-center gap-8 text-sm mt-4">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-            <span className="text-slate-300">Income</span>
+        {/* Income vs Expenses */}
+        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <h5 className="font-medium text-white mb-4 flex items-center gap-2">
+            <TrendingUp className="finance-text-amber-400" size={18} />
+            Income vs Expenses
+          </h5>
+          
+          <div className="h-64 relative">
+            {incomeVsExpenses.length > 0 ? (
+              <div className="w-full h-full">
+                <svg width="100%" height="100%" viewBox="0 0 600 240" preserveAspectRatio="none">
+                  {/* Grid lines */}
+                  <line x1="0" y1="0" x2="600" y2="0" stroke="#4B5563" strokeWidth="1" />
+                  <line x1="0" y1="60" x2="600" y2="60" stroke="#4B5563" strokeWidth="1" />
+                  <line x1="0" y1="120" x2="600" y2="120" stroke="#4B5563" strokeWidth="1" />
+                  <line x1="0" y1="180" x2="600" y2="180" stroke="#4B5563" strokeWidth="1" />
+                  <line x1="0" y1="240" x2="600" y2="240" stroke="#4B5563" strokeWidth="1" />
+                  
+                  {/* Income and expenses lines */}
+                  {(() => {
+                    // Find max value for scaling
+                    const maxValue = Math.max(
+                      ...incomeVsExpenses.map(item => Math.max(item.income, item.expenses))
+                    );
+                    
+                    // Calculate path coordinates
+                    const xStep = 600 / (incomeVsExpenses.length - 1 || 1);
+                    
+                    // Income path
+                    const incomePath = incomeVsExpenses.map((item, i) => {
+                      const x = i * xStep;
+                      const y = maxValue > 0 ? 240 - (item.income / maxValue * 240) : 240;
+                      return i === 0 ? `M${x},${y}` : `L${x},${y}`;
+                    }).join(' ');
+                    
+                    // Expenses path
+                    const expensesPath = incomeVsExpenses.map((item, i) => {
+                      const x = i * xStep;
+                      const y = maxValue > 0 ? 240 - (item.expenses / maxValue * 240) : 240;
+                      return i === 0 ? `M${x},${y}` : `L${x},${y}`;
+                    }).join(' ');
+                    
+                    // Income area
+                    const incomeArea = `${incomePath} L${(incomeVsExpenses.length - 1) * xStep},240 L0,240 Z`;
+                    
+                    return (
+                      <>
+                        {/* Income area */}
+                        <path 
+                          d={incomeArea}
+                          fill="rgba(52, 211, 153, 0.2)"
+                          stroke="#34D399"
+                          strokeWidth="2"
+                        />
+                        
+                        {/* Expenses line */}
+                        <path 
+                          d={expensesPath}
+                          fill="none"
+                          stroke="#F87171"
+                          strokeWidth="2"
+                        />
+                        
+                        {/* Labels and data points */}
+                        {incomeVsExpenses.map((item, i) => {
+                          const x = i * xStep;
+                          
+                          // Income data point
+                          const incomeY = maxValue > 0 ? 240 - (item.income / maxValue * 240) : 240;
+                          
+                          // Expenses data point
+                          const expensesY = maxValue > 0 ? 240 - (item.expenses / maxValue * 240) : 240;
+                          
+                          return (
+                            <g key={i}>
+                              {/* Income data point */}
+                              <circle cx={x} cy={incomeY} r="4" fill="#34D399" />
+                              
+                              {/* Expenses data point */}
+                              <circle cx={x} cy={expensesY} r="4" fill="#F87171" />
+                              
+                              {/* Period label */}
+                              <text x={x} y="255" fontSize="12" fill="#94A3B8" textAnchor="middle">
+                                {item.label}
+                              </text>
+                            </g>
+                          );
+                        })}
+                      </>
+                    );
+                  })()}
+                </svg>
+              </div>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <p className="text-slate-400">No income vs expense data available</p>
+              </div>
+            )}
           </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-            <span className="text-slate-300">Expenses</span>
+          
+          <div className="flex justify-center gap-8 text-sm mt-6">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+              <span className="text-slate-300">Income</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+              <span className="text-slate-300">Expenses</span>
+            </div>
           </div>
+          
+          {/* Income vs Expenses Analysis */}
+          {incomeVsExpenses.length > 0 && (
+            <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
+              <div className="text-sm text-slate-300">
+                {(() => {
+                  // Calculate totals and averages
+                  const totalIncome = incomeVsExpenses.reduce((sum, item) => sum + item.income, 0);
+                  const totalExpenses = incomeVsExpenses.reduce((sum, item) => sum + item.expenses, 0);
+                  const totalNet = totalIncome - totalExpenses;
+                  
+                  // Find best and worst periods
+                  const bestPeriod = [...incomeVsExpenses].sort((a, b) => (b.income - b.expenses) - (a.income - a.expenses))[0];
+                  const worstPeriod = [...incomeVsExpenses].sort((a, b) => (a.income - a.expenses) - (b.income - b.expenses))[0];
+                  
+                  if (totalNet > 0) {
+                    return (
+                      <>
+                        <span className="font-medium text-white">Positive Cash Flow: </span>
+                        Your income exceeded expenses by {formatCurrency(totalNet)} during this period. 
+                        Your best performing period was {bestPeriod.label} with a net of {formatCurrency(bestPeriod.income - bestPeriod.expenses)}.
+                      </>
+                    );
+                  } else {
+                    return (
+                      <>
+                        <span className="font-medium text-white">Negative Cash Flow: </span>
+                        Your expenses exceeded income by {formatCurrency(Math.abs(totalNet))} during this period. 
+                        Your most challenging period was {worstPeriod.label} with a net of {formatCurrency(worstPeriod.income - worstPeriod.expenses)}.
+                      </>
+                    );
+                  }
+                })()}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       

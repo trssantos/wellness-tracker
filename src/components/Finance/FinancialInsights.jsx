@@ -627,51 +627,86 @@ const FinancialInsights = ({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 mb-6">
-        <div className="flex flex-wrap gap-4 justify-between">
-          <div className="flex items-center gap-4">
-            <h4 className="text-lg font-medium text-white flex items-center gap-2">
-              <BarChart2 className="finance-text-amber-400" size={20} />
-              Financial Insights
-            </h4>
-            
-            <div className="flex bg-slate-700 rounded-lg overflow-hidden text-sm">
-              <button 
-                onClick={() => handleDateRangeChange('week')} 
-                className={`px-3 py-1.5 ${timeRange === 'week' && !customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
-              >
-                Week
-              </button>
-              <button 
-                onClick={() => handleDateRangeChange('month')} 
-                className={`px-3 py-1.5 ${timeRange === 'month' && !customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
-              >
-                Month
-              </button>
-              <button 
-                onClick={() => handleDateRangeChange('quarter')} 
-                className={`px-3 py-1.5 ${timeRange === 'quarter' && !customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
-              >
-                Quarter
-              </button>
-              <button 
-                onClick={() => handleDateRangeChange('year')} 
-                className={`px-3 py-1.5 ${timeRange === 'year' && !customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
-              >
-                Year
-              </button>
-              <button 
-                onClick={() => setCustomDateRange(!customDateRange)} 
-                className={`px-3 py-1.5 ${customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
-              >
-                Custom
-              </button>
-            </div>
-          </div>
+      <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:justify-between w-full">
+  {/* Title and time range in first row on mobile, left column on desktop */}
+  <div className="mb-4">
+  {/* Header with title only */}
+  <h4 className="text-lg font-medium text-white flex items-center gap-2 mb-3">
+    <BarChart2 className="finance-text-amber-400" size={20} />
+    Financial Insights
+  </h4>
+  
+  {/* Time frame selection - scrollable on mobile */}
+  <div className="flex flex-col gap-3">
+    <div className="overflow-x-auto no-scrollbar">
+      <div className="flex bg-slate-700 rounded-lg min-w-max">
+        <button 
+          onClick={() => handleDateRangeChange('week')} 
+          className={`px-3 py-1.5 whitespace-nowrap ${timeRange === 'week' && !customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
+        >
+          Week
+        </button>
+        <button 
+          onClick={() => handleDateRangeChange('month')} 
+          className={`px-3 py-1.5 whitespace-nowrap ${timeRange === 'month' && !customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
+        >
+          Month
+        </button>
+        <button 
+          onClick={() => handleDateRangeChange('quarter')} 
+          className={`px-3 py-1.5 whitespace-nowrap ${timeRange === 'quarter' && !customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
+        >
+          Quarter
+        </button>
+        <button 
+          onClick={() => handleDateRangeChange('year')} 
+          className={`px-3 py-1.5 whitespace-nowrap ${timeRange === 'year' && !customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
+        >
+          Year
+        </button>
+        <button 
+          onClick={() => setCustomDateRange(!customDateRange)} 
+          className={`px-3 py-1.5 whitespace-nowrap ${customDateRange ? 'bg-amber-600 text-white' : 'text-slate-300 hover:bg-slate-600'}`}
+        >
+          Custom
+        </button>
+      </div>
+    </div>
+    
+    {/* Date navigation - separated and full width */}
+    {!customDateRange && (
+      <div className="flex items-center justify-between bg-slate-700/50 rounded-lg p-2">
+        <button 
+          onClick={() => {
+            /* Your existing code */
+          }}
+          className="p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        
+        <span className="text-xs text-slate-300 flex-1 text-center">
+          {new Date(startDate).toLocaleDateString()} — {new Date(endDate).toLocaleDateString()}
+        </span>
+        
+        <button 
+          onClick={() => {
+            /* Your existing code */
+          }}
+          className="p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300"
+          disabled={new Date(endDate) >= new Date()}
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    )}
+  </div>
+</div>
           
           {!customDateRange && (
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => {
+    <div className="flex items-center gap-2 self-start">
+      <button 
+        onClick={() => {
                   let prevPeriod = new Date(selectedDateRange.start);
                   let newEnd = new Date(selectedDateRange.start);
                   newEnd.setDate(newEnd.getDate() - 1);
@@ -700,14 +735,14 @@ const FinancialInsights = ({
                   
                   fetchFinancialData();
                 }}
-                className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300"
+                className="p-1.5 xs:p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300"
               >
-                <ChevronLeft size={18} />
+                <ChevronLeft size={16} />
               </button>
               
-              <span className="text-sm text-slate-300">
-                {new Date(startDate).toLocaleDateString()} — {new Date(endDate).toLocaleDateString()}
-              </span>
+              <span className="text-xs xs:text-sm text-slate-300 whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]">
+        {new Date(startDate).toLocaleDateString()} — {new Date(endDate).toLocaleDateString()}
+      </span>
               
               <button 
                 onClick={() => {
@@ -745,10 +780,10 @@ const FinancialInsights = ({
                   
                   fetchFinancialData();
                 }}
-                className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300"
-                disabled={new Date(endDate) >= new Date()}
+                className="p-1.5 xs:p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300"
+        disabled={new Date(endDate) >= new Date()}
               >
-                <ChevronRight size={18} />
+                <ChevronRight size={16} />
               </button>
             </div>
           )}

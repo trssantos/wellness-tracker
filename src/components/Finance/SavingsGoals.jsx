@@ -251,14 +251,14 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
                 <div className="flex justify-between items-end mb-4">
                   <div>
                     <div className="text-sm text-slate-400 dark:text-slate-400">Saved</div>
-                    <div className="text-2xl font-bold text-white dark:text-white">
+                    <div className="text-lg font-bold text-white dark:text-white">
                       {formatCurrency(goal.current)}
                     </div>
                   </div>
                   
                   <div className="text-right">
                     <div className="text-sm text-slate-400 dark:text-slate-400">Target</div>
-                    <div className="text-2xl font-bold text-white dark:text-white">
+                    <div className="text-lg font-bold text-white dark:text-white">
                       {formatCurrency(goal.target)}
                     </div>
                   </div>

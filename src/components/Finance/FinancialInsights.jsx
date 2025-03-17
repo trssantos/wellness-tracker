@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  X,BarChart2, Award, AlertTriangle, AlertCircle, PiggyBank, Calendar, 
+  BarChart2, Award, AlertTriangle, AlertCircle, PiggyBank, Calendar, 
   TrendingUp, TrendingDown, DollarSign, PieChart, Info, 
   ArrowRight, ArrowLeft, ChevronLeft, ChevronRight, Settings, Filter
 } from 'lucide-react';
@@ -50,6 +50,7 @@ const FinancialInsights = ({
   const [insights, setInsights] = useState({ score: 0, insights: [] });
   const [correlations, setCorrelations] = useState([]);
   const [bills, setBills] = useState([]);
+  const [isMobile, setIsMobile] = useState(false);
   
   // New state for selective chart application
   const [chartSettings, setChartSettings] = useState({
@@ -58,6 +59,17 @@ const FinancialInsights = ({
     applyCustomToIncomeExpenses: true,
     applyCustomToCategoryBreakdown: true
   });
+
+  // Check if we're on mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Fetch data on initial render and when refreshTrigger changes
   useEffect(() => {
@@ -221,6 +233,41 @@ const FinancialInsights = ({
       balance,
       categoryBreakdown: breakdown
     });
+  };
+
+  // Helper function to find the top spending category for a set of transactions
+  const findTopCategory = (transactions) => {
+    const categories = {};
+    
+    transactions.forEach(tx => {
+      if (!tx.category) return;
+      
+      if (!categories[tx.category]) {
+        categories[tx.category] = 0;
+      }
+      
+      categories[tx.category] += Math.abs(tx.amount);
+    });
+    
+    let topCategoryId = null;
+    let topAmount = 0;
+    
+    Object.entries(categories).forEach(([categoryId, amount]) => {
+      if (amount > topAmount) {
+        topCategoryId = categoryId;
+        topAmount = amount;
+      }
+    });
+    
+    if (topCategoryId) {
+      const category = getCategoryById(topCategoryId);
+      return {
+        name: category ? category.name : 'Unknown',
+        amount: topAmount
+      };
+    }
+    
+    return null;
   };
 
   // IMPROVED: Generate spending trend data based on timeframe - always showing 7 periods
@@ -400,41 +447,6 @@ const FinancialInsights = ({
     });
     
     setSpendingTrend(trend);
-  };
-  
-  // Helper function to find the top spending category for a set of transactions
-  const findTopCategory = (transactions) => {
-    const categories = {};
-    
-    transactions.forEach(tx => {
-      if (!tx.category) return;
-      
-      if (!categories[tx.category]) {
-        categories[tx.category] = 0;
-      }
-      
-      categories[tx.category] += Math.abs(tx.amount);
-    });
-    
-    let topCategoryId = null;
-    let topAmount = 0;
-    
-    Object.entries(categories).forEach(([categoryId, amount]) => {
-      if (amount > topAmount) {
-        topCategoryId = categoryId;
-        topAmount = amount;
-      }
-    });
-    
-    if (topCategoryId) {
-      const category = getCategoryById(topCategoryId);
-      return {
-        name: category ? category.name : 'Unknown',
-        amount: topAmount
-      };
-    }
-    
-    return null;
   };
   
   // Generate income vs expenses data
@@ -752,198 +764,186 @@ const FinancialInsights = ({
 
   return (
     <div className="space-y-6">
-      {/* Header Section with improved Time Navigation */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <div>
-            <h4 className="text-lg font-medium text-white flex items-center gap-2 mb-2">
-              <BarChart2 className="finance-text-amber-400" size={20} />
-              Insights
-              <span className="text-sm text-slate-400 font-normal">
-                {customDateRange 
-                  ? `Custom Range` 
-                  : timeRange === 'week' 
-                    ? 'Daily View' 
-                    : timeRange === 'month' 
-                      ? 'Monthly View' 
-                      : timeRange === 'quarter' 
-                        ? 'Quarterly View' 
-                        : 'Yearly View'
-                }
-              </span>
-            </h4>
-            <p className="text-slate-400 text-sm hidden md:block">
-              Gain insights into your spending patterns and financial health to make better financial decisions.
-            </p>
-          </div>
-          
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => handleDateRangeChange('week')}
-              className={`px-3 py-1.5 rounded-lg text-sm ${
-                timeRange === 'week' && !customDateRange 
-                  ? 'bg-amber-600 text-white' 
-                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-              }`}
-            >
-              Week
-            </button>
-            <button
-              onClick={() => handleDateRangeChange('month')}
-              className={`px-3 py-1.5 rounded-lg text-sm ${
-                timeRange === 'month' && !customDateRange 
-                  ? 'bg-amber-600 text-white' 
-                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-              }`}
-            >
-              Month
-            </button>
-            <button
-              onClick={() => handleDateRangeChange('quarter')}
-              className={`px-3 py-1.5 rounded-lg text-sm ${
-                timeRange === 'quarter' && !customDateRange 
-                  ? 'bg-amber-600 text-white' 
-                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-              }`}
-            >
-              Quarter
-            </button>
-            <button
-              onClick={() => handleDateRangeChange('year')}
-              className={`px-3 py-1.5 rounded-lg text-sm ${
-                timeRange === 'year' && !customDateRange 
-                  ? 'bg-amber-600 text-white' 
-                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-              }`}
-            >
-              Year
-            </button>
-            <button
-              onClick={() => setChartSettings(prev => ({
-                ...prev,
-                showCustomDateSettings: !prev.showCustomDateSettings
-              }))}
-              className={`px-3 py-1.5 rounded-lg text-sm ${
-                customDateRange || chartSettings.showCustomDateSettings
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-              }`}
-            >
-              <Settings size={16} />
-            </button>
-          </div>
-        </div>
-        
-        {/* Time Navigation Controls */}
-        <div className="flex items-center justify-between bg-slate-700 rounded-lg p-2">
-          <button 
-            onClick={handleNavigatePrevious}
-            className="p-1.5 rounded-lg bg-slate-600 hover:bg-slate-500 text-slate-300"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          
-          <span className="text-sm text-slate-300">
-            {new Date(startDate).toLocaleDateString()} — {new Date(endDate).toLocaleDateString()}
-          </span>
-          
-          <button 
-            onClick={handleNavigateNext}
-            className="p-1.5 rounded-lg bg-slate-600 hover:bg-slate-500 text-slate-300"
-            disabled={new Date(endDate) >= new Date()}
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-        
-        {/* Custom Date Settings Panel */}
-        {chartSettings.showCustomDateSettings && (
-          <div className="mt-4 p-4 bg-slate-700 rounded-lg border border-slate-600">
-            <div className="flex justify-between items-center mb-4">
-              <h5 className="text-white font-medium">Custom Date Settings</h5>
+      {/* Header Section with improved Time Navigation - MOBILE OPTIMIZED */}
+      <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
+        <div className="flex flex-col gap-4 mb-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <h4 className="text-lg font-medium text-white flex items-center gap-2 mb-2">
+                <BarChart2 className="finance-text-amber-400" size={20} />
+                <span className="truncate max-w-xs">Insights</span>
+                {!isMobile && (
+                  <span className="text-sm text-slate-400 font-normal">
+                    {customDateRange 
+                      ? `Custom Range` 
+                      : timeRange === 'week' 
+                        ? 'Daily View' 
+                        : timeRange === 'month' 
+                          ? 'Monthly View' 
+                          : timeRange === 'quarter' 
+                            ? 'Quarterly View' 
+                            : 'Yearly View'
+                    }
+                  </span>
+                )}
+              </h4>
+              {!isMobile && (
+                <p className="text-slate-400 text-sm">
+                  Gain insights into your spending patterns and financial health.
+                </p>
+              )}
+            </div>
+            
+            {/* Time range selector - MOBILE OPTIMIZED */}
+            <div className="flex flex-wrap gap-1">
+              <button
+                onClick={() => handleDateRangeChange('week')}
+                className={`px-2 py-1 rounded-lg text-xs ${
+                  timeRange === 'week' && !customDateRange 
+                    ? 'bg-amber-600 text-white' 
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Week
+              </button>
+              <button
+                onClick={() => handleDateRangeChange('month')}
+                className={`px-2 py-1 rounded-lg text-xs ${
+                  timeRange === 'month' && !customDateRange 
+                    ? 'bg-amber-600 text-white' 
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Month
+              </button>
+              <button
+                onClick={() => handleDateRangeChange('quarter')}
+                className={`px-2 py-1 rounded-lg text-xs ${
+                  timeRange === 'quarter' && !customDateRange 
+                    ? 'bg-amber-600 text-white' 
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Quarter
+              </button>
+              <button
+                onClick={() => handleDateRangeChange('year')}
+                className={`px-2 py-1 rounded-lg text-xs ${
+                  timeRange === 'year' && !customDateRange 
+                    ? 'bg-amber-600 text-white' 
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Year
+              </button>
               <button
                 onClick={() => setChartSettings(prev => ({
                   ...prev,
-                  showCustomDateSettings: false
+                  showCustomDateSettings: !prev.showCustomDateSettings
                 }))}
-                className="p-1 rounded-full hover:bg-slate-600 text-slate-400"
+                className={`p-1 rounded-lg text-xs ${
+                  customDateRange || chartSettings.showCustomDateSettings
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
               >
-                <X size={18} />
+                <Settings size={14} />
               </button>
             </div>
+          </div>
+          
+          {/* Time Navigation Controls - MOBILE OPTIMIZED */}
+          <div className="flex items-center justify-between bg-slate-700 rounded-lg p-2">
+            <button 
+              onClick={handleNavigatePrevious}
+              className="p-1 rounded-lg bg-slate-600 hover:bg-slate-500 text-slate-300"
+            >
+              <ChevronLeft size={16} />
+            </button>
             
-            <div className="flex flex-wrap md:flex-nowrap gap-4 mb-4">
-              <div className="w-full md:w-1/2">
-                <label className="block text-sm text-slate-300 mb-1">Start Date</label>
+            <span className="text-xs text-slate-300 px-1 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-48">
+              {new Date(startDate).toLocaleDateString()} — {new Date(endDate).toLocaleDateString()}
+            </span>
+            
+            <button 
+              onClick={handleNavigateNext}
+              className="p-1 rounded-lg bg-slate-600 hover:bg-slate-500 text-slate-300"
+              disabled={new Date(endDate) >= new Date()}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+        
+        {/* Custom Date Settings Panel - MOBILE OPTIMIZED */}
+        {chartSettings.showCustomDateSettings && (
+          <div className="mt-4 p-3 bg-slate-700 rounded-lg border border-slate-600">
+            <div className="flex justify-between items-center mb-2">
+              <h5 className="text-white font-medium text-sm">Custom Date Settings</h5>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div>
+                <label className="block text-xs text-slate-300 mb-1">
+                  Start Date
+                </label>
                 <input 
                   type="date" 
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full p-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                  className="w-full p-1 text-xs bg-slate-600 border border-slate-500 rounded-lg text-white"
                 />
               </div>
               
-              <div className="w-full md:w-1/2">
-                <label className="block text-sm text-slate-300 mb-1">End Date</label>
+              <div>
+                <label className="block text-xs text-slate-300 mb-1">
+                  End Date
+                </label>
                 <input 
                   type="date" 
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   max={new Date().toISOString().split('T')[0]}
-                  className="w-full p-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                  className="w-full p-1 text-xs bg-slate-600 border border-slate-500 rounded-lg text-white"
                 />
               </div>
             </div>
             
-            <div className="flex flex-col gap-2 mb-4">
-              <label className="text-sm text-white font-medium">Apply custom date range to:</label>
+            <div className="space-y-1 mb-3">
+              <label className="text-xs text-white">Apply custom date to:</label>
               
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="applyToSpendingTrend"
-                  checked={chartSettings.applyCustomToSpendingTrend}
-                  onChange={() => setChartSettings(prev => ({
-                    ...prev,
-                    applyCustomToSpendingTrend: !prev.applyCustomToSpendingTrend
-                  }))}
-                  className="mr-2"
-                />
-                <label htmlFor="applyToSpendingTrend" className="text-slate-300 text-sm">
-                  Spending Trend Chart
-                </label>
-              </div>
-              
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="applyToIncomeExpenses"
-                  checked={chartSettings.applyCustomToIncomeExpenses}
-                  onChange={() => setChartSettings(prev => ({
-                    ...prev,
-                    applyCustomToIncomeExpenses: !prev.applyCustomToIncomeExpenses
-                  }))}
-                  className="mr-2"
-                />
-                <label htmlFor="applyToIncomeExpenses" className="text-slate-300 text-sm">
-                  Income vs Expenses Chart
-                </label>
-              </div>
-              
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="applyToCategoryBreakdown"
-                  checked={chartSettings.applyCustomToCategoryBreakdown}
-                  onChange={() => setChartSettings(prev => ({
-                    ...prev,
-                    applyCustomToCategoryBreakdown: !prev.applyCustomToCategoryBreakdown
-                  }))}
-                  className="mr-2"
-                />
-                <label htmlFor="applyToCategoryBreakdown" className="text-slate-300 text-sm">
-                  Category Breakdown
-                </label>
+              <div className="grid grid-cols-2 gap-1 text-xs">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="applyToSpendingTrend"
+                    checked={chartSettings.applyCustomToSpendingTrend}
+                    onChange={() => setChartSettings(prev => ({
+                      ...prev,
+                      applyCustomToSpendingTrend: !prev.applyCustomToSpendingTrend
+                    }))}
+                    className="mr-1 h-3 w-3"
+                  />
+                  <label htmlFor="applyToSpendingTrend" className="text-slate-300 text-xs">
+                    Spending Trend Chart
+                  </label>
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="applyToIncomeExpenses"
+                    checked={chartSettings.applyCustomToIncomeExpenses}
+                    onChange={() => setChartSettings(prev => ({
+                      ...prev,
+                      applyCustomToIncomeExpenses: !prev.applyCustomToIncomeExpenses
+                    }))}
+                    className="mr-1 h-3 w-3"
+                  />
+                  <label htmlFor="applyToIncomeExpenses" className="text-slate-300 text-xs">
+                    Income vs Expenses
+                  </label>
+                </div>
               </div>
             </div>
             
@@ -957,21 +957,21 @@ const FinancialInsights = ({
                     showCustomDateSettings: false
                   }));
                 }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs"
               >
-                Apply Custom Range
+                Apply Range
               </button>
             </div>
           </div>
         )}
       </div>
       
-      {/* Financial Health Score */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <div className="flex flex-col md:flex-row items-center gap-6">
-          <div className="relative">
-            <div className="w-36 h-36 rounded-full bg-slate-700 flex items-center justify-center">
-              <div className="w-28 h-28 rounded-full bg-slate-800 flex items-center justify-center relative">
+      {/* Financial Health Score - MOBILE OPTIMIZED */}
+      <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
+        <div className="flex flex-col sm:flex-row items-center gap-6">
+          <div className="relative mb-4 sm:mb-0">
+            <div className="w-28 sm:w-36 h-28 sm:h-36 rounded-full bg-slate-700 flex items-center justify-center mx-auto">
+              <div className="w-20 sm:w-28 h-20 sm:h-28 rounded-full bg-slate-800 flex items-center justify-center relative">
                 <svg className="w-full h-full" viewBox="0 0 36 36">
                   <path
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
@@ -991,7 +991,7 @@ const FinancialInsights = ({
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center flex-col">
-                  <span className="text-3xl font-bold text-white">
+                  <span className="text-2xl sm:text-3xl font-bold text-white">
                     {insights.score}
                   </span>
                   <span className="text-xs text-slate-400">out of 100</span>
@@ -1000,7 +1000,7 @@ const FinancialInsights = ({
             </div>
           </div>
           
-          <div className="flex-1">
+          <div className="flex-1 text-center sm:text-left">
             <h5 className="text-xl font-medium text-white mb-2">
               Financial Health Score
             </h5>
@@ -1013,34 +1013,34 @@ const FinancialInsights = ({
               }
             </p>
             
-            {/* Score breakdown */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="bg-slate-700 rounded-lg p-3">
-                <div className="text-sm font-medium text-white mb-1 flex items-center">
+            {/* Score breakdown - MOBILE OPTIMIZED */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="bg-slate-700 rounded-lg p-2 sm:p-3">
+                <div className="text-sm font-medium text-white mb-1 flex items-center justify-center sm:justify-start">
                   <TrendingUp size={16} className="mr-1 finance-text-green-400" />
                   Income
                 </div>
-                <div className="text-2xl font-bold text-white">
+                <div className="text-xl sm:text-2xl font-bold text-white">
                   {formatCurrency(stats?.income || 0)}
                 </div>
               </div>
               
-              <div className="bg-slate-700 rounded-lg p-3">
-                <div className="text-sm font-medium text-white mb-1 flex items-center">
+              <div className="bg-slate-700 rounded-lg p-2 sm:p-3">
+                <div className="text-sm font-medium text-white mb-1 flex items-center justify-center sm:justify-start">
                   <TrendingDown size={16} className="mr-1 finance-text-red-400" />
                   Expenses
                 </div>
-                <div className="text-2xl font-bold text-white">
+                <div className="text-xl sm:text-2xl font-bold text-white">
                   {formatCurrency(stats?.expenses || 0)}
                 </div>
               </div>
               
-              <div className="bg-slate-700 rounded-lg p-3">
-                <div className="text-sm font-medium text-white mb-1 flex items-center">
+              <div className="bg-slate-700 rounded-lg p-2 sm:p-3">
+                <div className="text-sm font-medium text-white mb-1 flex items-center justify-center sm:justify-start">
                   <PiggyBank size={16} className="mr-1 finance-text-amber-400" />
                   Savings Rate
                 </div>
-                <div className="text-2xl font-bold text-white">
+                <div className="text-xl sm:text-2xl font-bold text-white">
                   {stats && stats.income > 0 
                     ? Math.round(((stats.income - stats.expenses) / stats.income) * 100) 
                     : 0}%
@@ -1051,14 +1051,16 @@ const FinancialInsights = ({
         </div>
       </div>
       
-      {/* ENHANCED: Spending Trend Chart */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+      {/* ENHANCED: Spending Trend Chart - MOBILE OPTIMIZED */}
+      <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
         <h5 className="font-medium text-white mb-4 flex items-center gap-2">
           <BarChart2 className="finance-text-amber-400" size={18} />
           Spending Trend
-          <span className="text-sm text-slate-400 font-normal">
-            {timeRange === 'week' ? 'Daily View' : timeRange === 'month' ? 'Monthly View' : 'Period View'}
-          </span>
+          {!isMobile && (
+            <span className="text-sm text-slate-400 font-normal">
+              {timeRange === 'week' ? 'Daily View' : timeRange === 'month' ? 'Monthly View' : 'Period View'}
+            </span>
+          )}
         </h5>
         
         <div className="h-64 relative">
@@ -1082,7 +1084,7 @@ const FinancialInsights = ({
                       onMouseLeave={() => setHoveredBar(null)}
                     >
                       <div 
-                        className={`w-10 ${barColor} rounded-t-lg transition-all relative`}
+                        className={`w-8 sm:w-10 ${barColor} rounded-t-lg transition-all relative`}
                         style={{ height: `${Math.max(20, height)}px` }}
                       >
                         {hoveredBar === index && (
@@ -1098,17 +1100,9 @@ const FinancialInsights = ({
                       </div>
                       
                       <div className="w-full mt-2 text-center">
-                        <div className="text-xs text-slate-300 font-medium">{item.label}</div>
-                        
-                        {hoveredBar === index && (
-                          <div className="text-xs text-slate-400 absolute left-1/2 transform -translate-x-1/2">
-                            {item.spending > averageSpending * 1.1 
-                              ? '↑ Higher' 
-                              : item.spending < averageSpending * 0.9 
-                                ? '↓ Lower' 
-                                : '= Average'}
-                          </div>
-                        )}
+                        <div className="text-xs text-slate-300 font-medium truncate" style={{maxWidth: isMobile ? '40px' : '60px'}}>
+                          {item.label}
+                        </div>
                       </div>
                     </div>
                   );
@@ -1154,68 +1148,13 @@ const FinancialInsights = ({
               </div>
             </div>
           </div>
-          
-          {/* Spending Trend Analysis */}
-          {spendingTrend.length > 0 && (
-            <div className="mt-4 p-3 bg-slate-700/50 rounded-lg text-sm">
-              <div className="flex items-start gap-2">
-                <Info size={16} className="text-amber-400 mt-0.5" />
-                <div>
-                  {(() => {
-                    // Calculate trend analysis
-                    const firstHalf = spendingTrend.slice(0, Math.ceil(spendingTrend.length / 2));
-                    const secondHalf = spendingTrend.slice(Math.ceil(spendingTrend.length / 2));
-                    
-                    const firstHalfTotal = firstHalf.reduce((sum, period) => sum + period.spending, 0);
-                    const secondHalfTotal = secondHalf.reduce((sum, period) => sum + period.spending, 0);
-                    
-                    const percentChange = firstHalfTotal > 0 
-                      ? ((secondHalfTotal - firstHalfTotal) / firstHalfTotal) * 100
-                      : 0;
-                    
-                    // Find the highest spending period
-                    const highestPeriod = [...spendingTrend].sort((a, b) => b.spending - a.spending)[0];
-                    
-                    if (Math.abs(percentChange) < 5) {
-                      return (
-                        <span className="text-slate-300">
-                          Your spending has been relatively stable during this period. 
-                          {highestPeriod && highestPeriod.topCategory && (
-                            ` Your highest spending was in ${highestPeriod.label} with ${highestPeriod.topCategory.name} as the top category.`
-                          )}
-                        </span>
-                      );
-                    } else if (percentChange > 0) {
-                      return (
-                        <span className="text-slate-300">
-                          Your spending has increased by approximately {Math.abs(percentChange).toFixed(0)}% from earlier to later in this period.
-                          {highestPeriod && highestPeriod.topCategory && (
-                            ` Your highest spending was in ${highestPeriod.label} with ${highestPeriod.topCategory.name} as the top category.`
-                          )}
-                        </span>
-                      );
-                    } else {
-                      return (
-                        <span className="text-slate-300">
-                          Your spending has decreased by approximately {Math.abs(percentChange).toFixed(0)}% from earlier to later in this period.
-                          {highestPeriod && highestPeriod.topCategory && (
-                            ` Your highest spending was in ${highestPeriod.label} with ${highestPeriod.topCategory.name} as the top category.`
-                          )}
-                        </span>
-                      );
-                    }
-                  })()}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
       
-      {/* Chart Grid */}
+      {/* Chart Grid - MOBILE OPTIMIZED */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Expense Breakdown */}
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
           <h5 className="font-medium text-white mb-4 flex items-center gap-2">
             <PieChart className="finance-text-amber-400" size={18} />
             Expense Breakdown
@@ -1292,8 +1231,8 @@ const FinancialInsights = ({
             </div>
           </div>
           
-          {/* Categories Legend */}
-          <div className="space-y-2 mt-4">
+          {/* Categories Legend - MOBILE OPTIMIZED */}
+          <div className="space-y-2 mt-4 max-h-60 overflow-y-auto pr-1">
             {chartData.map((category, index) => {
               const totalValue = chartData.reduce((sum, cat) => sum + cat.value, 0);
               const percentage = totalValue > 0 ? (category.value / totalValue) * 100 : 0;
@@ -1319,20 +1258,20 @@ const FinancialInsights = ({
               
               return (
                 <div key={category.id} className="flex items-center justify-between">
-                  <div className="flex items-center">
+                  <div className="flex items-center max-w-[50%]">
                     <div 
-                      className="w-3 h-3 rounded-full mr-2"
+                      className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
                       style={{ backgroundColor: color }}
                     ></div>
-                    <span className="text-white">
+                    <span className="text-white truncate">
                       {category.name}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-slate-300 font-medium">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-300 font-medium text-xs sm:text-sm whitespace-nowrap">
                       {formatCurrency(category.value)}
                     </span>
-                    <span className="text-xs text-slate-400 w-12 text-right">
+                    <span className="text-xs text-slate-400 w-9 text-right">
                       {Math.round(percentage)}%
                     </span>
                   </div>
@@ -1340,24 +1279,10 @@ const FinancialInsights = ({
               );
             })}
           </div>
-          
-          {/* Top spending category analysis */}
-          {chartData.length > 0 && (
-            <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
-              <div className="text-sm text-slate-300">
-                <span className="font-medium text-white">Spending Insight: </span>
-                Your highest spending category is {chartData[0].name} at {formatCurrency(chartData[0].value)} 
-                ({Math.round((chartData[0].value / (stats?.expenses || 1)) * 100)}% of total expenses).
-                {chartData.length > 1 && (
-                  ` This is ${Math.round((chartData[0].value / chartData[1].value) * 100) - 100}% higher than your second highest category, ${chartData[1].name}.`
-                )}
-              </div>
-            </div>
-          )}
         </div>
         
         {/* Income vs Expenses */}
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
           <h5 className="font-medium text-white mb-4 flex items-center gap-2">
             <TrendingUp className="finance-text-amber-400" size={18} />
             Income vs Expenses
@@ -1438,8 +1363,8 @@ const FinancialInsights = ({
                               <circle cx={x} cy={expensesY} r="4" fill="#F87171" />
                               
                               {/* Period label */}
-                              <text x={x} y="255" fontSize="12" fill="#94A3B8" textAnchor="middle">
-                                {item.label}
+                              <text x={x} y="255" fontSize="10" fill="#94A3B8" textAnchor="middle">
+                                {isMobile ? (item.label.length > 5 ? item.label.substring(0, 5) : item.label) : item.label}
                               </text>
                             </g>
                           );
@@ -1466,47 +1391,11 @@ const FinancialInsights = ({
               <span className="text-slate-300">Expenses</span>
             </div>
           </div>
-          
-          {/* Income vs Expenses Analysis */}
-          {incomeVsExpenses.length > 0 && (
-            <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
-              <div className="text-sm text-slate-300">
-                {(() => {
-                  // Calculate totals and averages
-                  const totalIncome = incomeVsExpenses.reduce((sum, item) => sum + item.income, 0);
-                  const totalExpenses = incomeVsExpenses.reduce((sum, item) => sum + item.expenses, 0);
-                  const totalNet = totalIncome - totalExpenses;
-                  
-                  // Find best and worst periods
-                  const bestPeriod = [...incomeVsExpenses].sort((a, b) => (b.income - b.expenses) - (a.income - a.expenses))[0];
-                  const worstPeriod = [...incomeVsExpenses].sort((a, b) => (a.income - a.expenses) - (b.income - b.expenses))[0];
-                  
-                  if (totalNet > 0) {
-                    return (
-                      <>
-                        <span className="font-medium text-white">Positive Cash Flow: </span>
-                        Your income exceeded expenses by {formatCurrency(totalNet)} during this period. 
-                        Your best performing period was {bestPeriod.label} with a net of {formatCurrency(bestPeriod.income - bestPeriod.expenses)}.
-                      </>
-                    );
-                  } else {
-                    return (
-                      <>
-                        <span className="font-medium text-white">Negative Cash Flow: </span>
-                        Your expenses exceeded income by {formatCurrency(Math.abs(totalNet))} during this period. 
-                        Your most challenging period was {worstPeriod.label} with a net of {formatCurrency(worstPeriod.income - worstPeriod.expenses)}.
-                      </>
-                    );
-                  }
-                })()}
-              </div>
-            </div>
-          )}
         </div>
       </div>
       
-      {/* Key Insights */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+      {/* Key Insights - MOBILE OPTIMIZED */}
+      <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
         <h5 className="text-lg font-medium text-white mb-4">
           Key Insights & Recommendations
         </h5>
@@ -1516,17 +1405,17 @@ const FinancialInsights = ({
             insights.insights.map((insight, index) => (
               <div 
                 key={index} 
-                className={`p-4 rounded-lg ${getInsightBgClass(insight.type)}`}
+                className={`p-3 sm:p-4 rounded-lg ${getInsightBgClass(insight.type)}`}
               >
-                <div className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg ${getInsightColorClass(insight.type)}`}>
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <div className={`p-2 rounded-lg ${getInsightColorClass(insight.type)} flex-shrink-0`}>
                     {renderIcon(insight.icon, 18)}
                   </div>
-                  <div className="flex-1">
-                    <h6 className="font-medium text-white mb-1">
+                  <div className="flex-1 min-w-0">
+                    <h6 className="font-medium text-white mb-1 break-words">
                       {insight.title}
                     </h6>
-                    <p className="text-slate-300 text-sm">
+                    <p className="text-slate-300 text-sm break-words">
                       {insight.description}
                     </p>
                     
@@ -1550,56 +1439,6 @@ const FinancialInsights = ({
           )}
         </div>
       </div>
-      
-      {/* Wellbeing Connection */}
-      {correlations && correlations.length > 0 && (
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <h5 className="text-lg font-medium text-white mb-4">
-            Finance & Wellbeing Connections
-          </h5>
-          
-          <div className="space-y-4">
-            {correlations.map((correlation, index) => {
-              const category = correlation.categoryName || 'overall spending';
-              
-              return (
-                <div 
-                  key={index} 
-                  className="finance-bg-purple-900/30 rounded-lg p-4 finance-border-purple-800/50"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg finance-bg-purple-900/50 finance-text-purple-400">
-                      <BarChart2 size={18} />
-                    </div>
-                    <div className="flex-1">
-                      <h6 className="font-medium text-white mb-1">
-                        {correlation.type === 'negative' 
-                          ? `${category} may affect your mood`
-                          : `${category} shows positive mood correlation`
-                        }
-                      </h6>
-                      <p className="text-slate-300 text-sm">
-                        {correlation.type === 'negative'
-                          ? `There's a pattern where higher spending on ${category} is followed by lower mood scores the next day.`
-                          : `Days with higher ${category} tend to correlate with improved mood scores.`
-                        }
-                      </p>
-                      
-                      <div className="mt-2 text-sm bg-slate-700 p-3 rounded-lg">
-                        <span className="font-medium finance-text-purple-400">Recommendation:</span>
-                        {correlation.type === 'negative'
-                          ? ` Try to be more mindful of your spending on ${category} and notice how it affects your wellbeing.`
-                          : ` While financial health is important, maintaining a balanced approach to spending can support overall wellbeing.`
-                        }
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

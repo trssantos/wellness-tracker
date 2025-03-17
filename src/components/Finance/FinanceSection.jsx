@@ -728,14 +728,6 @@ const filterTransactionsByDate = (transactions, futureOnly = false) => {
               
               <div className="flex gap-2">
                 <button
-                  onClick={handleRefresh}
-                  className="p-1.5 rounded-lg bg-slate-700 dark:bg-slate-700 text-white hover:bg-slate-600 dark:hover:bg-slate-600 transition-colors"
-                  title="Refresh"
-                >
-                  <RefreshCw size={16} />
-                </button>
-                
-                <button
                   onClick={handleResetBudgets}
                   className="px-2 py-1 rounded-lg bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors flex items-center gap-1 text-xs"
                 >

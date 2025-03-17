@@ -154,7 +154,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
         <div className="flex-1 min-w-[250px] xs:min-w-[200px] bg-amber-900/30 dark:bg-amber-900/30 p-4 rounded-lg border border-amber-800/50 dark:border-amber-800/50">
     {/* Card content */}
             <h5 className="font-medium text-white dark:text-white mb-1">Total Budget</h5>
-            <div className="text-2xl font-bold text-amber-300 dark:text-amber-300">
+            <div className="text-lg font-bold text-amber-300 dark:text-amber-300">
               {formatCurrency(budgetProgress.reduce((sum, b) => sum + b.allocated, 0))}
             </div>
             <div className="text-sm text-slate-400 dark:text-slate-400 mt-1">
@@ -164,7 +164,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
           
           <div className="flex-1 min-w-[200px] bg-green-900/30 dark:bg-green-900/30 p-4 rounded-lg border border-green-800/50 dark:border-green-800/50">
             <h5 className="font-medium text-white dark:text-white mb-1">Total Spent</h5>
-            <div className="text-2xl font-bold text-green-300 dark:text-green-300">
+            <div className="text-lg font-bold text-green-300 dark:text-green-300">
               {formatCurrency(budgetProgress.reduce((sum, b) => sum + b.spent, 0))}
             </div>
             <div className="text-sm text-slate-400 dark:text-slate-400 mt-1">
@@ -175,7 +175,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
           
           <div className="flex-1 min-w-[200px] bg-blue-900/30 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-800/50 dark:border-blue-800/50">
             <h5 className="font-medium text-white dark:text-white mb-1">Remaining</h5>
-            <div className="text-2xl font-bold text-blue-300 dark:text-blue-300">
+            <div className="text-lg font-bold text-blue-300 dark:text-blue-300">
               {formatCurrency(
                 budgetProgress.reduce((sum, b) => sum + b.allocated, 0) - 
                 budgetProgress.reduce((sum, b) => sum + b.spent, 0)

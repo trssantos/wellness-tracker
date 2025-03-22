@@ -613,17 +613,7 @@ export const createHabitTaskCategory = (date) => {
     habit.steps.forEach(step => {
       items.push(`[${habit.name}] ${step}`);
     });
-    
-    // Add a separator between habits if there are multiple
-    if (habits.length > 1) {
-      items.push('---');
-    }
   });
-  
-  // Remove the last separator if it exists
-  if (items[items.length - 1] === '---') {
-    items.pop();
-  }
   
   return {
     title: "Habits",

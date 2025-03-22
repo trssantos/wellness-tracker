@@ -4,11 +4,12 @@ import TemplateList from '../Templates/TemplateList';
 import TemplateDetail from '../Templates/TemplateDetail';
 import TemplateForm from '../Templates/TemplateForm';
 import TemplateAnalytics from '../Templates/TemplateAnalytics';
+import AITemplateGenerator from '../Templates/AITemplateGenerator';
 
 const TemplatesSection = () => {
   // Main view state
   const [activeTemplate, setActiveTemplate] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'detail', 'create', 'edit', 'analytics'
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'detail', 'create', 'edit', 'analytics', 'aiGenerate'
   
   // Handle viewing analytics
   const handleViewAnalytics = () => {
@@ -33,6 +34,12 @@ const TemplatesSection = () => {
     setViewMode('create');
   };
 
+  // Handle AI template generation
+  const handleAITemplateGeneration = () => {
+    setActiveTemplate(null);
+    setViewMode('aiGenerate');
+  };
+
   // Handle editing a template
   const handleEditTemplate = () => {
     setViewMode('edit');
@@ -51,6 +58,15 @@ const TemplatesSection = () => {
     } else {
       setViewMode('list');
     }
+  };
+
+  // Handle AI-generated template
+  const handleAITemplateGenerated = (templateData) => {
+    // Set the active template to the newly created template
+    setActiveTemplate(templateData);
+    
+    // Go directly to detail view
+    setViewMode('detail');
   };
 
   // Handle going back to list
@@ -98,12 +114,20 @@ const TemplatesSection = () => {
             onBack={handleBackToList}
           />
         );
+      case 'aiGenerate':
+        return (
+          <AITemplateGenerator
+            onTemplateGenerated={handleAITemplateGenerated}
+            onCancel={handleBackToList}
+          />
+        );
       case 'list':
       default:
         return (
           <TemplateList 
             onSelectTemplate={handleSelectTemplate}
             onCreateTemplate={handleCreateTemplate}
+            onAIGenerate={handleAITemplateGeneration}
             onViewAnalytics={handleViewAnalytics}
           />
         );

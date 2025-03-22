@@ -1,6 +1,6 @@
 // components/Templates/TemplateList.jsx
 import React, { useState, useEffect } from 'react';
-import { Layout, PlusCircle, BarChart2, Tag, CheckSquare } from 'lucide-react';
+import { Layout, PlusCircle, BarChart2, Tag, CheckSquare, Sparkles } from 'lucide-react';
 import { getTemplates } from '../../utils/templateUtils';
 
 const difficultyColors = {
@@ -9,7 +9,7 @@ const difficultyColors = {
   hard: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
 };
 
-const TemplateList = ({ onSelectTemplate, onCreateTemplate, onViewAnalytics }) => {
+const TemplateList = ({ onSelectTemplate, onCreateTemplate, onAIGenerate, onViewAnalytics }) => {
   // IMPORTANT: Don't use the templates prop, directly get templates from storage
   const [templates, setTemplates] = useState([]);
   
@@ -44,6 +44,15 @@ const TemplateList = ({ onSelectTemplate, onCreateTemplate, onViewAnalytics }) =
               <BarChart2 size={16} />
               <span className="hidden sm:inline">Analytics</span>
             </button>
+            
+            <button
+              onClick={onAIGenerate}
+              className="px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 flex items-center gap-1 transition-colors"
+            >
+              <Sparkles size={16} />
+              <span className="hidden sm:inline">AI Generate</span>
+            </button>
+            
             <button
               onClick={onCreateTemplate}
               className="px-3 py-1.5 rounded-lg bg-teal-500 text-white hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700 flex items-center gap-1 transition-colors"
@@ -63,12 +72,21 @@ const TemplateList = ({ onSelectTemplate, onCreateTemplate, onViewAnalytics }) =
             <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
               Create task templates to save time on recurring activities and streamline your daily planning.
             </p>
-            <button
-              onClick={onCreateTemplate}
-              className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700 transition-colors"
-            >
-              Create First Template
-            </button>
+            <div className="flex flex-wrap justify-center gap-3">
+              <button
+                onClick={onCreateTemplate}
+                className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700 transition-colors"
+              >
+                Create Template Manually
+              </button>
+              <button
+                onClick={onAIGenerate}
+                className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 transition-colors flex items-center gap-2"
+              >
+                <Sparkles size={18} />
+                Generate with AI
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

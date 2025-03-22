@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, PlusCircle, X, Save, AlertTriangle } from 'lucide-react';
 import { createTemplate, updateTemplate } from '../../utils/templateUtils';
+import TaskSuggestions from '../TaskSuggestions';
+import { registerTask } from '../../utils/taskRegistry';
 
 const TemplateForm = ({ template, onSave, onCancel }) => {
   const [name, setName] = useState('');
@@ -64,24 +66,22 @@ const TemplateForm = ({ template, onSave, onCancel }) => {
         newErrors.emptyTasks = 'All tasks must have content';
       }
       
-      // Check for duplicate task names - only when submitting
-      const allTasks = categories.flatMap(cat => cat.items);
-      const uniqueTasks = new Set();
-      const duplicates = [];
-      
-      allTasks.forEach(task => {
-        if (task && task.trim()) {
-          if (uniqueTasks.has(task)) {
-            duplicates.push(task);
-          } else {
-            uniqueTasks.add(task);
-          }
-        }
-      });
-      
-      if (duplicates.length > 0) {
-        newErrors.duplicateTasks = `Duplicate tasks found: ${duplicates.join(', ')}`;
-      }
+      // Check for duplicate task names within the same category
+let hasDuplicatesInCategory = false;
+let categoryWithDuplicate = '';
+
+categories.forEach(category => {
+  const taskTexts = category.items.map(item => item.trim()).filter(item => item);
+  const uniqueTasks = new Set(taskTexts);
+  if (uniqueTasks.size !== taskTexts.length) {
+    hasDuplicatesInCategory = true;
+    categoryWithDuplicate = category.title;
+  }
+});
+
+if (hasDuplicatesInCategory) {
+  newErrors.duplicateTasks = `Duplicate tasks found within ${categoryWithDuplicate} category. Tasks must be unique within each category.`;
+}
     }
     
     setErrors(newErrors);
@@ -281,15 +281,26 @@ const TemplateForm = ({ template, onSave, onCancel }) => {
                     {category.items.map((task, taskIndex) => (
                       <div key={taskIndex} className="flex items-start">
                         <div className="w-2 h-2 bg-slate-300 dark:bg-slate-600 rounded-full mr-2 mt-2.5 flex-shrink-0"></div>
-                        <div className="flex-1 min-w-0">
-                          <input
-                            type="text"
-                            value={task}
-                            onChange={(e) => updateTask(catIndex, taskIndex, e.target.value)}
-                            className="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm"
-                            placeholder="Task description"
-                          />
-                        </div>
+                        <div className="flex-1 min-w-0 relative">
+  <input
+    type="text"
+    value={task}
+    onChange={(e) => updateTask(catIndex, taskIndex, e.target.value)}
+    className="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm"
+    placeholder="Task description"
+    onBlur={() => {
+      if (task.trim()) {
+        registerTask(task, category.title);
+      }
+    }}
+  />
+  <TaskSuggestions
+    inputText={task}
+    onSelectTask={(suggestedTask) => updateTask(catIndex, taskIndex, suggestedTask)}
+    excludeTasks={category.items}
+    categoryContext={category.title}
+  />
+</div>
                         <button
                           type="button"
                           onClick={() => removeTask(catIndex, taskIndex)}

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, X, Layout, Check, AlertTriangle, Lock, ArrowLeft } from 'lucide-react';
 import { getTemplates, applyTemplatesToDay } from '../utils/templateUtils';
+import TaskSuggestions from './TaskSuggestions';
+import { registerTask } from '../utils/taskRegistry';
 
 const difficultyColors = {
   easy: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -255,11 +257,14 @@ const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
       newCategories = [{ title: 'General', items: [''] }];
     }
     
-    // Update state
+    // Update state with the applied templates
     setCategories(newCategories);
     setTemplateTasks(newTemplateTasks);
     setShowTemplates(false);
-  }
+
+    // Store selected templates for later usage
+    console.log(`Applied templates: ${selectedTemplates.length} templates selected`);
+  };
   
   // Skip templates - explicit button handler
   const skipTemplates = () => {
@@ -325,10 +330,28 @@ const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
       checked: { ...(dateData.checked || {}), ...initialChecked }
     };
     
-    // Record selected templates if any
-    if (selectedTemplates.length > 0) {
+    // Extract template IDs from templateTasks object
+    const usedTemplateIds = Array.from(
+      new Set(
+        Object.values(templateTasks)
+          .map(info => info.templateId)
+          .filter(id => id) // Filter out any undefined values
+      )
+    );
+    
+    console.log(`Saving task list with ${usedTemplateIds.length} used templates`);
+    
+    // Record template usage if we have any
+    if (usedTemplateIds.length > 0) {
+      console.log(`Recording usage for templates: ${usedTemplateIds.join(', ')}`);
+      // This will properly update the usage count
+      applyTemplatesToDay(date, usedTemplateIds);
+    } else if (selectedTemplates.length > 0) {
+      // Fallback to using selectedTemplates if no template tasks were tracked
+      console.log(`Using fallback for recording templates: ${selectedTemplates.join(', ')}`);
       applyTemplatesToDay(date, selectedTemplates);
     } else {
+      // Just save the data without recording template usage
       localStorage.setItem('wellnessTracker', JSON.stringify(existingData));
     }
     
@@ -488,24 +511,32 @@ const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
                           <div key={taskIndex} className="flex items-center gap-2">
                             <div className="w-2 h-2 bg-slate-300 dark:bg-slate-600 rounded-full mr-1 flex-shrink-0 transition-colors"></div>
                             <div className="flex-1 relative">
-                              <input
-                                type="text"
-                                placeholder="Task description"
-                                value={task}
-                                onChange={(e) => updateTask(categoryIndex, taskIndex, e.target.value)}
-                                className={`w-full p-2 border text-sm ${
-                                  isTemplateTask 
-                                    ? 'border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20' 
-                                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700'
-                                } rounded-md text-slate-700 dark:text-slate-200 transition-colors`}
-                                readOnly={isTemplateTask}
-                              />
-                              {isTemplateTask && (
-                                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 dark:text-blue-400">
-                                  <Lock size={12} />
-                                </div>
-                              )}
-                            </div>
+  <input
+    type="text"
+    placeholder="Task description"
+    value={task}
+    onChange={(e) => updateTask(categoryIndex, taskIndex, e.target.value)}
+    className={`w-full p-2 border text-sm ${
+      isTemplateTask 
+        ? 'border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20' 
+        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700'
+    } rounded-md text-slate-700 dark:text-slate-200 transition-colors`}
+    readOnly={isTemplateTask}
+    onBlur={() => {
+      if (task.trim()) {
+        registerTask(task, category.title);
+      }
+    }}
+  />
+  {!isTemplateTask && (
+    <TaskSuggestions 
+      inputText={task} 
+      onSelectTask={(suggestedTask) => updateTask(categoryIndex, taskIndex, suggestedTask)}
+      excludeTasks={category.items}
+      categoryContext={category.title}
+    />
+  )}
+</div>
                             <button
                               onClick={() => removeTask(categoryIndex, taskIndex)}
                               className="p-1.5 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-md transition-colors flex-shrink-0"

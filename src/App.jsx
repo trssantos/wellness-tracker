@@ -41,6 +41,8 @@ import WorkoutSection from './components/Sections/WorkoutSection';
 import { WorkoutThemeProvider } from './context/ThemeContext';
 import { saveFocusSessionState } from './utils/FocusSessionState';
 import DayCoach from './components/DayCoach/DayCoach';
+import { initTaskRegistry, migrateTasksToRegistry } from './utils/taskRegistry';
+
 
 const App = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -72,6 +74,37 @@ const preventNavigationAway = useRef(false);
       // Update the storage data after migration
       setStorageData(getStorage());
     }
+
+    // Initialize task registry - this should only run once
+  const initRegistry = async () => {
+    console.log('Initializing task registry...');
+    
+    // Initialize the task registry
+    const registry = initTaskRegistry();
+    
+    // Check if we need to run migration (if there are no tasks yet)
+    if (!registry.tasks || Object.keys(registry.tasks).length === 0) {
+      console.log('No tasks in registry, starting migration...');
+      
+      try {
+        // Show a small delay to not block the UI
+        setTimeout(() => {
+          const result = migrateTasksToRegistry();
+          if (result.migrated) {
+            console.log(`Migration complete: found ${result.uniqueTasks} unique tasks from ${result.tasksProcessed} total tasks`);
+            // Force a refresh of storage data
+            handleStorageUpdate();
+          }
+        }, 500);
+      } catch (error) {
+        console.error('Error during task registry migration:', error);
+      }
+    } else {
+      console.log(`Task registry already contains ${Object.keys(registry.tasks).length} tasks`);
+    }
+  };
+  
+  initRegistry();
     
     // Initialize the reminder service
     reminderService.init();

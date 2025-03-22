@@ -10,6 +10,7 @@ import { TaskReminder } from './TaskReminder';
 import HabitTaskIntegration from './HabitTaskIntegration';
 import { getHabitsForDate, trackHabitCompletion, getHabitTaskNames } from '../utils/habitTrackerUtils';
 import { handleDataChange } from '../utils/dayCoachUtils';
+import { registerTaskCompletion } from '../utils/taskRegistry';
 
 // Default categories from separate file
 import { DEFAULT_CATEGORIES } from '../utils/defaultTasks';
@@ -273,6 +274,11 @@ const openImportTasksModal = () => {
     };
     setChecked(newChecked);
     
+  // If the task was just completed, register the completion
+  if (newChecked[item] === true) {
+    registerTaskCompletion(item);
+  }
+
     const storage = getStorage();
     const currentData = storage[date] || {};
     storage[date] = {

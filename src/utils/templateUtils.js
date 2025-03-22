@@ -36,7 +36,7 @@ export const getTemplates = () => {
       saveTemplates(templates);
       return templates[index];
     }
-    return null;
+    return templates[index];
   };
   
   // Delete a template

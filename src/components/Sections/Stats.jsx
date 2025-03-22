@@ -12,6 +12,7 @@ import { processMoodComparisonData, analyzeMoodImpacts } from '../../utils/moodA
 import ProcrastinationStats from './Charts/ProcrastinationStats';
 import TemplateStatsWidget from '../Templates/TemplateStatsWidget';
 import SleepAnalyticsChart from './Charts/SleepAnalyticsChart';
+import TopTasksList from '../Stats/TopTasksList';
 
 export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
   const [statsData, setStatsData] = useState({
@@ -780,6 +781,11 @@ const processStorageData = (data, month) => {
             </div>
           )}
         </div>
+
+        {/* Top Tasks Chart */}
+        <div className="lg:col-span-2">
+  <TopTasksList />
+</div>
         
         {/* Mood Trend Chart */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">

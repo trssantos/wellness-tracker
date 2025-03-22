@@ -42,6 +42,8 @@ import { WorkoutThemeProvider } from './context/ThemeContext';
 import { saveFocusSessionState } from './utils/FocusSessionState';
 import DayCoach from './components/DayCoach/DayCoach';
 import { initTaskRegistry, migrateTasksToRegistry } from './utils/taskRegistry';
+import { NutritionPlaceholder } from './components/Nutrition/NutritionPlaceholder';
+
 
 
 const App = () => {
@@ -595,6 +597,10 @@ const handlePendingTasksAction = (action, tasks = []) => {
     onFullscreenChange={setIsFullscreenActive} 
   />
 </SectionContainer>
+<SectionContainer id="nutrition" isActive={activeSection === 'nutrition'}>
+  <NutritionPlaceholder />
+</SectionContainer>
+
 
 <SectionContainer id="finance" isActive={activeSection === 'finance'}>
   <FinanceSection />
@@ -617,6 +623,11 @@ const handlePendingTasksAction = (action, tasks = []) => {
 
 <SectionContainer id="financeShowcase" isActive={activeSection === 'financeShowcase'}>
   <FinancePlaceholder />
+</SectionContainer>
+
+
+<SectionContainer id="nutritionShowcase" isActive={activeSection === 'nutritionShowcase'}>
+  <NutritionPlaceholder />
 </SectionContainer>
               
             </div>

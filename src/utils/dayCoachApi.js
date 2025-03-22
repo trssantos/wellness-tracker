@@ -1,4 +1,3 @@
-
 import { getStorage, setStorage } from './storage';
 import { generateTasks, generateContent } from './ai-service';
 
@@ -53,6 +52,12 @@ const gatherUserDataWithSummarization = async () => {
   
   // Get recent detailed data (last 7 days)
   const recentData = getRecentDetailedData(storage, today);
+
+  // Get finance data (filtered to relevant dates)
+  const financeData = getRelevantFinanceData(storage, today);
+  
+  // Get nutrition data (filtered to relevant dates)
+  const nutritionData = getRelevantNutritionData(storage, today);
   
   // Prepare final data object
   return {
@@ -63,8 +68,58 @@ const gatherUserDataWithSummarization = async () => {
     // Additional user context
     habits: storage.habits || [],
     focusSessions: (storage.focusSessions || []).slice(-10), // Last 10 focus sessions
-    workouts: (storage.completedWorkouts || []).slice(-10) // Last 10 workouts
+    workouts: (storage.completedWorkouts || []).slice(-10), // Last 10 workouts
+    finance: financeData, // Add finance data
+    nutrition: nutritionData // Add nutrition data
   };
+};
+
+// Get finance data filtered to relevant dates (recent period)
+const getRelevantFinanceData = (storage, today) => {
+  // If no finance data exists, return an empty object
+  if (!storage.finance) return {};
+  
+  const finance = { ...storage.finance };
+  
+  // Create date threshold for filtering (7 days ago)
+  const threshold = new Date(today);
+  threshold.setDate(threshold.getDate() - 7);
+  
+  // Filter transactions to only include recent ones
+  if (finance.transactions && Array.isArray(finance.transactions)) {
+    finance.transactions = finance.transactions.filter(transaction => {
+      const transactionDate = new Date(transaction.date);
+      return transactionDate >= threshold;
+    });
+  }
+  
+  // Include all budgets and goals (they're relevant regardless of date)
+  // Include all recurring transactions (they're relevant for planning)
+  // Include categories and settings (they're metadata)
+  
+  return finance;
+};
+
+// Get nutrition data filtered to relevant dates (recent period)
+const getRelevantNutritionData = (storage, today) => {
+  // If no nutrition data exists, return an empty object
+  if (!storage.nutrition) return {};
+  
+  const nutrition = {};
+  
+  // Create date threshold for filtering (7 days ago)
+  const threshold = new Date(today);
+  threshold.setDate(threshold.getDate() - 7);
+  
+  // Filter nutrition entries by date
+  for (const dateKey in storage.nutrition) {
+    const entryDate = new Date(dateKey);
+    if (entryDate >= threshold) {
+      nutrition[dateKey] = storage.nutrition[dateKey];
+    }
+  }
+  
+  return nutrition;
 };
 
 // Generate weekly and monthly summaries
@@ -381,19 +436,9 @@ const buildUserPrompt = (context) => {
     Active habits: ${userData.habits.length}
     Recent focus sessions: ${userData.focusSessions.length}
     Recent workouts: ${userData.workouts.length}
-    
-    IMPORTANT GUIDANCE:
-    1. Be conversational and friendly - address the user directly as "you"
-    2. Be supportive of their goals and lifestyle choices
-    4. Keep responses concise (30-70 words) but meaningful
-    5. Use thoughtful judgment to determine what kind of suggestions would be most helpful:
-       - Sometimes recommend completely new ideas when the user seems open to exploration
-       - Other times suggest manageable variations or improvements to existing habits, tasks, hobbies when consistency is important
-       - Base this decision on their mood, energy level, and the conversation context
-    6. Reference specific details from their journal entries and task lists
-    7. Make connections between different aspects of their data (e.g., sleep quality affecting mood)
-    8. Be personalized - avoid generic advice that could apply to anyone
-    9. If they mention people in their journals, acknowledge these social connections
+    Finance data: ${userData.finance?.transactions ? `${userData.finance.transactions.length} recent transactions` : 'None available'}
+    Nutrition data: ${Object.keys(userData.nutrition || {}).length > 0 ? `Available for ${Object.keys(userData.nutrition).length} recent days` : 'None available'}
+   
   `;
 
   // Add conversation history for context
@@ -494,7 +539,7 @@ const buildUserPrompt = (context) => {
         The user has asked: "${userMessage}"
         
         Provide a helpful, specific response based on their data and prior conversation. The user's question may be about 
-        their tasks, habits, mood, energy, workouts, focus sessions, or other tracked data.
+        their tasks, habits, mood, energy, workouts, focus sessions, finance, nutrition, or other tracked data.
         
         Be specific - if they're asking about their data, reference the actual items from their data
         in your response (like specific task names, habit details, etc.) rather than being vague.
@@ -513,7 +558,6 @@ const buildUserPrompt = (context) => {
       prompt += `
         Generate a supportive check-in message for the user based on their recent data.
         Look for meaningful insights, correlations, or patterns that might be helpful for them.
-        Make a thoughtful suggestion based on what you observe - this could be a new habit, a modified approach to an existing activity, or a different perspective on their current practices.
       `;
   }
   
@@ -534,6 +578,16 @@ const buildUserPrompt = (context) => {
   
   // Add workouts
   prompt += `\n\nRECENT WORKOUTS:\n${JSON.stringify(userData.workouts, null, 2)}`;
+  
+  // Add finance data
+  if (userData.finance && Object.keys(userData.finance).length > 0) {
+    prompt += `\n\nFINANCE DATA:\n${JSON.stringify(userData.finance, null, 2)}`;
+  }
+  
+  // Add nutrition data
+  if (userData.nutrition && Object.keys(userData.nutrition).length > 0) {
+    prompt += `\n\nNUTRITION DATA:\n${JSON.stringify(userData.nutrition, null, 2)}`;
+  }
   
   // Add weekly summaries (but limit to prevent prompt from getting too large)
   const recentWeeklySummaries = Object.entries(userData.weeklySummaries || {})
@@ -557,17 +611,17 @@ const fetchFromAI = async (context) => {
     // In fetchFromAI function in src/utils/dayCoachApi.js
 const systemPrompt = `
 You are Solaris, a supportive, friendly day coach within the ZenTracker app. 
-Your role is to be a compassionate companion, offering insights, encouragement, and suggestions.
+Your role is to be a compassionate companion, offering insights, encouragement, suggestions and guide the user and be there to listen to him.
 
-Keep your responses casual, warm and concise (30-70 words). Write like a supportive friend texting, not a formal coach writing an email.
+Keep your responses casual, warm and concise. Write like a supportive friend texting, not a formal coach writing an email.
 
 Be thoughtfully varied in your suggestions - don't focus repeatedly on habits unless the user specifically mentions them. 
-Consider the user's full context including their mood, energy, focus sessions, tasks, journal entries, and workouts.
+Consider the user's full context including their mood, energy, focus sessions, tasks, journal entries, workouts, nutrition.
 
 Make connections between different aspects of the user's data to provide unique, personalized insights rather than generic advice.
 
 Your responses should be:
-- Short and impactful
+- Short
 - Contextually relevant to what the user is currently experiencing
 - Varied (don't repeat similar suggestions)
 - Empathetic to the user's current state
@@ -575,6 +629,14 @@ Your responses should be:
 Vary your conversation style - sometimes ask questions, sometimes offer observations, sometimes give encouragement.
 
 Always maintain continuity with the prior conversation and refer back to things previously discussed.
+
+Use thoughtful judgment to determine what kind of suggestions would be most helpful:
+       - Sometimes recommend completely new ideas when the user seems open to exploration
+       - Other times suggest manageable variations or improvements to existing habits, tasks, hobbies when consistency is important
+       - Base this decision on their mood, energy level, and the conversation context
+Make use of connections between different aspects of their data (e.g., sleep quality affecting mood) if you see it's relevant to advise the user
+Be personalized - avoid generic advice that could apply to anyone
+If they mention people in their journals, acknowledge these social connections
 
 Current date: ${context.userData.today}
 You have access to the user's:
@@ -584,6 +646,8 @@ You have access to the user's:
 - Focus session statistics
 - Habit tracking data
 - Journal entries
+- Finance data
+- Nutrition data
 - Previous conversation history
   
 For recent data (last 7 days), you have detailed information. For older data, you have weekly and monthly summaries.
@@ -619,81 +683,6 @@ For recent data (last 7 days), you have detailed information. For older data, yo
     console.error('Error with AI API:', error);
     throw error;
   }
-};
-
-// Helper functions to extract specific data
-const getLatestWorkout = (userData) => {
-  const today = userData.today;
-  
-  // Check if there's a workout today
-  if (userData.recentData[today]?.workout) {
-    return userData.recentData[today].workout;
-  }
-  
-  if (userData.recentData[today]?.workouts && userData.recentData[today].workouts.length > 0) {
-    return userData.recentData[today].workouts[userData.recentData[today].workouts.length - 1];
-  }
-  
-  // Check recent workouts
-  if (userData.workouts && userData.workouts.length > 0) {
-    return userData.workouts[userData.workouts.length - 1];
-  }
-  
-  return null;
-};
-
-const getLatestJournalEntry = (userData) => {
-  const today = userData.today;
-  
-  // Check if there's a journal entry today
-  if (userData.recentData[today]?.notes) {
-    return userData.recentData[today].notes;
-  }
-  
-  // Find the most recent journal entry
-  const recentDates = Object.keys(userData.recentData).sort().reverse();
-  for (const date of recentDates) {
-    if (userData.recentData[date].notes) {
-      return userData.recentData[date].notes;
-    }
-  }
-  
-  return "No recent journal entries found.";
-};
-
-const getTodaysTasks = (userData) => {
-  const today = userData.today;
-  if (!userData.recentData[today]?.checked) return [];
-  
-  const tasks = userData.recentData[today].checked;
-  return Object.keys(tasks);
-};
-
-const getCompletedTaskCount = (userData) => {
-  const today = userData.today;
-  if (!userData.recentData[today]?.checked) return 0;
-  
-  const tasks = userData.recentData[today].checked;
-  return Object.values(tasks).filter(Boolean).length;
-};
-
-const getRemainingTaskCount = (userData) => {
-  const today = userData.today;
-  if (!userData.recentData[today]?.checked) return 0;
-  
-  const tasks = userData.recentData[today].checked;
-  return Object.values(tasks).filter(v => !v).length;
-};
-
-// Helper to calculate task completion percentage
-const calculateTaskCompletion = (dayData) => {
-  if (!dayData.checked) return null;
-  
-  const totalTasks = Object.keys(dayData.checked).length;
-  if (totalTasks === 0) return null;
-  
-  const completedTasks = Object.values(dayData.checked).filter(Boolean).length;
-  return Math.round((completedTasks / totalTasks) * 100);
 };
 
 // Extract suggested replies from the AI response

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Calendar, RefreshCw, Book, TrendingUp, AlertTriangle,
   Smile, Brain, Zap, Dumbbell, Clock, FileText, Loader, 
-  BarChart2, ChevronDown, Info, Sparkles
+  BarChart2, ChevronDown, Info, Sparkles, MoreHorizontal
 } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
 import { generateContent } from '../../utils/ai-service';
@@ -15,6 +15,7 @@ const DayCoachAnalysis = () => {
   const [timeRange, setTimeRange] = useState('week');
   const [lastUpdated, setLastUpdated] = useState(null);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   const [hasEnoughData, setHasEnoughData] = useState(true);
   const [error, setError] = useState(null);
   const [forceUpdate, setForceUpdate] = useState(0); // Added to force re-renders
@@ -22,7 +23,12 @@ const DayCoachAnalysis = () => {
   // Reference to track if component is mounted
   const isMounted = useRef(true);
   const dropdownRef = useRef(null);
+  const overflowRef = useRef(null);
   const generationCompleted = useRef(false);
+  
+  // Define primary and overflow tabs
+  const primaryTabs = ['overview', 'mood', 'focus'];
+  const overflowTabs = ['habits', 'workouts', 'journaling'];
   
   // Force re-render if generation completed flag is set
   useEffect(() => {
@@ -33,11 +39,14 @@ const DayCoachAnalysis = () => {
     }
   }, [forceUpdate]);
   
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowCategoryMenu(false);
+      }
+      if (overflowRef.current && !overflowRef.current.contains(event.target)) {
+        setShowOverflowMenu(false);
       }
     };
     
@@ -143,7 +152,8 @@ const DayCoachAnalysis = () => {
           checkCategoryDataAvailability(storage, dates, 'mood') ||
           checkCategoryDataAvailability(storage, dates, 'focus') ||
           checkCategoryDataAvailability(storage, dates, 'habits') ||
-          checkCategoryDataAvailability(storage, dates, 'workouts')
+          checkCategoryDataAvailability(storage, dates, 'workouts') ||
+          checkCategoryDataAvailability(storage, dates, 'journaling')
         );
       
       case 'mood':
@@ -199,6 +209,13 @@ const DayCoachAnalysis = () => {
           return dayData && (dayData.workout || (dayData.workouts && dayData.workouts.length > 0));
         });
       
+      case 'journaling':
+        // Check if there are journal entries in the timeframe
+        return dates.some(date => {
+          const dayData = storage[date];
+          return dayData && dayData.notes && dayData.notes.trim().length > 0;
+        });
+        
       default:
         return false;
     }
@@ -449,6 +466,20 @@ For this workout analysis:
 - Keep your analysis specifically about physical activity and fitness`;
         break;
         
+      case 'journaling':
+        specificPrompt = `Focus EXCLUSIVELY on journal entries and the thoughts, feelings, and experiences the user has recorded. DO NOT discuss other areas unless they are mentioned in the journal or directly correlated.
+
+For this journaling analysis:
+- Identify recurring themes, topics, or concerns in the journal entries
+- Note any social connections or relationships mentioned and their apparent significance
+- Detect any emotional patterns or shifts expressed in writing
+- Look for correlations between journaled thoughts and other tracked data (mood, energy, task completion, etc.)
+- Identify any personal goals, aspirations, or challenges mentioned
+- Pay special attention to names of people, places, or events that appear multiple times
+- Analyze how the journaling content may reflect the user's overall wellbeing
+- Keep your analysis thoughtful, nuanced, and respectful of the personal nature of journal entries`;
+        break;
+        
       default:
         specificPrompt = `Provide concise insights about user's wellbeing, focusing on the most relevant data points.`;
     }
@@ -480,6 +511,10 @@ For this workout analysis:
         if (tab === 'overview' || tab === 'workouts') {
           if (userData[key].workout) relevantData.workout = userData[key].workout;
           if (userData[key].workouts) relevantData.workouts = userData[key].workouts;
+        }
+        
+        if (tab === 'overview' || tab === 'journaling' || tab === 'mood') {
+          if (userData[key].notes) relevantData.notes = userData[key].notes;
         }
         
         simplifiedUserData[key] = relevantData;
@@ -533,6 +568,8 @@ For this workout analysis:
         return { icon: <Zap size={16} />, name: 'Habits', color: 'amber' };
       case 'workouts':
         return { icon: <Dumbbell size={16} />, name: 'Workouts', color: 'green' };
+      case 'journaling':
+        return { icon: <FileText size={16} />, name: 'Journaling', color: 'teal' };
       default:
         return { icon: <Book size={16} />, name: 'Overview', color: 'blue' };
     }
@@ -629,7 +666,7 @@ For this workout analysis:
               {/* Dropdown Menu */}
               {showCategoryMenu && (
                 <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-slate-700 rounded-lg shadow-lg border border-slate-200 dark:border-slate-600 z-10 overflow-hidden">
-                  {['overview', 'mood', 'focus', 'habits', 'workouts'].map(cat => {
+                  {[...primaryTabs, ...overflowTabs].map(cat => {
                     const {icon, name, color} = getCategoryProperties(cat);
                     return (
                       <button
@@ -683,26 +720,76 @@ For this workout analysis:
         </div>
       </div>
       
-      {/* Desktop Header */}
+      {/* Desktop Header with Tab Bar + Overflow */}
       <div className="hidden sm:flex justify-between items-center mb-6">
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-          {['overview', 'mood', 'focus', 'habits', 'workouts'].map(tab => {
-            const {icon, name, color} = getCategoryProperties(tab);
+        <div className="flex gap-2">
+          {/* Primary tabs */}
+          {primaryTabs.map(tab => {
+            const { icon, name, color } = getCategoryProperties(tab);
             return (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 ${
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
                   activeTab === tab 
                     ? `bg-${color}-500 text-white` 
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                } transition-colors whitespace-nowrap`}
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                } transition-colors`}
               >
                 {icon}
                 <span>{name}</span>
               </button>
             );
           })}
+          
+          {/* Overflow menu */}
+          <div className="relative" ref={overflowRef}>
+            <button
+              onClick={() => setShowOverflowMenu(!showOverflowMenu)}
+              className={`px-3 py-2 rounded-lg flex items-center gap-1 ${
+                overflowTabs.includes(activeTab)
+                  ? `bg-${getCategoryProperties(activeTab).color}-500 text-white`
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+              } transition-colors`}
+            >
+              {overflowTabs.includes(activeTab) 
+                ? (
+                  <>
+                    {getCategoryProperties(activeTab).icon}
+                    <span className="mr-1">{getCategoryProperties(activeTab).name}</span>
+                  </>
+                ) 
+                : <MoreHorizontal size={16} />
+              }
+              <ChevronDown size={14} />
+            </button>
+            
+            {/* Dropdown menu */}
+            {showOverflowMenu && (
+              <div className="absolute top-full right-0 mt-1 z-10 w-40 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-600 py-1">
+                {overflowTabs.map(tab => {
+                  const { icon, name, color } = getCategoryProperties(tab);
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => {
+                        setActiveTab(tab);
+                        setShowOverflowMenu(false);
+                      }}
+                      className={`w-full px-4 py-2 flex items-center gap-2 ${
+                        activeTab === tab
+                          ? `bg-slate-100 dark:bg-slate-700 text-${color}-500 dark:text-${color}-400`
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                      } transition-colors`}
+                    >
+                      {icon}
+                      <span>{name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="flex gap-1 items-center">
@@ -749,6 +836,7 @@ For this workout analysis:
              activeTab === 'mood' ? 'Mood & Energy Analysis' :
              activeTab === 'focus' ? 'Focus & Productivity Insights' :
              activeTab === 'habits' ? 'Habit Tracking Analysis' :
+             activeTab === 'journaling' ? 'Journal & Reflection Analysis' :
              'Workout & Activity Insights'}
           </h3>
           

@@ -43,7 +43,7 @@ import { saveFocusSessionState } from './utils/FocusSessionState';
 import DayCoach from './components/DayCoach/DayCoach';
 import { initTaskRegistry, migrateTasksToRegistry } from './utils/taskRegistry';
 import { NutritionPlaceholder } from './components/Nutrition/NutritionPlaceholder';
-
+import NutritionTracker from './components/Nutrition/NutritionTracker';
 
 
 const App = () => {
@@ -598,7 +598,7 @@ const handlePendingTasksAction = (action, tasks = []) => {
   />
 </SectionContainer>
 <SectionContainer id="nutrition" isActive={activeSection === 'nutrition'}>
-  <NutritionPlaceholder />
+  <NutritionTracker />
 </SectionContainer>
 
 

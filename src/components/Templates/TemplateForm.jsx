@@ -1,3 +1,4 @@
+// components/Templates/TemplateForm.jsx
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, PlusCircle, X, Save, AlertTriangle } from 'lucide-react';
 import { createTemplate, updateTemplate } from '../../utils/templateUtils';
@@ -28,65 +29,69 @@ const TemplateForm = ({ template, onSave, onCancel }) => {
   }, [template]);
   
   // Validation
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!name.trim()) {
-      newErrors.name = 'Template name is required';
+  // In TemplateForm.jsx, update the validateForm function:
+const validateForm = () => {
+  const newErrors = {};
+  
+  if (!name.trim()) {
+    newErrors.name = 'Template name is required';
+  }
+  
+  if (categories.length === 0) {
+    newErrors.categories = 'At least one category is required';
+  } else {
+    // Check each category
+    const categoriesWithEmptyTitles = categories.filter(cat => !cat.title.trim());
+    if (categoriesWithEmptyTitles.length > 0) {
+      newErrors.categoryTitles = 'All categories must have a title';
     }
     
-    if (categories.length === 0) {
-      newErrors.categories = 'At least one category is required';
-    } else {
-      // Check each category
-      const categoriesWithEmptyTitles = categories.filter(cat => !cat.title.trim());
-      if (categoriesWithEmptyTitles.length > 0) {
-        newErrors.categoryTitles = 'All categories must have a title';
-      }
+    // Check each category has at least one task
+    const categoriesWithNoTasks = categories.filter(cat => 
+      cat.items.length === 0 || cat.items.every(item => !item.trim())
+    );
+    if (categoriesWithNoTasks.length > 0) {
+      newErrors.categoryItems = 'All categories must have at least one task';
+    }
+    
+    // Check for empty tasks
+    let hasEmptyTask = false;
+    categories.forEach(cat => {
+      cat.items.forEach(item => {
+        if (!item.trim()) {
+          hasEmptyTask = true;
+        }
+      });
+    });
+    
+    if (hasEmptyTask) {
+      newErrors.emptyTasks = 'All tasks must have content';
+    }
+    
+    // Check for duplicate task names WITHIN EACH CATEGORY
+    categories.forEach((category, categoryIndex) => {
+      const tasksInCategory = category.items.filter(item => item.trim() !== '');
+      const uniqueTasks = new Set();
+      const duplicates = [];
       
-      // Check each category has at least one task
-      const categoriesWithNoTasks = categories.filter(cat => 
-        cat.items.length === 0 || cat.items.every(item => !item.trim())
-      );
-      if (categoriesWithNoTasks.length > 0) {
-        newErrors.categoryItems = 'All categories must have at least one task';
-      }
-      
-      // Check for empty tasks
-      let hasEmptyTask = false;
-      categories.forEach(cat => {
-        cat.items.forEach(item => {
-          if (!item.trim()) {
-            hasEmptyTask = true;
-          }
-        });
+      tasksInCategory.forEach(task => {
+        if (uniqueTasks.has(task)) {
+          duplicates.push(task);
+        } else {
+          uniqueTasks.add(task);
+        }
       });
       
-      if (hasEmptyTask) {
-        newErrors.emptyTasks = 'All tasks must have content';
+      if (duplicates.length > 0) {
+        newErrors[`duplicatesInCategory${categoryIndex}`] = 
+          `Duplicate tasks in "${category.title}": ${duplicates.join(', ')}`;
       }
-      
-      // Check for duplicate task names within the same category
-let hasDuplicatesInCategory = false;
-let categoryWithDuplicate = '';
-
-categories.forEach(category => {
-  const taskTexts = category.items.map(item => item.trim()).filter(item => item);
-  const uniqueTasks = new Set(taskTexts);
-  if (uniqueTasks.size !== taskTexts.length) {
-    hasDuplicatesInCategory = true;
-    categoryWithDuplicate = category.title;
+    });
   }
-});
-
-if (hasDuplicatesInCategory) {
-  newErrors.duplicateTasks = `Duplicate tasks found within ${categoryWithDuplicate} category. Tasks must be unique within each category.`;
-}
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
   
   // Handle form submission
   const handleSubmit = (e) => {
@@ -103,15 +108,33 @@ if (hasDuplicatesInCategory) {
       categories
     };
     
+    let updatedTemplate;
+    
     if (template) {
-      // Update existing
-      updateTemplate(template.id, templateData);
+      // Update existing template
+      updatedTemplate = updateTemplate(template.id, templateData);
+      console.log('Template updated:', updatedTemplate);
     } else {
-      // Create new
-      createTemplate(templateData);
+      // Create new template
+      updatedTemplate = createTemplate(templateData);
+      console.log('Template created:', updatedTemplate);
     }
     
-    onSave();
+    // Register all tasks in the template
+    categories.forEach(category => {
+      category.items.forEach(task => {
+        if (task.trim()) {
+          registerTask(task, category.title);
+        }
+      });
+    });
+    
+    // Important fix: Call onSave with the updated template when editing
+    if (template) {
+      onSave(updatedTemplate); // Pass the updated template back
+    } else {
+      onSave(); // For new templates, no need to pass anything
+    }
   };
   
   // Category management
@@ -282,25 +305,25 @@ if (hasDuplicatesInCategory) {
                       <div key={taskIndex} className="flex items-start">
                         <div className="w-2 h-2 bg-slate-300 dark:bg-slate-600 rounded-full mr-2 mt-2.5 flex-shrink-0"></div>
                         <div className="flex-1 min-w-0 relative">
-  <input
-    type="text"
-    value={task}
-    onChange={(e) => updateTask(catIndex, taskIndex, e.target.value)}
-    className="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm"
-    placeholder="Task description"
-    onBlur={() => {
-      if (task.trim()) {
-        registerTask(task, category.title);
-      }
-    }}
-  />
-  <TaskSuggestions
-    inputText={task}
-    onSelectTask={(suggestedTask) => updateTask(catIndex, taskIndex, suggestedTask)}
-    excludeTasks={category.items}
-    categoryContext={category.title}
-  />
-</div>
+                          <input
+                            type="text"
+                            value={task}
+                            onChange={(e) => updateTask(catIndex, taskIndex, e.target.value)}
+                            className="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm"
+                            placeholder="Task description"
+                            onBlur={() => {
+                              if (task.trim()) {
+                                registerTask(task, category.title);
+                              }
+                            }}
+                          />
+                          <TaskSuggestions
+                            inputText={task}
+                            onSelectTask={(suggestedTask) => updateTask(catIndex, taskIndex, suggestedTask)}
+                            excludeTasks={category.items}
+                            categoryContext={category.title}
+                          />
+                        </div>
                         <button
                           type="button"
                           onClick={() => removeTask(catIndex, taskIndex)}

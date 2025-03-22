@@ -1,5 +1,5 @@
+// components/Sections/TemplatesSection.jsx
 import React, { useState, useEffect } from 'react';
-import { getTemplates } from '../../utils/templateUtils';
 import TemplateList from '../Templates/TemplateList';
 import TemplateDetail from '../Templates/TemplateDetail';
 import TemplateForm from '../Templates/TemplateForm';
@@ -7,20 +7,9 @@ import TemplateAnalytics from '../Templates/TemplateAnalytics';
 
 const TemplatesSection = () => {
   // Main view state
-  const [templates, setTemplates] = useState([]);
   const [activeTemplate, setActiveTemplate] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'detail', 'create', 'edit', 'analytics'
   
-  // Initialize and load templates
-  useEffect(() => {
-    loadTemplates();
-  }, []);
-
-  const loadTemplates = () => {
-    const templateData = getTemplates();
-    setTemplates(templateData);
-  };
-
   // Handle viewing analytics
   const handleViewAnalytics = () => {
     setViewMode('analytics');
@@ -29,7 +18,11 @@ const TemplatesSection = () => {
 
   // Handle selecting a template
   const handleSelectTemplate = (templateId) => {
+    // Get fresh template data directly from localStorage
+    const storageData = JSON.parse(localStorage.getItem('wellnessTracker') || '{}');
+    const templates = storageData.templates || [];
     const template = templates.find(t => t.id === templateId);
+    
     setActiveTemplate(template);
     setViewMode('detail');
   };
@@ -47,15 +40,17 @@ const TemplatesSection = () => {
 
   // Handle saving a new template
   const handleTemplateSaved = () => {
-    loadTemplates();
     setViewMode('list');
   };
 
   // Handle updating a template
   const handleTemplateUpdated = (updatedTemplate) => {
-    loadTemplates();
-    setActiveTemplate(updatedTemplate);
-    setViewMode('detail');
+    if (updatedTemplate) {
+      setActiveTemplate(updatedTemplate);
+      setViewMode('detail');
+    } else {
+      setViewMode('list');
+    }
   };
 
   // Handle going back to list
@@ -66,7 +61,6 @@ const TemplatesSection = () => {
 
   // Handle deleting a template
   const handleTemplateDeleted = () => {
-    loadTemplates();
     setActiveTemplate(null);
     setViewMode('list');
   };
@@ -108,7 +102,6 @@ const TemplatesSection = () => {
       default:
         return (
           <TemplateList 
-            templates={templates}
             onSelectTemplate={handleSelectTemplate}
             onCreateTemplate={handleCreateTemplate}
             onViewAnalytics={handleViewAnalytics}

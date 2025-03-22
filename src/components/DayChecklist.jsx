@@ -308,6 +308,15 @@ if (allTasksCompleted) {
     
     // Create a copy of the current categories
     const newCategories = JSON.parse(JSON.stringify(categories));
+
+    // Check if this exact task already exists in this category
+  const taskExistsInThisCategory = newCategories[categoryIndex].items.includes(quickAddText.trim());
+  
+  if (taskExistsInThisCategory) {
+    // Maybe show a warning or prevent adding
+    console.warn("This task already exists in this category");
+    return;
+  }
     
     // Add the new task to the specified category
     newCategories[categoryIndex].items.push(quickAddText.trim());

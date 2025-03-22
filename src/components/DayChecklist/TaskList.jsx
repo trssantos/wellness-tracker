@@ -46,16 +46,17 @@ const TaskList = ({
       
       {/* Quick Add Task UI */}
       {quickAddCategory === activeCategory ? (
-        <QuickAddTask 
-          quickAddText={quickAddText}
-          setQuickAddText={setQuickAddText}
-          onAdd={() => handleQuickAddTask(activeCategory)}
-          onCancel={() => {
-            setQuickAddCategory(null);
-            setQuickAddText('');
-          }}
-        />
-      ) : (
+  <QuickAddTask 
+    quickAddText={quickAddText}
+    setQuickAddText={setQuickAddText}
+    onAdd={() => handleQuickAddTask(activeCategory)}
+    onCancel={() => {
+      setQuickAddCategory(null);
+      setQuickAddText('');
+    }}
+    existingTasks={currentCategory.items} // Pass existing tasks
+  />
+) : (
         <button
           onClick={() => setQuickAddCategory(activeCategory)}
           className="mt-2 flex items-center gap-1 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg w-full"

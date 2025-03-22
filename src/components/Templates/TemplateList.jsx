@@ -1,6 +1,7 @@
-import React from 'react';
-import { Layout, PlusCircle, BarChart2, Tag, Clock, Calendar } from 'lucide-react';
-import { getMostUsedTemplates } from '../../utils/templateUtils';
+// components/Templates/TemplateList.jsx
+import React, { useState, useEffect } from 'react';
+import { Layout, PlusCircle, BarChart2, Tag, CheckSquare } from 'lucide-react';
+import { getTemplates } from '../../utils/templateUtils';
 
 const difficultyColors = {
   easy: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -8,8 +9,24 @@ const difficultyColors = {
   hard: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
 };
 
-const TemplateList = ({ templates, onSelectTemplate, onCreateTemplate, onViewAnalytics }) => {
-  const mostUsedTemplates = getMostUsedTemplates(3);
+const TemplateList = ({ onSelectTemplate, onCreateTemplate, onViewAnalytics }) => {
+  // IMPORTANT: Don't use the templates prop, directly get templates from storage
+  const [templates, setTemplates] = useState([]);
+  
+  // Directly fetch from localStorage - identical to how analytics does it
+  useEffect(() => {
+    // Force refresh from localStorage on every render
+    const freshData = localStorage.getItem('wellnessTracker') || '{}';
+    const storageData = JSON.parse(freshData);
+    const templatesData = storageData.templates || [];
+    setTemplates(templatesData);
+  }, []);
+  
+  // Sort by usage count to get most used templates
+  const mostUsedTemplates = [...templates]
+    .filter(t => (t.usageCount || 0) > 0) // Only show templates with usage
+    .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
+    .slice(0, 3); // Top 3
 
   return (
     <div className="space-y-6">
@@ -55,74 +72,83 @@ const TemplateList = ({ templates, onSelectTemplate, onCreateTemplate, onViewAna
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {templates.map((template) => (
-              <div 
-                key={template.id}
-                onClick={() => onSelectTemplate(template.id)}
-                className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden hover:shadow-md cursor-pointer transition-all hover:scale-[1.02]"
-              >
-                <div className="bg-teal-50 dark:bg-teal-900/30 p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                  <h4 className="font-medium text-slate-700 dark:text-slate-200">{template.name}</h4>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${difficultyColors[template.difficulty || 'medium']}`}>
-                    {template.difficulty || 'Medium'}
-                  </span>
-                </div>
-                <div className="p-3">
-                  <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">
-                    {template.description || 'No description'}
-                  </div>
-                  <div className="flex justify-between text-xs text-slate-500 dark:text-slate-500">
-                    <div className="flex items-center gap-1">
-                      <Tag size={12} />
-                      <span>{template.categories?.length || 0} categories</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock size={12} />
-                      <span>Used {template.usageCount || 0} times</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Most Used Templates */}
-      {templates.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-          <h3 className="text-lg font-medium text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2">
-            <Calendar className="text-teal-500 dark:text-teal-400" size={20} />
-            Most Used Templates
-          </h3>
-          
-          <div className="space-y-3">
-            {mostUsedTemplates.length > 0 ? (
-              mostUsedTemplates.map(template => (
+            {templates.map((template) => {
+              // Calculate total tasks in the template
+              const totalTasks = template.categories
+                ? template.categories.reduce((sum, cat) => sum + (cat.items?.length || 0), 0)
+                : 0;
+                
+              return (
                 <div 
                   key={template.id}
                   onClick={() => onSelectTemplate(template.id)}
-                  className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+                  className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden hover:shadow-md cursor-pointer transition-all hover:scale-[1.02]"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-full rounded-l-lg ${difficultyColors[template.difficulty || 'medium']}`}></div>
-                    <span className="font-medium text-slate-700 dark:text-slate-200">{template.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500 dark:text-slate-400">
-                      Used {template.usageCount || 0} times
-                    </span>
+                  <div className="bg-teal-50 dark:bg-teal-900/30 p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                    <h4 className="font-medium text-slate-700 dark:text-slate-200">{template.name}</h4>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${difficultyColors[template.difficulty || 'medium']}`}>
                       {template.difficulty || 'Medium'}
                     </span>
                   </div>
+                  <div className="p-3">
+                    <div className="mb-3 text-sm text-slate-600 dark:text-slate-400">
+                      {template.description || 'No description'}
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      {/* Show categories count */}
+                      <div className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                        <Tag size={12} />
+                        <span>{template.categories?.length || 0} categories</span>
+                      </div>
+                      
+                      {/* Show tasks count */}
+                      <div className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                        <CheckSquare size={12} />
+                        <span>{totalTasks} tasks</span>
+                      </div>
+                      
+                      {/* Show usage count - ensure we use same data as analytics */}
+                      <div className={`px-2 py-1 rounded-full flex items-center gap-1 ${
+                        (template.usageCount > 0) 
+                          ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300" 
+                          : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                      }`}>
+                        Used {template.usageCount || 0} times
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-6 text-slate-500 dark:text-slate-400">
-                No templates have been used yet
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Most Used Templates - Only show if there are used templates */}
+      {mostUsedTemplates.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+          <h3 className="text-lg font-medium text-slate-700 dark:text-slate-200 mb-4">
+            Most Used Templates
+          </h3>
+          
+          <div className="space-y-3">
+            {mostUsedTemplates.map(template => (
+              <div 
+                key={template.id}
+                onClick={() => onSelectTemplate(template.id)}
+                className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-full rounded-l-lg ${difficultyColors[template.difficulty || 'medium']}`}></div>
+                  <span className="font-medium text-slate-700 dark:text-slate-200">{template.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full text-xs text-green-600 dark:text-green-300">
+                    Used {template.usageCount || 0} times
+                  </span>
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
       )}

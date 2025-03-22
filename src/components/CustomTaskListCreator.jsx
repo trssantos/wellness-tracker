@@ -123,27 +123,32 @@ const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
     setError('');
   };
   
-  const updateTask = (categoryIndex, taskIndex, text) => {
-    const currentTask = categories[categoryIndex].items[taskIndex];
-    
-    // If this is a template task, don't allow renaming
-    if (templateTasks[currentTask]) {
-      setError('Tasks from templates cannot be renamed to maintain analytics tracking');
-      return;
-    }
-    
-    // Check for duplicate task names
-    const allTasks = categories.flatMap(category => category.items);
-    if (allTasks.includes(text) && text !== currentTask) {
-      setError('Tasks must have unique names');
-      return;
-    }
-    
-    const newCategories = [...categories];
-    newCategories[categoryIndex].items[taskIndex] = text;
-    setCategories(newCategories);
-    setError('');
-  };
+  // In CustomTaskListCreator.jsx, update the updateTask function:
+const updateTask = (categoryIndex, taskIndex, text) => {
+  const currentTask = categories[categoryIndex].items[taskIndex];
+  
+  // If this is a template task, don't allow renaming
+  if (templateTasks[currentTask]) {
+    setError('Tasks from templates cannot be renamed to maintain analytics tracking');
+    return;
+  }
+  
+  // Check for duplicate task names ONLY WITHIN THIS CATEGORY
+  const tasksInThisCategory = categories[categoryIndex].items;
+  const isDuplicateInCategory = tasksInThisCategory.some((item, idx) => 
+    idx !== taskIndex && item === text
+  );
+  
+  if (isDuplicateInCategory) {
+    setError('Tasks must have unique names within the same category');
+    return;
+  }
+  
+  const newCategories = [...categories];
+  newCategories[categoryIndex].items[taskIndex] = text;
+  setCategories(newCategories);
+  setError('');
+};
   
   // Toggle template selection
   const toggleTemplate = (templateId) => {
@@ -272,36 +277,50 @@ const CustomTaskListCreator = ({ date, onClose, onTasksGenerated }) => {
     setShowTemplates(false);
   };
   
-  const validateTaskList = () => {
-    // Reset error
-    setError('');
-    
-    // Check if any category title is empty
-    const invalidCategory = categories.find(category => !category.title.trim());
-    if (invalidCategory) {
-      setError('All categories must have a title');
+  // In CustomTaskListCreator.jsx, update the validateTaskList function:
+const validateTaskList = () => {
+  // Reset error
+  setError('');
+  
+  // Check if any category title is empty
+  const invalidCategory = categories.find(category => !category.title.trim());
+  if (invalidCategory) {
+    setError('All categories must have a title');
+    return false;
+  }
+  
+  // Check if any task is empty
+  for (const category of categories) {
+    const emptyTask = category.items.find(item => !item.trim());
+    if (emptyTask !== undefined) {
+      setError('All tasks must have a description');
       return false;
     }
     
-    // Check if any task is empty
-    for (const category of categories) {
-      const emptyTask = category.items.find(item => !item.trim());
-      if (emptyTask !== undefined) {
-        setError('All tasks must have a description');
-        return false;
+    // Check for duplicate task names WITHIN THIS CATEGORY
+    const tasksInCategory = category.items;
+    const uniqueTasks = new Set();
+    const duplicates = [];
+    
+    for (const task of tasksInCategory) {
+      if (uniqueTasks.has(task)) {
+        duplicates.push(task);
+      } else {
+        uniqueTasks.add(task);
       }
     }
     
-    // Check for duplicate task names
-    const allTasks = categories.flatMap(category => category.items);
-    const uniqueTasks = new Set(allTasks);
-    if (uniqueTasks.size !== allTasks.length) {
-      setError('Tasks must have unique names');
+    if (duplicates.length > 0) {
+      setError(`Duplicate tasks in category "${category.title}": ${duplicates.join(', ')}`);
       return false;
     }
-    
-    return true;
-  };
+  }
+  
+  // Don't check for duplicate task names ACROSS CATEGORIES anymore
+  // This allows the same task name to be used in different categories
+  
+  return true;
+};
   
   const handleSave = () => {
     if (!validateTaskList()) {

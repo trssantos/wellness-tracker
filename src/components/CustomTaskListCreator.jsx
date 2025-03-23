@@ -160,116 +160,130 @@ const updateTask = (categoryIndex, taskIndex, text) => {
     setError('');
   };
   
-  // Apply selected templates to categories
-  const applySelectedTemplates = () => {
-    setError('');
-    
-    // If no templates selected, just proceed to next screen
-    if (selectedTemplates.length === 0) {
-      setShowTemplates(false);
-      return;
-    }
-    
-    // Get selected template objects
-    const selectedTemplateObjects = templates.filter(t => selectedTemplates.includes(t.id));
-    
-    // Start with current categories (or empty array if just the default empty one)
-    let newCategories = [...categories];
-    if (newCategories.length === 1 && 
-        newCategories[0].title === 'General' && 
-        newCategories[0].items.length === 1 && 
-        !newCategories[0].items[0].trim()) {
-      newCategories = [];
-    }
-    
-    // Track new template tasks
-    let newTemplateTasks = { ...templateTasks };
-    
-    // Check for duplicate tasks across all templates and existing categories
-    const existingTaskNames = new Set();
-    
-    // Collect existing task names that aren't empty
-    categories.forEach(category => {
-      category.items.forEach(item => {
-        if (item.trim()) {
-          existingTaskNames.add(item);
-        }
-      });
-    });
-    
-    // Check for conflicts in templates
-    const templateTaskConflicts = [];
-    
-    // First pass - identify conflicts
-    selectedTemplateObjects.forEach(template => {
-      template.categories.forEach(category => {
-        category.items.forEach(item => {
-          if (existingTaskNames.has(item)) {
-            templateTaskConflicts.push(item);
-          }
-          existingTaskNames.add(item);
-        });
-      });
-    });
-    
-    // If we have conflicts, show error and don't proceed
-    if (templateTaskConflicts.length > 0) {
-      setError(`Duplicate task names detected: ${templateTaskConflicts.join(', ')}. Please select different templates or modify existing tasks.`);
-      return;
-    }
-    
-    // Second pass - apply templates
-    selectedTemplateObjects.forEach(template => {
-      template.categories.forEach(category => {
-        const existingCategoryIndex = newCategories.findIndex(c => c.title === category.title);
-        
-        if (existingCategoryIndex !== -1) {
-          // Add unique tasks to existing category
-          const existingItems = newCategories[existingCategoryIndex].items;
-          const newItems = category.items.filter(item => !existingItems.includes(item));
-          
-          // Mark all new items as template-sourced
-          newItems.forEach(task => {
-            newTemplateTasks[task] = {
-              templateId: template.id,
-              templateName: template.name
-            };
-          });
-          
-          newCategories[existingCategoryIndex].items = [...existingItems, ...newItems];
-        } else {
-          // Add new category with all its items
-          const newCategory = {
-            title: category.title,
-            items: [...category.items]
-          };
-          
-          // Mark all items as template-sourced
-          category.items.forEach(task => {
-            newTemplateTasks[task] = {
-              templateId: template.id,
-              templateName: template.name
-            };
-          });
-          
-          newCategories.push(newCategory);
-        }
-      });
-    });
-    
-    // If we ended up with no categories (unlikely but possible), add default
-    if (newCategories.length === 0) {
-      newCategories = [{ title: 'General', items: [''] }];
-    }
-    
-    // Update state with the applied templates
-    setCategories(newCategories);
-    setTemplateTasks(newTemplateTasks);
+ // Apply selected templates to categories
+const applySelectedTemplates = () => {
+  setError('');
+  
+  // If no templates selected, just proceed to next screen
+  if (selectedTemplates.length === 0) {
     setShowTemplates(false);
+    return;
+  }
+  
+  // Get selected template objects
+  const selectedTemplateObjects = templates.filter(t => selectedTemplates.includes(t.id));
+  
+  // Start with current categories (or empty array if just the default empty one)
+  let newCategories = [...categories];
+  if (newCategories.length === 1 && 
+      newCategories[0].title === 'General' && 
+      newCategories[0].items.length === 1 && 
+      !newCategories[0].items[0].trim()) {
+    newCategories = [];
+  }
+  
+  // Track new template tasks
+  let newTemplateTasks = { ...templateTasks };
+  
+  // Instead of checking all tasks globally, we need to check per category
+  const categoryTasksMap = new Map();
+  
+  // Initialize with existing categories and tasks
+  newCategories.forEach(category => {
+    categoryTasksMap.set(category.title, new Set(category.items.filter(item => item.trim())));
+  });
+  
+  // Check for conflicts in templates, but only within the same category
+  const categoryConflicts = new Map();
+  
+  // First pass - identify conflicts within categories
+  selectedTemplateObjects.forEach(template => {
+    template.categories.forEach(category => {
+      // Get or create the set of tasks for this category
+      let categoryTasks = categoryTasksMap.get(category.title) || new Set();
+      
+      // Check each task in this category
+      category.items.forEach(item => {
+        if (item.trim() && categoryTasks.has(item)) {
+          // This is a duplicate within this category
+          if (!categoryConflicts.has(category.title)) {
+            categoryConflicts.set(category.title, []);
+          }
+          categoryConflicts.get(category.title).push(item);
+        } else {
+          // Add to the set
+          categoryTasks.add(item);
+        }
+      });
+      
+      // Update the map
+      categoryTasksMap.set(category.title, categoryTasks);
+    });
+  });
+  
+  // If we have conflicts within any category, show error and don't proceed
+  if (categoryConflicts.size > 0) {
+    const conflictMessages = [];
+    categoryConflicts.forEach((tasks, category) => {
+      conflictMessages.push(`Category "${category}": ${tasks.join(', ')}`);
+    });
+    
+    setError(`Duplicate task names detected within the same categories. ${conflictMessages.join('; ')}`);
+    return;
+  }
+  
+  // Second pass - apply templates
+  selectedTemplateObjects.forEach(template => {
+    template.categories.forEach(category => {
+      const existingCategoryIndex = newCategories.findIndex(c => c.title === category.title);
+      
+      if (existingCategoryIndex !== -1) {
+        // Add unique tasks to existing category
+        const existingItems = newCategories[existingCategoryIndex].items;
+        const newItems = category.items.filter(item => !existingItems.includes(item));
+        
+        // Mark all new items as template-sourced
+        newItems.forEach(task => {
+          newTemplateTasks[task] = {
+            templateId: template.id,
+            templateName: template.name
+          };
+        });
+        
+        newCategories[existingCategoryIndex].items = [...existingItems, ...newItems];
+      } else {
+        // Add new category with all its items
+        const newCategory = {
+          title: category.title,
+          items: [...category.items]
+        };
+        
+        // Mark all items as template-sourced
+        category.items.forEach(task => {
+          newTemplateTasks[task] = {
+            templateId: template.id,
+            templateName: template.name
+          };
+        });
+        
+        newCategories.push(newCategory);
+      }
+    });
+  });
+  
+  // If we ended up with no categories (unlikely but possible), add default
+  if (newCategories.length === 0) {
+    newCategories = [{ title: 'General', items: [''] }];
+  }
+  
+  // Update state with the applied templates
+  setCategories(newCategories);
+  setTemplateTasks(newTemplateTasks);
+  setShowTemplates(false);
 
-    // Store selected templates for later usage
-    console.log(`Applied templates: ${selectedTemplates.length} templates selected`);
-  };
+  // Store selected templates for later usage
+  console.log(`Applied templates: ${selectedTemplates.length} templates selected`);
+};
   
   // Skip templates - explicit button handler
   const skipTemplates = () => {

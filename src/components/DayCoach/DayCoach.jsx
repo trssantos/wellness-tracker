@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, BarChart2,Trash2,
+import { Bot,User, BarChart2,Trash2,
   MessageCircle, Send, SmilePlus, Calendar, Clock, 
   Dumbbell, Brain, Zap, Check, Bell, X, Moon, Sun,
   Lightbulb, Activity, ArrowRight, ChevronDown, ChevronUp, Sparkles
@@ -22,6 +22,7 @@ import DayCoachAnalysis from './DayCoachAnalysis';
 import DayCoachMoodTracker from './DayCoachMoodTracker';
 import { clearDayCoachMessages } from '../../utils/dayCoachUtils';
 import ClearChatDialog from './ClearChatDialog';
+import SolarisRobot from './SolarisRobot';
 
 const DayCoach = () => {
   const [messages, setMessages] = useState([]);
@@ -43,6 +44,8 @@ const DayCoach = () => {
   const componentMountTime = useRef(Date.now());
 
   const [showClearDialog, setShowClearDialog] = useState(false);
+  const [robotMode, setRobotMode] = useState(false);
+
   
   // First-time initialization
   useEffect(() => {
@@ -448,6 +451,17 @@ const isToday = (dateStr) => {
         )}
       </h2>
     </div>
+
+    {/* Add the Robot Mode button */}
+    <div className="flex items-center gap-2">
+      <button
+        onClick={() => setRobotMode(true)}
+        className="p-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 shadow-md transition-all transform hover:scale-105"
+        title="Enter Robot Mode"
+        aria-label="Enter Robot Mode"
+      >
+        <Bot size={18} />
+      </button>
     
     {/* Navigation tabs */}
     <div className="flex rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 shadow-sm border border-slate-200 dark:border-slate-600 h-8">
@@ -487,6 +501,7 @@ const isToday = (dateStr) => {
         <BarChart2 size={14} className="sm:hidden" />
         <span className="hidden sm:inline text-sm">Analysis</span>
       </button>
+    </div>
     </div>
   </div>
 </div>
@@ -617,6 +632,86 @@ const isToday = (dateStr) => {
   onClose={() => setShowClearDialog(false)}
   onConfirm={handleClearChat}
 />
+
+{robotMode && (
+  <SolarisRobot
+    messages={messages}
+    onSendMessage={(message) => {
+      // Create a user message immediately for responsiveness
+      const userMessage = {
+        id: `user-msg-${Date.now()}`,
+        sender: 'user',
+        content: message,
+        timestamp: new Date().toISOString(),
+      };
+      
+      // Add user message to state immediately
+      setMessages(prev => [...prev, userMessage]);
+      
+      // Save the message to storage
+      saveDayCoachMessage(userMessage);
+      
+      // Process with AI - this should trigger your existing AI flow
+      setIsLoading(true);
+      
+      // Create context for AI
+      const aiContext = {
+        messageType: 'userQuery',
+        userMessage: message,
+        currentTime: new Date().toLocaleTimeString(),
+        previousMessages: [...messages, userMessage].slice(-10) // Include last 10 messages for context
+      };
+      
+      // Get AI response using your existing fetchCoachResponse
+      fetchCoachResponse(aiContext)
+        .then(response => {
+          console.log("Robot received AI response:", response);
+          
+          // Create coach response message
+          const coachMessage = {
+            id: `coach-msg-${Date.now()}`,
+            sender: 'coach',
+            content: response.message,
+            timestamp: new Date().toISOString(),
+            suggestions: response.suggestions || [],
+            isRead: true,
+            context: {
+              type: 'response',
+              userQuery: message
+            }
+          };
+          
+          // Save coach message
+          saveDayCoachMessage(coachMessage);
+          
+          // Update messages in state
+          setMessages(prev => [...prev, coachMessage]);
+          setQuickReplies(response.suggestions || []);
+        })
+        .catch(error => {
+          console.error('Error sending message to coach:', error);
+          
+          // Add an error message
+          const errorMessage = {
+            id: `coach-msg-${Date.now()}`,
+            sender: 'coach',
+            content: "I'm sorry, I'm having trouble processing your message right now. Could you try again in a moment?",
+            timestamp: new Date().toISOString(),
+            isError: true,
+            isRead: true
+          };
+          
+          saveDayCoachMessage(errorMessage);
+          setMessages(prev => [...prev, errorMessage]);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }}
+    onClose={() => setRobotMode(false)}
+  />
+)}
+
     </div>
   );
 };

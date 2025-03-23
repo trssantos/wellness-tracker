@@ -110,11 +110,36 @@ const openImportTasksModal = () => {
         habitTasks.push(`[${habit.name}] ${step}`);
       });
       
+      // Find all categories that might contain these habit tasks
+      const categories = categories || [];
+      
       // Check if all habit tasks exist and are checked
-      const allTasksExist = habitTasks.every(task => newChecked.hasOwnProperty(task));
+      const allTasksExist = habitTasks.every(task => {
+        // Find if this task exists in any category
+        for (const category of categories) {
+          if (category.items.includes(task)) {
+            const taskId = `${category.title}|${task}`;
+            return newChecked.hasOwnProperty(taskId);
+          }
+        }
+        // Also check old format for backward compatibility
+        return newChecked.hasOwnProperty(task);
+      });
       
       if (allTasksExist) {
-        const allTasksCompleted = habitTasks.every(task => newChecked[task] === true);
+        const allTasksCompleted = habitTasks.every(task => {
+          // Check in all categories
+          for (const category of categories) {
+            if (category.items.includes(task)) {
+              const taskId = `${category.title}|${task}`;
+              if (newChecked[taskId] === true) {
+                return true;
+              }
+            }
+          }
+          // Also check old format for backward compatibility
+          return newChecked[task] === true;
+        });
         
         // Only update if the completion status has changed
         const currentStatus = habit.completions && habit.completions[date] === true;
@@ -133,63 +158,33 @@ const openImportTasksModal = () => {
   };
   
   // Helper function to load tasks from storage
-  const loadTasksFromStorage = (savedData) => {
-    let taskCategories = [];
-    let listType = 'default';
+  // Helper function to load tasks from storage with category-aware checks
+const loadTasksFromStorage = (savedData) => {
+  let taskCategories = [];
+  let listType = 'default';
 
-    // AI Tasks take highest priority
-    if (savedData?.aiTasks && Array.isArray(savedData.aiTasks)) {
-      const validCategories = validateCategories(savedData.aiTasks);
-      if (validCategories.length > 0) {
-        taskCategories = validCategories;
-        setDayContext({
-          morningMood: savedData.morningMood || savedData.mood || savedData.aiContext?.mood || null,
-          eveningMood: savedData.eveningMood || null,
-          morningEnergy: savedData.morningEnergy || savedData.energyLevel || savedData.aiContext?.energyLevel || 0,
-          eveningEnergy: savedData.eveningEnergy || 0,
-          objective: savedData.aiContext?.objective || '',
-          context: savedData.aiContext?.context || '',
-          isAIGenerated: true
-        });
-        listType = 'ai';
-      }
+  // AI Tasks take highest priority
+  if (savedData?.aiTasks && Array.isArray(savedData.aiTasks)) {
+    const validCategories = validateCategories(savedData.aiTasks);
+    if (validCategories.length > 0) {
+      taskCategories = validCategories;
+      setDayContext({
+        morningMood: savedData.morningMood || savedData.mood || savedData.aiContext?.mood || null,
+        eveningMood: savedData.eveningMood || null,
+        morningEnergy: savedData.morningEnergy || savedData.energyLevel || savedData.aiContext?.energyLevel || 0,
+        eveningEnergy: savedData.eveningEnergy || 0,
+        objective: savedData.aiContext?.objective || '',
+        context: savedData.aiContext?.context || '',
+        isAIGenerated: true
+      });
+      listType = 'ai';
     }
-    // Then check for Custom Tasks
-    else if (savedData?.customTasks && Array.isArray(savedData.customTasks)) {
-      const validCategories = validateCategories(savedData.customTasks);
-      if (validCategories.length > 0) {
-        taskCategories = validCategories;
-        setDayContext({
-          morningMood: savedData.morningMood || savedData.mood || null,
-          eveningMood: savedData.eveningMood || null,
-          morningEnergy: savedData.morningEnergy || savedData.energyLevel || 0,
-          eveningEnergy: savedData.eveningEnergy || 0,
-          objective: '',
-          context: '',
-          isAIGenerated: false
-        });
-        listType = 'custom';
-      }
-    }
-    // Check for Default Tasks (now stored in the same way as AI and custom)
-    else if (savedData?.defaultTasks && Array.isArray(savedData.defaultTasks)) {
-      const validCategories = validateCategories(savedData.defaultTasks);
-      if (validCategories.length > 0) {
-        taskCategories = validCategories;
-        setDayContext({
-          morningMood: savedData.morningMood || savedData.mood || null,
-          eveningMood: savedData.eveningMood || null,
-          morningEnergy: savedData.morningEnergy || savedData.energyLevel || 0,
-          eveningEnergy: savedData.eveningEnergy || 0,
-          objective: '',
-          context: '',
-          isAIGenerated: false
-        });
-        listType = 'default';
-      }
-    } else {
-      // Fallback to the original DEFAULT_CATEGORIES if nothing is stored
-      taskCategories = DEFAULT_CATEGORIES;
+  }
+  // Then check for Custom Tasks
+  else if (savedData?.customTasks && Array.isArray(savedData.customTasks)) {
+    const validCategories = validateCategories(savedData.customTasks);
+    if (validCategories.length > 0) {
+      taskCategories = validCategories;
       setDayContext({
         morningMood: savedData.morningMood || savedData.mood || null,
         eveningMood: savedData.eveningMood || null,
@@ -199,32 +194,84 @@ const openImportTasksModal = () => {
         context: '',
         isAIGenerated: false
       });
+      listType = 'custom';
     }
+  }
+  // Check for Default Tasks (now stored in the same way as AI and custom)
+  else if (savedData?.defaultTasks && Array.isArray(savedData.defaultTasks)) {
+    const validCategories = validateCategories(savedData.defaultTasks);
+    if (validCategories.length > 0) {
+      taskCategories = validCategories;
+      setDayContext({
+        morningMood: savedData.morningMood || savedData.mood || null,
+        eveningMood: savedData.eveningMood || null,
+        morningEnergy: savedData.morningEnergy || savedData.energyLevel || 0,
+        eveningEnergy: savedData.eveningEnergy || 0,
+        objective: '',
+        context: '',
+        isAIGenerated: false
+      });
+      listType = 'default';
+    }
+  } else {
+    // Fallback to the original DEFAULT_CATEGORIES if nothing is stored
+    taskCategories = DEFAULT_CATEGORIES;
+    setDayContext({
+      morningMood: savedData.morningMood || savedData.mood || null,
+      eveningMood: savedData.eveningMood || null,
+      morningEnergy: savedData.morningEnergy || savedData.energyLevel || 0,
+      eveningEnergy: savedData.eveningEnergy || 0,
+      objective: '',
+      context: '',
+      isAIGenerated: false
+    });
+  }
 
-    setCategories(taskCategories);
-    setEditedCategories(JSON.parse(JSON.stringify(taskCategories))); // Deep copy
-    setTaskListType(listType);
+  setCategories(taskCategories);
+  setEditedCategories(JSON.parse(JSON.stringify(taskCategories))); // Deep copy
+  setTaskListType(listType);
 
-    if (savedData?.checked) {
-      setChecked(savedData.checked);
-    } else {
-      const initialChecked = {};
+  const newChecked = {};
+  if (savedData?.checked) {
+    // First, try to load using the new category-based format
+    const oldChecked = savedData.checked;
+    
+    // Check if we need to migrate to new format
+    const needsMigration = !Object.keys(oldChecked).some(key => key.includes('|'));
+    
+    if (needsMigration) {
+      // Need to migrate old format to new category-based format
       taskCategories.forEach(category => {
         category.items.forEach(item => {
-          initialChecked[item] = false;
+          const taskId = `${category.title}|${item}`;
+          // Copy the value from the old format if it exists, otherwise default to false
+          newChecked[taskId] = oldChecked[item] !== undefined ? oldChecked[item] : false;
         });
       });
-      setChecked(initialChecked);
+    } else {
+      // Already using new format, just copy it
+      Object.assign(newChecked, oldChecked);
     }
-    
-    // Load task reminders
-    if (savedData?.taskReminders) {
-      setTaskReminders(savedData.taskReminders);
-    }
+  } else {
+    // Initialize all tasks as unchecked in the new format
+    taskCategories.forEach(category => {
+      category.items.forEach(item => {
+        const taskId = `${category.title}|${item}`;
+        newChecked[taskId] = false;
+      });
+    });
+  }
+  
+  setChecked(newChecked);
+  
+  // Load task reminders
+  if (savedData?.taskReminders) {
+    setTaskReminders(savedData.taskReminders);
+  }
 
-    // Reset active category to 0 whenever data changes
-    setActiveCategory(0);
-  };
+  // Reset active category to 0 whenever data changes
+  setActiveCategory(0);
+};
 
   const validateCategories = (categoriesData) => {
     return categoriesData
@@ -267,49 +314,56 @@ const openImportTasksModal = () => {
     setStorage(storage);
   };
 
-  const handleCheck = (item) => {
-    const newChecked = {
-      ...checked,
-      [item]: !checked[item]
-    };
-    setChecked(newChecked);
-    
+  // Update how we track checked state with a category identifier
+const handleCheck = (item, categoryTitle) => {
+  // Create a unique identifier that includes both category and task text
+  const taskId = `${categoryTitle}|${item}`;
+  
+  const newChecked = {
+    ...checked,
+    [taskId]: !checked[taskId]
+  };
+  setChecked(newChecked);
+  
   // If the task was just completed, register the completion
-  if (newChecked[item] === true) {
+  if (newChecked[taskId] === true) {
     registerTaskCompletion(item);
   }
 
-    const storage = getStorage();
-    const currentData = storage[date] || {};
-    storage[date] = {
-      ...currentData,
-      checked: newChecked
-    };
-    setStorage(storage);
-
-    // Check if all tasks are completed
-const allTasksCompleted = Object.values(newChecked).every(Boolean) && Object.keys(newChecked).length > 0;
-if (allTasksCompleted) {
-  handleDataChange(date, 'tasks', { allCompleted: true });
-}
-    
-    // Update habit completions based on checked tasks
-    updateHabitCompletions(newChecked);
+  const storage = getStorage();
+  const currentData = storage[date] || {};
+  storage[date] = {
+    ...currentData,
+    checked: newChecked
   };
+  setStorage(storage);
+
+  // Check if all tasks are completed
+  const allTasksCompleted = Object.values(newChecked).every(Boolean) && Object.keys(newChecked).length > 0;
+  if (allTasksCompleted) {
+    handleDataChange(date, 'tasks', { allCompleted: true });
+  }
+    
+  // Update habit completions based on checked tasks
+  updateHabitCompletions(newChecked);
+};
 
   // Modified handleQuickAddTask to preserve category selection and scroll position
-  const handleQuickAddTask = (categoryIndex) => {
-    if (!quickAddText.trim()) {
-      return;
-    }
-    
-    // Keep the current active category
-    const currentActiveCategory = activeCategory;
-    
-    // Create a copy of the current categories
-    const newCategories = JSON.parse(JSON.stringify(categories));
+  // Modified handleQuickAddTask to use category-aware task IDs
+const handleQuickAddTask = (categoryIndex) => {
+  if (!quickAddText.trim()) {
+    return;
+  }
+  
+  // Keep the current active category
+  const currentActiveCategory = activeCategory;
+  
+  // Create a copy of the current categories
+  const newCategories = JSON.parse(JSON.stringify(categories));
+  
+  const categoryTitle = newCategories[categoryIndex].title;
 
-    // Check if this exact task already exists in this category
+  // Check if this exact task already exists in this category
   const taskExistsInThisCategory = newCategories[categoryIndex].items.includes(quickAddText.trim());
   
   if (taskExistsInThisCategory) {
@@ -318,126 +372,127 @@ if (allTasksCompleted) {
     return;
   }
     
-    // Add the new task to the specified category
-    newCategories[categoryIndex].items.push(quickAddText.trim());
-    
-    // Update checked state
-    const newChecked = { ...checked };
-    newChecked[quickAddText.trim()] = false;
-    
-    // Update storage
-    const storage = getStorage();
-    const dayData = storage[date] || {};
-    
-    if (taskListType === 'custom') {
-      storage[date] = {
-        ...dayData,
-        customTasks: newCategories,
-        checked: newChecked
-      };
-    } else if (taskListType === 'ai') {
-      storage[date] = {
-        ...dayData,
-        aiTasks: newCategories,
-        checked: newChecked
-      };
-    } else {
-      // For default, convert to custom when edited
-      storage[date] = {
-        ...dayData,
-        customTasks: newCategories,
-        checked: newChecked
-      };
-      setTaskListType('custom');
-    }
-    
-    setStorage(storage);
-    
-    // Update local state without changing active category
-    setCategories(newCategories);
-    setChecked(newChecked);
-    setQuickAddText('');
-    setQuickAddCategory(null);
-    
-    // Ensure we maintain the same active category
-    // We don't need to explicitly set it since we're not calling any functions that reset it
-    // But to be extra safe:
-    if (currentActiveCategory !== activeCategory) {
-      setActiveCategory(currentActiveCategory);
-    }
-  };
+  // Add the new task to the specified category
+  newCategories[categoryIndex].items.push(quickAddText.trim());
+  
+  // Update checked state using the new category-aware format
+  const taskId = `${categoryTitle}|${quickAddText.trim()}`;
+  const newChecked = { ...checked };
+  newChecked[taskId] = false;
+  
+  // Update storage
+  const storage = getStorage();
+  const dayData = storage[date] || {};
+  
+  if (taskListType === 'custom') {
+    storage[date] = {
+      ...dayData,
+      customTasks: newCategories,
+      checked: newChecked
+    };
+  } else if (taskListType === 'ai') {
+    storage[date] = {
+      ...dayData,
+      aiTasks: newCategories,
+      checked: newChecked
+    };
+  } else {
+    // For default, convert to custom when edited
+    storage[date] = {
+      ...dayData,
+      customTasks: newCategories,
+      checked: newChecked
+    };
+    setTaskListType('custom');
+  }
+  
+  setStorage(storage);
+  
+  // Update local state without changing active category
+  setCategories(newCategories);
+  setChecked(newChecked);
+  setQuickAddText('');
+  setQuickAddCategory(null);
+  
+  // Ensure we maintain the same active category
+  if (currentActiveCategory !== activeCategory) {
+    setActiveCategory(currentActiveCategory);
+  }
+};
 
-  // Task deletion function
-  const handleDeleteTask = (taskText) => {
-    // Create a copy of the current categories
-    const newCategories = JSON.parse(JSON.stringify(categories));
+ // Task deletion function with category-aware IDs
+const handleDeleteTask = (taskText) => {
+  // Create a copy of the current categories
+  const newCategories = JSON.parse(JSON.stringify(categories));
+  
+  // Find the category that contains this task
+  const categoryIndex = newCategories.findIndex(category => 
+    category.items.includes(taskText)
+  );
+  
+  if (categoryIndex === -1) return; // Task not found
+  
+  // Save current active category
+  const currentActiveCategory = activeCategory;
+  const categoryTitle = newCategories[categoryIndex].title;
+  
+  // Remove the task from the category
+  newCategories[categoryIndex].items = newCategories[categoryIndex].items.filter(
+    item => item !== taskText
+  );
+  
+  // Update checked state by removing the deleted task
+  const newChecked = { ...checked };
+  const taskId = `${categoryTitle}|${taskText}`;
+  delete newChecked[taskId];
+  
+  // Update storage
+  const storage = getStorage();
+  const dayData = storage[date] || {};
+  
+  if (taskListType === 'custom') {
+    storage[date] = {
+      ...dayData,
+      customTasks: newCategories,
+      checked: newChecked
+    };
+  } else if (taskListType === 'ai') {
+    storage[date] = {
+      ...dayData,
+      aiTasks: newCategories,
+      checked: newChecked
+    };
+  } else {
+    // For default, convert to custom when edited
+    storage[date] = {
+      ...dayData,
+      customTasks: newCategories,
+      checked: newChecked
+    };
+    setTaskListType('custom');
+  }
+  
+  // If this task had a reminder, remove it
+  if (dayData.taskReminders && dayData.taskReminders[taskText]) {
+    delete storage[date].taskReminders[taskText];
     
-    // Find the category that contains this task
-    const categoryIndex = newCategories.findIndex(category => 
-      category.items.includes(taskText)
-    );
-    
-    if (categoryIndex === -1) return; // Task not found
-    
-    // Save current active category
-    const currentActiveCategory = activeCategory;
-    
-    // Remove the task from the category
-    newCategories[categoryIndex].items = newCategories[categoryIndex].items.filter(
-      item => item !== taskText
-    );
-    
-    // Update checked state by removing the deleted task
-    const newChecked = { ...checked };
-    delete newChecked[taskText];
-    
-    // Update storage
-    const storage = getStorage();
-    const dayData = storage[date] || {};
-    
-    if (taskListType === 'custom') {
-      storage[date] = {
-        ...dayData,
-        customTasks: newCategories,
-        checked: newChecked
-      };
-    } else if (taskListType === 'ai') {
-      storage[date] = {
-        ...dayData,
-        aiTasks: newCategories,
-        checked: newChecked
-      };
-    } else {
-      // For default, convert to custom when edited
-      storage[date] = {
-        ...dayData,
-        customTasks: newCategories,
-        checked: newChecked
-      };
-      setTaskListType('custom');
+    // Clean up empty reminders object
+    if (Object.keys(storage[date].taskReminders).length === 0) {
+      delete storage[date].taskReminders;
     }
-    
-    // If this task had a reminder, remove it
-    if (dayData.taskReminders && dayData.taskReminders[taskText]) {
-      delete storage[date].taskReminders[taskText];
-      
-      // Clean up empty reminders object
-      if (Object.keys(storage[date].taskReminders).length === 0) {
-        delete storage[date].taskReminders;
-      }
-    }
-    
-    setStorage(storage);
-    
-    // Update local state
-    setCategories(newCategories);
-    setChecked(newChecked);
-    
-    // Maintain active category
-    if (currentActiveCategory !== activeCategory) {
-      setActiveCategory(currentActiveCategory);
-    }
-  };
+  }
+  
+  setStorage(storage);
+  
+  // Update local state
+  setCategories(newCategories);
+  setChecked(newChecked);
+  
+  // Maintain active category
+  if (currentActiveCategory !== activeCategory) {
+    setActiveCategory(currentActiveCategory);
+  }
+};
 
   // Editing functions
   const toggleEditing = () => {

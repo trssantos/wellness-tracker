@@ -14,7 +14,8 @@ export const getMoodValue = (mood) => {
 };
 
 // Process data for morning/evening mood comparison chart
-export const processMoodComparisonData = (storageData, month) => {
+// Updated to handle category-based task IDs
+export const processMoodComparisonData = (data, month) => {
   // Get start and end date for the current month
   const start = new Date(month.getFullYear(), month.getMonth(), 1);
   const end = new Date(month.getFullYear(), month.getMonth() + 1, 0);
@@ -24,36 +25,79 @@ export const processMoodComparisonData = (storageData, month) => {
   // Process each day in the current month
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const dateStr = d.toISOString().split('T')[0];
-    const dayData = storageData[dateStr];
+    const dayData = data[dateStr];
     
     if (dayData) {
-      // Only include days with at least one mood tracked
-      if (dayData.morningMood || dayData.eveningMood) {
-        const dayEntry = {
-          date: dateStr,
-          day: d.getDate(),
-          // For legacy data, use mood as morningMood if no specific morning/evening values exist
-          morningMood: dayData.morningMood 
-            ? getMoodValue(dayData.morningMood) 
-            : (dayData.mood ? getMoodValue(dayData.mood) : null),
-          eveningMood: dayData.eveningMood 
-            ? getMoodValue(dayData.eveningMood) 
-            : null,
-          morningEnergy: dayData.morningEnergy || dayData.energyLevel || 0,
-          eveningEnergy: dayData.eveningEnergy || 0
-        };
+      // Check if we have both morning and evening moods
+      const hasMorningMood = dayData.morningMood !== undefined;
+      const hasEveningMood = dayData.eveningMood !== undefined;
+      
+      if (hasMorningMood || hasEveningMood) {
+        // Calculate task completion percentage
+        let completionRate = 0;
         
-        // Calculate mood change if both morning and evening are available
-        if (dayEntry.morningMood !== null && dayEntry.eveningMood !== null) {
-          dayEntry.change = dayEntry.eveningMood - dayEntry.morningMood;
+        if (dayData.checked) {
+          // Count total and completed tasks using the new category-based format
+          let totalTasks = 0;
+          let completedTasks = 0;
+          
+          // Get all categories for this day
+          const categories = dayData.customTasks || dayData.aiTasks || dayData.defaultTasks;
+          
+          if (categories && Array.isArray(categories)) {
+            // Process all categories and items
+            categories.forEach(category => {
+              if (category && category.items && Array.isArray(category.items)) {
+                category.items.forEach(item => {
+                  if (item && item.trim()) {
+                    totalTasks++;
+                    // Check both formats for backward compatibility
+                    const taskId = `${category.title}|${item}`;
+                    if (dayData.checked[taskId] === true || dayData.checked[item] === true) {
+                      completedTasks++;
+                    }
+                  }
+                });
+              }
+            });
+          }
+          
+          completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
         }
         
-        comparisonData.push(dayEntry);
+        // Calculate mood change if we have both values
+        let moodChange = 0;
+        if (hasMorningMood && hasEveningMood) {
+          // Map mood values to numbers
+          const moodValues = {
+            'GREAT': 5,
+            'GOOD': 4,
+            'OKAY': 3,
+            'MEH': 2,
+            'BAD': 1,
+            'OVERWHELMED': 0
+          };
+          
+          const morningValue = moodValues[dayData.morningMood] || 0;
+          const eveningValue = moodValues[dayData.eveningMood] || 0;
+          moodChange = eveningValue - morningValue;
+        }
+        
+        comparisonData.push({
+          date: dateStr,
+          day: d.getDate(),
+          morningMood: dayData.morningMood || null,
+          eveningMood: dayData.eveningMood || null,
+          morningEnergy: dayData.morningEnergy || 0,
+          eveningEnergy: dayData.eveningEnergy || 0,
+          completionRate,
+          change: moodChange
+        });
       }
     }
   }
   
-  return comparisonData.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return comparisonData;
 };
 
 // Analyze mood impact factors

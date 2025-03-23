@@ -48,6 +48,7 @@ export const getTemplates = () => {
   
   // Get template usage analytics
   // utils/templateUtils.js - update getTemplateAnalytics function to sync usage counts
+// Updated getTemplateAnalytics function to handle category-based task IDs
 export const getTemplateAnalytics = () => {
   const storage = JSON.parse(localStorage.getItem('wellnessTracker') || '{}');
   const templates = storage.templates || [];
@@ -98,7 +99,11 @@ export const getTemplateAnalytics = () => {
           template.categories.forEach(category => {
             category.items.forEach(task => {
               templateStats.totalTasks++;
-              if (dayData.checked[task] === true) {
+              
+              // Check using new category-based format
+              const taskId = `${category.title}|${task}`;
+              // Also check the old format as fallback for backward compatibility
+              if (dayData.checked[taskId] === true || dayData.checked[task] === true) {
                 templateStats.completedTasks++;
               }
             });
@@ -115,7 +120,7 @@ export const getTemplateAnalytics = () => {
       : 0;
   });
   
-  // Now, update the template objects in storage with the correct usage counts
+  // Update template objects in storage with correct usage counts
   let updated = false;
   templates.forEach((template, index) => {
     const analytics = findTemplateAnalytics(template.id);

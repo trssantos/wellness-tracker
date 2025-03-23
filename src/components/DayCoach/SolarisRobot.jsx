@@ -44,7 +44,8 @@ const SolarisRobot = (props) => {
   // Eye elements
   const eyesRef = useRef({ 
     left: { main: null, pupil: null, highlight: null, lid: null },
-    right: { main: null, pupil: null, highlight: null, lid: null }
+    right: { main: null, pupil: null, highlight: null, lid: null },
+    blinkTimestamp: null
   });
   
   // Expression elements
@@ -61,6 +62,12 @@ const SolarisRobot = (props) => {
   const videoRef = useRef(null);
   const audioContextRef = useRef(null);
   const speechSynthesisRef = useRef(null);
+  
+  // Face tracking elements
+  const faceTrackingRef = useRef(null);
+  const facePositionRef = useRef({ x: 0, y: 0, detected: false });
+  const canvas = useRef(document.createElement('canvas'));
+  const canvasContext = useRef(null);
   
   // Theme context
   const { theme } = useTheme();
@@ -87,20 +94,17 @@ const SolarisRobot = (props) => {
     personalityLevel: 0.7
   });
 
-  // Add this state
-const [startupPhase, setStartupPhase] = useState(0); // 0: starting, 1: eyes appearing, 2: fully active
-
-
-
+  // Add startup phase state
+  const [startupPhase, setStartupPhase] = useState(0); // 0: starting, 1: eyes appearing, 2: fully active
   
   // Initialize the robot
   useEffect(() => {
     if (!containerRef.current) return;
 
     // Initialize messages from props if available
-  if (props.messages && props.messages.length > 0) {
-    setMessages(props.messages);
-  }
+    if (props.messages && props.messages.length > 0) {
+      setMessages(props.messages);
+    }
     
     // Initialize Three.js scene
     initThreeJS();
@@ -149,6 +153,12 @@ const [startupPhase, setStartupPhase] = useState(0); // 0: starting, 1: eyes app
         tracks.forEach(track => track.stop());
       }
       
+      // Stop face tracking
+      if (faceTrackingRef.current) {
+        clearInterval(faceTrackingRef.current);
+        faceTrackingRef.current = null;
+      }
+      
       // Stop speech recognition
       if (recognition && recognition.stop) {
         try {
@@ -176,92 +186,92 @@ const [startupPhase, setStartupPhase] = useState(0); // 0: starting, 1: eyes app
   }, []);
 
   // Add this effect for startup animation
-useEffect(() => {
-  // Phase 0: Initial delay
-  setTimeout(() => {
-    setStartupPhase(1); // Eyes appearing
-    
-    // Phase 1: Eyes fully appear and calibrate
+  useEffect(() => {
+    // Phase 0: Initial delay
     setTimeout(() => {
-      // Look sequence to simulate eye calibration
-      const calibrationSequence = [
-        { x: 0, y: 0 },    // Center
-        { x: 1, y: 0 },    // Right
-        { x: -1, y: 0 },   // Left
-        { x: 0, y: 1 },    // Up
-        { x: 0, y: -1 },   // Down
-        { x: 0, y: 0 }     // Back to center
-      ];
+      setStartupPhase(1); // Eyes appearing
       
-      calibrationSequence.forEach((pos, index) => {
-        setTimeout(() => {
-          setLookTarget(pos);
-        }, index * 300);
-      });
-      
-      // Blink after calibration
+      // Phase 1: Eyes fully appear and calibrate
       setTimeout(() => {
-        setIsBlinking(true);
+        // Look sequence to simulate eye calibration
+        const calibrationSequence = [
+          { x: 0, y: 0 },    // Center
+          { x: 1, y: 0 },    // Right
+          { x: -1, y: 0 },   // Left
+          { x: 0, y: 1 },    // Up
+          { x: 0, y: -1 },   // Down
+          { x: 0, y: 0 }     // Back to center
+        ];
+        
+        calibrationSequence.forEach((pos, index) => {
+          setTimeout(() => {
+            setLookTarget(pos);
+          }, index * 300);
+        });
+        
+        // Blink after calibration
         setTimeout(() => {
-          setIsBlinking(false);
-          setStartupPhase(2); // Fully active
-        }, 200);
-      }, calibrationSequence.length * 300 + 200);
-      
-    }, 1000);
-  }, 500);
-}, []);
+          setIsBlinking(true);
+          setTimeout(() => {
+            setIsBlinking(false);
+            setStartupPhase(2); // Fully active
+          }, 200);
+        }, calibrationSequence.length * 300 + 200);
+        
+      }, 1000);
+    }, 500);
+  }, []);
 
   // Monitor messages for new bot responses
-useEffect(() => {
-  if (messages.length === 0) return;
-  
-  // Get the latest message
-  const latestMessage = messages[messages.length - 1];
-  
-  // Only process if it's from the coach/bot and not something we've already spoken
-  if (latestMessage.sender === 'coach' && !latestMessage.spoken) {
-    // Show "thinking" then set expression based on content immediately
-    setCurrentExpression(EXPRESSIONS.THINKING);
+  useEffect(() => {
+    if (messages.length === 0) return;
     
-    // Mark as spoken to prevent repeated speaking
-    latestMessage.spoken = true;
+    // Get the latest message
+    const latestMessage = messages[messages.length - 1];
     
-    // Add a slight delay for realism before speaking
-    setTimeout(() => {
-      // Log that we're about to speak
-      console.log("Speaking newest response:", latestMessage.content);
+    // Only process if it's from the coach/bot and not something we've already spoken
+    if (latestMessage.sender === 'coach' && !latestMessage.spoken) {
+      // Show "thinking" then set expression based on content immediately
+      setCurrentExpression(EXPRESSIONS.THINKING);
       
-      // Speak the response
-      if (isSpeechEnabled) {
-        speakText(latestMessage.content);
-      }
+      // Mark as spoken to prevent repeated speaking
+      latestMessage.spoken = true;
       
-      // Set appropriate expression based on content
-      const newExpression = 
-        latestMessage.content.includes('?') ? EXPRESSIONS.CURIOUS :
-        latestMessage.content.includes('!') ? EXPRESSIONS.EXCITED :
-        latestMessage.content.toLowerCase().includes('sorry') ? EXPRESSIONS.SAD :
-        EXPRESSIONS.HAPPY;
-      
-      console.log("Setting expression for bot response:", newExpression);
-      setCurrentExpression(newExpression);
-      
-      // Return to neutral after a delay
+      // Add a slight delay for realism before speaking
       setTimeout(() => {
-        setCurrentExpression(EXPRESSIONS.NEUTRAL);
-      }, 5000);
-    }, 500);
-  }
-}, [messages]);
+        // Log that we're about to speak
+        console.log("Speaking newest response:", latestMessage.content);
+        
+        // Speak the response
+        if (isSpeechEnabled) {
+          speakText(latestMessage.content);
+        }
+        
+        // Set appropriate expression based on content
+        const newExpression = 
+          latestMessage.content.includes('?') ? EXPRESSIONS.CURIOUS :
+          latestMessage.content.includes('!') ? EXPRESSIONS.EXCITED :
+          latestMessage.content.toLowerCase().includes('sorry') ? EXPRESSIONS.SAD :
+          EXPRESSIONS.HAPPY;
+        
+        console.log("Setting expression for bot response:", newExpression);
+        setCurrentExpression(newExpression);
+        
+        // Return to neutral after a delay
+        setTimeout(() => {
+          setCurrentExpression(EXPRESSIONS.NEUTRAL);
+        }, 5000);
+      }, 500);
+    }
+  }, [messages]);
 
   // Add this effect after your initialization effect
-useEffect(() => {
-  // Update local messages state when props messages change
-  if (props.messages && props.messages.length > 0) {
-    setMessages(props.messages);
-  }
-}, [props.messages]);
+  useEffect(() => {
+    // Update local messages state when props messages change
+    if (props.messages && props.messages.length > 0) {
+      setMessages(props.messages);
+    }
+  }, [props.messages]);
   
   // Initialize Three.js
   const initThreeJS = () => {
@@ -289,41 +299,11 @@ useEffect(() => {
     
     // Create robot face elements
     createFace();
-
-    // Add direct animation system
-let lastBlinkTime = 0;
-let blinkActive = false;
-
-
-    const directAnimationSystem = () => {
-      const currentTime = Date.now();
-      
-      // Handle blinking directly
-      if (!blinkActive && currentTime - lastBlinkTime > 3000) {
-        // Time to blink
-        if (eyesRef.current.left.lid && eyesRef.current.right.lid) {
-          eyesRef.current.left.lid.scale.y = 1;
-          eyesRef.current.right.lid.scale.y = 1;
-        }
-        blinkActive = true;
-        
-        // Reset lids after short delay
-        setTimeout(() => {
-          if (eyesRef.current.left.lid && eyesRef.current.right.lid) {
-            eyesRef.current.left.lid.scale.y = 0;
-            eyesRef.current.right.lid.scale.y = 0;
-          }
-          blinkActive = false;
-          lastBlinkTime = Date.now();
-        }, 150);
-      }
-    };
     
     // Set up animation loop
     const animate = () => {
       animationFrameRef.current = requestAnimationFrame(animate);
       updateFaceAnimations();
-      directAnimationSystem(); // Add direct animation control
       renderer.render(scene, camera);
     };
     animate();
@@ -445,6 +425,9 @@ let blinkActive = false;
     // Add glow effects
     addEyeGlow(-2.5, 0, eyeColor, accentColor);
     addEyeGlow(2.5, 0, eyeColor, accentColor);
+    
+    // Store a timestamp for blink animations
+    eyesRef.current.blinkTimestamp = null;
   };
   
   // Create eyebrows for expressions
@@ -520,7 +503,7 @@ let blinkActive = false;
     sceneRef.current.add(innerGlow);
   };
   
-  // Update face animations each frame
+  // Update face animations each frame - IMPROVED VERSION
   const updateFaceAnimations = () => {
     if (!eyesRef.current.left.main || !eyesRef.current.right.main) return;
     
@@ -540,41 +523,35 @@ let blinkActive = false;
       if (startupPhase === 0) return;
     }
     
-    // Handle eye movements
+    // Handle eye movements - guaranteed to run in animation frame
     updateEyeMovements();
     
-    // Handle blinking - add console log to debug
-    if (isBlinking) {
-      console.log("Blinking animation active");
-      
-      // When blinking, scale eyelids to cover eyes
-      if (eyesRef.current.left.lid) {
-        eyesRef.current.left.lid.scale.y = 1;
-      }
-      if (eyesRef.current.right.lid) {
-        eyesRef.current.right.lid.scale.y = 1;
-      }
+    // Direct blinking control - don't rely on React state for this
+    const currentTime = Date.now();
+    if (isBlinking || (eyesRef.current.blinkTimestamp && currentTime < eyesRef.current.blinkTimestamp + 200)) {
+      // Scale eyelids to cover eyes (blinking)
+      if (eyesRef.current.left.lid) eyesRef.current.left.lid.scale.y = 1;
+      if (eyesRef.current.right.lid) eyesRef.current.right.lid.scale.y = 1;
+      // Store timestamp for blink duration tracking
+      if (!eyesRef.current.blinkTimestamp) eyesRef.current.blinkTimestamp = currentTime;
     } else {
       // When not blinking, eyelids should be hidden (unless sleeping)
       if (currentExpression !== EXPRESSIONS.SLEEPING) {
-        if (eyesRef.current.left.lid) {
-          eyesRef.current.left.lid.scale.y = 0;
-        }
-        if (eyesRef.current.right.lid) {
-          eyesRef.current.right.lid.scale.y = 0; 
-        }
+        if (eyesRef.current.left.lid) eyesRef.current.left.lid.scale.y = 0;
+        if (eyesRef.current.right.lid) eyesRef.current.right.lid.scale.y = 0;
       }
+      // Reset timestamp
+      eyesRef.current.blinkTimestamp = null;
     }
     
-    // Handle expressions
-    updateExpression();
+    // Handle expressions - direct manipulation not dependent on React state
+    updateExpressionDirect(currentExpression);
     
     // Handle audio visualizer if speaking
     if (isSpeaking) {
-      updateMouthForSpeech();
+      updateMouthForSpeechDirect();
     }
   };
-  
   
   // Update eye positions based on look target
   const updateEyeMovements = () => {
@@ -614,21 +591,8 @@ let blinkActive = false;
     eyesRef.current.right.lid.position.y = eyesRef.current.right.main.position.y;
   };
   
-  // Update blinking animation
-  const updateBlinking = () => {
-    if (isBlinking) {
-      // When blinking, scale eyelids to cover eyes
-      eyesRef.current.left.lid.scale.y = 1;
-      eyesRef.current.right.lid.scale.y = 1;
-    } else {
-      // When not blinking, eyelids should be hidden
-      eyesRef.current.left.lid.scale.y = 0;
-      eyesRef.current.right.lid.scale.y = 0;
-    }
-  };
-  
-  // Update expression on the face
-  const updateExpression = () => {
+  // Direct expression update function - more reliable than React state
+  const updateExpressionDirect = (expression) => {
     const { left, right } = eyebrowsRef.current;
     if (!left || !right || !mouthRef.current) return;
     
@@ -638,11 +602,11 @@ let blinkActive = false;
     left.position.y = 1.8;
     right.position.y = 1.8;
     
-    // Update pupil size based on expression
+    // Default pupil size
     let pupilScale = 1.0;
     
-    // Different expressions
-    switch(currentExpression) {
+    // Handle each expression directly
+    switch(expression) {
       case EXPRESSIONS.HAPPY:
         left.rotation.z = -0.2;
         right.rotation.z = 0.2;
@@ -664,10 +628,9 @@ let blinkActive = false;
         right.rotation.z = 0;
         left.position.y = 2;
         updateMouthCurve(0.5, -3, 1.5, 0.1, 0.3, Math.PI - 0.3);
-        pupilScale = 0.8;
-        eyesRef.current.left.pupil.scale.set(0.8, 0.8, 1);
-        eyesRef.current.right.pupil.scale.set(1.2, 1.2, 1);
-        break;
+        if (eyesRef.current.left.pupil) eyesRef.current.left.pupil.scale.set(0.8, 0.8, 1);
+        if (eyesRef.current.right.pupil) eyesRef.current.right.pupil.scale.set(1.2, 1.2, 1);
+        return; // Early return to skip general pupil scaling
         
       case EXPRESSIONS.SURPRISED:
         left.position.y = 2.2;
@@ -700,36 +663,55 @@ let blinkActive = false;
         right.position.y = 1.6;
         updateMouthCurve(0, -2.5, 1.5, 0.1, 0, Math.PI);
         // Make pupils invisible during sleep
-        eyesRef.current.left.pupil.visible = false;
-        eyesRef.current.right.pupil.visible = false;
-        eyesRef.current.left.highlight.visible = false;
-        eyesRef.current.right.highlight.visible = false;
-        eyesRef.current.left.lid.scale.y = 1;
-        eyesRef.current.right.lid.scale.y = 1;
-        break;
+        if (eyesRef.current.left.pupil) eyesRef.current.left.pupil.visible = false;
+        if (eyesRef.current.right.pupil) eyesRef.current.right.pupil.visible = false;
+        if (eyesRef.current.left.highlight) eyesRef.current.left.highlight.visible = false;
+        if (eyesRef.current.right.highlight) eyesRef.current.right.highlight.visible = false;
+        if (eyesRef.current.left.lid) eyesRef.current.left.lid.scale.y = 1;
+        if (eyesRef.current.right.lid) eyesRef.current.right.lid.scale.y = 1;
+        return; // Skip pupil scaling
         
       case EXPRESSIONS.WINKING:
         left.rotation.z = -0.2;
         right.rotation.z = 0.2;
         updateMouthCurve(0, -3, 2, 0.5, 0, Math.PI, true);
-        eyesRef.current.left.lid.scale.y = 1; // Left eye wink
-        eyesRef.current.right.lid.scale.y = 0;
+        if (eyesRef.current.left.lid) eyesRef.current.left.lid.scale.y = 1; // Left eye wink
+        if (eyesRef.current.right.lid) eyesRef.current.right.lid.scale.y = 0;
         break;
         
       default: // NEUTRAL
         updateMouthCurve(0, -3, 2, 0.3, 0, Math.PI);
         pupilScale = 1.0;
-        eyesRef.current.left.pupil.visible = true;
-        eyesRef.current.right.pupil.visible = true;
-        eyesRef.current.left.highlight.visible = true;
-        eyesRef.current.right.highlight.visible = true;
+        if (eyesRef.current.left.pupil) eyesRef.current.left.pupil.visible = true;
+        if (eyesRef.current.right.pupil) eyesRef.current.right.pupil.visible = true;
+        if (eyesRef.current.left.highlight) eyesRef.current.left.highlight.visible = true;
+        if (eyesRef.current.right.highlight) eyesRef.current.right.highlight.visible = true;
     }
     
-    // Apply pupil scaling for both eyes
-    if (currentExpression !== EXPRESSIONS.THINKING) {
-      eyesRef.current.left.pupil.scale.set(pupilScale, pupilScale, 1);
-      eyesRef.current.right.pupil.scale.set(pupilScale, pupilScale, 1);
+    // Apply pupil scaling for both eyes (except for THINKING which has special handling)
+    if (expression !== EXPRESSIONS.THINKING && expression !== EXPRESSIONS.SLEEPING) {
+      if (eyesRef.current.left.pupil) eyesRef.current.left.pupil.scale.set(pupilScale, pupilScale, 1);
+      if (eyesRef.current.right.pupil) eyesRef.current.right.pupil.scale.set(pupilScale, pupilScale, 1);
     }
+  };
+  
+  // Direct mouth animation for speech - more fluid than using React state
+  const updateMouthForSpeechDirect = () => {
+    // Only proceed if we have the mouth reference
+    if (!mouthRef.current) return;
+    
+    // Generate dynamic audio levels for speech animation
+    const now = Date.now() / 1000;
+    const mouthOpenness = 0.2 + (Math.sin(now * 10) * 0.5 + 0.5) * 1.2; // Range 0.2-1.4
+    
+    // Apply mouth shape based on dynamic mouth openness
+    updateMouthCurve(
+      0, -3,                  // Center x, y
+      2, mouthOpenness,       // x radius, y radius
+      0, Math.PI * 2,         // Full circle for open mouth
+      false,                  // Not clockwise
+      (Math.sin(now * 5) > 0) // Slight asymmetry that changes
+    );
   };
   
   // Update mouth curve based on parameters
@@ -761,35 +743,11 @@ let blinkActive = false;
     }
   };
   
-  // Update mouth for speech visualization
-  const updateMouthForSpeech = () => {
-    // Only update if speaking and we have visualizer data
-    if (!isSpeaking || !visualizerData.length) return;
-    
-    // Calculate average audio level
-    const avgLevel = visualizerData.reduce((sum, val) => sum + val, 0) / visualizerData.length;
-    const normalizedLevel = Math.min(1, avgLevel / 100);
-    
-    // For debugging - uncomment if needed
-    // console.log("Mouth animation with level:", normalizedLevel);
-    
-    // Use different mouth shapes based on audio level
-    const mouthOpenness = 0.2 + normalizedLevel * 1.2; // Scale between 0.2 and 1.4
-    
-    // Update mouth curve with variable height based on audio
-    updateMouthCurve(
-      0, -3,                 // Center x, y
-      2, mouthOpenness,      // x radius, y radius (y varies with sound)
-      0, Math.PI * 2,        // Full circle for open mouth
-      false,                 // Not clockwise
-      visualizerData[0] > visualizerData[visualizerData.length - 1] // Slight asymmetry
-    );
-  };
-  
-  
-  // Schedule random blinking
+  // Improve the scheduling of blinking - more reliable
   const scheduleBlinking = () => {
-    console.log("Scheduling next blink...");
+    if (blinkTimeoutRef.current) {
+      clearTimeout(blinkTimeoutRef.current);
+    }
     
     // Blink more frequently (1-3 seconds) to make it more noticeable
     const blinkDelay = 1000 + Math.random() * 2000;
@@ -797,13 +755,26 @@ let blinkActive = false;
     blinkTimeoutRef.current = setTimeout(() => {
       // Don't blink if already in sleep expression
       if (currentExpression !== EXPRESSIONS.SLEEPING) {
-        console.log("Triggering blink!");
+        // Set blinking state, but also directly apply to eye lids
         setIsBlinking(true);
+        
+        // Directly update eyelids to ensure they actually blink
+        if (eyesRef.current.left.lid && eyesRef.current.right.lid) {
+          eyesRef.current.left.lid.scale.y = 1;
+          eyesRef.current.right.lid.scale.y = 1;
+        }
         
         // Reset blinking after a short delay
         setTimeout(() => {
           setIsBlinking(false);
-          console.log("Blink complete, scheduling next");
+          
+          // Directly reset eyelids
+          if (eyesRef.current.left.lid && eyesRef.current.right.lid &&
+              currentExpression !== EXPRESSIONS.SLEEPING) {
+            eyesRef.current.left.lid.scale.y = 0;
+            eyesRef.current.right.lid.scale.y = 0;
+          }
+          
           scheduleBlinking();
         }, 200);
       } else {
@@ -945,25 +916,35 @@ let blinkActive = false;
           voices = window.speechSynthesis.getVoices();
           console.log("Voices loaded:", voices.length);
           
-          // Test speech synthesis
-          const testUtterance = new SpeechSynthesisUtterance("Speech system initialized.");
-          testUtterance.onstart = () => console.log("Test speech started");
-          testUtterance.onend = () => console.log("Test speech ended");
-          testUtterance.onerror = (e) => console.error("Test speech error:", e);
+          // Find and use a good voice (preferring Google or female voices)
+          const goodVoice = voices.find(v => 
+            v.name.includes('Google') && v.name.includes('Female')
+          ) || voices.find(v => v.name.includes('Female')) || voices[0];
           
-          if (voices.length > 0) {
-            testUtterance.voice = voices[0];
+          if (goodVoice) {
+            console.log("Using voice:", goodVoice.name);
+            speechSynthesisRef.current = { 
+              speechSynthesis: window.speechSynthesis,
+              preferredVoice: goodVoice
+            };
           }
-          
-          // Uncomment to test - this would speak on initialization
-          // window.speechSynthesis.speak(testUtterance);
         };
       } else {
         console.log("Voices already loaded:", voices.length);
+        
+        // Find a good voice
+        const preferredVoice = voices.find(voice => 
+          voice.name.includes('Google') && voice.name.includes('Female')
+        ) || voices.find(voice => voice.name.includes('Female')) || voices[0];
+        
+        if (preferredVoice) {
+          console.log("Using voice:", preferredVoice.name);
+          speechSynthesisRef.current = { 
+            speechSynthesis: window.speechSynthesis,
+            preferredVoice: preferredVoice
+          };
+        }
       }
-      
-      // Set reference
-      speechSynthesisRef.current = window.speechSynthesis;
       
       // Set up audio context for visualization
       try {
@@ -980,7 +961,7 @@ let blinkActive = false;
     }
   };
   
-  // Initialize speech recognition
+  // Initialize speech recognition with silence detection
   const initSpeechRecognition = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
@@ -990,24 +971,58 @@ let blinkActive = false;
         recognitionInstance.continuous = true;
         recognitionInstance.interimResults = true;
         recognitionInstance.lang = 'en-US';
+        
+        // Storage for speech processing
+        const speechState = {
+          finalTranscript: '',
+          interimTranscript: '',
+          lastSpeechTime: 0,
+          silenceTimer: null,
+          processingComplete: false
+        };
 
         recognitionInstance.onresult = (event) => {
-          let interimTranscript = '';
-          let finalTranscript = '';
-
+          // Clear any pending silence timer
+          if (speechState.silenceTimer) {
+            clearTimeout(speechState.silenceTimer);
+            speechState.silenceTimer = null;
+          }
+          
+          // Update the last speech time
+          speechState.lastSpeechTime = Date.now();
+          
+          // Reset the processing flag since we're still getting results
+          speechState.processingComplete = false;
+          
+          // Process transcript
+          speechState.interimTranscript = '';
+          
           for (let i = event.resultIndex; i < event.results.length; i++) {
             const transcript = event.results[i][0].transcript;
+            
             if (event.results[i].isFinal) {
-              finalTranscript += transcript;
+              speechState.finalTranscript += transcript;
             } else {
-              interimTranscript += transcript;
+              speechState.interimTranscript += transcript;
             }
           }
-
-          if (finalTranscript) {
-            setMessageInput(finalTranscript);
-            handleSendMessage(finalTranscript);
-          }
+          
+          // Update the input with combined transcript
+          const displayTranscript = speechState.finalTranscript + speechState.interimTranscript;
+          setMessageInput(displayTranscript);
+          
+          // Set a silence timer to detect when user has stopped talking
+          speechState.silenceTimer = setTimeout(() => {
+            // If we have speech and 1.5 seconds of silence has passed, submit it
+            if ((speechState.finalTranscript || speechState.interimTranscript) && !speechState.processingComplete) {
+              speechState.processingComplete = true;
+              handleSendMessage(speechState.finalTranscript || speechState.interimTranscript);
+              
+              // Reset transcripts
+              speechState.finalTranscript = '';
+              speechState.interimTranscript = '';
+            }
+          }, 1500); // Wait 1.5 seconds of silence before submitting
         };
 
         recognitionInstance.onerror = (event) => {
@@ -1016,6 +1031,17 @@ let blinkActive = false;
         };
 
         recognitionInstance.onend = () => {
+          // Check if we have unsubmitted speech when recognition ends
+          if ((speechState.finalTranscript || speechState.interimTranscript) && !speechState.processingComplete) {
+            speechState.processingComplete = true;
+            handleSendMessage(speechState.finalTranscript || speechState.interimTranscript);
+            
+            // Reset transcripts
+            speechState.finalTranscript = '';
+            speechState.interimTranscript = '';
+          }
+          
+          // Restart recognition if still supposed to be listening
           if (isListening) {
             try {
               recognitionInstance.start();
@@ -1034,30 +1060,58 @@ let blinkActive = false;
     }
   };
   
-  // Toggle speech recognition
+  // Toggle speech recognition with improved feedback
   const toggleSpeechRecognition = () => {
     if (!recognition) return;
     
     if (isListening) {
+      // Stop listening
       recognition.stop();
       setIsListening(false);
+      setCurrentExpression(EXPRESSIONS.NEUTRAL);
     } else {
+      // Start listening with visual indication
       try {
         recognition.start();
         setIsListening(true);
         
-        // Change expression to show it's listening
+        // Sequence of expressions to show it's listening
         setCurrentExpression(EXPRESSIONS.SURPRISED);
+        
         setTimeout(() => {
-          setCurrentExpression(EXPRESSIONS.NEUTRAL);
-        }, 1000);
+          if (isListening) {
+            setCurrentExpression(EXPRESSIONS.HAPPY);
+            
+            // After a moment, show periodic "thinking" expressions while listening
+            const listeningAnimation = setInterval(() => {
+              if (isListening) {
+                // Brief "thinking" expression to show active listening
+                setCurrentExpression(EXPRESSIONS.THINKING);
+                setTimeout(() => {
+                  if (isListening) {
+                    setCurrentExpression(EXPRESSIONS.NEUTRAL);
+                  }
+                }, 500);
+              } else {
+                clearInterval(listeningAnimation);
+              }
+            }, 5000);
+            
+            // Clean up interval when listening stops
+            const originalStop = recognition.stop;
+            recognition.stop = function() {
+              clearInterval(listeningAnimation);
+              originalStop.apply(this, arguments);
+            };
+          }
+        }, 800);
       } catch (error) {
         console.error('Error starting speech recognition:', error);
       }
     }
   };
   
-  // Toggle camera tracking
+  // Toggle camera tracking with improved face tracking
   const toggleCamera = async () => {
     if (isCameraActive) {
       // Stop camera
@@ -1067,39 +1121,35 @@ let blinkActive = false;
         videoRef.current.srcObject = null;
       }
       setIsCameraActive(false);
+      
+      // Clear any face tracking intervals
+      if (faceTrackingRef.current) {
+        clearInterval(faceTrackingRef.current);
+        faceTrackingRef.current = null;
+      }
       return;
     }
     
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: "user",
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        } 
+      });
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        await videoRef.current.play();
         setIsCameraActive(true);
         
-        // In a real implementation, you would use face-api.js here
-        // For this example, we'll use a simple placeholder that simulates face tracking
-        const faceTrackingSimulator = setInterval(() => {
-          if (videoRef.current && isCameraActive) {
-            // Simulate face tracking with some realism
-            // Movement is based on a combination of random and sinusoidal patterns
-            const time = Date.now() / 1000;
-            const baseX = Math.sin(time * 0.3) * 0.7;
-            const baseY = Math.cos(time * 0.2) * 0.4;
-            
-            // Add small random component to make it look more natural
-            const randomX = (Math.random() * 2 - 1) * 0.1;
-            const randomY = (Math.random() * 2 - 1) * 0.1;
-            
-            setLookTarget({ 
-              x: baseX + randomX, 
-              y: baseY + randomY
-            });
-          }
-        }, 100);
+        // React to the camera being enabled with a surprised expression
+        setCurrentExpression(EXPRESSIONS.SURPRISED);
+        setTimeout(() => setCurrentExpression(EXPRESSIONS.NEUTRAL), 1500);
         
-        // Store interval ID to clear later
-        return () => clearInterval(faceTrackingSimulator);
+        // Set up face tracking
+        setupFaceTracking();
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -1107,17 +1157,167 @@ let blinkActive = false;
     }
   };
   
-  // Speak text using Web Speech API
+  // Setup face tracking with the camera
+  const setupFaceTracking = () => {
+    if (!videoRef.current) return;
+    
+    // Set up canvas for processing video frames
+    canvasContext.current = canvas.current.getContext('2d');
+    canvas.current.width = 640;
+    canvas.current.height = 480;
+    
+    // Create a simplified face detection algorithm
+    // This is a basic implementation - in a production app, you'd use a proper face detection library
+    faceTrackingRef.current = setInterval(() => {
+      if (!videoRef.current || !videoRef.current.videoWidth) return;
+      
+      try {
+        // Draw current video frame to canvas
+        canvasContext.current.drawImage(
+          videoRef.current, 
+          0, 0, 
+          canvas.current.width, 
+          canvas.current.height
+        );
+        
+        // Get image data for processing
+        const imageData = canvasContext.current.getImageData(
+          0, 0, 
+          canvas.current.width, 
+          canvas.current.height
+        );
+        
+        // Simplified face detection based on skin color detection
+        // This is not robust but provides a simple demonstration
+        const facePosition = detectFacePosition(imageData);
+        
+        if (facePosition.detected) {
+          // Smoothly update look target based on face position
+          const normalizedX = (facePosition.x / canvas.current.width) * 2 - 1;
+          const normalizedY = -((facePosition.y / canvas.current.height) * 2 - 1);
+          
+          // Limit the range of movement
+          const limitedX = Math.max(-1, Math.min(1, normalizedX));
+          const limitedY = Math.max(-1, Math.min(1, normalizedY));
+          
+          // Update the look target with some smoothing
+          setLookTarget(prev => ({
+            x: prev.x * 0.8 + limitedX * 0.2,
+            y: prev.y * 0.8 + limitedY * 0.2
+          }));
+          
+          // React to face movement
+          reactToFacePosition(facePosition);
+        }
+      } catch (err) {
+        console.error('Error processing video frame:', err);
+      }
+    }, 100);
+  };
+  
+  // Basic face detection function using skin tone detection
+  const detectFacePosition = (imageData) => {
+    const { data, width, height } = imageData;
+    
+    // Areas to sample from the image (center, slightly to the sides and top)
+    const samplingAreas = [
+      { x: width * 0.5, y: height * 0.4, w: width * 0.2, h: height * 0.2 },  // center top
+      { x: width * 0.3, y: height * 0.5, w: width * 0.2, h: height * 0.2 },  // left
+      { x: width * 0.7, y: height * 0.5, w: width * 0.2, h: height * 0.2 }   // right
+    ];
+    
+    let totalX = 0;
+    let totalY = 0;
+    let skinPixelCount = 0;
+    
+    // Check each sampling area for skin-colored pixels
+    for (const area of samplingAreas) {
+      const { x, y, w, h } = area;
+      
+      // For each pixel in the sampling area
+      for (let yPos = y; yPos < y + h; yPos += 5) {  // Sample every 5th pixel for performance
+        for (let xPos = x; xPos < x + w; xPos += 5) {
+          const i = ((Math.floor(yPos) * width) + Math.floor(xPos)) * 4;
+          
+          // Simple skin detection (not very robust but works for demo)
+          const r = data[i];
+          const g = data[i+1];
+          const b = data[i+2];
+          
+          // Check if color is in skin tone range (simplified)
+          if (r > 60 && g > 40 && b > 20 && 
+              r > g && r > b && 
+              r - g > 15 && 
+              r - b > 15) {
+            totalX += xPos;
+            totalY += yPos;
+            skinPixelCount++;
+          }
+        }
+      }
+    }
+    
+    // If we found enough skin pixels, assume we detected a face
+    if (skinPixelCount > 20) {
+      const avgX = totalX / skinPixelCount;
+      const avgY = totalY / skinPixelCount;
+      
+      // Store last position for smoothing
+      facePositionRef.current = {
+        x: avgX,
+        y: avgY,
+        detected: true
+      };
+      
+      return facePositionRef.current;
+    }
+    
+    // If we're here, we didn't detect enough skin pixels
+    return { 
+      x: facePositionRef.current.x, 
+      y: facePositionRef.current.y, 
+      detected: facePositionRef.current.detected 
+    };
+  };
+  
+  // React to face position changes with expressions
+  const reactToFacePosition = (position) => {
+    // Only react occasionally to avoid constant changes
+    if (Math.random() > 0.95) {
+      // Get previous position
+      const prev = facePositionRef.current;
+      
+      // Calculate how much the face moved
+      const moveX = Math.abs(position.x - prev.x);
+      const moveY = Math.abs(position.y - prev.y);
+      const movement = moveX + moveY;
+      
+      // React based on movement
+      if (movement > 50) {
+        // Substantial movement - show surprise
+        setCurrentExpression(EXPRESSIONS.SURPRISED);
+        setTimeout(() => setCurrentExpression(EXPRESSIONS.NEUTRAL), 800);
+      } else if (movement > 20 && Math.random() > 0.5) {
+        // Some movement - occasional reaction
+        if (Math.random() > 0.7) {
+          // Quick wink
+          setCurrentExpression(EXPRESSIONS.WINKING);
+          setTimeout(() => setCurrentExpression(EXPRESSIONS.NEUTRAL), 300);
+        } else {
+          // Brief happy expression
+          setCurrentExpression(EXPRESSIONS.HAPPY);
+          setTimeout(() => setCurrentExpression(EXPRESSIONS.NEUTRAL), 500);
+        }
+      }
+    }
+  };
+  
+  // Speak text using Web Speech API with improved mouth animation
   const speakText = (text) => {
     console.log("speakText called with:", text);
     
-    if (!window.speechSynthesis) {
-      console.error("Speech synthesis not available in this browser");
-      return;
-    }
-    
-    if (!isSpeechEnabled) {
-      console.log("Speech is disabled, not speaking");
+    if (!window.speechSynthesis || !isSpeechEnabled) {
+      console.log("Speech is disabled or not available");
       return;
     }
     
@@ -1127,77 +1327,78 @@ let blinkActive = false;
     // Create utterance
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Set voice
-    let voices = window.speechSynthesis.getVoices();
-    if (voices.length === 0) {
-      // Sometimes voices aren't loaded immediately
-      console.log("No voices available yet, waiting...");
-      window.speechSynthesis.onvoiceschanged = () => {
-        voices = window.speechSynthesis.getVoices();
-        setVoiceAndSpeak();
-      };
-    } else {
-      setVoiceAndSpeak();
+    // Apply settings
+    utterance.rate = settingsValues.voiceRate;
+    utterance.pitch = settingsValues.voicePitch;
+    
+    // Use preferred voice if available
+    if (speechSynthesisRef.current?.preferredVoice) {
+      utterance.voice = speechSynthesisRef.current.preferredVoice;
     }
     
-    function setVoiceAndSpeak() {
-      // Try to find a good voice - prefer Google female voices
-      const preferredVoice = voices.find(voice => 
-        voice.name.includes('Google') && voice.name.includes('Female')
-      ) || voices.find(voice => voice.name.includes('Female')) || voices[0];
+    // Create more noticeable mouth movement
+    utterance.onstart = () => {
+      console.log("Speech started");
+      setIsSpeaking(true);
+      setCurrentExpression(EXPRESSIONS.NEUTRAL); // Clear any previous expression
       
-      if (preferredVoice) {
-        console.log("Using voice:", preferredVoice.name);
-        utterance.voice = preferredVoice;
-      } else {
-        console.log("No specific voice found, using default");
+      // Generate dynamic voice animation
+      const mouthAnimInterval = setInterval(() => {
+        if (!isSpeaking) {
+          clearInterval(mouthAnimInterval);
+          return;
+        }
+        
+        // Create realistic patterns based on words and syllables
+        const now = Date.now();
+        // Every ~250ms, change mouth shape to simulate syllables
+        if (now % 250 < 100) {
+          updateMouthCurve(0, -3, 2, 0.8, 0, Math.PI * 2, false);
+        } else {
+          updateMouthCurve(0, -3, 2, 0.3, 0, Math.PI, false);
+        }
+        
+        // Occasionally add more expression
+        if (now % 2000 < 100) {
+          // Eyebrow movement
+          if (eyebrowsRef.current.left && eyebrowsRef.current.right) {
+            eyebrowsRef.current.left.rotation.z = -0.1;
+            eyebrowsRef.current.right.rotation.z = 0.1;
+          }
+        } else if (now % 2000 > 1900) {
+          // Reset eyebrows
+          if (eyebrowsRef.current.left && eyebrowsRef.current.right) {
+            eyebrowsRef.current.left.rotation.z = 0;
+            eyebrowsRef.current.right.rotation.z = 0;
+          }
+        }
+      }, 50);
+    };
+    
+    utterance.onend = () => {
+      console.log("Speech ended");
+      setIsSpeaking(false);
+      
+      // Reset mouth to neutral position
+      if (mouthRef.current) {
+        updateMouthCurve(0, -3, 2, 0.3, 0, Math.PI);
       }
       
-      // Apply settings
-      utterance.rate = settingsValues.voiceRate;
-      utterance.pitch = settingsValues.voicePitch;
-      
-      // Set up events
-      utterance.onstart = () => {
-        console.log("Speech started");
-        setIsSpeaking(true);
-        
-        // Generate fake audio visualization data
-        const visualizerInterval = setInterval(() => {
-          if (isSpeaking) {
-            // Create dynamic data based on speaking
-            const newData = Array(32).fill(0).map(() => {
-              // Create a wave pattern that changes over time
-              const time = Date.now() / 1000;
-              const base = Math.sin(time * 10) * 50 + 50; // 0-100 range
-              return Math.max(5, Math.min(100, base + (Math.random() * 30)));
-            });
-            setVisualizerData(newData);
-          } else {
-            clearInterval(visualizerInterval);
-          }
-        }, 50);
-      };
-      
-      utterance.onend = () => {
-        console.log("Speech ended");
-        setIsSpeaking(false);
-        
-        // Reset mouth
-        if (mouthRef.current) {
-          updateMouthCurve(0, -3, 2, 0.3, 0, Math.PI);
-        }
-      };
-      
-      utterance.onerror = (event) => {
-        console.error("Speech error:", event);
-        setIsSpeaking(false);
-      };
-      
-      // Start speaking
-      console.log("Starting speech...");
-      window.speechSynthesis.speak(utterance);
-    }
+      // Reset eyebrows
+      if (eyebrowsRef.current.left && eyebrowsRef.current.right) {
+        eyebrowsRef.current.left.rotation.z = 0;
+        eyebrowsRef.current.right.rotation.z = 0;
+      }
+    };
+    
+    utterance.onerror = (event) => {
+      console.error("Speech error:", event);
+      setIsSpeaking(false);
+    };
+    
+    // Start speaking
+    console.log("Starting speech...");
+    window.speechSynthesis.speak(utterance);
   };
   
   // Handle mouse movement to control eye direction
@@ -1239,7 +1440,6 @@ let blinkActive = false;
       setMessageInput('');
     }
   };
-  
   
   const processBotResponse = async (userMessage) => {
     try {
@@ -1330,7 +1530,7 @@ let blinkActive = false;
         // Return to neutral after a delay
         setTimeout(() => {
           setCurrentExpression(EXPRESSIONS.NEUTRAL);
-        }, 5000); // Increased from 3000 to 5000 to make it more noticeable
+        }, 5000);
       }, 1000);
     } catch (error) {
       console.error('Error processing bot response:', error);

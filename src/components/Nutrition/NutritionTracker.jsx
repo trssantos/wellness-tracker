@@ -1,5 +1,6 @@
+// src/components/Nutrition/NutritionTracker.jsx
 import React, { useState, useEffect } from 'react';
-import { Apple, Search, PlusCircle, Calendar, ChevronLeft, ChevronRight, X, BarChart2, ArrowRight, Droplets } from 'lucide-react';
+import { Apple, Search, PlusCircle, Calendar, ChevronLeft, ChevronRight, X, BarChart2, ArrowRight, Droplets, Brain, Utensils } from 'lucide-react';
 import { FoodLogEntry } from './FoodLogEntry';
 import { FoodSearchModal } from './FoodSearchModal';
 import { FoodEntryForm } from './FoodEntryForm';
@@ -7,6 +8,9 @@ import { WaterTracker } from './WaterTracker';
 import { MoodBasedSuggestions } from './MoodBasedSuggestions';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import NutritionStats from './NutritionStats';
+import MealPlanGenerator from './MealPlanGenerator';
+import NutritionAI from './NutritionAI';
+import MealPlanList from './MealPlanList';
 import { getStorage, setStorage } from '../../utils/storage';
 
 const NutritionTracker = () => {
@@ -19,6 +23,9 @@ const NutritionTracker = () => {
   const [deletingEntry, setDeletingEntry] = useState(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [waterIntake, setWaterIntake] = useState(0);
+  const [showMealPlanner, setShowMealPlanner] = useState(false);
+  const [showAIPrompt, setShowAIPrompt] = useState(false);
+  const [showMealPlanList, setShowMealPlanList] = useState(true); // Default to showing list
   
   // Format date as YYYY-MM-DD for storage
   const formatStorageDate = (date) => {
@@ -205,7 +212,7 @@ const NutritionTracker = () => {
   const handleAddFromSearch = (foodItem) => {
     handleAddEntry({
       name: foodItem.name,
-      category: foodItem.category,
+      categories: foodItem.category ? [foodItem.category] : [], // Updated for multiple categories
       mealType: 'snack',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       emoji: foodItem.emoji,
@@ -276,6 +283,72 @@ const NutritionTracker = () => {
     setShowAnalytics(!showAnalytics);
   };
 
+  // Handle open meal planner
+  const handleOpenMealPlanner = () => {
+    setShowMealPlanner(true);
+    setShowMealPlanList(true); // Start by showing the list of meal plans
+    
+    // Use setTimeout to ensure the modal element exists before trying to open it
+    setTimeout(() => {
+      const modal = document.getElementById('meal-planner-modal');
+      if (modal) {
+        modal.showModal();
+      }
+    }, 50);
+  };
+
+  const handleViewMealPlan = (planId) => {
+    const storage = getStorage();
+    if (storage.mealPlans) {
+      const plan = storage.mealPlans.find(p => p.id === planId);
+      if (plan) {
+        // You could either:
+        // 1. Set some state to show the plan details
+        // 2. Or use the existing meal plan generator with this plan loaded
+        console.log("Viewing meal plan:", plan);
+      }
+    }
+  };
+
+  // Handle open AI prompt
+  const handleOpenAIPrompt = () => {
+    setShowAIPrompt(true);
+    
+    // Use setTimeout to ensure the modal element exists before trying to open it
+    setTimeout(() => {
+      const modal = document.getElementById('nutrition-ai-modal');
+      if (modal) {
+        modal.showModal();
+      }
+    }, 50);
+  };
+
+  // Handle save meal plan
+  const handleSaveMealPlan = (mealPlan) => {
+    const storage = getStorage();
+    if (!storage.mealPlans) {
+      storage.mealPlans = [];
+    }
+    
+    // Add the new meal plan with ID and date
+    const newMealPlan = {
+      id: `mealplan-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      ...mealPlan
+    };
+    
+    storage.mealPlans.push(newMealPlan);
+    setStorage(storage);
+    
+    // Show success message and return to the list view
+    setShowMealPlanner(false);
+    setShowMealPlanList(true);
+    alert("Meal plan saved successfully!"); // Replace with a nicer notification if you have one
+    
+    const modal = document.getElementById('meal-planner-modal');
+    if (modal) modal.close();
+  };
+
   // Get user's current mood and energy level for the day
   const getUserMoodEnergyForDay = () => {
     const storage = getStorage();
@@ -326,38 +399,36 @@ const NutritionTracker = () => {
             Nutrition Tracker
           </h2>
           
-          {/* Mobile-only Date Display */}
-          <div className="flex sm:hidden w-full justify-between items-center mb-2">
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={handlePreviousDay}
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                <ChevronLeft size={18} className="text-slate-600 dark:text-slate-400" />
-              </button>
-              
-              <span className="text-slate-700 dark:text-slate-300 font-medium">
-                {formatMobileDate(currentDate)}
-              </span>
-              
-              <button 
-                onClick={handleNextDay}
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                <ChevronRight size={18} className="text-slate-600 dark:text-slate-400" />
-              </button>
-            </div>
+          <div className="flex gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            <button
+              onClick={toggleAnalytics}
+              className="p-2 sm:px-3 sm:py-1.5 text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg flex items-center gap-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+            >
+              <BarChart2 size={16} />
+              <span className="hidden sm:inline">Analytics</span>
+            </button>
             
             <button
-              onClick={handleToday}
-              className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded px-2 py-1"
+              onClick={handleOpenMealPlanner}
+              className="p-2 sm:px-3 sm:py-1.5 text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg flex items-center gap-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
             >
-              Today
+              <Utensils size={16} />
+              <span className="hidden sm:inline">Meal Plans</span>
+            </button>
+            
+            <button
+              onClick={handleOpenAIPrompt}
+              className="p-2 sm:px-3 sm:py-1.5 text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg flex items-center gap-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+            >
+              <Brain size={16} />
+              <span className="hidden sm:inline">Ask AI</span>
             </button>
           </div>
-          
-          {/* Desktop-only Date Navigation */}
-          <div className="hidden sm:flex items-center gap-2">
+        </div>
+        
+        {/* Mobile-only Date Display */}
+        <div className="flex sm:hidden w-full justify-between items-center mb-2">
+          <div className="flex items-center gap-2">
             <button 
               onClick={handlePreviousDay}
               className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
@@ -365,12 +436,9 @@ const NutritionTracker = () => {
               <ChevronLeft size={18} className="text-slate-600 dark:text-slate-400" />
             </button>
             
-            <button 
-              onClick={handleToday}
-              className="px-2 py-1 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-            >
-              Today
-            </button>
+            <span className="text-slate-700 dark:text-slate-300 font-medium">
+              {formatMobileDate(currentDate)}
+            </span>
             
             <button 
               onClick={handleNextDay}
@@ -379,6 +447,37 @@ const NutritionTracker = () => {
               <ChevronRight size={18} className="text-slate-600 dark:text-slate-400" />
             </button>
           </div>
+          
+          <button
+            onClick={handleToday}
+            className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded px-2 py-1"
+          >
+            Today
+          </button>
+        </div>
+        
+        {/* Desktop-only Date Navigation */}
+        <div className="hidden sm:flex items-center gap-2">
+          <button 
+            onClick={handlePreviousDay}
+            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          >
+            <ChevronLeft size={18} className="text-slate-600 dark:text-slate-400" />
+          </button>
+          
+          <button 
+            onClick={handleToday}
+            className="px-2 py-1 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          >
+            Today
+          </button>
+          
+          <button 
+            onClick={handleNextDay}
+            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          >
+            <ChevronRight size={18} className="text-slate-600 dark:text-slate-400" />
+          </button>
         </div>
         
         {/* Desktop-only Full Date Display */}
@@ -391,14 +490,6 @@ const NutritionTracker = () => {
           </div>
           
           <div className="flex gap-2">
-            <button
-              onClick={toggleAnalytics}
-              className="px-3 py-1.5 text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg flex items-center gap-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-            >
-              <BarChart2 size={16} />
-              <span className="hidden sm:inline">Analytics</span>
-            </button>
-            
             <button
               onClick={handleOpenSearchModal}
               className="px-3 py-1.5 text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg flex items-center gap-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
@@ -419,14 +510,6 @@ const NutritionTracker = () => {
         
         {/* Mobile-only Action Buttons */}
         <div className="flex sm:hidden justify-between mb-4">
-          <button
-            onClick={toggleAnalytics}
-            className="p-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-            aria-label="Analytics"
-          >
-            <BarChart2 size={20} />
-          </button>
-          
           <button
             onClick={handleOpenSearchModal}
             className="p-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
@@ -543,6 +626,52 @@ const NutritionTracker = () => {
           onCancel={handleCancelDelete}
         />
       </dialog>
+      
+      {/* Meal Planner Modal */}
+{showMealPlanner && (
+  <dialog
+    id="meal-planner-modal"
+    className="modal-base"
+  >
+    <div className="modal-content max-w-2xl w-full bg-white dark:bg-slate-800" onClick={e => e.stopPropagation()}>
+      {showMealPlanList ? (
+        <MealPlanList 
+          onClose={() => {
+            document.getElementById('meal-planner-modal').close();
+            setShowMealPlanner(false);
+          }}
+          onCreateNew={() => setShowMealPlanList(false)}
+          onViewPlan={(planId) => handleViewMealPlan(planId)}
+        />
+      ) : (
+        <MealPlanGenerator
+          onClose={() => {
+            document.getElementById('meal-planner-modal').close();
+            setShowMealPlanner(false);
+          }}
+          onSaveMealPlan={handleSaveMealPlan}
+        />
+      )}
+    </div>
+  </dialog>
+)}
+
+{/* AI Prompt Modal */}
+{showAIPrompt && (
+  <dialog
+    id="nutrition-ai-modal"
+    className="modal-base"
+  >
+    <div className="modal-content max-w-2xl w-full bg-white dark:bg-slate-800" onClick={e => e.stopPropagation()}>
+      <NutritionAI
+        onClose={() => {
+          document.getElementById('nutrition-ai-modal').close();
+          setShowAIPrompt(false);
+        }}
+      />
+    </div>
+  </dialog>
+)}
     </div>
   );
 };

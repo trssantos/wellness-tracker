@@ -5,7 +5,7 @@ import { uploadImage } from '../../utils/imageUploadService';
 export const FoodEntryForm = ({ entry, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: '',
-    category: '',
+    categories: [], // Changed from single category to array
     mealType: 'snack',
     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     emoji: '🍽️',
@@ -13,6 +13,20 @@ export const FoodEntryForm = ({ entry, onClose, onSave }) => {
     tags: [],
     imageUrl: ''
   });
+
+  // Add a mapping of food categories to icons
+const categoryIcons = {
+  'Fruits': '🍎',
+  'Vegetables': '🥦',
+  'Proteins': '🥩',
+  'Grains': '🍞',
+  'Dairy': '🥛',
+  'Sweets': '🍫',
+  'Beverages': '☕',
+  'Snacks': '🥨',
+  'Fast Food': '🍔',
+  'Home Cooked': '🍲'
+};
   
   const [newTag, setNewTag] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -31,6 +45,19 @@ export const FoodEntryForm = ({ entry, onClose, onSave }) => {
   
   // Meal types
   const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
+
+  // Add a function to handle category toggling
+const handleCategoryToggle = (category) => {
+  setFormData(prev => {
+    const categories = [...prev.categories];
+    
+    if (categories.includes(category)) {
+      return { ...prev, categories: categories.filter(c => c !== category) };
+    } else {
+      return { ...prev, categories: [...categories, category] };
+    }
+  });
+};
   
   // Initialize form when editing an entry
   useEffect(() => {
@@ -402,70 +429,78 @@ export const FoodEntryForm = ({ entry, onClose, onSave }) => {
             </div>
           </div>
           
-          {/* Food Category */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Category
-            </label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="input-field"
-            >
-              <option value="">Select a category</option>
-              {foodCategories.map(category => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Food Categories */}
+<div>
+  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+    Categories (select all that apply)
+  </label>
+  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+    {Object.entries(categoryIcons).map(([category, icon]) => (
+      <button
+        key={category}
+        type="button"
+        onClick={() => handleCategoryToggle(category)}
+        className={`flex flex-col items-center p-2 rounded-lg border ${
+          formData.categories.includes(category)
+            ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700'
+            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+        }`}
+      >
+        <span className="text-xl mb-1">{icon}</span>
+        <span className="block text-sm font-medium text-slate-700 dark:text-slate-300 text-center leading-tight">{category}</span>
+      </button>
+    ))}
+  </div>
+</div>
+
           
           {/* Tags */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-              <Tag size={16} />
-              Tags
-            </label>
-            <div className="flex items-center mb-2">
-              <input
-                type="text"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                className="input-field flex-1"
-                placeholder="Add tags (e.g., organic, homemade)"
-              />
-              <button
-                type="button"
-                onClick={handleAddTag}
-                className="ml-2 p-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-700 dark:text-slate-300 transition-colors"
-              >
-                <PlusCircle size={20} />
-              </button>
-            </div>
-            
-            {formData.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {formData.tags.map((tag, index) => (
-                  <div 
-                    key={index} 
-                    className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-lg text-sm flex items-center gap-1"
-                  >
-                    <span>{tag}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(tag)}
-                      className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+    <Tag size={16} />
+    Tags
+  </label>
+  <div className="flex items-center mb-2">
+    <input
+      type="text"
+      value={newTag}
+      onChange={(e) => setNewTag(e.target.value)}
+      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+      className="input-field flex-1"
+      placeholder="Add tags (e.g., organic, homemade)"
+    />
+    <button
+      type="button"
+      onClick={handleAddTag}
+      className="ml-2 p-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-700 dark:text-slate-300 transition-colors"
+    >
+      <PlusCircle size={20} />
+    </button>
+  </div>
+  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+    Tags help track attributes like "organic", "homemade", "spicy", "gluten-free" or preparation methods.
+  </p>
+  
+  {formData.tags.length > 0 && (
+    <div className="flex flex-wrap gap-2 mt-2">
+      {formData.tags.map((tag, index) => (
+        <div 
+          key={index} 
+          className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-lg text-sm flex items-center gap-1"
+        >
+          <span>{tag}</span>
+          <button
+            type="button"
+            onClick={() => handleRemoveTag(tag)}
+            className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
           
           {/* Notes */}
           <div>

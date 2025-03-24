@@ -31,39 +31,41 @@ export const FoodLogEntry = ({ entry, onEdit, onDelete }) => {
   return (
     <div className="p-3 sm:p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2 max-w-[70%]">
-          <span className="text-xl">{entry.emoji || '🍽️'}</span>
-          <span className="font-medium text-slate-700 dark:text-slate-300 text-sm sm:text-base truncate">
-            {entry.name}
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-1 sm:gap-2">
-          <div className="flex items-center text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
-            <Clock size={12} className="sm:hidden mr-1" />
-            <Clock size={14} className="hidden sm:block mr-1" />
-            <span>{entry.time || '12:00'}</span>
-          </div>
-          
-          <button
-            onClick={onEdit}
-            className="p-1 sm:p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
-            aria-label="Edit"
-          >
-            <Edit2 size={14} className="sm:hidden" />
-            <Edit2 size={16} className="hidden sm:block" />
-          </button>
-          
-          <button
-            onClick={onDelete}
-            className="p-1 sm:p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
-            aria-label="Delete"
-          >
-            <Trash2 size={14} className="sm:hidden" />
-            <Trash2 size={16} className="hidden sm:block" />
-          </button>
-        </div>
-      </div>
+  <div className="flex items-center gap-2 max-w-[70%]">  {/* Added max-width */}
+    <span className="text-xl">{entry.emoji || '🍽️'}</span>
+    <span className="font-medium text-slate-700 dark:text-slate-300 text-sm sm:text-base truncate">  {/* Added truncate */}
+      {entry.name}
+    </span>
+  </div>
+  
+  {/* Made time display more compact on mobile */}
+  <div className="flex items-center gap-1 sm:gap-2">
+    <div className="flex items-center text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
+      <Clock size={12} className="sm:hidden mr-1" />
+      <Clock size={14} className="hidden sm:block mr-1" />
+      <span>{entry.time || '12:00'}</span>
+    </div>
+    
+    {/* Smaller buttons on mobile */}
+    <button
+      onClick={onEdit}
+      className="p-1 sm:p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+      aria-label="Edit"
+    >
+      <Edit2 size={14} className="sm:hidden" />
+      <Edit2 size={16} className="hidden sm:block" />
+    </button>
+    
+    <button
+      onClick={onDelete}
+      className="p-1 sm:p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+      aria-label="Delete"
+    >
+      <Trash2 size={14} className="sm:hidden" />
+      <Trash2 size={16} className="hidden sm:block" />
+    </button>
+  </div>
+</div>
       
       <div className="flex flex-wrap gap-1 sm:gap-2 mt-1 sm:mt-2">
         {entry.category && (

@@ -44,7 +44,8 @@ import DayCoach from './components/DayCoach/DayCoach';
 import { initTaskRegistry, migrateTasksToRegistry } from './utils/taskRegistry';
 import { NutritionPlaceholder } from './components/Nutrition/NutritionPlaceholder';
 import NutritionTracker from './components/Nutrition/NutritionTracker';
-import GoalsPlaceholder from './components/Goals/GoalsPlaceholder';
+import GoalsPlaceholder from './components/BucketList/GoalsPlaceholder';
+import BucketList from './components/BucketList/BucketList';
 
 
 const App = () => {
@@ -635,6 +636,10 @@ const handlePendingTasksAction = (action, tasks = []) => {
               </SectionContainer>
               <SectionContainer id="habits" isActive={activeSection === 'habits'}>
   <HabitSection />
+</SectionContainer>
+
+<SectionContainer id="bucketList" isActive={activeSection === 'bucketList'}>
+  <BucketList />
 </SectionContainer>
 
               <SectionContainer id="meditation" isActive={activeSection === 'meditation'}>

@@ -160,6 +160,7 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
     { id: 'financeShowcase', label: 'Finance - Showcase', icon: <Coins size={20} /> },
     { id: 'nutritionShowcase', label: 'Nutrition - Showcase', icon: <Apple size={20} /> },
     { id: 'goalsShowcase', label: 'Goals - Showcase', icon: <Trophy size={20} /> },
+    { id: 'bucketList', label: 'Bucket List', icon: <Trophy size={20} /> },
   ];
 
   return (

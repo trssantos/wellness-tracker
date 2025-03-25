@@ -110,41 +110,53 @@ const openImportTasksModal = () => {
         habitTasks.push(`[${habit.name}] ${step}`);
       });
       
-      // Find all categories that might contain these habit tasks
-      const categories = categories || [];
+      // Check if all tasks for this habit are completed
+      if (habitTasks.length === 0) return;
       
-      // Check if all habit tasks exist and are checked
-      const allTasksExist = habitTasks.every(task => {
-        // Find if this task exists in any category
+      // Check if all habit tasks exist in any category and are completed
+      let allTasksCompleted = true;
+      let anyTaskFound = false;
+      
+      habitTasks.forEach(habitTask => {
+        let taskFound = false;
+        let taskCompleted = false;
+        
+        // Search for this task in all categories
         for (const category of categories) {
-          if (category.items.includes(task)) {
-            const taskId = `${category.title}|${task}`;
-            return newChecked.hasOwnProperty(taskId);
-          }
-        }
-        // Also check old format for backward compatibility
-        return newChecked.hasOwnProperty(task);
-      });
-      
-      if (allTasksExist) {
-        const allTasksCompleted = habitTasks.every(task => {
-          // Check in all categories
-          for (const category of categories) {
-            if (category.items.includes(task)) {
-              const taskId = `${category.title}|${task}`;
-              if (newChecked[taskId] === true) {
-                return true;
-              }
+          if (category.items.includes(habitTask)) {
+            taskFound = true;
+            const taskId = `${category.title}|${habitTask}`;
+            
+            if (newChecked[taskId] === true) {
+              taskCompleted = true;
+              break; // Found and completed in this category
             }
           }
-          // Also check old format for backward compatibility
-          return newChecked[task] === true;
-        });
+        }
         
+        // Also check old format for backward compatibility
+        if (!taskFound && newChecked.hasOwnProperty(habitTask)) {
+          taskFound = true;
+          if (newChecked[habitTask] === true) {
+            taskCompleted = true;
+          }
+        }
+        
+        if (taskFound) {
+          anyTaskFound = true;
+          if (!taskCompleted) {
+            allTasksCompleted = false;
+          }
+        }
+      });
+      
+      // Only proceed if we found any tasks for this habit
+      if (anyTaskFound) {
         // Only update if the completion status has changed
         const currentStatus = habit.completions && habit.completions[date] === true;
         
         if (allTasksCompleted !== currentStatus) {
+          console.log(`Setting habit "${habit.name}" completion to ${allTasksCompleted}`);
           trackHabitCompletion(habit.id, date, allTasksCompleted);
           anyUpdates = true;
         }

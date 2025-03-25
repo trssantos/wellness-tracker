@@ -12,6 +12,61 @@ export const findPreviousTaskDate = (currentDate) => {
   
   console.log(`Looking for pending tasks before ${currentDate}`);
   
+  // If we already have data for this date, collect its tasks to exclude
+  const currentDayTasks = new Set();
+  const currentDayData = storage[currentDate];
+  if (currentDayData) {
+    const taskCategories = currentDayData.customTasks || currentDayData.aiTasks || currentDayData.defaultTasks;
+    if (taskCategories && Array.isArray(taskCategories)) {
+      taskCategories.forEach(category => {
+        if (category && category.items && Array.isArray(category.items)) {
+          category.items.forEach(task => {
+            currentDayTasks.add(task);
+          });
+        }
+      });
+    }
+  }
+  
+  console.log(`Current day has ${currentDayTasks.size} tasks that will be excluded from pending tasks`);
+  
+  // Helper function to check if a task was completed in a date range
+  const wasCompletedInDateRange = (taskText, startDateStr, endDateStr) => {
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+    
+    // Loop through each day in the range
+    const currentCheck = new Date(startDate);
+    currentCheck.setDate(currentCheck.getDate() + 1); // Start from the day after
+    
+    while (currentCheck <= endDate) {
+      const checkDateStr = currentCheck.toISOString().split('T')[0];
+      const dayData = storage[checkDateStr];
+      
+      // If this day has data and the task was completed, return true
+      if (dayData && dayData.checked) {
+        // Check both new category-based format and old format
+        const wasCompleted = Object.entries(dayData.checked).some(([key, isChecked]) => {
+          // For category-based format, extract just the task text
+          const taskTextPart = key.includes('|') ? key.split('|')[1] : key;
+          return isChecked === true && taskTextPart === taskText;
+        });
+        
+        if (wasCompleted) return true;
+      }
+      
+      // Move to next day
+      currentCheck.setDate(currentCheck.getDate() + 1);
+    }
+    
+    return false;
+  };
+  
+  // Helper function to check if a task is from a habit
+  const isHabitTask = (taskText) => {
+    return taskText.startsWith('[') && taskText.includes(']');
+  };
+  
   // Look back up to 7 days to find previous tasks
   for (let i = 1; i <= 7; i++) {
     const prevDate = new Date(currentDateObj);
@@ -23,18 +78,28 @@ export const findPreviousTaskDate = (currentDate) => {
     
     if (prevDayData) {
       console.log('Examining data for', prevDateStr);
-      if (prevDayData.checked) {
-        console.log('Has checked items:', Object.keys(prevDayData.checked).length);
-      }
-      console.log('Has defaultTasks:', !!prevDayData.defaultTasks);
-      console.log('Has aiTasks:', !!prevDayData.aiTasks);
-      console.log('Has customTasks:', !!prevDayData.customTasks);
       
-      const hasPending = hasPendingTasks(prevDayData);
+      // Get all task items from various possible task lists
+      const taskCategories = prevDayData.customTasks || prevDayData.aiTasks || prevDayData.defaultTasks;
+      if (!taskCategories || !Array.isArray(taskCategories)) continue;
       
-      if (hasPending) {
-        console.log(`Found pending tasks for date ${prevDateStr}`);
-        return prevDateStr;
+      // Check for uncompleted tasks that aren't already in current day and weren't completed later
+      for (const category of taskCategories) {
+        for (const task of category.items) {
+          // Use both old and new category-based checked format
+          const taskId = `${category.title}|${task}`;
+          const isTaskChecked = prevDayData.checked[taskId] === true || prevDayData.checked[task] === true;
+          
+          // Skip if task is completed, is a habit task, already in current day, or completed later
+          if (!isTaskChecked && 
+              !isHabitTask(task) && 
+              !currentDayTasks.has(task) &&
+              !wasCompletedInDateRange(task, prevDateStr, currentDate)) {
+            
+            console.log(`Found pending task "${task}" from date ${prevDateStr}`);
+            return prevDateStr;
+          }
+        }
       }
     }
   }
@@ -144,27 +209,12 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
     convertingDefault = true;
     console.log('Converting explicit defaultTasks to customTasks with deferred tasks');
   } else {
-    // Check if we have old-style default tasks by comparing checked items with DEFAULT_CATEGORIES
-    const DEFAULT_CATEGORIES = require('./defaultTasks').DEFAULT_CATEGORIES;
-    const defaultTaskItems = DEFAULT_CATEGORIES.flatMap(cat => cat.items || []);
-    const checkedTasks = Object.keys(dayData.checked || {});
-    
-    // If many checked items match default tasks, this is likely a default task list
-    const matchCount = checkedTasks.filter(task => defaultTaskItems.includes(task)).length;
-    
-    if (matchCount > 5) { // Arbitrary threshold to determine if these are default tasks
-      console.log('Detected old-style default tasks with', matchCount, 'matching items');
-      taskList = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
-      taskType = 'customTasks';
-      convertingDefault = true;
-    } else {
-      // Default to creating new custom tasks with basic categories
-      taskList = [
-        { title: 'Priority', items: [] },
-        { title: 'Daily', items: [] }
-      ];
-      taskType = 'customTasks';
-    }
+    // Default to creating new custom tasks with basic categories
+    taskList = [
+      { title: 'Priority', items: [] },
+      { title: 'Daily', items: [] }
+    ];
+    taskType = 'customTasks';
   }
   
   console.log(`Using task list type: ${taskType} with ${taskList.length} categories`);
@@ -214,7 +264,6 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
   
   // Update deferral history for each task
   deferredTasks.forEach(task => {
-    
     // Update deferral history
     dayData.taskDeferHistory[task.text] = {
       count: task.deferCount,
@@ -222,23 +271,33 @@ export const importDeferredTasks = (currentDate, deferredTasks) => {
     };
   });
   
+  // Create a clean copy of the day data to ensure we preserve all properties
+  const updatedDayData = { ...dayData };
+  
   // Update the day data
-  dayData[taskType] = taskList;
-  dayData.checked = newChecked;
+  updatedDayData[taskType] = taskList;
+  updatedDayData.checked = newChecked;
   
   // Remove defaultTasks if we converted to customTasks
-  if (convertingDefault && dayData.defaultTasks) {
-    delete dayData.defaultTasks;
+  if (convertingDefault && updatedDayData.defaultTasks) {
+    delete updatedDayData.defaultTasks;
+  }
+  
+  // IMPORTANT FIX: Ensure templateTasks tracking is preserved
+  // This is what was causing template tasks to disappear
+  if (dayData.templateTasks && !updatedDayData.templateTasks) {
+    updatedDayData.templateTasks = dayData.templateTasks;
+    console.log('Preserved template tasks tracking during deferred task import');
   }
   
   // Save to storage
-  storage[currentDate] = dayData;
+  storage[currentDate] = updatedDayData;
   setStorage(storage);
   
   console.log(`Imported ${deferredTasks.length} tasks into ${currentDate}`);
   
-  return dayData;
-};
+  return updatedDayData;
+}
 
 // First, update this function to handle the object format of taskDeferHistory
 export const getProcrastinationStats = (startDate, endDate) => {

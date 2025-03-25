@@ -205,7 +205,6 @@ const preventNavigationAway = useRef(false);
 
 // 2. This helper function checks if a specific date has pending tasks
 // Similar to logic in findPreviousTaskDate but for a specific date
-// Update the hasPendingTasksOnDate function in App.jsx
 const hasPendingTasksOnDate = (dateToCheck, targetDate) => {
   const storage = getStorage();
   const dayData = storage[dateToCheck];
@@ -225,13 +224,70 @@ const hasPendingTasksOnDate = (dateToCheck, targetDate) => {
     return taskText.startsWith('[') && taskText.includes(']');
   };
   
-  // Check if any tasks on this date are uncompleted
+  // If target date is provided, get all its tasks to exclude
+  const targetDayTasks = new Set();
+  if (targetDate) {
+    const targetDayData = storage[targetDate];
+    if (targetDayData) {
+      const targetTaskCategories = targetDayData.customTasks || targetDayData.aiTasks || targetDayData.defaultTasks;
+      if (targetTaskCategories && Array.isArray(targetTaskCategories)) {
+        targetTaskCategories.forEach(category => {
+          if (category && category.items && Array.isArray(category.items)) {
+            category.items.forEach(task => {
+              targetDayTasks.add(task);
+            });
+          }
+        });
+      }
+    }
+  }
+  
+  // Helper function to check if a task was completed in a date range
+  const wasCompletedInDateRange = (taskText, startDateStr, endDateStr) => {
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+    
+    // Loop through each day in the range
+    const currentCheck = new Date(startDate);
+    currentCheck.setDate(currentCheck.getDate() + 1); // Start from the day after
+    
+    while (currentCheck <= endDate) {
+      const checkDateStr = currentCheck.toISOString().split('T')[0];
+      const checkDayData = storage[checkDateStr];
+      
+      // If this day has data and the task was completed, return true
+      if (checkDayData && checkDayData.checked) {
+        // Check both category-based format and old format
+        const wasCompleted = Object.entries(checkDayData.checked).some(([key, isChecked]) => {
+          // For category-based format, extract just the task text
+          const taskTextPart = key.includes('|') ? key.split('|')[1] : key;
+          return isChecked === true && taskTextPart === taskText;
+        });
+        
+        if (wasCompleted) return true;
+      }
+      
+      // Move to next day
+      currentCheck.setDate(currentCheck.getDate() + 1);
+    }
+    
+    return false;
+  };
+  
+  // Check if any tasks on this date are uncompleted, not in target day, not habits, not completed later
   let hasUncompletedTasks = false;
   
   for (const category of taskCategories) {
     for (const task of category.items) {
-      // If task exists in checked map, is false (uncompleted), and is not a habit task
-      if (dayData.checked[task] === false && !isHabitTask(task)) {
+      // Use both old and new category-based checked format
+      const taskId = `${category.title}|${task}`;
+      const isTaskChecked = dayData.checked[taskId] === true || dayData.checked[task] === true;
+      
+      // Skip if task is completed, is a habit task, already in target day, or completed later
+      if (!isTaskChecked && 
+          !isHabitTask(task) && 
+          !targetDayTasks.has(task) &&
+          !wasCompletedInDateRange(task, dateToCheck, targetDate || new Date().toISOString().split('T')[0])) {
         hasUncompletedTasks = true;
         break;
       }

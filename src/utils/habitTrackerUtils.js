@@ -165,9 +165,6 @@ export const trackHabitCompletion = (habitId, date, completed) => {
   // Recalculate stats
   updateHabitStats(habit);
   
-  // Save the updated habit
-  storage.habits[habitIndex] = habit;
-  
   // IMPORTANT ADDITION: Update all habit tasks in any daily task list for this date
   if (storage[date]) {
     const dayData = storage[date];
@@ -175,13 +172,36 @@ export const trackHabitCompletion = (habitId, date, completed) => {
     
     // Check if there's a checked state to update
     if (dayData.checked) {
-      // Find all tasks for this habit
-      const habitTasks = [];
-      habit.steps.forEach(step => {
-        const taskName = `[${habit.name}] ${step}`;
+      // Get all task names for this habit
+      const habitTaskNames = habit.steps.map(step => `[${habit.name}] ${step}`);
+      
+      // Find all categories (needed for new category-based format)
+      const taskCategories = dayData.customTasks || dayData.aiTasks || dayData.defaultTasks;
+      
+      if (taskCategories && Array.isArray(taskCategories)) {
+        // For each category, check if it contains any of our habit tasks
+        taskCategories.forEach(category => {
+          if (category && category.items && Array.isArray(category.items)) {
+            habitTaskNames.forEach(taskName => {
+              if (category.items.includes(taskName)) {
+                // Update using new category-based format
+                const taskId = `${category.title}|${taskName}`;
+                dayData.checked[taskId] = completed;
+                updated = true;
+                
+                // Also update old format for backward compatibility
+                if (dayData.checked.hasOwnProperty(taskName)) {
+                  dayData.checked[taskName] = completed;
+                }
+              }
+            });
+          }
+        });
+      }
+      
+      // Also check old format direct keys
+      habitTaskNames.forEach(taskName => {
         if (dayData.checked.hasOwnProperty(taskName)) {
-          habitTasks.push(taskName);
-          // Update the checked state to match the habit completion state
           dayData.checked[taskName] = completed;
           updated = true;
         }

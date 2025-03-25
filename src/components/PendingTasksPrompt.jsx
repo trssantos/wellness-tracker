@@ -35,6 +35,59 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
       return taskText.startsWith('[') && taskText.includes(']');
     };
     
+    // IMPROVEMENT: First collect all tasks from current date to exclude later
+    const currentDayData = storage[date] || {};
+    const currentDayTasks = new Set();
+    
+    // Get all tasks from the current day's tasklists
+    const currentTaskCategories = currentDayData.customTasks || currentDayData.aiTasks || currentDayData.defaultTasks;
+    if (currentTaskCategories && Array.isArray(currentTaskCategories)) {
+      currentTaskCategories.forEach(category => {
+        if (category && category.items && Array.isArray(category.items)) {
+          category.items.forEach(task => {
+            currentDayTasks.add(task);
+          });
+        }
+      });
+    }
+    
+    console.log(`Current day has ${currentDayTasks.size} tasks that will be excluded from pending tasks`);
+    
+    // Helper function to check if a task was completed in a date range
+    const wasCompletedInDateRange = (taskText, startDateStr, endDateStr) => {
+      const startDate = new Date(startDateStr);
+      const endDate = new Date(endDateStr);
+      
+      // Loop through each day in the range
+      const currentCheck = new Date(startDate);
+      currentCheck.setDate(currentCheck.getDate() + 1); // Start from the day after
+      
+      while (currentCheck <= endDate) {
+        const checkDateStr = currentCheck.toISOString().split('T')[0];
+        const dayData = storage[checkDateStr];
+        
+        // If this day has data and the task was completed, return true
+        if (dayData && dayData.checked) {
+          // Check both new category-based format and old format
+          const wasCompleted = Object.entries(dayData.checked).some(([key, isChecked]) => {
+            // For category-based format, extract just the task text
+            const taskTextPart = key.includes('|') ? key.split('|')[1] : key;
+            return isChecked === true && taskTextPart === taskText;
+          });
+          
+          if (wasCompleted) {
+            console.log(`Task "${taskText}" was completed on ${checkDateStr}`);
+            return true;
+          }
+        }
+        
+        // Move to next day
+        currentCheck.setDate(currentCheck.getDate() + 1);
+      }
+      
+      return false;
+    };
+    
     // Check each of the past 7 days
     for (let i = 1; i <= 7; i++) {
       const pastDate = new Date(currentDate);
@@ -66,7 +119,19 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
           // 1. Task is completed
           // 2. Task is a habit task 
           // 3. We've already processed this exact task text (duplicate)
-          if (dayData.checked[task] === false && !isHabitTask(task) && !processedTaskTexts.has(task)) {
+          // 4. Task is already in the current day's tasks
+          // 5. Task was completed in a later date
+          
+          // Use both old and new category-based checked format
+          const taskId = `${category.title}|${task}`;
+          const isTaskChecked = dayData.checked[taskId] === true || dayData.checked[task] === true;
+          
+          if (!isTaskChecked && 
+              !isHabitTask(task) && 
+              !processedTaskTexts.has(task) &&
+              !currentDayTasks.has(task) &&
+              !wasCompletedInDateRange(task, pastDateStr, date)) {
+            
             processedTaskTexts.add(task); // Mark as processed
             
             // Check if the task has a deferral history

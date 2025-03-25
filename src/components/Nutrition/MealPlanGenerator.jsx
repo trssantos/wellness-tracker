@@ -1,7 +1,7 @@
-// src/components/Nutrition/MealPlanGenerator.jsx
 import React, { useState } from 'react';
-import { ArrowLeft, PlusCircle, Check, Utensils, Brain, CalendarCheck, Info, Loader } from 'lucide-react';
+import { ArrowLeft, Brain, Save, Loader, Info, Check, Target, Flame, ChevronUp, ChevronDown } from 'lucide-react';
 import { generateContent } from '../../utils/ai-service';
+import { getStorage, setStorage } from '../../utils/storage';
 
 const MealPlanGenerator = ({ onClose, onSaveMealPlan }) => {
   const [formData, setFormData] = useState({
@@ -17,8 +17,14 @@ const MealPlanGenerator = ({ onClose, onSaveMealPlan }) => {
     preferences: '',
     excludedFoods: '',
     mealCount: '3',
+    cuisinePreference: '', // New field
+    healthConditions: '', // New field
+    dietType: 'balanced', // New field with default
+    planDuration: '7', // New field with default
+    mealPrepTime: 'moderate', // New field with default
   });
   
+  const [advancedOptions, setAdvancedOptions] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState(null);
   const [error, setError] = useState(null);
@@ -36,53 +42,81 @@ const MealPlanGenerator = ({ onClose, onSaveMealPlan }) => {
     setError(null);
     
     try {
-      // Create prompt for AI
-      const prompt = `Generate a personalized meal plan based on the following information:
+      // Create an improved AI prompt with more detailed instructions
+      const prompt = `Generate a detailed, personalized meal plan based on the following information:
       
-Weight: ${formData.weight} ${formData.weightUnit}
-Height: ${formData.height} ${formData.heightUnit}
-Age: ${formData.age}
-Gender: ${formData.gender}
-Activity Level: ${formData.activityLevel}
-Goal: ${formData.goal}
-Allergies/Intolerances: ${formData.allergies || 'None'}
-Food Preferences: ${formData.preferences || 'No specific preferences'}
-Excluded Foods: ${formData.excludedFoods || 'None'}
-Meals per Day: ${formData.mealCount}
-
-Please create a detailed 7-day meal plan with ${formData.mealCount} meals per day.
-For each meal, provide:
-1. The meal name
-2. A brief description
-3. Key nutritional benefits
-4. Main ingredients
-5. Optional: Simple preparation instructions
-
-Format the response as JSON with the following structure:
-{
-  "weekPlan": [
-    {
-      "day": "Day 1",
-      "meals": [
-        {
-          "mealType": "Breakfast",
-          "name": "Meal name",
-          "description": "Brief description",
-          "benefits": "Key nutritional benefits",
-          "ingredients": ["ingredient1", "ingredient2", "..."],
-          "instructions": "Simple preparation"
-        }
-      ]
-    }
-  ],
-  "nutritionSummary": {
-    "calories": "Approximate daily calories",
-    "protein": "Approximate daily protein",
-    "carbs": "Approximate daily carbs",
-    "fat": "Approximate daily fat"
-  },
-  "tips": ["tip1", "tip2", "..."]
-}`;
+      Basic Information:
+      - Weight: ${formData.weight} ${formData.weightUnit}
+      - Height: ${formData.height} ${formData.heightUnit}
+      - Age: ${formData.age}
+      - Gender: ${formData.gender}
+      - Activity Level: ${formData.activityLevel}
+      - Weight Goal: ${formData.goal}
+      
+      Dietary Preferences:
+      - Diet Type: ${formData.dietType}
+      - Cuisine Preference: ${formData.cuisinePreference || "No specific preference"}
+      - Allergies/Intolerances: ${formData.allergies || "None"}
+      - Food Preferences: ${formData.preferences || "No specific preferences"}
+      - Excluded Foods: ${formData.excludedFoods || "None"}
+      - Health Conditions: ${formData.healthConditions || "None"}
+      
+      Meal Plan Structure:
+      - Duration: ${formData.planDuration} days
+      - Meals per Day: ${formData.mealCount}
+      - Meal Prep Time: ${formData.mealPrepTime}
+      
+      IMPORTANT FORMATTING REQUIREMENTS:
+      1. Keep all meal names SHORT and CONCISE (under 30 characters)
+      2. For nutritional summary, provide ONLY numbers with units:
+         - calories: "1800 kcal" (just the number and unit)
+         - protein: "90g" (just the number and unit)
+         - carbs: "220g" (just the number and unit)
+         - fat: "60g" (just the number and unit)
+      
+      Please create a comprehensive ${formData.planDuration}-day meal plan that:
+      1. Reflects the user's dietary preferences and restrictions
+      2. Provides appropriate caloric intake for their goals
+      3. Includes a variety of nutrient-dense foods
+      4. Is practical to prepare given their time constraints
+      5. Includes specific nutritional benefits for each meal
+      6. Offers simple preparation instructions where appropriate
+      
+      For each day and meal, provide:
+      1. The meal type (breakfast, lunch, dinner, snack)
+      2. A short, descriptive meal name (keep it brief!)
+      3. A brief description of the meal
+      4. Specific nutritional benefits
+      5. A detailed list of ingredients
+      6. Simple preparation instructions
+      7. A list of food categories the meal belongs to (e.g., "Proteins", "Vegetables", "Whole Foods", "High Protein", etc.)
+      
+      Format the response as JSON with the following structure:
+      {
+        "weekPlan": [
+          {
+            "day": "Day 1",
+            "meals": [
+              {
+                "mealType": "Breakfast",
+                "name": "Meal name",
+                "description": "Brief description",
+                "benefits": "Key nutritional benefits",
+                "ingredients": ["ingredient1", "ingredient2", "..."],
+                "instructions": "Simple preparation",
+                "categories": ["category1", "category2", "..."]
+              }
+            ]
+          }
+        ],
+        "nutritionSummary": {
+          "calories": "1800 kcal",
+          "protein": "90g", 
+          "carbs": "220g",
+          "fat": "60g"
+        },
+        "tips": ["tip1", "tip2", "..."]
+      }`;
 
       // Call the AI service
       const response = await generateContent(prompt);
@@ -106,7 +140,27 @@ Format the response as JSON with the following structure:
   
   const handleSaveMealPlan = () => {
     if (generatedPlan) {
-      onSaveMealPlan(generatedPlan);
+      // Include user's goals and preferences in the plan for reference
+      const enhancedPlan = {
+        ...generatedPlan,
+        userPreferences: {
+          weight: formData.weight,
+          weightUnit: formData.weightUnit,
+          height: formData.height,
+          heightUnit: formData.heightUnit,
+          age: formData.age,
+          gender: formData.gender,
+          activityLevel: formData.activityLevel,
+          goal: formData.goal,
+          dietType: formData.dietType,
+          allergies: formData.allergies,
+          cuisinePreference: formData.cuisinePreference,
+          mealCount: formData.mealCount,
+          created: new Date().toISOString()
+        }
+      };
+      
+      onSaveMealPlan(enhancedPlan);
     }
   };
   
@@ -132,19 +186,19 @@ Format the response as JSON with the following structure:
               <Info size={20} className="text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0" />
               <div className="text-sm text-slate-600 dark:text-slate-300">
                 <p className="font-medium text-slate-700 dark:text-slate-200 mb-1">
-                  How it works
+                  Smart Meal Planning
                 </p>
                 <p>
-                  Our AI will generate a personalized meal plan based on your information. You can review and customize the plan before saving it.
+                  Our AI will generate a personalized meal plan based on your goals, preferences, and dietary needs. The more information you provide, the more tailored your plan will be.
                 </p>
               </div>
             </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Basic Information */}
+            {/* Basic Information Section */}
             <div>
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Basic Information</h3>
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Body Information</h3>
               
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
@@ -264,7 +318,7 @@ Format the response as JSON with the following structure:
                 
                 <div>
                   <label htmlFor="goal" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Goal
+                    Weight Goal
                   </label>
                   <select
                     id="goal"
@@ -276,40 +330,116 @@ Format the response as JSON with the following structure:
                     <option value="lose">Weight Loss</option>
                     <option value="maintain">Maintain Weight</option>
                     <option value="gain">Gain Weight/Muscle</option>
-                    <option value="energy">Increase Energy</option>
-                    <option value="health">Improve Overall Health</option>
                   </select>
                 </div>
                 
                 <div>
-                  <label htmlFor="mealCount" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Meals per Day
+                  <label htmlFor="dietType" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Diet Type
                   </label>
                   <select
-                    id="mealCount"
-                    name="mealCount"
-                    value={formData.mealCount}
+                    id="dietType"
+                    name="dietType"
+                    value={formData.dietType}
                     onChange={handleInputChange}
                     className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
                   >
-                    <option value="3">3 meals</option>
-                    <option value="4">4 meals</option>
-                    <option value="5">5 meals</option>
-                    <option value="6">6 meals</option>
+                    <option value="balanced">Balanced/Standard</option>
+                    <option value="highProtein">High Protein</option>
+                    <option value="lowCarb">Low Carb</option>
+                    <option value="keto">Ketogenic</option>
+                    <option value="paleo">Paleo</option>
+                    <option value="vegetarian">Vegetarian</option>
+                    <option value="vegan">Vegan</option>
+                    <option value="mediterranean">Mediterranean</option>
+                    <option value="dairyFree">Dairy Free</option>
+                    <option value="glutenFree">Gluten Free</option>
                   </select>
                 </div>
               </div>
             </div>
           </div>
           
-          {/* Dietary Preferences */}
+          {/* Meal Plan Structure */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Dietary Preferences</h3>
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Meal Plan Structure</h3>
             
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label htmlFor="planDuration" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Plan Duration
+                </label>
+                <select
+                  id="planDuration"
+                  name="planDuration"
+                  value={formData.planDuration}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="3">3 days</option>
+                  <option value="5">5 days</option>
+                  <option value="7">7 days</option>
+                  <option value="14">14 days</option>
+                </select>
+              </div>
+              
+              <div>
+                <label htmlFor="mealCount" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Meals per Day
+                </label>
+                <select
+                  id="mealCount"
+                  name="mealCount"
+                  value={formData.mealCount}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="3">3 meals</option>
+                  <option value="4">3 meals + 1 snack</option>
+                  <option value="5">3 meals + 2 snacks</option>
+                  <option value="6">6 small meals</option>
+                </select>
+              </div>
+              
+              <div>
+                <label htmlFor="mealPrepTime" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Meal Prep Time
+                </label>
+                <select
+                  id="mealPrepTime"
+                  name="mealPrepTime"
+                  value={formData.mealPrepTime}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="quick">Quick (under 15 min)</option>
+                  <option value="moderate">Moderate (15-30 min)</option>
+                  <option value="extended">Extended (30+ min)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          {/* Advanced Options Toggle */}
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+            <button
+              type="button"
+              onClick={() => setAdvancedOptions(!advancedOptions)}
+              className="flex items-center gap-2 text-blue-500 hover:text-blue-600"
+            >
+              {advancedOptions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              {advancedOptions ? 'Hide Advanced Options' : 'Show Advanced Options'}
+            </button>
+          </div>
+          
+          {/* Advanced Dietary Preferences - only shown when expanded */}
+          {advancedOptions && (
+            <div className="space-y-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Advanced Dietary Preferences</h3>
+              
               <div>
                 <label htmlFor="allergies" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Allergies/Intolerances
+                  Allergies & Intolerances
                 </label>
                 <input
                   type="text"
@@ -318,7 +448,22 @@ Format the response as JSON with the following structure:
                   value={formData.allergies}
                   onChange={handleInputChange}
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                  placeholder="e.g., dairy, gluten, nuts"
+                  placeholder="e.g., dairy, gluten, nuts, shellfish"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="cuisinePreference" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Cuisine Preferences
+                </label>
+                <input
+                  type="text"
+                  id="cuisinePreference"
+                  name="cuisinePreference"
+                  value={formData.cuisinePreference}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                  placeholder="e.g., Mediterranean, Asian, Mexican"
                 />
               </div>
               
@@ -333,7 +478,7 @@ Format the response as JSON with the following structure:
                   value={formData.preferences}
                   onChange={handleInputChange}
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                  placeholder="e.g., vegetarian, mediterranean, high-protein"
+                  placeholder="e.g., high-protein, low-sugar, plant-based"
                 />
               </div>
               
@@ -351,8 +496,26 @@ Format the response as JSON with the following structure:
                   placeholder="e.g., red meat, processed foods, soy"
                 />
               </div>
+              
+              <div>
+                <label htmlFor="healthConditions" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Health Conditions
+                </label>
+                <input
+                  type="text"
+                  id="healthConditions"
+                  name="healthConditions"
+                  value={formData.healthConditions}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                  placeholder="e.g., diabetes, hypertension, IBS"
+                />
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Note: Always consult with healthcare professionals for medical dietary advice.
+                </p>
+              </div>
             </div>
-          </div>
+          )}
           
           {/* Generate Button */}
           <button
@@ -370,7 +533,7 @@ Format the response as JSON with the following structure:
             ) : (
               <>
                 <Brain size={18} />
-                <span>Generate Meal Plan</span>
+                <span>Generate Personalized Meal Plan</span>
               </>
             )}
           </button>
@@ -389,10 +552,11 @@ Format the response as JSON with the following structure:
               <Check size={20} className="text-green-500 dark:text-green-400 mt-0.5 flex-shrink-0" />
               <div className="text-sm text-slate-600 dark:text-slate-300">
                 <p className="font-medium text-slate-700 dark:text-slate-200 mb-1">
-                  Your Personalized 7-Day Meal Plan
+                  Your Personalized Meal Plan Is Ready
                 </p>
                 <p>
-                  Based on your goals and preferences, we've created a custom meal plan. You can save this plan, or go back to adjust your preferences.
+                  Based on your information, we've created a custom meal plan designed to help you reach your goals. 
+                  Review the plan below before saving it.
                 </p>
               </div>
             </div>
@@ -402,13 +566,16 @@ Format the response as JSON with the following structure:
           {generatedPlan.nutritionSummary && (
             <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
               <div className="bg-red-50 dark:bg-red-900/30 p-4 border-b border-slate-200 dark:border-slate-700">
-                <h3 className="font-semibold text-slate-800 dark:text-slate-100">Nutrition Summary</h3>
+                <h3 className="font-semibold text-slate-800 dark:text-slate-100">Daily Nutrition Targets</h3>
               </div>
               <div className="p-4">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
                     <div className="text-xs text-slate-500 dark:text-slate-400">Daily Calories</div>
-                    <div className="font-semibold text-slate-800 dark:text-slate-100">{generatedPlan.nutritionSummary.calories}</div>
+                    <div className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-1">
+                      <Flame size={16} className="text-red-500 dark:text-red-400" />
+                      {generatedPlan.nutritionSummary.calories}
+                    </div>
                   </div>
                   <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
                     <div className="text-xs text-slate-500 dark:text-slate-400">Protein</div>
@@ -423,77 +590,102 @@ Format the response as JSON with the following structure:
                     <div className="font-semibold text-slate-800 dark:text-slate-100">{generatedPlan.nutritionSummary.fat}</div>
                   </div>
                 </div>
+                
+                <div className="mt-3">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Nutrition Distribution</div>
+                  <div className="flex h-2.5 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
+                    {/* Simplified macro distribution visualization */}
+                    <div className="bg-red-500 h-full" style={{ width: '25%' }}></div>
+                    <div className="bg-blue-500 h-full" style={{ width: '45%' }}></div>
+                    <div className="bg-green-500 h-full" style={{ width: '30%' }}></div>
+                  </div>
+                  <div className="flex text-xs justify-between mt-1">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-red-500 rounded-full mr-1"></div>
+                      <span className="text-slate-500 dark:text-slate-400">Protein</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-1"></div>
+                      <span className="text-slate-500 dark:text-slate-400">Carbs</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                      <span className="text-slate-500 dark:text-slate-400">Fat</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
           
-          {/* 7-Day Meal Plan */}
-          <div className="space-y-4">
-            {generatedPlan.weekPlan.map((day, dayIndex) => (
-              <div key={dayIndex} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-                <div className="bg-slate-50 dark:bg-slate-700/50 p-3 border-b border-slate-200 dark:border-slate-700">
-                  <h3 className="font-medium text-slate-800 dark:text-slate-100">{day.day}</h3>
+          {/* Sample of the meal plan */}
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+            <div className="bg-slate-50 dark:bg-slate-700/50 p-3 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="font-medium text-slate-800 dark:text-slate-100">Sample Day (Day 1)</h3>
+            </div>
+            <div className="p-4 space-y-4">
+              {generatedPlan.weekPlan[0].meals.slice(0, 3).map((meal, index) => (
+                <div key={index} className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                  <div className="flex justify-between mb-2">
+                    <h4 className="font-medium text-slate-700 dark:text-slate-300">
+                      {meal.mealType}: {meal.name}
+                    </h4>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{meal.description}</p>
+                  
+                  <div className="text-xs mb-2">
+                    <span className="text-slate-700 dark:text-slate-300 font-medium">Benefits: </span>
+                    <span className="text-slate-600 dark:text-slate-400">{meal.benefits}</span>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {meal.ingredients.slice(0, 5).map((ingredient, i) => (
+                      <span key={i} className="text-xs bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+                        {ingredient}
+                      </span>
+                    ))}
+                    {meal.ingredients.length > 5 && (
+                      <span className="text-xs bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+                        +{meal.ingredients.length - 5} more
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="p-4 space-y-4">
-                  {day.meals.map((meal, mealIndex) => (
-                    <div key={mealIndex} className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-slate-700 dark:text-slate-300">{meal.mealType}: {meal.name}</h4>
-                        <button className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-1 rounded-full flex items-center gap-1">
-                          <PlusCircle size={12} />
-                          Add to Day
-                        </button>
-                      </div>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{meal.description}</p>
-                      
-                      <div className="text-xs mb-2">
-                        <span className="font-medium text-slate-700 dark:text-slate-300">Benefits:</span> <span className="font-medium text-slate-700 dark:text-slate-300">{meal.benefits}</span>
-                      </div>
-                      
-                      <div className="mb-2">
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Ingredients:</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {meal.ingredients.map((ingredient, i) => (
-                            <span key={i} className="text-xs bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded-full border border-slate-200 dark:border-slate-700">
-                              {ingredient}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      {meal.instructions && (
-                        <div className="text-xs text-slate-600 dark:text-slate-400">
-                          <span className="font-medium text-slate-700 dark:text-slate-300">Instructions:</span> {meal.instructions}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 border-t border-slate-200 dark:border-slate-700 text-center text-sm">
+              <p className="text-slate-600 dark:text-slate-400">
+                The full plan contains {generatedPlan.weekPlan.length} days with {generatedPlan.weekPlan.reduce((sum, day) => sum + day.meals.length, 0)} total meals.
+              </p>
+            </div>
           </div>
           
-          {/* Nutritional Tips */}
+          {/* Tips Preview */}
           {generatedPlan.tips && generatedPlan.tips.length > 0 && (
             <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-              <div className="bg-blue-50 dark:bg-blue-900/30 p-3 border-b border-slate-200 dark:border-slate-700">
-                <h3 className="font-medium text-slate-800 dark:text-slate-100">Tips & Recommendations</h3>
+              <div className="bg-green-50 dark:bg-green-900/30 p-3 border-b border-slate-200 dark:border-slate-700">
+                <h3 className="font-medium text-slate-800 dark:text-slate-100">Nutrition Tips</h3>
               </div>
               <div className="p-4">
-                <ul className="space-y-2">
-                  {generatedPlan.tips.map((tip, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 flex-shrink-0"></div>
-                      {tip}
-                    </li>
+                <div className="space-y-2">
+                  {generatedPlan.tips.slice(0, 3).map((tip, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <span className="text-green-500 dark:text-green-400">•</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-400">{tip}</span>
+                    </div>
                   ))}
-                </ul>
+                  {generatedPlan.tips.length > 3 && (
+                    <div className="text-sm text-blue-500 dark:text-blue-400">
+                      +{generatedPlan.tips.length - 3} more tips included in the full plan
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
           
           {/* Action Buttons */}
-          <div className="flex gap-3 justify-between">
+          <div className="flex gap-3 justify-end">
             <button
               onClick={() => setGeneratedPlan(null)}
               className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
@@ -505,7 +697,7 @@ Format the response as JSON with the following structure:
               onClick={handleSaveMealPlan}
               className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 flex items-center gap-2"
             >
-              <CalendarCheck size={18} />
+              <Save size={18} />
               Save Meal Plan
             </button>
           </div>

@@ -5,7 +5,7 @@ import GoalList from './GoalList';
 import GoalDetail from './GoalDetail';
 import GoalProgressTracker from './GoalProgressTracker';
 import GoalInspirationTab from './GoalInspirationTab';
-import VisionBoard from './VisionBoard';
+import GoalAnalytics from './GoalAnalytics';
 import { getGoals, getSummaryStats } from '../../utils/bucketListUtils';
 
 const BucketList = () => {
@@ -111,27 +111,27 @@ const BucketList = () => {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-        <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2 transition-colors">
-          <Trophy className="text-amber-500 dark:text-amber-400" size={24} />
-          Bucket List & Goals
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-6 transition-colors">
+        <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2 transition-colors break-words">
+          <Trophy className="text-amber-500 dark:text-amber-400 flex-shrink-0" size={24} />
+          <span className="break-words">Bucket List & Goals</span>
         </h2>
         
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <div className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-3 text-center transition-colors">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-2 sm:p-3 text-center transition-colors">
             <div className="text-xl font-bold text-amber-600 dark:text-amber-400">{stats.totalGoals || 0}</div>
             <div className="text-xs text-slate-600 dark:text-slate-400">Total Goals</div>
           </div>
-          <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 text-center transition-colors">
+          <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-2 sm:p-3 text-center transition-colors">
             <div className="text-xl font-bold text-green-600 dark:text-green-400">{stats.completedGoals || 0}</div>
             <div className="text-xs text-slate-600 dark:text-slate-400">Completed</div>
           </div>
-          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 text-center transition-colors">
+          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-2 sm:p-3 text-center transition-colors">
             <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{stats.inProgressGoals || 0}</div>
             <div className="text-xs text-slate-600 dark:text-slate-400">In Progress</div>
           </div>
-          <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 text-center transition-colors">
+          <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-2 sm:p-3 text-center transition-colors">
             <div className="text-xl font-bold text-purple-600 dark:text-purple-400">{stats.avgCompletionRate || 0}%</div>
             <div className="text-xs text-slate-600 dark:text-slate-400">Completion Rate</div>
           </div>
@@ -142,7 +142,7 @@ const BucketList = () => {
           <div className="flex overflow-x-auto no-scrollbar">
             <button
               onClick={() => setActiveTab('goals')}
-              className={`px-4 py-3 font-medium text-sm whitespace-nowrap ${
+              className={`px-3 sm:px-4 py-3 font-medium text-sm whitespace-nowrap ${
                 activeTab === 'goals' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -152,7 +152,7 @@ const BucketList = () => {
             </button>
             <button
               onClick={() => setActiveTab('inspiration')}
-              className={`px-4 py-3 font-medium text-sm whitespace-nowrap ${
+              className={`px-3 sm:px-4 py-3 font-medium text-sm whitespace-nowrap ${
                 activeTab === 'inspiration' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -162,13 +162,13 @@ const BucketList = () => {
             </button>
             <button
               onClick={() => setActiveTab('visionBoard')}
-              className={`px-4 py-3 font-medium text-sm whitespace-nowrap ${
+              className={`px-3 sm:px-4 py-3 font-medium text-sm whitespace-nowrap ${
                 activeTab === 'visionBoard' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              Vision Board
+              Goal Analytics
             </button>
           </div>
         </div>
@@ -202,7 +202,7 @@ const BucketList = () => {
                     className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                   <div className="relative">
                     <select
                       value={filter}
@@ -220,7 +220,7 @@ const BucketList = () => {
                     className="bg-amber-500 dark:bg-amber-600 text-white py-2 px-4 rounded-lg flex items-center gap-1 hover:bg-amber-600 dark:hover:bg-amber-700 transition-colors"
                   >
                     <Plus size={18} />
-                    New Goal
+                    <span className="whitespace-nowrap">New Goal</span>
                   </button>
                 </div>
               </div>
@@ -237,15 +237,15 @@ const BucketList = () => {
       
       {/* Inspiration Tab */}
       {activeTab === 'inspiration' && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-6 transition-colors">
           <GoalInspirationTab onAddGoal={handleGoalUpdate} />
         </div>
       )}
       
-      {/* Vision Board Tab */}
+      {/* Vision Board Tab (renamed to Goal Analytics) */}
       {activeTab === 'visionBoard' && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-          <VisionBoard />
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-6 transition-colors">
+          <GoalAnalytics />
         </div>
       )}
       

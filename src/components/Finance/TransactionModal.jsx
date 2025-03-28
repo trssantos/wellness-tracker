@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import ModalContainer from './ModalContainer';
 import InputField from './InputField';
-import { getFinanceData, addTransaction, addRecurringTransaction } from '../../utils/financeUtils';
+import { getFinanceData, addTransaction, addRecurringTransaction, getCategoriesByGroup } from '../../utils/financeUtils';
 
 const TransactionModal = ({ onClose, onTransactionAdded }) => {
   // State variables
@@ -16,6 +16,7 @@ const TransactionModal = ({ onClose, onTransactionAdded }) => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
   const [categories, setCategories] = useState({ income: [], expense: [] });
+  const [groupedCategories, setGroupedCategories] = useState({ income: {}, expense: {} });
   const [error, setError] = useState('');
   
   // Recurring transaction options
@@ -28,6 +29,10 @@ const TransactionModal = ({ onClose, onTransactionAdded }) => {
   useEffect(() => {
     const financeData = getFinanceData();
     setCategories(financeData.categories);
+    
+    // Get categories grouped by their group attribute
+    const grouped = getCategoriesByGroup();
+    setGroupedCategories(grouped);
   }, []);
 
   // Handle form submission
@@ -197,18 +202,22 @@ const TransactionModal = ({ onClose, onTransactionAdded }) => {
   >
     <option value="">Select a category</option>
     {type === 'income' ? (
-      categories.income && categories.income.map(cat => (
-        <option key={cat.id} value={cat.id} className="flex items-center">
-          <div className={`inline-block w-2 h-2 rounded-full bg-${cat.color}-500 mr-2`}></div>
-          {cat.name}
-        </option>
+      // Group income categories by their group
+      Object.entries(groupedCategories.income).map(([group, cats]) => (
+        <optgroup key={group} label={group}>
+          {cats.map(cat => (
+            <option key={cat.id} value={cat.id}>{cat.name}</option>
+          ))}
+        </optgroup>
       ))
     ) : (
-      categories.expense && categories.expense.map(cat => (
-        <option key={cat.id} value={cat.id} className="flex items-center">
-          <div className={`inline-block w-2 h-2 rounded-full bg-${cat.color}-500 mr-2`}></div>
-          {cat.name}
-        </option>
+      // Group expense categories by their group
+      Object.entries(groupedCategories.expense).map(([group, cats]) => (
+        <optgroup key={group} label={group}>
+          {cats.map(cat => (
+            <option key={cat.id} value={cat.id}>{cat.name}</option>
+          ))}
+        </optgroup>
       ))
     )}
   </select>

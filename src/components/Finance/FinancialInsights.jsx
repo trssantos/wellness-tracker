@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
   BarChart2, Award, AlertTriangle, AlertCircle, PiggyBank, Calendar, 
-  TrendingUp, TrendingDown, DollarSign, PieChart, Info, 
-  ArrowRight, ArrowLeft, ChevronLeft, ChevronRight, Settings, Filter
+  TrendingUp, TrendingDown, DollarSign, PieChart, Info, Coffee, Utensils,
+  ArrowRight, ArrowLeft, ChevronLeft, ChevronRight, Settings, Filter, ShoppingBag
 } from 'lucide-react';
+import CategoryGroupAnalysis from './CategoryGroupAnalysis';
 import { 
   getFinanceData, calculateFinancialStats, getFinancialInsights, 
-  getSpendingMoodCorrelation, getCategoryById 
+  getSpendingMoodCorrelation, getCategoryById, getSpendingByGroup
 } from '../../utils/financeUtils';
 
 // Define chart colors array for consistent coloring
@@ -51,6 +52,8 @@ const FinancialInsights = ({
   const [correlations, setCorrelations] = useState([]);
   const [bills, setBills] = useState([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [activeView, setActiveView] = useState('overview'); // 'overview', 'categoryBreakdown', 'foodAnalysis', etc.
+  const [spendingByGroup, setSpendingByGroup] = useState([]);
   
   // New state for selective chart application
   const [chartSettings, setChartSettings] = useState({
@@ -168,6 +171,10 @@ const FinancialInsights = ({
     const moodCorrelations = getSpendingMoodCorrelation();
     setCorrelations(moodCorrelations);
     
+    // Update category group spending
+    const spendingByGroupData = getSpendingByGroup(filteredTransactions);
+    setSpendingByGroup(spendingByGroupData);
+    
     // Update parent component's date range if available
     if (setSelectedDateRange) {
       setSelectedDateRange(customDateRange ? customRange : standardDateRange);
@@ -214,7 +221,8 @@ const FinancialInsights = ({
           id: categoryId,
           name: category.name,
           value: amount,
-          color: category.color // Use the color from category definition
+          color: category.color, // Use the color from category definition
+          group: category.group || 'Other'
         });
       }
     });
@@ -743,6 +751,12 @@ const FinancialInsights = ({
         return <TrendingUp size={size} />;
       case 'trending-down':
         return <TrendingDown size={size} />;
+      case 'utensils':
+        return <Utensils size={size} />;
+      case 'coffee':
+        return <Coffee size={size} />;
+      case 'shopping-bag':
+        return <ShoppingBag size={size} />;
       default:
         return <Info size={size} />;
     }
@@ -762,6 +776,479 @@ const FinancialInsights = ({
     }
   };
 
+  // Render the appropriate view based on activeView state
+  const renderView = () => {
+    switch (activeView) {
+      case 'categoryBreakdown':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-xl font-medium text-white mb-4">Category Breakdown</h3>
+            <CategoryGroupAnalysis 
+              spendingByGroup={spendingByGroup} 
+              totalExpenses={stats?.expenses || 0}
+              currency={currency}
+            />
+          </div>
+        );
+      
+      case 'foodAnalysis':
+        const foodGroup = spendingByGroup.find(group => group.name === 'Food');
+        
+        if (!foodGroup) {
+          return (
+            <div className="text-center p-6 bg-slate-700/50 rounded-lg">
+              <Utensils size={48} className="text-slate-500 mx-auto mb-3" />
+              <p className="text-slate-400">No food expenses to analyze.</p>
+            </div>
+          );
+        }
+        
+        // Find specific categories
+        const groceries = foodGroup.subcategories.find(sub => sub.id === 'expense-food-groceries');
+        const restaurants = foodGroup.subcategories.find(sub => sub.id === 'expense-food-restaurants');
+        const takeaway = foodGroup.subcategories.find(sub => sub.id === 'expense-food-takeaway');
+        const coffee = foodGroup.subcategories.find(sub => sub.id === 'expense-food-coffee');
+        
+        // Calculate totals
+        const diningOutTotal = (restaurants?.total || 0) + (takeaway?.total || 0);
+        const groceryTotal = groceries?.total || 0;
+        const coffeeTotal = coffee?.total || 0;
+        const foodTotal = foodGroup.total;
+        
+        // Calculate ratios and percentages
+        const homeVsOutRatio = groceryTotal > 0 ? diningOutTotal / groceryTotal : 0;
+        const groceryPercent = (groceryTotal / foodTotal) * 100;
+        const diningOutPercent = (diningOutTotal / foodTotal) * 100;
+        const coffeePercent = (coffeeTotal / foodTotal) * 100;
+        
+        return (
+          <div className="space-y-6">
+            <h3 className="text-xl font-medium text-white mb-4 flex items-center gap-2">
+              <Utensils className="text-green-400" size={24} />
+              Food Spending Analysis
+            </h3>
+            
+            {/* Food spending summary */}
+            <div className="bg-slate-800/60 rounded-lg border border-slate-700 p-4">
+              <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
+                <div>
+                  <div className="text-sm text-slate-400">Total Food Spending</div>
+                  <div className="text-xl font-bold text-white">{formatCurrency(foodTotal)}</div>
+                  <div className="text-xs text-slate-400 mt-1">
+                    {Math.round((foodTotal / stats.expenses) * 100)}% of your total expenses
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-white">{Math.round(groceryPercent)}%</div>
+                    <div className="text-xs text-slate-400">Groceries</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-white">{Math.round(diningOutPercent)}%</div>
+                    <div className="text-xs text-slate-400">Dining Out</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-white">{Math.round(coffeePercent)}%</div>
+                    <div className="text-xs text-slate-400">Coffee</div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Progress bars */}
+              <div className="space-y-3">
+                {groceries && (
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-white">Groceries</span>
+                      <span className="text-white">{formatCurrency(groceryTotal)}</span>
+                    </div>
+                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-green-500 rounded-full"
+                        style={{ width: `${groceryPercent}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+                
+                {restaurants && (
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-white">Restaurants</span>
+                      <span className="text-white">{formatCurrency(restaurants.total)}</span>
+                    </div>
+                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-amber-500 rounded-full"
+                        style={{ width: `${(restaurants.total / foodTotal) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+                
+                {takeaway && (
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-white">Takeaway</span>
+                      <span className="text-white">{formatCurrency(takeaway.total)}</span>
+                    </div>
+                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-red-500 rounded-full"
+                        style={{ width: `${(takeaway.total / foodTotal) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+                
+                {coffee && (
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-white">Coffee & Cafes</span>
+                      <span className="text-white">{formatCurrency(coffee.total)}</span>
+                    </div>
+                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-purple-500 rounded-full"
+                        style={{ width: `${(coffee.total / foodTotal) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Analysis Section */}
+            <div className="bg-slate-800/60 rounded-lg border border-slate-700 p-4">
+              <h4 className="text-lg font-medium text-white mb-3">Food Budget Analysis</h4>
+              
+              <div className="space-y-4">
+                {homeVsOutRatio > 0 && (
+                  <div className={`p-3 rounded-lg ${
+                    homeVsOutRatio > 1.5 ? 'bg-red-900/30 border border-red-800/50' :
+                    homeVsOutRatio > 1 ? 'bg-amber-900/30 border border-amber-800/50' :
+                    'bg-green-900/30 border border-green-800/50'
+                  }`}>
+                    <div className="flex items-start gap-2">
+                      <div className={`p-2 rounded-lg ${
+                        homeVsOutRatio > 1.5 ? 'bg-red-900/50 text-red-400' :
+                        homeVsOutRatio > 1 ? 'bg-amber-900/50 text-amber-400' :
+                        'bg-green-900/50 text-green-400'
+                      }`}>
+                        {homeVsOutRatio > 1 ? 
+                          <TrendingUp size={18} /> : 
+                          <TrendingDown size={18} />
+                        }
+                      </div>
+                      <div>
+                        <h5 className="font-medium text-white">
+                          {homeVsOutRatio > 1.5 ? 'High Eating Out Ratio' :
+                           homeVsOutRatio > 1 ? 'Moderate Eating Out Ratio' :
+                           'Good Home Cooking Ratio'}
+                        </h5>
+                        <p className="text-sm text-slate-300">
+                          {homeVsOutRatio > 0 ? 
+                            `You're spending ${homeVsOutRatio.toFixed(1)}x more on dining out than on groceries.` :
+                            'You have no eating out expenses recorded.'
+                          }
+                          {homeVsOutRatio > 1.5 && ' Consider cooking at home more to reduce food costs.'}
+                          {homeVsOutRatio <= 1 && ' Keep up the good habit of home cooking!'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {coffee && coffeePercent > 10 && (
+                  <div className="bg-amber-900/30 border border-amber-800/50 p-3 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <div className="p-2 rounded-lg bg-amber-900/50 text-amber-400">
+                        <Coffee size={18} />
+                      </div>
+                      <div>
+                        <h5 className="font-medium text-white">Coffee Shop Spending</h5>
+                        <p className="text-sm text-slate-300">
+                          Coffee shops represent {Math.round(coffeePercent)}% of your food budget.
+                          You could save approximately {formatCurrency(coffeeTotal * 0.7)} per month
+                          by making coffee at home more often.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Add monthly trend analysis if available */}
+                {incomeVsExpenses.length > 0 && (
+                  <div className="pt-3">
+                    <h5 className="text-white font-medium mb-2">Monthly Food Spending Trend</h5>
+                    <p className="text-sm text-slate-300">
+                      Your food spending this month is {
+                        spendingTrend[spendingTrend.length - 1]?.spending > 
+                        spendingTrend[spendingTrend.length - 2]?.spending ?
+                        'higher' : 'lower'
+                      } than last month. {
+                        spendingTrend[spendingTrend.length - 1]?.spending > 
+                        spendingTrend[spendingTrend.length - 2]?.spending ?
+                        'Look for ways to reduce unnecessary spending.' : 
+                        'Great job managing your food budget!'
+                      }
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+        
+      case 'overview':
+      default:
+        return (
+          <div className="space-y-6">
+            {/* Financial Health Score */}
+            <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                <div className="relative mb-4 sm:mb-0">
+                  <div className="w-28 sm:w-36 h-28 sm:h-36 rounded-full bg-slate-700 flex items-center justify-center mx-auto">
+                    <div className="w-20 sm:w-28 h-20 sm:h-28 rounded-full bg-slate-800 flex items-center justify-center relative">
+                      <svg className="w-full h-full" viewBox="0 0 36 36">
+                        <path
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none"
+                          stroke="#2D3748"
+                          strokeWidth="2"
+                          className="dark:stroke-slate-600"
+                        />
+                        <path
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none"
+                          stroke={insights.score > 70 ? "#10B981" : insights.score > 40 ? "#F59E0B" : "#EF4444"}
+                          strokeWidth="4"
+                          strokeDasharray="100"
+                          strokeDashoffset={100 - insights.score}
+                          className="dark:stroke-opacity-80"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center flex-col">
+                        <span className="text-2xl sm:text-3xl font-bold text-white">
+                          {insights.score}
+                        </span>
+                        <span className="text-xs text-slate-400">out of 100</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex-1 text-center sm:text-left">
+                  <h5 className="text-xl font-medium text-white mb-2">
+                    Financial Health Score
+                  </h5>
+                  <p className="text-slate-300 mb-4">
+                    {insights.score > 70
+                      ? "Your financial health is excellent! You're managing your money effectively."
+                      : insights.score > 40
+                      ? "Your financial health is good, but there's room for improvement."
+                      : "Your financial health needs attention. Consider the suggestions below."
+                    }
+                  </p>
+                  
+                  {/* Score breakdown */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="bg-slate-700 rounded-lg p-2 sm:p-3">
+                      <div className="text-sm font-medium text-white mb-1 flex items-center justify-center sm:justify-start">
+                        <TrendingUp size={16} className="mr-1 finance-text-green-400" />
+                        Income
+                      </div>
+                      <div className="text-xl sm:text-2xl font-bold text-white">
+                        {formatCurrency(stats?.income || 0)}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-slate-700 rounded-lg p-2 sm:p-3">
+                      <div className="text-sm font-medium text-white mb-1 flex items-center justify-center sm:justify-start">
+                        <TrendingDown size={16} className="mr-1 finance-text-red-400" />
+                        Expenses
+                      </div>
+                      <div className="text-xl sm:text-2xl font-bold text-white">
+                        {formatCurrency(stats?.expenses || 0)}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-slate-700 rounded-lg p-2 sm:p-3">
+                      <div className="text-sm font-medium text-white mb-1 flex items-center justify-center sm:justify-start">
+                        <PiggyBank size={16} className="mr-1 finance-text-amber-400" />
+                        Savings Rate
+                      </div>
+                      <div className="text-xl sm:text-2xl font-bold text-white">
+                        {stats && stats.income > 0 
+                          ? Math.round(((stats.income - stats.expenses) / stats.income) * 100) 
+                          : 0}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* ENHANCED: Category Group Analysis */}
+            <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
+              <div className="flex justify-between items-center mb-4">
+                <h5 className="font-medium text-white mb-0 flex items-center gap-2">
+                  <BarChart2 className="finance-text-amber-400" size={18} />
+                  Spending Categories
+                </h5>
+                
+                <button 
+                  onClick={() => setActiveView('categoryBreakdown')}
+                  className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                >
+                  <span>Detailed Analysis</span>
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+              
+              <CategoryGroupAnalysis 
+                spendingByGroup={spendingByGroup} 
+                totalExpenses={stats?.expenses || 0}
+                currency={currency}
+                compact={true}
+              />
+            </div>
+            
+            {/* Food Analysis Summary - if we have food data */}
+            {spendingByGroup.some(group => group.name === 'Food') && (
+              <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
+                <div className="flex justify-between items-center mb-4">
+                  <h5 className="font-medium text-white mb-0 flex items-center gap-2">
+                    <Utensils className="text-amber-400" size={18} />
+                    Food Spending
+                  </h5>
+                  
+                  <button 
+                    onClick={() => setActiveView('foodAnalysis')}
+                    className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                  >
+                    <span>Detailed Analysis</span>
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+                
+                {(() => {
+                  const foodGroup = spendingByGroup.find(group => group.name === 'Food');
+                  if (!foodGroup) return null;
+                  
+                  // Find specific categories
+                  const groceries = foodGroup.subcategories.find(sub => sub.id === 'expense-food-groceries');
+                  const restaurants = foodGroup.subcategories.find(sub => sub.id === 'expense-food-restaurants');
+                  const takeaway = foodGroup.subcategories.find(sub => sub.id === 'expense-food-takeaway');
+                  
+                  // Calculate totals
+                  const diningOutTotal = (restaurants?.total || 0) + (takeaway?.total || 0);
+                  const groceryTotal = groceries?.total || 0;
+                  const foodTotal = foodGroup.total;
+                  
+                  // Calculate ratios
+                  const homeVsOutRatio = groceryTotal > 0 ? diningOutTotal / groceryTotal : 0;
+                  
+                  return (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between gap-2 bg-green-900/30 p-3 rounded-lg border border-green-800/50">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-green-900/50 rounded-lg">
+                            <ShoppingBag size={20} className="text-green-400" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-white">Groceries</div>
+                            <div className="text-xs text-slate-300">
+                              {Math.round((groceryTotal / foodTotal) * 100)}% of food budget
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-lg font-bold text-white">{formatCurrency(groceryTotal)}</div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between gap-2 bg-amber-900/30 p-3 rounded-lg border border-amber-800/50">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-amber-900/50 rounded-lg">
+                            <Utensils size={20} className="text-amber-400" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-white">Dining Out</div>
+                            <div className="text-xs text-slate-300">
+                              {Math.round((diningOutTotal / foodTotal) * 100)}% of food budget
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-lg font-bold text-white">{formatCurrency(diningOutTotal)}</div>
+                      </div>
+                      
+                      {/* Home vs Eating Out Ratio Indicator */}
+                      <div className="mt-2 pt-2 border-t border-slate-700">
+                        <div className="flex justify-between items-center">
+                          <div className="text-xs text-slate-400">Home vs Eating Out Ratio</div>
+                          <div className={`text-sm font-medium ${
+                            homeVsOutRatio > 1.5 ? 'text-red-400' :
+                            homeVsOutRatio > 1 ? 'text-amber-400' :
+                            'text-green-400'
+                          }`}>
+                            {homeVsOutRatio > 0 ? `${homeVsOutRatio.toFixed(1)}x` : 'No data'}
+                          </div>
+                        </div>
+                        
+                        {homeVsOutRatio > 0 && (
+                          <div className="text-xs text-slate-400 mt-1">
+                            {homeVsOutRatio > 1.5 ? 'High dining out expenses compared to groceries.' :
+                             homeVsOutRatio > 1 ? 'Moderate dining out compared to groceries.' :
+                             'Great job cooking at home more than eating out!'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+            
+            {/* Key Insights */}
+            <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
+              <h5 className="text-lg font-medium text-white mb-4">
+                Key Insights & Recommendations
+              </h5>
+              
+              <div className="space-y-4">
+                {insights.insights.length > 0 ? (
+                  insights.insights.slice(0, 3).map((insight, index) => (
+                    <div 
+                      key={index} 
+                      className={`p-3 sm:p-4 rounded-lg ${getInsightBgClass(insight.type)}`}
+                    >
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <div className={`p-2 rounded-lg ${getInsightColorClass(insight.type)} flex-shrink-0`}>
+                          {renderIcon(insight.icon, 18)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h6 className="font-medium text-white mb-1 break-words">
+                            {insight.title}
+                          </h6>
+                          <p className="text-slate-300 text-sm break-words">
+                            {insight.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-slate-400 p-6">
+                    Not enough financial data to generate insights. Add more transactions and budgets to get personalized recommendations.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+    }
+  };
+  
   return (
     <div className="space-y-6">
       {/* Header Section with improved Time Navigation - MOBILE OPTIMIZED */}
@@ -771,7 +1258,7 @@ const FinancialInsights = ({
             <div>
               <h4 className="text-lg font-medium text-white flex items-center gap-2 mb-2">
                 <BarChart2 className="finance-text-amber-400" size={20} />
-                <span className="truncate max-w-xs">Insights</span>
+                <span className="truncate max-w-xs">Financial Insights</span>
                 {!isMobile && (
                   <span className="text-sm text-slate-400 font-normal">
                     {customDateRange 
@@ -850,6 +1337,41 @@ const FinancialInsights = ({
                 <Settings size={14} />
               </button>
             </div>
+          </div>
+          
+          {/* Navigation for specific insights views */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveView('overview')}
+              className={`px-3 py-1.5 text-sm rounded-lg ${
+                activeView === 'overview' 
+                  ? 'bg-amber-600 text-white' 
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveView('categoryBreakdown')}
+              className={`px-3 py-1.5 text-sm rounded-lg ${
+                activeView === 'categoryBreakdown' 
+                  ? 'bg-amber-600 text-white' 
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              Category Groups
+            </button>
+            <button
+              onClick={() => setActiveView('foodAnalysis')}
+              className={`px-3 py-1.5 text-sm rounded-lg ${
+                activeView === 'foodAnalysis' 
+                  ? 'bg-amber-600 text-white' 
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+              disabled={!spendingByGroup.some(group => group.name === 'Food')}
+            >
+              Food Analysis
+            </button>
           </div>
           
           {/* Time Navigation Controls - MOBILE OPTIMIZED */}
@@ -966,479 +1488,8 @@ const FinancialInsights = ({
         )}
       </div>
       
-      {/* Financial Health Score - MOBILE OPTIMIZED */}
-      <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
-        <div className="flex flex-col sm:flex-row items-center gap-6">
-          <div className="relative mb-4 sm:mb-0">
-            <div className="w-28 sm:w-36 h-28 sm:h-36 rounded-full bg-slate-700 flex items-center justify-center mx-auto">
-              <div className="w-20 sm:w-28 h-20 sm:h-28 rounded-full bg-slate-800 flex items-center justify-center relative">
-                <svg className="w-full h-full" viewBox="0 0 36 36">
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="#2D3748"
-                    strokeWidth="2"
-                    className="dark:stroke-slate-600"
-                  />
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke={insights.score > 70 ? "#10B981" : insights.score > 40 ? "#F59E0B" : "#EF4444"}
-                    strokeWidth="4"
-                    strokeDasharray="100"
-                    strokeDashoffset={100 - insights.score}
-                    className="dark:stroke-opacity-80"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center flex-col">
-                  <span className="text-2xl sm:text-3xl font-bold text-white">
-                    {insights.score}
-                  </span>
-                  <span className="text-xs text-slate-400">out of 100</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex-1 text-center sm:text-left">
-            <h5 className="text-xl font-medium text-white mb-2">
-              Financial Health Score
-            </h5>
-            <p className="text-slate-300 mb-4">
-              {insights.score > 70
-                ? "Your financial health is excellent! You're managing your money effectively."
-                : insights.score > 40
-                ? "Your financial health is good, but there's room for improvement."
-                : "Your financial health needs attention. Consider the suggestions below."
-              }
-            </p>
-            
-            {/* Score breakdown - MOBILE OPTIMIZED */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <div className="bg-slate-700 rounded-lg p-2 sm:p-3">
-                <div className="text-sm font-medium text-white mb-1 flex items-center justify-center sm:justify-start">
-                  <TrendingUp size={16} className="mr-1 finance-text-green-400" />
-                  Income
-                </div>
-                <div className="text-xl sm:text-2xl font-bold text-white">
-                  {formatCurrency(stats?.income || 0)}
-                </div>
-              </div>
-              
-              <div className="bg-slate-700 rounded-lg p-2 sm:p-3">
-                <div className="text-sm font-medium text-white mb-1 flex items-center justify-center sm:justify-start">
-                  <TrendingDown size={16} className="mr-1 finance-text-red-400" />
-                  Expenses
-                </div>
-                <div className="text-xl sm:text-2xl font-bold text-white">
-                  {formatCurrency(stats?.expenses || 0)}
-                </div>
-              </div>
-              
-              <div className="bg-slate-700 rounded-lg p-2 sm:p-3">
-                <div className="text-sm font-medium text-white mb-1 flex items-center justify-center sm:justify-start">
-                  <PiggyBank size={16} className="mr-1 finance-text-amber-400" />
-                  Savings Rate
-                </div>
-                <div className="text-xl sm:text-2xl font-bold text-white">
-                  {stats && stats.income > 0 
-                    ? Math.round(((stats.income - stats.expenses) / stats.income) * 100) 
-                    : 0}%
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* ENHANCED: Spending Trend Chart - MOBILE OPTIMIZED */}
-      <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
-        <h5 className="font-medium text-white mb-4 flex items-center gap-2">
-          <BarChart2 className="finance-text-amber-400" size={18} />
-          Spending Trend
-          {!isMobile && (
-            <span className="text-sm text-slate-400 font-normal">
-              {timeRange === 'week' ? 'Daily View' : timeRange === 'month' ? 'Monthly View' : 'Period View'}
-            </span>
-          )}
-        </h5>
-        
-        <div className="h-64 relative">
-          {spendingTrend.length > 0 ? (
-            <div className="w-full h-full flex items-end justify-between">
-              {(() => {
-                // Calculate average spending across all periods
-                const totalSpending = spendingTrend.reduce((sum, item) => sum + item.spending, 0);
-                const averageSpending = totalSpending / spendingTrend.length;
-                
-                return spendingTrend.map((item, index) => {
-                  const maxSpending = Math.max(...spendingTrend.map(i => i.spending));
-                  const height = maxSpending > 0 ? (item.spending / maxSpending * 180) || 0 : 0;
-                  const barColor = getSpendingTrendBarColor(index, item.spending, averageSpending);
-                  
-                  return (
-                    <div 
-                      key={index} 
-                      className="flex flex-col items-center"
-                      onMouseEnter={() => setHoveredBar(index)}
-                      onMouseLeave={() => setHoveredBar(null)}
-                    >
-                      <div 
-                        className={`w-8 sm:w-10 ${barColor} rounded-t-lg transition-all relative`}
-                        style={{ height: `${Math.max(20, height)}px` }}
-                      >
-                        {hoveredBar === index && (
-                          <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white p-2 rounded text-xs whitespace-nowrap z-10 min-w-[120px] border border-slate-700">
-                            <div className="font-bold mb-1">{formatCurrency(item.spending)}</div>
-                            {item.topCategory && (
-                              <div className="text-xs">
-                                Top: {item.topCategory.name} ({formatCurrency(item.topCategory.amount)})
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="w-full mt-2 text-center">
-                        <div className="text-xs text-slate-300 font-medium truncate" style={{maxWidth: isMobile ? '40px' : '60px'}}>
-                          {item.label}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <p className="text-slate-400">No spending data available</p>
-            </div>
-          )}
-        </div>
-        
-        <div className="mt-6 pt-4 border-t border-slate-700">
-          <div className="flex flex-col sm:flex-row justify-between gap-4">
-            <div className="text-sm">
-              <div className="text-slate-400">Average Spending</div>
-              <div className="text-lg font-bold text-white">
-                {formatCurrency(
-                  spendingTrend.length > 0 
-                    ? spendingTrend.reduce((sum, period) => sum + period.spending, 0) / spendingTrend.length
-                    : 0
-                )}
-              </div>
-            </div>
-            
-            <div className="text-sm text-right">
-              <div className="text-slate-400">Highest Period</div>
-              <div className="text-lg font-bold text-white">
-                {spendingTrend.length > 0
-                  ? formatCurrency(Math.max(...spendingTrend.map(period => period.spending)))
-                  : formatCurrency(0)
-                }
-              </div>
-            </div>
-            
-            <div className="text-sm">
-              <div className="text-slate-400">Total Spending</div>
-              <div className="text-lg font-bold text-white">
-                {formatCurrency(
-                  spendingTrend.reduce((sum, period) => sum + period.spending, 0)
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Chart Grid - MOBILE OPTIMIZED */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Expense Breakdown */}
-        <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
-          <h5 className="font-medium text-white mb-4 flex items-center gap-2">
-            <PieChart className="finance-text-amber-400" size={18} />
-            Expense Breakdown
-          </h5>
-          
-          <div className="h-64 relative">
-            <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
-              <svg width="100%" height="100%" viewBox="0 0 42 42">
-                <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#2D3748" strokeWidth="1" className="dark:stroke-slate-700"></circle>
-                
-                {/* Generate pie chart segments */}
-                {chartData.map((category, index, array) => {
-                  // Calculate the percentage and angles for this category
-                  const totalValue = array.reduce((sum, cat) => sum + cat.value, 0);
-                  const percentage = totalValue > 0 ? (category.value / totalValue) * 100 : 0;
-                  
-                  // Calculate the start angle
-                  const previousPercentage = array
-                    .slice(0, index)
-                    .reduce((sum, cat) => sum + (totalValue > 0 ? (cat.value / totalValue) * 100 : 0), 0);
-                  
-                  const startAngle = (previousPercentage / 100) * 360;
-                  const endAngle = ((previousPercentage + percentage) / 100) * 360;
-                  
-                  // SVG coordinates
-                  const x1 = 21 + 15.91549430918954 * Math.cos((startAngle - 90) * Math.PI / 180);
-                  const y1 = 21 + 15.91549430918954 * Math.sin((startAngle - 90) * Math.PI / 180);
-                  const x2 = 21 + 15.91549430918954 * Math.cos((endAngle - 90) * Math.PI / 180);
-                  const y2 = 21 + 15.91549430918954 * Math.sin((endAngle - 90) * Math.PI / 180);
-                  
-                  // Determine if the arc should be drawn larger than 180 degrees
-                  const largeArcFlag = percentage > 50 ? 1 : 0;
-                  
-                  // Use the category's color directly
-                  const fixedColors = {
-                    'blue': '#3B82F6', 
-                    'green': '#10B981',
-                    'amber': '#F59E0B',
-                    'purple': '#8B5CF6', 
-                    'red': '#EF4444',
-                    'pink': '#EC4899',
-                    'indigo': '#6366F1',
-                    'teal': '#14B8A6',
-                    'emerald': '#10B981',
-                    'cyan': '#06B6D4',
-                    'violet': '#8B5CF6',
-                    'fuchsia': '#D946EF',
-                    'gray': '#6B7280'
-                  };
-                  
-                  const color = fixedColors[category.color] || fixedColors['gray'];
-                  
-                  return percentage > 0 ? (
-                    <path
-                      key={category.id}
-                      d={`M21 21 L ${x1} ${y1} A 15.91549430918954 15.91549430918954 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
-                      fill={color}
-                      className="dark:fill-opacity-80"
-                    />
-                  ) : null;
-                })}
-                
-                {/* Inner circle for donut effect */}
-                <circle cx="21" cy="21" r="10" fill="#1E293B" className="dark:fill-slate-800" />
-              </svg>
-              
-              {/* Total in center */}
-              <div className="absolute inset-0 flex items-center justify-center flex-col">
-                <div className="text-xs text-slate-400">Total Expenses</div>
-                <div className="text-xl font-bold text-white">
-                  {formatCurrency(stats?.expenses || 0)}
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Categories Legend - MOBILE OPTIMIZED */}
-          <div className="space-y-2 mt-4 max-h-60 overflow-y-auto pr-1">
-            {chartData.map((category, index) => {
-              const totalValue = chartData.reduce((sum, cat) => sum + cat.value, 0);
-              const percentage = totalValue > 0 ? (category.value / totalValue) * 100 : 0;
-              
-              // Use the category's color
-              const fixedColors = {
-                'blue': '#3B82F6', 
-                'green': '#10B981',
-                'amber': '#F59E0B',
-                'purple': '#8B5CF6', 
-                'red': '#EF4444',
-                'pink': '#EC4899',
-                'indigo': '#6366F1',
-                'teal': '#14B8A6',
-                'emerald': '#10B981',
-                'cyan': '#06B6D4',
-                'violet': '#8B5CF6',
-                'fuchsia': '#D946EF',
-                'gray': '#6B7280'
-              };
-              
-              const color = fixedColors[category.color] || fixedColors['gray'];
-              
-              return (
-                <div key={category.id} className="flex items-center justify-between">
-                  <div className="flex items-center max-w-[50%]">
-                    <div 
-                      className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
-                      style={{ backgroundColor: color }}
-                    ></div>
-                    <span className="text-white truncate">
-                      {category.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-300 font-medium text-xs sm:text-sm whitespace-nowrap">
-                      {formatCurrency(category.value)}
-                    </span>
-                    <span className="text-xs text-slate-400 w-9 text-right">
-                      {Math.round(percentage)}%
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        
-        {/* Income vs Expenses */}
-        <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
-          <h5 className="font-medium text-white mb-4 flex items-center gap-2">
-            <TrendingUp className="finance-text-amber-400" size={18} />
-            Income vs Expenses
-          </h5>
-          
-          <div className="h-64 relative">
-            {incomeVsExpenses.length > 0 ? (
-              <div className="w-full h-full">
-                <svg width="100%" height="100%" viewBox="0 0 600 240" preserveAspectRatio="none">
-                  {/* Grid lines */}
-                  <line x1="0" y1="0" x2="600" y2="0" stroke="#4B5563" strokeWidth="1" />
-                  <line x1="0" y1="60" x2="600" y2="60" stroke="#4B5563" strokeWidth="1" />
-                  <line x1="0" y1="120" x2="600" y2="120" stroke="#4B5563" strokeWidth="1" />
-                  <line x1="0" y1="180" x2="600" y2="180" stroke="#4B5563" strokeWidth="1" />
-                  <line x1="0" y1="240" x2="600" y2="240" stroke="#4B5563" strokeWidth="1" />
-                  
-                  {/* Income and expenses lines */}
-                  {(() => {
-                    // Find max value for scaling
-                    const maxValue = Math.max(
-                      ...incomeVsExpenses.map(item => Math.max(item.income, item.expenses))
-                    );
-                    
-                    // Calculate path coordinates
-                    const xStep = 600 / (incomeVsExpenses.length - 1 || 1);
-                    
-                    // Income path
-                    const incomePath = incomeVsExpenses.map((item, i) => {
-                      const x = i * xStep;
-                      const y = maxValue > 0 ? 240 - (item.income / maxValue * 240) : 240;
-                      return i === 0 ? `M${x},${y}` : `L${x},${y}`;
-                    }).join(' ');
-                    
-                    // Expenses path
-                    const expensesPath = incomeVsExpenses.map((item, i) => {
-                      const x = i * xStep;
-                      const y = maxValue > 0 ? 240 - (item.expenses / maxValue * 240) : 240;
-                      return i === 0 ? `M${x},${y}` : `L${x},${y}`;
-                    }).join(' ');
-                    
-                    // Income area
-                    const incomeArea = `${incomePath} L${(incomeVsExpenses.length - 1) * xStep},240 L0,240 Z`;
-                    
-                    return (
-                      <>
-                        {/* Income area */}
-                        <path 
-                          d={incomeArea}
-                          fill="rgba(52, 211, 153, 0.2)"
-                          stroke="#34D399"
-                          strokeWidth="2"
-                        />
-                        
-                        {/* Expenses line */}
-                        <path 
-                          d={expensesPath}
-                          fill="none"
-                          stroke="#F87171"
-                          strokeWidth="2"
-                        />
-                        
-                        {/* Labels and data points */}
-                        {incomeVsExpenses.map((item, i) => {
-                          const x = i * xStep;
-                          
-                          // Income data point
-                          const incomeY = maxValue > 0 ? 240 - (item.income / maxValue * 240) : 240;
-                          
-                          // Expenses data point
-                          const expensesY = maxValue > 0 ? 240 - (item.expenses / maxValue * 240) : 240;
-                          
-                          return (
-                            <g key={i}>
-                              {/* Income data point */}
-                              <circle cx={x} cy={incomeY} r="4" fill="#34D399" />
-                              
-                              {/* Expenses data point */}
-                              <circle cx={x} cy={expensesY} r="4" fill="#F87171" />
-                              
-                              {/* Period label */}
-                              <text x={x} y="255" fontSize="10" fill="#94A3B8" textAnchor="middle">
-                                {isMobile ? (item.label.length > 5 ? item.label.substring(0, 5) : item.label) : item.label}
-                              </text>
-                            </g>
-                          );
-                        })}
-                      </>
-                    );
-                  })()}
-                </svg>
-              </div>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <p className="text-slate-400">No income vs expense data available</p>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex justify-center gap-8 text-sm mt-6">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-              <span className="text-slate-300">Income</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-              <span className="text-slate-300">Expenses</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Key Insights - MOBILE OPTIMIZED */}
-      <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
-        <h5 className="text-lg font-medium text-white mb-4">
-          Key Insights & Recommendations
-        </h5>
-        
-        <div className="space-y-4">
-          {insights.insights.length > 0 ? (
-            insights.insights.map((insight, index) => (
-              <div 
-                key={index} 
-                className={`p-3 sm:p-4 rounded-lg ${getInsightBgClass(insight.type)}`}
-              >
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <div className={`p-2 rounded-lg ${getInsightColorClass(insight.type)} flex-shrink-0`}>
-                    {renderIcon(insight.icon, 18)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h6 className="font-medium text-white mb-1 break-words">
-                      {insight.title}
-                    </h6>
-                    <p className="text-slate-300 text-sm break-words">
-                      {insight.description}
-                    </p>
-                    
-                    {insight.details && insight.details.length > 0 && (
-                      <ul className="mt-2 pl-4 text-sm text-slate-400 space-y-1">
-                        {insight.details.map((detail, i) => (
-                          <li key={i} className="list-disc">
-                            {detail}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center text-slate-400 p-6">
-              Not enough financial data to generate insights. Add more transactions and budgets to get personalized recommendations.
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Render the active view */}
+      {renderView()}
     </div>
   );
 };

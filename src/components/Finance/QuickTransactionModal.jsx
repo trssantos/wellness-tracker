@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown,X, DollarSign, Tag } from 'lucide-react';
-import { addTransaction, getFinanceData } from '../../utils/financeUtils';
+import { ChevronDown, X, DollarSign, Tag } from 'lucide-react';
+import { addTransaction, getFinanceData, getCategoriesByGroup } from '../../utils/financeUtils';
 
 const QuickTransactionModal = ({ type = 'expense', onClose, onTransactionAdded }) => {
   // State variables
@@ -8,12 +8,17 @@ const QuickTransactionModal = ({ type = 'expense', onClose, onTransactionAdded }
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [categories, setCategories] = useState({ income: [], expense: [] });
+  const [groupedCategories, setGroupedCategories] = useState({ income: {}, expense: {} });
   const [error, setError] = useState('');
 
   // Fetch categories on mount
   useEffect(() => {
     const financeData = getFinanceData();
     setCategories(financeData.categories);
+    
+    // Get categories grouped by their group attribute
+    const grouped = getCategoriesByGroup();
+    setGroupedCategories(grouped);
     
     // Set default category if available
     if (type === 'income' && financeData.categories.income.length > 0) {
@@ -143,12 +148,22 @@ const QuickTransactionModal = ({ type = 'expense', onClose, onTransactionAdded }
   >
     <option value="">Select a category</option>
     {type === 'income' ? (
-      categories.income && categories.income.map(cat => (
-        <option key={cat.id} value={cat.id}>{cat.name}</option>
+      // Group income categories by their group
+      Object.entries(groupedCategories.income).map(([group, cats]) => (
+        <optgroup key={group} label={group}>
+          {cats.map(cat => (
+            <option key={cat.id} value={cat.id}>{cat.name}</option>
+          ))}
+        </optgroup>
       ))
     ) : (
-      categories.expense && categories.expense.map(cat => (
-        <option key={cat.id} value={cat.id}>{cat.name}</option>
+      // Group expense categories by their group
+      Object.entries(groupedCategories.expense).map(([group, cats]) => (
+        <optgroup key={group} label={group}>
+          {cats.map(cat => (
+            <option key={cat.id} value={cat.id}>{cat.name}</option>
+          ))}
+        </optgroup>
       ))
     )}
   </select>

@@ -1,8 +1,12 @@
+// src/utils/financeUtils.js
 import { getStorage, setStorage } from './storage';
 import { 
-  Banknote, Laptop, TrendingUp, Gift, PlusCircle,
-  Home, Utensils, Car, Zap, Heart, Film, ShoppingBag,
-  BookOpen, User, Repeat, CreditCard, MoreHorizontal
+  Banknote, Laptop, TrendingUp, Gift, PlusCircle, Briefcase,
+  Home, Utensils, Car, Zap, Heart, Film, ShoppingBag, Train, Package,
+  BookOpen, User, Repeat, CreditCard, MoreHorizontal, Shield,
+  Wrench, Droplet, ShoppingCart, Coffee, Wine, Smartphone, Wifi,
+  Scissors, Smile, Activity, FileText, UserCheck, Music, Ticket,
+  Gamepad, Undo, MapPin, Lamp, Stethoscope, Pill, Flame
 } from 'lucide-react';
 
 
@@ -16,7 +20,6 @@ export const getFinanceData = () => {
       budgets: [],
       savingsGoals: [],
       recurringTransactions: [],
-      categories: getDefaultCategories(),
       settings: {
         currency: 'EUR',
         currencySymbol: '€',
@@ -25,13 +28,24 @@ export const getFinanceData = () => {
     };
     setStorage(storage);
   }
-  return storage.finance;
+  
+  // Always use the categories from constants, not storage
+  // This ensures new categories are always available without requiring resets
+  return {
+    ...storage.finance,
+    categories: getCategoriesFromConstants()
+  };
 };
 
 // Save finance data
 export const saveFinanceData = (financeData) => {
   const storage = getStorage();
-  storage.finance = financeData;
+  
+  // Save everything except categories to storage
+  // Categories will always be loaded from getCategoriesFromConstants()
+  const { categories, ...dataToSave } = financeData;
+  
+  storage.finance = dataToSave;
   setStorage(storage);
 };
 
@@ -183,52 +197,186 @@ export const deleteTransaction = (transactionId) => {
 export const CATEGORY_ICONS = {
   // Income categories
   'income-salary': { icon: 'banknote', component: Banknote },
+  'income-bonus': { icon: 'banknote', component: Banknote },
   'income-freelance': { icon: 'laptop', component: Laptop },
-  'income-investments': { icon: 'trending-up', component: TrendingUp },
+  'income-business': { icon: 'briefcase', component: Briefcase },
+  'income-dividends': { icon: 'trending-up', component: TrendingUp },
+  'income-interest': { icon: 'trending-up', component: TrendingUp },
+  'income-rental': { icon: 'home', component: Home },
   'income-gifts': { icon: 'gift', component: Gift },
+  'income-refunds': { icon: 'undo', component: Undo },
   'income-other': { icon: 'plus-circle', component: PlusCircle },
   
-  // Expense categories
-  'expense-housing': { icon: 'home', component: Home },
-  'expense-food': { icon: 'utensils', component: Utensils },
-  'expense-transportation': { icon: 'car', component: Car },
-  'expense-utilities': { icon: 'zap', component: Zap },
-  'expense-healthcare': { icon: 'heart', component: Heart },
-  'expense-entertainment': { icon: 'film', component: Film },
-  'expense-shopping': { icon: 'shopping-bag', component: ShoppingBag },
+  // Housing categories
+  'expense-housing-rent': { icon: 'home', component: Home },
+  'expense-housing-insurance': { icon: 'shield', component: Shield },
+  'expense-housing-maintenance': { icon: 'wrench', component: Wrench },
+  'expense-housing-furniture': { icon: 'lamp', component: Lamp },
+  
+  // Food categories
+  'expense-food-groceries': { icon: 'shopping-cart', component: ShoppingCart },
+  'expense-food-restaurants': { icon: 'utensils', component: Utensils },
+  'expense-food-takeaway': { icon: 'package', component: Package },
+  'expense-food-coffee': { icon: 'coffee', component: Coffee },
+  'expense-food-alcohol': { icon: 'wine', component: Wine },
+  
+  // Transportation categories
+  'expense-transport-public': { icon: 'train', component: Train },
+  'expense-transport-taxi': { icon: 'car', component: Car },
+  'expense-transport-fuel': { icon: 'droplet', component: Droplet },
+  'expense-transport-maintenance': { icon: 'wrench', component: Wrench },
+  'expense-transport-parking': { icon: 'map-pin', component: MapPin },
+  
+  // Utilities categories
+  'expense-utilities-electricity': { icon: 'zap', component: Zap },
+  'expense-utilities-water': { icon: 'droplet', component: Droplet },
+  'expense-utilities-gas': { icon: 'flame', component: Flame },
+  'expense-utilities-internet': { icon: 'wifi', component: Wifi },
+  'expense-utilities-phone': { icon: 'smartphone', component: Smartphone },
+  
+  // Shopping categories
+  'expense-shopping-clothes': { icon: 'shopping-bag', component: ShoppingBag },
+  'expense-shopping-electronics': { icon: 'smartphone', component: Smartphone },
+  'expense-shopping-gifts': { icon: 'gift', component: Gift },
+  'expense-shopping-household': { icon: 'home', component: Home },
+  
+  // Healthcare categories
+  'expense-health-doctor': { icon: 'stethoscope', component: Stethoscope },
+  'expense-health-pharmacy': { icon: 'pill', component: Pill },
+  'expense-health-insurance': { icon: 'shield', component: Shield },
+  'expense-health-fitness': { icon: 'activity', component: Activity },
+  
+  // Entertainment categories
+  'expense-entertainment-movies': { icon: 'film', component: Film },
+  'expense-entertainment-music': { icon: 'music', component: Music },
+  'expense-entertainment-games': { icon: 'gamepad', component: Gamepad },
+  'expense-entertainment-events': { icon: 'ticket', component: Ticket },
+  
+  // Subscription categories
+  'expense-subs-streaming': { icon: 'repeat', component: Repeat },
+  'expense-subs-software': { icon: 'smartphone', component: Smartphone },
+  'expense-subs-memberships': { icon: 'user-check', component: UserCheck },
+  
+  // Personal categories
+  'expense-personal-hygiene': { icon: 'user', component: User },
+  'expense-personal-haircut': { icon: 'scissors', component: Scissors },
+  'expense-personal-spa': { icon: 'smile', component: Smile },
+  
+  // Other categories
   'expense-education': { icon: 'book-open', component: BookOpen },
-  'expense-personal': { icon: 'user', component: User },
-  'expense-subscriptions': { icon: 'repeat', component: Repeat },
-  'expense-debt': { icon: 'credit-card', component: CreditCard },
+  'expense-debt-payments': { icon: 'credit-card', component: CreditCard },
+  'expense-taxes': { icon: 'file-text', component: FileText },
+  'expense-charity': { icon: 'heart', component: Heart },
   'expense-other': { icon: 'more-horizontal', component: MoreHorizontal }
 };
 
-
-// Get default expense/income categories with unique colors
-export const getDefaultCategories = () => {
+// This becomes the source of truth for categories
+export const getCategoriesFromConstants = () => {
   return {
     income: [
-      { id: 'income-salary', name: 'Salary & Wages', color: 'green', icon: 'banknote' },
-      { id: 'income-freelance', name: 'Freelance', color: 'emerald', icon: 'laptop' },
-      { id: 'income-investments', name: 'Investments', color: 'blue', icon: 'trending-up' },
-      { id: 'income-gifts', name: 'Gifts', color: 'purple', icon: 'gift' },
-      { id: 'income-other', name: 'Other Income', color: 'indigo', icon: 'plus-circle' }
+      { id: 'income-salary', name: 'Salary & Wages', color: 'green', icon: 'banknote', group: 'Employment' },
+      { id: 'income-bonus', name: 'Bonus', color: 'green', icon: 'banknote', group: 'Employment' },
+      { id: 'income-freelance', name: 'Freelance', color: 'emerald', icon: 'laptop', group: 'Self-Employment' },
+      { id: 'income-business', name: 'Business', color: 'emerald', icon: 'briefcase', group: 'Self-Employment' },
+      { id: 'income-dividends', name: 'Dividends', color: 'blue', icon: 'trending-up', group: 'Investments' },
+      { id: 'income-interest', name: 'Interest', color: 'blue', icon: 'trending-up', group: 'Investments' },
+      { id: 'income-rental', name: 'Rental Income', color: 'blue', icon: 'home', group: 'Investments' },
+      { id: 'income-gifts', name: 'Gifts', color: 'purple', icon: 'gift', group: 'Other Income' },
+      { id: 'income-refunds', name: 'Refunds', color: 'purple', icon: 'undo', group: 'Other Income' },
+      { id: 'income-other', name: 'Other Income', color: 'indigo', icon: 'plus-circle', group: 'Other Income' }
     ],
     expense: [
-      { id: 'expense-housing', name: 'Housing', color: 'amber', icon: 'home' },
-      { id: 'expense-food', name: 'Food', color: 'green', icon: 'utensils' },
-      { id: 'expense-transportation', name: 'Transportation', color: 'blue', icon: 'car' },
-      { id: 'expense-utilities', name: 'Utilities', color: 'teal', icon: 'zap' },
-      { id: 'expense-healthcare', name: 'Healthcare', color: 'rose', icon: 'heart' },
-      { id: 'expense-entertainment', name: 'Entertainment', color: 'purple', icon: 'film' },
-      { id: 'expense-shopping', name: 'Shopping', color: 'pink', icon: 'shopping-bag' },
-      { id: 'expense-education', name: 'Education', color: 'indigo', icon: 'book-open' },
-      { id: 'expense-personal', name: 'Personal Care', color: 'cyan', icon: 'user' },
-      { id: 'expense-subscriptions', name: 'Subscriptions', color: 'violet', icon: 'repeat' },
-      { id: 'expense-debt', name: 'Debt Payments', color: 'red', icon: 'credit-card' },
-      { id: 'expense-other', name: 'Other Expenses', color: 'gray', icon: 'more-horizontal' }
+      // Housing group
+      { id: 'expense-housing-rent', name: 'Rent/Mortgage', color: 'amber', icon: 'home', group: 'Housing' },
+      { id: 'expense-housing-insurance', name: 'Home Insurance', color: 'amber', icon: 'shield', group: 'Housing' },
+      { id: 'expense-housing-maintenance', name: 'Home Maintenance', color: 'amber', icon: 'wrench', group: 'Housing' },
+      { id: 'expense-housing-furniture', name: 'Furniture', color: 'amber', icon: 'lamp', group: 'Housing' },
+      
+      // Food group
+      { id: 'expense-food-groceries', name: 'Groceries', color: 'green', icon: 'shopping-cart', group: 'Food' },
+      { id: 'expense-food-restaurants', name: 'Dining Out', color: 'green', icon: 'utensils', group: 'Food' },
+      { id: 'expense-food-takeaway', name: 'Takeaway', color: 'green', icon: 'package', group: 'Food' },
+      { id: 'expense-food-coffee', name: 'Coffee & Cafes', color: 'green', icon: 'coffee', group: 'Food' },
+      { id: 'expense-food-alcohol', name: 'Alcohol & Bars', color: 'green', icon: 'wine', group: 'Food' },
+      
+      // Transportation group
+      { id: 'expense-transport-public', name: 'Public Transit', color: 'blue', icon: 'train', group: 'Transportation' },
+      { id: 'expense-transport-taxi', name: 'Taxi & Rideshare', color: 'blue', icon: 'car', group: 'Transportation' },
+      { id: 'expense-transport-fuel', name: 'Fuel', color: 'blue', icon: 'droplet', group: 'Transportation' },
+      { id: 'expense-transport-maintenance', name: 'Car Maintenance', color: 'blue', icon: 'wrench', group: 'Transportation' },
+      { id: 'expense-transport-parking', name: 'Parking & Tolls', color: 'blue', icon: 'map-pin', group: 'Transportation' },
+      
+      // Utilities group
+      { id: 'expense-utilities-electricity', name: 'Electricity', color: 'teal', icon: 'zap', group: 'Utilities' },
+      { id: 'expense-utilities-water', name: 'Water', color: 'teal', icon: 'droplet', group: 'Utilities' },
+      { id: 'expense-utilities-gas', name: 'Gas', color: 'teal', icon: 'flame', group: 'Utilities' },
+      { id: 'expense-utilities-internet', name: 'Internet', color: 'teal', icon: 'wifi', group: 'Utilities' },
+      { id: 'expense-utilities-phone', name: 'Phone', color: 'teal', icon: 'smartphone', group: 'Utilities' },
+      
+      // Shopping group
+      { id: 'expense-shopping-clothes', name: 'Clothing', color: 'pink', icon: 'shopping-bag', group: 'Shopping' },
+      { id: 'expense-shopping-electronics', name: 'Electronics', color: 'pink', icon: 'smartphone', group: 'Shopping' },
+      { id: 'expense-shopping-gifts', name: 'Gifts', color: 'pink', icon: 'gift', group: 'Shopping' },
+      { id: 'expense-shopping-household', name: 'Household Items', color: 'pink', icon: 'home', group: 'Shopping' },
+      
+      // Healthcare group
+      { id: 'expense-health-doctor', name: 'Doctor & Medical', color: 'rose', icon: 'stethoscope', group: 'Healthcare' },
+      { id: 'expense-health-pharmacy', name: 'Pharmacy', color: 'rose', icon: 'pill', group: 'Healthcare' },
+      { id: 'expense-health-insurance', name: 'Health Insurance', color: 'rose', icon: 'shield', group: 'Healthcare' },
+      { id: 'expense-health-fitness', name: 'Fitness', color: 'rose', icon: 'activity', group: 'Healthcare' },
+      
+      // Entertainment group
+      { id: 'expense-entertainment-movies', name: 'Movies & TV', color: 'purple', icon: 'film', group: 'Entertainment' },
+      { id: 'expense-entertainment-music', name: 'Music', color: 'purple', icon: 'music', group: 'Entertainment' },
+      { id: 'expense-entertainment-games', name: 'Games', color: 'purple', icon: 'gamepad', group: 'Entertainment' },
+      { id: 'expense-entertainment-events', name: 'Events & Concerts', color: 'purple', icon: 'ticket', group: 'Entertainment' },
+      
+      // Subscriptions group
+      { id: 'expense-subs-streaming', name: 'Streaming Services', color: 'violet', icon: 'repeat', group: 'Subscriptions' },
+      { id: 'expense-subs-software', name: 'Software & Apps', color: 'violet', icon: 'smartphone', group: 'Subscriptions' },
+      { id: 'expense-subs-memberships', name: 'Memberships', color: 'violet', icon: 'user-check', group: 'Subscriptions' },
+      
+      // Personal group
+      { id: 'expense-personal-hygiene', name: 'Personal Care', color: 'cyan', icon: 'user', group: 'Personal' },
+      { id: 'expense-personal-haircut', name: 'Hair & Beauty', color: 'cyan', icon: 'scissors', group: 'Personal' },
+      { id: 'expense-personal-spa', name: 'Spa & Massage', color: 'cyan', icon: 'smile', group: 'Personal' },
+      
+      // Other catch-all categories
+      { id: 'expense-education', name: 'Education', color: 'indigo', icon: 'book-open', group: 'Other' },
+      { id: 'expense-debt-payments', name: 'Debt Payments', color: 'red', icon: 'credit-card', group: 'Other' },
+      { id: 'expense-taxes', name: 'Taxes', color: 'gray', icon: 'file-text', group: 'Other' },
+      { id: 'expense-charity', name: 'Charity', color: 'green', icon: 'heart', group: 'Other' },
+      { id: 'expense-other', name: 'Miscellaneous', color: 'gray', icon: 'more-horizontal', group: 'Other' }
     ]
   };
+};
+
+// For backward compatibility - redirects to the constant categories 
+export const getDefaultCategories = () => {
+  return getCategoriesFromConstants();
+};
+
+// Group categories by their group field - now using the constant categories
+export const getCategoriesByGroup = () => {
+  const categories = getCategoriesFromConstants();
+  
+  // Process income categories
+  const incomeGroups = categories.income.reduce((groups, category) => {
+    const group = category.group || 'Other';
+    if (!groups[group]) groups[group] = [];
+    groups[group].push(category);
+    return groups;
+  }, {});
+  
+  // Process expense categories
+  const expenseGroups = categories.expense.reduce((groups, category) => {
+    const group = category.group || 'Other';
+    if (!groups[group]) groups[group] = [];
+    groups[group].push(category);
+    return groups;
+  }, {});
+  
+  return { income: incomeGroups, expense: expenseGroups };
 };
 
 // Add a helper function to get category icon component
@@ -238,6 +386,27 @@ export const getCategoryIconComponent = (categoryId, size = 16) => {
   
   const IconComponent = category.component;
   return <IconComponent size={size} />;
+};
+
+// Add a helper function to get category group by ID
+export const getCategoryGroupById = (categoryId) => {
+  const categories = getCategoriesFromConstants();
+  
+  // Look in income categories
+  for (const category of categories.income) {
+    if (category.id === categoryId) {
+      return category.group || 'Other';
+    }
+  }
+  
+  // Look in expense categories
+  for (const category of categories.expense) {
+    if (category.id === categoryId) {
+      return category.group || 'Other';
+    }
+  }
+  
+  return 'Uncategorized';
 };
 
 // Add a budget
@@ -521,124 +690,471 @@ const daysInMonth = (year, month) => {
 };
 
 // Process recurring transactions for today
-
-// Create a reminder for a recurring transaction
-export const createReminderForRecurring = (recurring) => {
-  if (!window.reminderService) {
-    console.error('Reminder service not available');
-    return null;
-  }
+export const processRecurringTransactions = (date) => {
+  const today = date ? new Date(date) : new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayString = today.toISOString().split('T')[0];
   
-  const storage = getStorage();
+  const financeData = getFinanceData();
+  const processed = [];
   
-  // Get or initialize reminder settings
-  if (!storage.reminderSettings) {
-    storage.reminderSettings = { enabled: true, reminders: [] };
-  }
-  
-  // Create reminder for this recurring transaction
-  const reminderDays = recurring.reminderDays || 3; // Default: 3 days before
-  const nextDate = new Date(recurring.nextDate);
-  
-  // Calculate reminder date
-  const reminderDate = new Date(nextDate);
-  reminderDate.setDate(nextDate.getDate() - reminderDays);
-  
-  // Format reminder date for tasks
-  const reminderDateStr = reminderDate.toISOString().split('T')[0];
-  
-  // Create task for this date
-  const isExpense = recurring.amount < 0;
-  const taskText = `${isExpense ? 'Pay' : 'Receive'}: ${recurring.name} (${isExpense ? '-' : '+'}$${Math.abs(recurring.amount).toFixed(2)})`;
-  
-  // Get the day data for the reminder date
-  const dayData = storage[reminderDateStr] || {};
-  
-  // Create or update task list
-  let taskList = dayData.customTasks || dayData.aiTasks || dayData.defaultTasks || JSON.parse(JSON.stringify(DEFAULT_TASKS));
-  
-  // Find or create Financial category
-  let financialCategory = taskList.find(cat => cat.title === 'Financial');
-  if (!financialCategory) {
-    financialCategory = { title: 'Financial', items: [] };
-    taskList.push(financialCategory);
-  }
-  
-  // Add task if not already present
-  if (!financialCategory.items.includes(taskText)) {
-    financialCategory.items.push(taskText);
-  }
-  
-  // Update day data with task list
-  storage[reminderDateStr] = {
-    ...dayData,
-    customTasks: taskList,
-    checked: { ...(dayData.checked || {}), [taskText]: false }
-  };
-  
-  // Create reminder ID
-  const reminderId = `finance-${recurring.id}`;
-  
-  // Add to reminders
-  const existingReminderIndex = storage.reminderSettings.reminders.findIndex(r => r.id === reminderId);
-  const reminderObj = {
-    id: reminderId,
-    label: `${isExpense ? 'Payment due' : 'Income expected'}: ${recurring.name} ($${Math.abs(recurring.amount).toFixed(2)})`,
-    time: '09:00', // Default reminder time
-    enabled: true,
-    dateKey: reminderDateStr
-  };
-  
-  if (existingReminderIndex >= 0) {
-    storage.reminderSettings.reminders[existingReminderIndex] = reminderObj;
-  } else {
-    storage.reminderSettings.reminders.push(reminderObj);
-  }
-  
-  setStorage(storage);
-  
-  // Reload reminders in reminder service
-  if (window.reminderService.loadReminders) {
-    window.reminderService.loadReminders();
-  }
-  
-  return reminderObj;
-};
-
-// Update reminder for a recurring transaction
-export const updateReminderForRecurring = (recurring) => {
-  // If reminder was disabled, delete it
-  if (!recurring.createReminder) {
-    deleteReminderForRecurring(recurring);
-    return null;
-  }
-  
-  // Otherwise create/update it
-  return createReminderForRecurring(recurring);
-};
-
-// Delete reminder for a recurring transaction
-export const deleteReminderForRecurring = (recurring) => {
-  const storage = getStorage();
-  const reminderId = `finance-${recurring.id}`;
-  
-  if (storage.reminderSettings && storage.reminderSettings.reminders) {
-    storage.reminderSettings.reminders = storage.reminderSettings.reminders.filter(r => r.id !== reminderId);
-    setStorage(storage);
-    
-    // Reload reminders in reminder service
-    if (window.reminderService.loadReminders) {
-      window.reminderService.loadReminders();
+  financeData.recurringTransactions.forEach(recurring => {
+    // Process transactions that are due today
+    if (recurring.nextDate === todayString) {
+      // Create actual transaction from the recurring one
+      const transaction = {
+        id: `tx-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        name: recurring.name,
+        amount: recurring.amount,
+        category: recurring.category,
+        date: todayString,
+        notes: `Auto-generated from recurring: ${recurring.name}`,
+        recurring: recurring.id,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Add the transaction
+      financeData.transactions.unshift(transaction);
+      processed.push(transaction);
+      
+      // Calculate and update next occurrence
+      recurring.nextDate = calculateNextOccurrence(recurring.frequency, todayString);
     }
     
-    return true;
+    // Process reminders for upcoming transactions
+    const reminderDays = recurring.reminderDays || 3;
+    const nextDueDate = new Date(recurring.nextDate);
+    const reminderDate = new Date(nextDueDate);
+    reminderDate.setDate(nextDueDate.getDate() - reminderDays);
+    
+    const reminderDateString = reminderDate.toISOString().split('T')[0];
+    if (reminderDateString === todayString && recurring.createReminder) {
+      // Create a reminder/task for this upcoming transaction
+      createReminderForRecurring(recurring);
+    }
+  });
+  
+  // Save updated data if any transactions were processed
+  if (processed.length > 0) {
+    saveFinanceData(financeData);
   }
   
-  return false;
+  return processed;
 };
 
+// Get category name from ID - now using constant categories
+export const getCategoryById = (categoryId) => {
+  const categories = getCategoriesFromConstants();
+  
+  for (const type of ['income', 'expense']) {
+    const found = categories[type].find(cat => cat.id === categoryId);
+    if (found) return found;
+  }
+  
+  return null;
+};
+
+// Get category color from ID
+export const getCategoryColor = (categoryId) => {
+  const category = getCategoryById(categoryId);
+  return category ? category.color : 'gray';
+};
+
+// Group transactions by category group
+export const groupTransactionsByCategoryGroup = (transactions) => {
+  const groupedTransactions = {};
+  
+  transactions.forEach(transaction => {
+    if (!transaction.category) return;
+    
+    const group = getCategoryGroupById(transaction.category);
+    if (!groupedTransactions[group]) {
+      groupedTransactions[group] = [];
+    }
+    
+    groupedTransactions[group].push(transaction);
+  });
+  
+  return groupedTransactions;
+};
+
+// Get spending breakdown by category group
+export const getSpendingByGroup = (transactions, dateRange) => {
+  const groups = {};
+  
+  // Filter transactions by date if provided
+  let filteredTransactions = transactions;
+  if (dateRange) {
+    const startDate = new Date(dateRange.start);
+    const endDate = new Date(dateRange.end);
+    
+    filteredTransactions = transactions.filter(tx => {
+      const txDate = new Date(tx.timestamp);
+      return txDate >= startDate && txDate <= endDate;
+    });
+  }
+  
+  // Only include expense transactions
+  filteredTransactions = filteredTransactions.filter(tx => tx.amount < 0);
+  
+  // Group by category group
+  filteredTransactions.forEach(tx => {
+    if (!tx.category) return;
+    
+    const group = getCategoryGroupById(tx.category);
+    if (!groups[group]) {
+      groups[group] = { total: 0, subcategories: {} };
+    }
+    
+    const amount = Math.abs(tx.amount);
+    groups[group].total += amount;
+    
+    // Track subcategory spending too
+    const subcategoryId = tx.category;
+    if (!groups[group].subcategories[subcategoryId]) {
+      const category = getCategoryById(subcategoryId);
+      groups[group].subcategories[subcategoryId] = {
+        id: subcategoryId,
+        name: category ? category.name : 'Unknown',
+        total: 0,
+        color: category ? category.color : 'gray'
+      };
+    }
+    
+    groups[group].subcategories[subcategoryId].total += amount;
+  });
+  
+  // Convert to array format
+  return Object.entries(groups).map(([name, data]) => ({
+    name,
+    total: data.total,
+    subcategories: Object.values(data.subcategories).sort((a, b) => b.total - a.total)
+  })).sort((a, b) => b.total - a.total);
+};
+
+// Get financial insights for the current user
+export const getFinancialInsights = () => {
+  const financeData = getFinanceData();
+  const insights = [];
+  
+  // Get the monthly stats
+  const stats = calculateFinancialStats('month');
+  
+  // Calculate financial health score (simple version)
+  let financialHealthScore = 50; // Base score
+  
+  // If income > expenses, that's good
+  if (stats.income > stats.expenses) {
+    financialHealthScore += 20;
+  } else {
+    financialHealthScore -= 10;
+  }
+  
+  // If saving at least 20% of income, that's great
+  const savingsRate = stats.income > 0 ? (stats.income - stats.expenses) / stats.income : 0;
+  if (savingsRate >= 0.2) {
+    financialHealthScore += 20;
+    insights.push({
+      type: 'positive',
+      title: 'Excellent Savings Rate',
+      description: `You're saving ${Math.round(savingsRate * 100)}% of your income this month. Great job!`,
+      icon: 'piggy-bank'
+    });
+  } else if (savingsRate > 0) {
+    financialHealthScore += 10;
+    insights.push({
+      type: 'neutral',
+      title: 'Positive Savings',
+      description: `You're saving ${Math.round(savingsRate * 100)}% of your income this month.`,
+      icon: 'piggy-bank'
+    });
+  } else {
+    financialHealthScore -= 20;
+    insights.push({
+      type: 'negative',
+      title: 'Negative Savings Rate',
+      description: 'You spent more than you earned this month. Review your expenses to get back on track.',
+      icon: 'alert-triangle'
+    });
+  }
+  
+  // Check budget adherence
+  const budgetsOverLimit = stats.budgets.filter(b => b.spent > b.allocated);
+  
+  if (budgetsOverLimit.length > 0) {
+    financialHealthScore -= 5 * budgetsOverLimit.length;
+    
+    insights.push({
+      type: 'negative',
+      title: 'Budget Alert',
+      description: `You've exceeded your budget in ${budgetsOverLimit.length} categories.`,
+      icon: 'alert-triangle',
+      details: budgetsOverLimit.map(b => `${getCategoryById(b.category)?.name || b.category}: $${b.spent.toFixed(2)} / $${b.allocated.toFixed(2)}`)
+    });
+  }
+  
+  // Budget categories that are close to limit
+  const budgetsNearLimit = stats.budgets.filter(b => b.spent < b.allocated && b.spent >= 0.8 * b.allocated);
+  
+  if (budgetsNearLimit.length > 0) {
+    insights.push({
+      type: 'warning',
+      title: 'Budget Warning',
+      description: `You're approaching your budget limit in ${budgetsNearLimit.length} categories.`,
+      icon: 'alert-circle',
+      details: budgetsNearLimit.map(b => `${getCategoryById(b.category)?.name || b.category}: $${b.spent.toFixed(2)} / $${b.allocated.toFixed(2)}`)
+    });
+  }
+  
+  // Check recurring transactions due soon
+  const today = new Date();
+  const nextWeek = new Date(today);
+  nextWeek.setDate(today.getDate() + 7);
+  
+  const upcomingRecurring = financeData.recurringTransactions.filter(r => {
+    const nextDate = new Date(r.nextDate);
+    return nextDate >= today && nextDate <= nextWeek && r.amount < 0;
+  });
+  
+  if (upcomingRecurring.length > 0) {
+    const totalAmount = upcomingRecurring.reduce((sum, r) => sum + Math.abs(r.amount), 0);
+    
+    insights.push({
+      type: 'info',
+      title: 'Upcoming Payments',
+      description: `You have ${upcomingRecurring.length} payments totaling $${totalAmount.toFixed(2)} due in the next 7 days.`,
+      icon: 'calendar',
+      details: upcomingRecurring.map(r => `${r.name}: $${Math.abs(r.amount).toFixed(2)} due on ${new Date(r.nextDate).toLocaleDateString()}`)
+    });
+  }
+  
+  // Look for category group spending patterns
+  const spendingByGroup = getSpendingByGroup(financeData.transactions);
+  
+  if (spendingByGroup.length > 0) {
+    const topGroup = spendingByGroup[0];
+    const percentOfTotal = stats.expenses > 0 ? Math.round((topGroup.total / stats.expenses) * 100) : 0;
+    
+    if (percentOfTotal > 40) {
+      insights.push({
+        type: 'warning',
+        title: 'High Category Spending',
+        description: `${percentOfTotal}% of your expenses this month were in the "${topGroup.name}" category group.`,
+        icon: 'pie-chart',
+        details: topGroup.subcategories.slice(0, 3).map(sub => 
+          `${sub.name}: $${sub.total.toFixed(2)} (${Math.round((sub.total / topGroup.total) * 100)}% of ${topGroup.name} spending)`
+        )
+      });
+      
+      if (percentOfTotal > 60) {
+        financialHealthScore -= 15;
+      } else {
+        financialHealthScore -= 5;
+      }
+    }
+    
+    // Look for subcategory insights
+    if (topGroup.subcategories.length > 0) {
+      const topSubcategory = topGroup.subcategories[0];
+      const subcategoryPercent = Math.round((topSubcategory.total / topGroup.total) * 100);
+      
+      if (subcategoryPercent > 70) {
+        insights.push({
+          type: 'info',
+          title: 'Spending Concentration',
+          description: `${subcategoryPercent}% of your ${topGroup.name} spending goes to ${topSubcategory.name}.`,
+          icon: 'focus'
+        });
+      }
+    }
+  }
+  
+  // Add food specific insights
+  const foodGroup = spendingByGroup.find(group => group.name === 'Food');
+  if (foodGroup && foodGroup.subcategories.length >= 2) {
+    const groceries = foodGroup.subcategories.find(sub => sub.id === 'expense-food-groceries');
+    const restaurants = foodGroup.subcategories.find(sub => sub.id === 'expense-food-restaurants');
+    const takeaway = foodGroup.subcategories.find(sub => sub.id === 'expense-food-takeaway');
+    
+    // Calculate total spent on eating out (restaurants + takeaway)
+    const eatingOutTotal = (restaurants?.total || 0) + (takeaway?.total || 0);
+    const groceryTotal = groceries?.total || 0;
+    
+    if (eatingOutTotal > 0 && groceryTotal > 0) {
+      const ratio = eatingOutTotal / groceryTotal;
+      
+      if (ratio > 1.5) {
+        insights.push({
+          type: 'warning',
+          title: 'High Eating Out Expenses',
+          description: `You're spending ${ratio.toFixed(1)}x more on eating out than on groceries.`,
+          icon: 'utensils',
+          details: [
+            `Restaurants & Takeaway: $${eatingOutTotal.toFixed(2)}`,
+            `Groceries: $${groceryTotal.toFixed(2)}`,
+            'Consider cooking at home more often to reduce expenses.'
+          ]
+        });
+        
+        financialHealthScore -= 10;
+      } else if (ratio < 0.5) {
+        insights.push({
+          type: 'positive',
+          title: 'Good Grocery Habits',
+          description: 'You\'re spending more on groceries than eating out, which is great for your budget.',
+          icon: 'shopping-cart'
+        });
+        
+        financialHealthScore += 5;
+      }
+    }
+  }
+  
+  // Adjust score based on savings goals progress
+  const activeGoals = financeData.savingsGoals.filter(g => g.current < g.target);
+  if (activeGoals.length > 0) {
+    // Check average progress
+    const avgProgress = activeGoals.reduce((sum, g) => sum + (g.current / g.target), 0) / activeGoals.length;
+    
+    if (avgProgress > 0.7) {
+      financialHealthScore += 10;
+      insights.push({
+        type: 'positive',
+        title: 'Savings Goals Progress',
+        description: 'You\'re making excellent progress on your savings goals!',
+        icon: 'award'
+      });
+    }
+  }
+  
+  // Cap the score between 0 and 100
+  financialHealthScore = Math.max(0, Math.min(100, financialHealthScore));
+  
+  return {
+    score: Math.round(financialHealthScore),
+    insights
+  };
+};
+
+// Get correlation between spending and mood
+export const getSpendingMoodCorrelation = () => {
+  const financeData = getFinanceData();
+  const storage = getStorage();
+  const correlations = [];
+  
+  // Only proceed if we have transactions and mood data
+  if (!financeData.transactions.length) {
+    return [];
+  }
+  
+  // Get all dates with mood data
+  const moodDates = Object.keys(storage).filter(key => {
+    return key.match(/^\d{4}-\d{2}-\d{2}$/) && 
+           (storage[key].morningMood || storage[key].eveningMood);
+  });
+  
+  if (moodDates.length < 5) {
+    // Not enough mood data for meaningful correlations
+    return [];
+  }
+  
+  // Group transactions by date
+  const transactionsByDate = {};
+  
+  financeData.transactions.forEach(transaction => {
+    const date = new Date(transaction.timestamp).toISOString().split('T')[0];
+    
+    if (!transactionsByDate[date]) {
+      transactionsByDate[date] = [];
+    }
+    
+    transactionsByDate[date].push(transaction);
+  });
+  
+  // Find days with high expenses followed by mood change
+  for (let i = 0; i < moodDates.length - 1; i++) {
+    const currentDate = moodDates[i];
+    const nextDate = moodDates[i + 1];
+    
+    // Skip if dates are not consecutive
+    const currentDateObj = new Date(currentDate);
+    const nextDateObj = new Date(nextDate);
+    const dayDiff = (nextDateObj - currentDateObj) / (1000 * 60 * 60 * 24);
+    
+    if (dayDiff !== 1) continue;
+    
+    // Get mood values (0-5 scale)
+    const currentMood = storage[currentDate].eveningMood || storage[currentDate].morningMood || 3;
+    const nextMood = storage[nextDate].morningMood || 3;
+    
+    // Get expenses for current date
+    const currentExpenses = transactionsByDate[currentDate] || [];
+    const totalSpent = currentExpenses
+      .filter(t => t.amount < 0)
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    
+    // Check if this was a high spending day (arbitrary threshold: $100)
+    const isHighSpending = totalSpent > 100;
+    
+    // Check if mood decreased
+    const moodDecreased = nextMood < currentMood;
+    
+    // Check if a specific category had high spending
+    if (currentExpenses.length > 0) {
+      const categorySpending = {};
+      
+      currentExpenses.forEach(transaction => {
+        if (!transaction.category || transaction.amount >= 0) return;
+        
+        if (!categorySpending[transaction.category]) {
+          categorySpending[transaction.category] = 0;
+        }
+        
+        categorySpending[transaction.category] += Math.abs(transaction.amount);
+      });
+      
+      // Find categories with significant spending
+      for (const [category, amount] of Object.entries(categorySpending)) {
+        if (amount > 50) {
+          const categoryObj = getCategoryById(category);
+          const categoryName = categoryObj?.name || category;
+          const categoryGroup = getCategoryGroupById(category);
+          
+          // Check if this specific category correlates with mood change
+          if (moodDecreased) {
+            correlations.push({
+              type: 'negative',
+              category: category,
+              categoryName: categoryName,
+              categoryGroup: categoryGroup,
+              spending: amount,
+              moodChange: currentMood - nextMood,
+              date: currentDate
+            });
+          }
+        }
+      }
+    }
+    
+    // General correlation between high spending and mood
+    if (isHighSpending && moodDecreased) {
+      correlations.push({
+        type: 'general',
+        spending: totalSpent,
+        moodChange: currentMood - nextMood,
+        date: currentDate
+      });
+    }
+  }
+  
+  // Sort correlations by strength (mood change)
+  correlations.sort((a, b) => b.moodChange - a.moodChange);
+  
+  return correlations.slice(0, 3); // Return top 3 correlations
+};
+
+
 // Calculate financial stats
-// Enhance your existing calculateFinancialStats function
 export const calculateFinancialStats = (period = 'month') => {
   const financeData = getFinanceData();
   const now = new Date();
@@ -777,6 +1293,9 @@ export const calculateFinancialStats = (period = 'month') => {
     };
   });
   
+  // Calculate spending by category group
+  const spendingByGroup = getSpendingByGroup(periodTransactions);
+  
   // Return compiled stats with both current and upcoming data
   return {
     period,
@@ -786,6 +1305,7 @@ export const calculateFinancialStats = (period = 'month') => {
     monthlyChange,
     categoryBreakdown,
     budgets,
+    spendingByGroup,
     startDate: startDateIso,
     endDate: now.toISOString(),
     // New properties for upcoming transactions
@@ -805,365 +1325,7 @@ export const calculateFinancialStats = (period = 'month') => {
   };
 };
 
-// Process recurring transactions for today and upcoming reminders
-export const processRecurringTransactions = (date) => {
-  const today = date ? new Date(date) : new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayString = today.toISOString().split('T')[0];
-  
-  const financeData = getFinanceData();
-  const processed = [];
-  
-  financeData.recurringTransactions.forEach(recurring => {
-    // Process transactions that are due today
-    if (recurring.nextDate === todayString) {
-      // Create actual transaction from the recurring one
-      const transaction = {
-        id: `tx-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        name: recurring.name,
-        amount: recurring.amount,
-        category: recurring.category,
-        date: todayString,
-        notes: `Auto-generated from recurring: ${recurring.name}`,
-        recurring: recurring.id,
-        timestamp: new Date().toISOString()
-      };
-      
-      // Add the transaction
-      financeData.transactions.unshift(transaction);
-      processed.push(transaction);
-      
-      // Calculate and update next occurrence
-      recurring.nextDate = calculateNextOccurrence(recurring.frequency, todayString);
-    }
-    
-    // Process reminders for upcoming transactions
-    const reminderDays = recurring.reminderDays || 3;
-    const nextDueDate = new Date(recurring.nextDate);
-    const reminderDate = new Date(nextDueDate);
-    reminderDate.setDate(nextDueDate.getDate() - reminderDays);
-    
-    const reminderDateString = reminderDate.toISOString().split('T')[0];
-    if (reminderDateString === todayString && recurring.createReminder) {
-      // Create a reminder/task for this upcoming transaction
-      createReminderForRecurring(recurring);
-    }
-  });
-  
-  // Save updated data if any transactions were processed
-  if (processed.length > 0) {
-    saveFinanceData(financeData);
-  }
-  
-  return processed;
-};
-
-// Default task list for placeholders
-const DEFAULT_TASKS = [
-  {
-    title: "Financial",
-    items: [
-      "Check bank account balance",
-      "Review budget for the week"
-    ]
-  }
-];
-
-// Get category name from ID
-export const getCategoryById = (categoryId) => {
-  const categories = getFinanceData().categories;
-  
-  for (const type of ['income', 'expense']) {
-    const found = categories[type].find(cat => cat.id === categoryId);
-    if (found) return found;
-  }
-  
-  return null;
-};
-
-// Get category color from ID
-export const getCategoryColor = (categoryId) => {
-  const category = getCategoryById(categoryId);
-  return category ? category.color : 'gray';
-};
-
-// Get financial insights for the current user
-export const getFinancialInsights = () => {
-  const financeData = getFinanceData();
-  const insights = [];
-  
-  // Get the monthly stats
-  const stats = calculateFinancialStats('month');
-  
-  // Calculate financial health score (simple version)
-  let financialHealthScore = 50; // Base score
-  
-  // If income > expenses, that's good
-  if (stats.income > stats.expenses) {
-    financialHealthScore += 20;
-  } else {
-    financialHealthScore -= 10;
-  }
-  
-  // If saving at least 20% of income, that's great
-  const savingsRate = stats.income > 0 ? (stats.income - stats.expenses) / stats.income : 0;
-  if (savingsRate >= 0.2) {
-    financialHealthScore += 20;
-    insights.push({
-      type: 'positive',
-      title: 'Excellent Savings Rate',
-      description: `You're saving ${Math.round(savingsRate * 100)}% of your income this month. Great job!`,
-      icon: 'piggy-bank'
-    });
-  } else if (savingsRate > 0) {
-    financialHealthScore += 10;
-    insights.push({
-      type: 'neutral',
-      title: 'Positive Savings',
-      description: `You're saving ${Math.round(savingsRate * 100)}% of your income this month.`,
-      icon: 'piggy-bank'
-    });
-  } else {
-    financialHealthScore -= 20;
-    insights.push({
-      type: 'negative',
-      title: 'Negative Savings Rate',
-      description: 'You spent more than you earned this month. Review your expenses to get back on track.',
-      icon: 'alert-triangle'
-    });
-  }
-  
-  // Check budget adherence
-  const budgetsOverLimit = stats.budgets.filter(b => b.spent > b.allocated);
-  
-  if (budgetsOverLimit.length > 0) {
-    financialHealthScore -= 5 * budgetsOverLimit.length;
-    
-    insights.push({
-      type: 'negative',
-      title: 'Budget Alert',
-      description: `You've exceeded your budget in ${budgetsOverLimit.length} categories.`,
-      icon: 'alert-triangle',
-      details: budgetsOverLimit.map(b => `${getCategoryById(b.category)?.name || b.category}: $${b.spent.toFixed(2)} / $${b.allocated.toFixed(2)}`)
-    });
-  }
-  
-  // Budget categories that are close to limit
-  const budgetsNearLimit = stats.budgets.filter(b => b.spent < b.allocated && b.spent >= 0.8 * b.allocated);
-  
-  if (budgetsNearLimit.length > 0) {
-    insights.push({
-      type: 'warning',
-      title: 'Budget Warning',
-      description: `You're approaching your budget limit in ${budgetsNearLimit.length} categories.`,
-      icon: 'alert-circle',
-      details: budgetsNearLimit.map(b => `${getCategoryById(b.category)?.name || b.category}: $${b.spent.toFixed(2)} / $${b.allocated.toFixed(2)}`)
-    });
-  }
-  
-  // Check recurring transactions due soon
-  const today = new Date();
-  const nextWeek = new Date(today);
-  nextWeek.setDate(today.getDate() + 7);
-  
-  const upcomingRecurring = financeData.recurringTransactions.filter(r => {
-    const nextDate = new Date(r.nextDate);
-    return nextDate >= today && nextDate <= nextWeek && r.amount < 0;
-  });
-  
-  if (upcomingRecurring.length > 0) {
-    const totalAmount = upcomingRecurring.reduce((sum, r) => sum + Math.abs(r.amount), 0);
-    
-    insights.push({
-      type: 'info',
-      title: 'Upcoming Payments',
-      description: `You have ${upcomingRecurring.length} payments totaling $${totalAmount.toFixed(2)} due in the next 7 days.`,
-      icon: 'calendar',
-      details: upcomingRecurring.map(r => `${r.name}: $${Math.abs(r.amount).toFixed(2)} due on ${new Date(r.nextDate).toLocaleDateString()}`)
-    });
-  }
-  
-  // Look for spending patterns (simple version)
-  const categories = {};
-  financeData.transactions
-    .filter(t => t.amount < 0 && new Date(t.timestamp) >= stats.startDate)
-    .forEach(t => {
-      if (!t.category) return;
-      
-      if (!categories[t.category]) {
-        categories[t.category] = 0;
-      }
-      
-      categories[t.category] += Math.abs(t.amount);
-    });
-  
-  // Find top spending category
-  let topCategory = null;
-  let topAmount = 0;
-  
-  for (const [category, amount] of Object.entries(categories)) {
-    if (amount > topAmount) {
-      topAmount = amount;
-      topCategory = category;
-    }
-  }
-  
-  if (topCategory) {
-    const categoryName = getCategoryById(topCategory)?.name || topCategory;
-    const percentOfTotal = stats.expenses > 0 ? Math.round((topAmount / stats.expenses) * 100) : 0;
-    
-    if (percentOfTotal > 40) {
-      insights.push({
-        type: 'warning',
-        title: 'High Category Spending',
-        description: `${percentOfTotal}% of your expenses this month were in ${categoryName}.`,
-        icon: 'pie-chart'
-      });
-      financialHealthScore -= 10;
-    }
-  }
-  
-  // Adjust score based on savings goals progress
-  const activeGoals = financeData.savingsGoals.filter(g => g.current < g.target);
-  if (activeGoals.length > 0) {
-    // Check average progress
-    const avgProgress = activeGoals.reduce((sum, g) => sum + (g.current / g.target), 0) / activeGoals.length;
-    
-    if (avgProgress > 0.7) {
-      financialHealthScore += 10;
-      insights.push({
-        type: 'positive',
-        title: 'Savings Goals Progress',
-        description: 'You\'re making excellent progress on your savings goals!',
-        icon: 'award'
-      });
-    }
-  }
-  
-  // Cap the score between 0 and 100
-  financialHealthScore = Math.max(0, Math.min(100, financialHealthScore));
-  
-  return {
-    score: Math.round(financialHealthScore),
-    insights
-  };
-};
-
-// Get correlation between spending and mood
-export const getSpendingMoodCorrelation = () => {
-  const financeData = getFinanceData();
-  const storage = getStorage();
-  const correlations = [];
-  
-  // Only proceed if we have transactions and mood data
-  if (!financeData.transactions.length) {
-    return [];
-  }
-  
-  // Get all dates with mood data
-  const moodDates = Object.keys(storage).filter(key => {
-    return key.match(/^\d{4}-\d{2}-\d{2}$/) && 
-           (storage[key].morningMood || storage[key].eveningMood);
-  });
-  
-  if (moodDates.length < 5) {
-    // Not enough mood data for meaningful correlations
-    return [];
-  }
-  
-  // Group transactions by date
-  const transactionsByDate = {};
-  
-  financeData.transactions.forEach(transaction => {
-    const date = new Date(transaction.timestamp).toISOString().split('T')[0];
-    
-    if (!transactionsByDate[date]) {
-      transactionsByDate[date] = [];
-    }
-    
-    transactionsByDate[date].push(transaction);
-  });
-  
-  // Find days with high expenses followed by mood change
-  for (let i = 0; i < moodDates.length - 1; i++) {
-    const currentDate = moodDates[i];
-    const nextDate = moodDates[i + 1];
-    
-    // Skip if dates are not consecutive
-    const currentDateObj = new Date(currentDate);
-    const nextDateObj = new Date(nextDate);
-    const dayDiff = (nextDateObj - currentDateObj) / (1000 * 60 * 60 * 24);
-    
-    if (dayDiff !== 1) continue;
-    
-    // Get mood values (0-5 scale)
-    const currentMood = storage[currentDate].eveningMood || storage[currentDate].morningMood || 3;
-    const nextMood = storage[nextDate].morningMood || 3;
-    
-    // Get expenses for current date
-    const currentExpenses = transactionsByDate[currentDate] || [];
-    const totalSpent = currentExpenses
-      .filter(t => t.amount < 0)
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-    
-    // Check if this was a high spending day (arbitrary threshold: $100)
-    const isHighSpending = totalSpent > 100;
-    
-    // Check if mood decreased
-    const moodDecreased = nextMood < currentMood;
-    
-    // Check if a specific category had high spending
-    if (currentExpenses.length > 0) {
-      const categorySpending = {};
-      
-      currentExpenses.forEach(transaction => {
-        if (!transaction.category || transaction.amount >= 0) return;
-        
-        if (!categorySpending[transaction.category]) {
-          categorySpending[transaction.category] = 0;
-        }
-        
-        categorySpending[transaction.category] += Math.abs(transaction.amount);
-      });
-      
-      // Find categories with significant spending
-      for (const [category, amount] of Object.entries(categorySpending)) {
-        if (amount > 50) {
-          const categoryName = getCategoryById(category)?.name || category;
-          
-          // Check if this specific category correlates with mood change
-          if (moodDecreased) {
-            correlations.push({
-              type: 'negative',
-              category: category,
-              categoryName: categoryName,
-              spending: amount,
-              moodChange: currentMood - nextMood,
-              date: currentDate
-            });
-          }
-        }
-      }
-    }
-    
-    // General correlation between high spending and mood
-    if (isHighSpending && moodDecreased) {
-      correlations.push({
-        type: 'general',
-        spending: totalSpent,
-        moodChange: currentMood - nextMood,
-        date: currentDate
-      });
-    }
-  }
-  
-  // Sort correlations by strength (mood change)
-  correlations.sort((a, b) => b.moodChange - a.moodChange);
-  
-  return correlations.slice(0, 3); // Return top 3 correlations
-};
-
-
+// Create task from transaction
 export const createTaskFromTransaction = (transaction) => {
   if (!transaction) return false;
   
@@ -1247,3 +1409,129 @@ export const createTaskFromTransaction = (transaction) => {
   
   return false;
 };
+
+// Create a reminder for a recurring transaction
+export const createReminderForRecurring = (recurring) => {
+  if (!window.reminderService) {
+    console.error('Reminder service not available');
+    return null;
+  }
+  
+  const storage = getStorage();
+  
+  // Get or initialize reminder settings
+  if (!storage.reminderSettings) {
+    storage.reminderSettings = { enabled: true, reminders: [] };
+  }
+  
+  // Create reminder for this recurring transaction
+  const reminderDays = recurring.reminderDays || 3; // Default: 3 days before
+  const nextDate = new Date(recurring.nextDate);
+  
+  // Calculate reminder date
+  const reminderDate = new Date(nextDate);
+  reminderDate.setDate(nextDate.getDate() - reminderDays);
+  
+  // Format reminder date for tasks
+  const reminderDateStr = reminderDate.toISOString().split('T')[0];
+  
+  // Create task for this date
+  const isExpense = recurring.amount < 0;
+  const taskText = `${isExpense ? 'Pay' : 'Receive'}: ${recurring.name} (${isExpense ? '-' : '+'}$${Math.abs(recurring.amount).toFixed(2)})`;
+  
+  // Get the day data for the reminder date
+  const dayData = storage[reminderDateStr] || {};
+  
+  // Create or update task list
+  let taskList = dayData.customTasks || dayData.aiTasks || dayData.defaultTasks || JSON.parse(JSON.stringify(DEFAULT_TASKS));
+  
+  // Find or create Financial category
+  let financialCategory = taskList.find(cat => cat.title === 'Financial');
+  if (!financialCategory) {
+    financialCategory = { title: 'Financial', items: [] };
+    taskList.push(financialCategory);
+  }
+  
+  // Add task if not already present
+  if (!financialCategory.items.includes(taskText)) {
+    financialCategory.items.push(taskText);
+  }
+  
+  // Update day data with task list
+  storage[reminderDateStr] = {
+    ...dayData,
+    customTasks: taskList,
+    checked: { ...(dayData.checked || {}), [taskText]: false }
+  };
+  
+  // Create reminder ID
+  const reminderId = `finance-${recurring.id}`;
+  
+  // Add to reminders
+  const existingReminderIndex = storage.reminderSettings.reminders.findIndex(r => r.id === reminderId);
+  const reminderObj = {
+    id: reminderId,
+    label: `${isExpense ? 'Payment due' : 'Income expected'}: ${recurring.name} ($${Math.abs(recurring.amount).toFixed(2)})`,
+    time: '09:00', // Default reminder time
+    enabled: true,
+    dateKey: reminderDateStr
+  };
+  
+  if (existingReminderIndex >= 0) {
+    storage.reminderSettings.reminders[existingReminderIndex] = reminderObj;
+  } else {
+    storage.reminderSettings.reminders.push(reminderObj);
+  }
+  
+  setStorage(storage);
+  
+  // Reload reminders in reminder service
+  if (window.reminderService.loadReminders) {
+    window.reminderService.loadReminders();
+  }
+  
+  return reminderObj;
+};
+
+// Update reminder for a recurring transaction
+export const updateReminderForRecurring = (recurring) => {
+  // If reminder was disabled, delete it
+  if (!recurring.createReminder) {
+    deleteReminderForRecurring(recurring);
+    return null;
+  }
+  
+  // Otherwise create/update it
+  return createReminderForRecurring(recurring);
+};
+
+// Delete reminder for a recurring transaction
+export const deleteReminderForRecurring = (recurring) => {
+  const storage = getStorage();
+  const reminderId = `finance-${recurring.id}`;
+  
+  if (storage.reminderSettings && storage.reminderSettings.reminders) {
+    storage.reminderSettings.reminders = storage.reminderSettings.reminders.filter(r => r.id !== reminderId);
+    setStorage(storage);
+    
+    // Reload reminders in reminder service
+    if (window.reminderService.loadReminders) {
+      window.reminderService.loadReminders();
+    }
+    
+    return true;
+  }
+  
+  return false;
+};
+
+// Default task list for placeholders
+const DEFAULT_TASKS = [
+  {
+    title: "Financial",
+    items: [
+      "Check bank account balance",
+      "Review budget for the week"
+    ]
+  }
+];

@@ -9,6 +9,7 @@ import {
   getFinanceData, calculateFinancialStats, getFinancialInsights, 
   getSpendingMoodCorrelation, getCategoryById, getSpendingByGroup
 } from '../../utils/financeUtils';
+import HorizontalSpendingTrend from './HorizontalSpendingTrend';
 
 // Define chart colors array for consistent coloring
 const CHART_COLORS = [
@@ -1089,6 +1090,29 @@ const FinancialInsights = ({
                 </div>
               </div>
             </div>
+
+            {/* Spending Trend Section */}
+<div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
+  {/* The header is now inside the HorizontalSpendingTrend component */}
+  <HorizontalSpendingTrend 
+    data={spendingTrend} 
+    currency={currency}
+    timeRange={timeRange}
+    showAverage={true}
+    compact={isMobile}
+  />
+  
+  {/* Time-based explanation - this is optional as it's also in the component */}
+  <div className="mt-2 text-center">
+    <button 
+      onClick={() => setActiveView('categoryBreakdown')}
+      className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1 mx-auto"
+    >
+      <span>View category breakdown</span>
+      <ArrowRight size={16} />
+    </button>
+  </div>
+</div>
             
             {/* ENHANCED: Category Group Analysis */}
             <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">

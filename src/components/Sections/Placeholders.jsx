@@ -1,7 +1,7 @@
 import React from 'react';
 import { Brain, Dumbbell, MessageCircle, Layout, Timer, Music, Heart, Book, Wind, Zap, Users, Sliders, ListChecks, FileText, Star, CalendarClock } from 'lucide-react';
 
-export const MeditationSection = () => {
+export const MeditationSectionPlaceholder = () => {
   // Features for meditation section
   const features = [
     { icon: <Timer size={18} />, title: "Guided Sessions", description: "Follow along with timed breathing exercises and guided meditations" },

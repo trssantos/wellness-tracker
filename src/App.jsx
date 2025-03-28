@@ -3,7 +3,7 @@ import { Sidebar } from './components/Navigation/Sidebar';
 import { SectionContainer } from './components/Navigation/SectionContainer';
 import { Overview } from './components/Sections/Overview';
 import { Stats } from './components/Sections/Stats';
-import { MeditationSection, DayCoachSection } from './components/Sections/Placeholders';
+import { MeditationSectionPlaceholder, DayCoachSection } from './components/Sections/Placeholders';
 import SleepTracker from './components/SleepTracker';
 import TemplatesSection from './components/Sections/TemplatesSection';
 import HabitsPlaceholder from './components/Sections/HabitsPlaceholder';
@@ -46,6 +46,7 @@ import { NutritionPlaceholder } from './components/Nutrition/NutritionPlaceholde
 import NutritionTracker from './components/Nutrition/NutritionTracker';
 import GoalsPlaceholder from './components/BucketList/GoalsPlaceholder';
 import BucketList from './components/BucketList/BucketList';
+import MeditationSection  from './components/Meditation/MeditationSection';
 
 
 const App = () => {
@@ -638,12 +639,16 @@ const handlePendingTasksAction = (action, tasks = []) => {
   <HabitSection />
 </SectionContainer>
 
+<SectionContainer id="meditation" isActive={activeSection === 'meditation'}>
+  <MeditationSection />
+</SectionContainer>
+
 <SectionContainer id="bucketList" isActive={activeSection === 'bucketList'}>
   <BucketList />
 </SectionContainer>
 
-              <SectionContainer id="meditation" isActive={activeSection === 'meditation'}>
-                <MeditationSection />
+              <SectionContainer id="meditationShowcase" isActive={activeSection === 'meditationShowcase'}>
+                <MeditationSectionPlaceholder />
               </SectionContainer>
 
               <SectionContainer id="workout" isActive={activeSection === 'workout'}>

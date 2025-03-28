@@ -154,13 +154,15 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
     { id: 'focus', label: 'Focus', icon: <Focus size={20} /> },
     { id: 'finance', label: 'Finance', icon: <Coins size={20} /> },
     { id: 'nutrition', label: 'Nutrition', icon: <Apple size={20} /> },
+    { id: 'bucketList', label: 'Bucket List', icon: <Trophy size={20} /> },
     { id: 'templates', label: 'Templates', icon: <Layout size={20} /> },
     { id: 'habitsShowcase', label: 'Habits - Showcase', icon: <Zap size={20} /> },
     { id: 'focusShowcase', label: 'Focus - Showcase', icon: <Focus size={20} /> },
     { id: 'financeShowcase', label: 'Finance - Showcase', icon: <Coins size={20} /> },
     { id: 'nutritionShowcase', label: 'Nutrition - Showcase', icon: <Apple size={20} /> },
     { id: 'goalsShowcase', label: 'Goals - Showcase', icon: <Trophy size={20} /> },
-    { id: 'bucketList', label: 'Bucket List', icon: <Trophy size={20} /> },
+    { id: 'meditationShowcase', label: 'Meditation - Showcase', icon: <Brain size={20} /> },
+    
   ];
 
   return (

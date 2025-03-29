@@ -423,7 +423,7 @@ const MeditationSection = () => {
                 categoryData: categories.find(c => c.id === exercise.category)
               })}
             >
-              <div className={`w-8 h-8 mx-auto mb-1 rounded-full ${exercise.categoryColor} flex items-center justify-center`}>
+              <div className={`w-8 h-8 mx-auto mb-1 rounded-full text-slate-800 dark:text-slate-100 flex items-center justify-center`}>
                 {exercise.icon}
               </div>
               <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate w-full">{exercise.name}</p>

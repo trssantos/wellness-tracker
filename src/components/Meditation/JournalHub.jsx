@@ -4,11 +4,14 @@ import {
   Save, PenTool, Lightbulb, Sparkles, RefreshCw, MessageSquare, Smile, Heart, Star,
   Users, Briefcase, Home, Brain, Moon, Sun, Filter, ArrowRight, BarChart2,
   Maximize2, Minimize2, Tag, ThumbsUp, ThumbsDown, Download, Upload, AlertTriangle,
-  Info, CheckCircle, ArrowLeft, Eye, Clock, Award, Check, MoreHorizontal
+  Info, CheckCircle, ArrowLeft, Eye, Clock, Award, Check, MoreHorizontal, ChevronRight, ChevronLeft,
+  Activity, Hash, FileText, Frown, Zap, User
 } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
 import { handleDataChange } from '../../utils/dayCoachUtils';
 import { generateContent } from '../../utils/ai-service';
+import JournalStreakCalendar from './JournalStreakCalendar';
+import MonthlyCalendar from './MonthlyCalendar';
 
 const JournalHub = () => {
   // View state management
@@ -39,18 +42,22 @@ const JournalHub = () => {
   const [filterByCategories, setFilterByCategories] = useState([]);
   const [filterByMoodRange, setFilterByMoodRange] = useState([1, 5]);
   const [showFilters, setShowFilters] = useState(false);
+  const [dateFilter, setDateFilter] = useState(null);
   
   // Guided journaling state
   const [activePrompt, setActivePrompt] = useState(null);
   const [aiResponse, setAiResponse] = useState('');
   const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [selectedInsight, setSelectedInsight] = useState(null);
   
-  // Streak data
-  const [streakData, setStreakData] = useState({
-    currentStreak: 0,
-    longestStreak: 0,
-    lastEntryDate: null,
-    streakDates: []
+  // Journal analysis state
+  const [journalAnalysis, setJournalAnalysis] = useState({
+    topWords: [],
+    topPeople: [],
+    stressFactors: [],
+    topTopics: [],
+    moodCorrelations: [],
+    loaded: false
   });
   
   // Refs
@@ -168,19 +175,6 @@ const JournalHub = () => {
         "What self-care practices would help me feel more centered?",
         "What perspective might help me find peace with this situation?"
       ]
-    },
-    {
-      id: 'future-self',
-      title: 'Future Self Dialogue',
-      description: 'Connect with your wiser future self for guidance and perspective.',
-      category: 'personal',
-      questions: [
-        "What would my future self (5 years from now) want me to know today?",
-        "What current habits would my future self thank me for?",
-        "What courage or growth does my future self wish for me now?",
-        "What patterns might my future self want me to change?",
-        "What can I do today that my future self would appreciate?"
-      ]
     }
   ];
   
@@ -217,7 +211,7 @@ const JournalHub = () => {
       systemPrompt: "You are an insightful, non-judgmental journaling companion focused on values exploration. Your role is to identify potential core values reflected in the user's journal entries and note where their actions, choices, and feelings suggest alignment or misalignment with these values. Respond thoughtfully, offering observations rather than judgments, and pose questions that might help them clarify what matters most to them. Maintain a respectful, curious tone that honors the complexity of living in accordance with one's values."
     }
   ];
-
+  
   // Format a date object to YYYY-MM-DD string for storage
   function formatDateForStorage(date) {
     return date.toISOString().split('T')[0];
@@ -260,101 +254,6 @@ const JournalHub = () => {
     }
   }
   
-  // Calculate writing streak data
-  const calculateStreakData = (entries) => {
-    if (!entries || entries.length === 0) {
-      return {
-        currentStreak: 0,
-        longestStreak: 0,
-        lastEntryDate: null,
-        streakDates: []
-      };
-    }
-    
-    // Get all entry dates and sort them
-    const allDates = entries.map(entry => {
-      const date = entry.date || entry.timestamp.split('T')[0];
-      return date;
-    }).sort();
-    
-    // Remove duplicates
-    const uniqueDates = [...new Set(allDates)];
-    
-    // Get the most recent date
-    const lastEntryDate = uniqueDates[uniqueDates.length - 1];
-    const lastEntryDateObj = new Date(lastEntryDate);
-    
-    // Check if the last entry was yesterday or today
-    const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(today.getDate() - 1);
-    
-    // If the last entry is older than yesterday, the current streak is broken
-    if (lastEntryDateObj < yesterday && lastEntryDateObj.toDateString() !== yesterday.toDateString()) {
-      return {
-        currentStreak: 0,
-        longestStreak: calculateLongestStreak(uniqueDates),
-        lastEntryDate,
-        streakDates: uniqueDates
-      };
-    }
-    
-    // Calculate current streak
-    let currentStreak = 1; // Start with the last entry day
-    let checkDate = lastEntryDateObj;
-    
-    // Count backwards from the last entry date
-    while (currentStreak < uniqueDates.length) {
-      // Check the previous day
-      checkDate.setDate(checkDate.getDate() - 1);
-      const checkDateStr = formatDateForStorage(checkDate);
-      
-      // If we don't have an entry for this date, the streak is broken
-      if (!uniqueDates.includes(checkDateStr)) {
-        break;
-      }
-      
-      currentStreak++;
-    }
-    
-    return {
-      currentStreak,
-      longestStreak: Math.max(currentStreak, calculateLongestStreak(uniqueDates)),
-      lastEntryDate,
-      streakDates: uniqueDates
-    };
-  };
-  
-  // Calculate longest streak
-  const calculateLongestStreak = (dates) => {
-    if (!dates || dates.length === 0) return 0;
-    
-    let longestStreak = 1;
-    let currentStreak = 1;
-    
-    // Convert to date objects for easier comparison
-    const dateObjects = dates.map(d => new Date(d)).sort((a, b) => a - b);
-    
-    for (let i = 1; i < dateObjects.length; i++) {
-      const currentDate = dateObjects[i];
-      const prevDate = dateObjects[i-1];
-      
-      // Calculate difference in days
-      const diffDays = Math.round((currentDate - prevDate) / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 1) {
-        // Consecutive day
-        currentStreak++;
-        longestStreak = Math.max(longestStreak, currentStreak);
-      } else if (diffDays > 1) {
-        // Streak broken
-        currentStreak = 1;
-      }
-    }
-    
-    return longestStreak;
-  };
-  
   // Load journal entries and daily notes from storage
   useEffect(() => {
     const storage = getStorage();
@@ -362,11 +261,19 @@ const JournalHub = () => {
     
     // Get journal entries
     if (meditationData.journalEntries && Array.isArray(meditationData.journalEntries)) {
-      setJournalEntries(meditationData.journalEntries);
+      // Sort entries by date
+      const sortedEntries = meditationData.journalEntries.sort((a, b) => {
+        const dateA = a.date || a.timestamp.split('T')[0];
+        const dateB = b.date || b.timestamp.split('T')[0];
+        return new Date(dateB) - new Date(dateA); // Newest first
+      });
       
-      // Calculate streak data
-      const streakInfo = calculateStreakData(meditationData.journalEntries);
-      setStreakData(streakInfo);
+      setJournalEntries(sortedEntries);
+      
+      // Analyze journal content once entries are loaded
+      if (sortedEntries.length > 0) {
+        analyzeJournalContent(sortedEntries);
+      }
     }
     
     // Get daily notes
@@ -382,6 +289,170 @@ const JournalHub = () => {
     
     setDailyNotes(allDailyNotes);
   }, []);
+  
+  // Analyze journal content to extract insights
+  const analyzeJournalContent = (entries) => {
+    // Only analyze if we have entries
+    if (!entries || entries.length === 0) return;
+    
+    // Extract all text from entries
+    const allText = entries.map(entry => entry.text || '').join(' ');
+    
+    // Find people mentioned (names that start with capital letters)
+    const peopleRegex = /\b([A-Z][a-z]+)(?:\s+[A-Z][a-z]+)?\b/g;
+    const peopleMatches = [...allText.matchAll(peopleRegex)];
+    
+    // Count people mentions
+    const peopleCounts = {};
+    peopleMatches.forEach(match => {
+      const name = match[0];
+      peopleCounts[name] = (peopleCounts[name] || 0) + 1;
+    });
+    
+    // Sort by frequency
+    const topPeople = Object.entries(peopleCounts)
+      .filter(([name]) => !['I', 'My', 'Me', 'We', 'Our', 'They', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].includes(name)) // Filter out common words
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, count]) => ({ name, count }));
+    
+    // Find common words
+    const words = allText.toLowerCase()
+      .replace(/[^\w\s]/gi, '') // Remove punctuation
+      .split(/\s+/) // Split by whitespace
+      .filter(word => word.length > 3); // Only words with 4+ characters
+    
+    // Count word frequency
+    const wordCounts = {};
+    words.forEach(word => {
+      if (!['this', 'that', 'with', 'from', 'have', 'about', 'would', 'could', 'should', 'there', 'their', 'they', 'were', 'when', 'what', 'then'].includes(word)) {
+        wordCounts[word] = (wordCounts[word] || 0) + 1;
+      }
+    });
+    
+    // Sort by frequency
+    const topWords = Object.entries(wordCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20)
+      .map(([word, count]) => ({ text: word, value: count }));
+    
+    // Identify potential stress factors
+    const stressWords = ['stress', 'anxiety', 'worried', 'nervous', 'tense', 'overwhelmed', 'exhausted', 'frustrated', 'angry', 'upset', 'tired', 'anxious', 'fear', 'scared', 'pressure', 'deadline', 'difficult'];
+    
+    const stressFactors = [];
+    stressWords.forEach(word => {
+      const regex = new RegExp(`\\b${word}\\b|\\b${word}ed\\b|\\b${word}ing\\b`, 'gi');
+      const matches = allText.match(regex);
+      if (matches && matches.length > 0) {
+        stressFactors.push({
+          factor: word,
+          count: matches.length,
+          entries: entries.filter(entry => {
+            const text = entry.text || '';
+            const regex = new RegExp(`\\b${word}\\b|\\b${word}ed\\b|\\b${word}ing\\b`, 'gi');
+            return text.match(regex);
+          }).length
+        });
+      }
+    });
+    
+    // Sort stress factors by frequency
+    stressFactors.sort((a, b) => b.count - a.count);
+    
+    // Identify common topics
+    const topics = [
+      { name: 'Work', keywords: ['work', 'job', 'career', 'office', 'boss', 'colleague', 'project', 'meeting', 'deadline', 'client', 'email'] },
+      { name: 'Relationships', keywords: ['friend', 'family', 'partner', 'relationship', 'date', 'love', 'together', 'conversation', 'talk', 'connect'] },
+      { name: 'Health', keywords: ['health', 'exercise', 'workout', 'gym', 'run', 'sleep', 'rest', 'diet', 'food', 'eat', 'doctor', 'pain', 'tired', 'energy'] },
+      { name: 'Personal Growth', keywords: ['learn', 'growth', 'improve', 'goal', 'progress', 'challenge', 'success', 'failure', 'better', 'change'] },
+      { name: 'Mindfulness', keywords: ['mindful', 'meditation', 'calm', 'peace', 'relax', 'breath', 'present', 'awareness', 'focus', 'attention'] },
+      { name: 'Creativity', keywords: ['create', 'creative', 'idea', 'inspire', 'write', 'art', 'music', 'design', 'project', 'make'] },
+      { name: 'Stress', keywords: ['stress', 'anxiety', 'worry', 'pressure', 'overwhelm', 'tense', 'nervous', 'anxious', 'fear'] }
+    ];
+    
+    // Count topic mentions
+    const topicCounts = topics.map(topic => {
+      let count = 0;
+      let entryCount = 0;
+      
+      entries.forEach(entry => {
+        const text = (entry.text || '').toLowerCase();
+        const hasKeyword = topic.keywords.some(keyword => text.includes(keyword));
+        if (hasKeyword) {
+          entryCount++;
+          topic.keywords.forEach(keyword => {
+            const regex = new RegExp(`\\b${keyword}\\b|\\b${keyword}s\\b|\\b${keyword}ing\\b|\\b${keyword}ed\\b`, 'gi');
+            const matches = text.match(regex);
+            if (matches) {
+              count += matches.length;
+            }
+          });
+        }
+      });
+      
+      return {
+        topic: topic.name,
+        count,
+        entries: entryCount
+      };
+    });
+    
+    // Sort topics by frequency
+    topicCounts.sort((a, b) => b.count - a.count);
+    
+    // Find mood correlations
+    const moodCorrelations = [];
+    if (entries.some(entry => entry.mood !== undefined)) {
+      // Group entries by mood
+      const moodGroups = {
+        low: entries.filter(entry => entry.mood <= 2),
+        medium: entries.filter(entry => entry.mood === 3),
+        high: entries.filter(entry => entry.mood >= 4)
+      };
+      
+      // Find common words in each mood group
+      Object.entries(moodGroups).forEach(([mood, moodEntries]) => {
+        if (moodEntries.length > 0) {
+          const moodText = moodEntries.map(entry => entry.text || '').join(' ').toLowerCase();
+          
+          // Create word frequency for this mood
+          const moodWords = moodText
+            .replace(/[^\w\s]/gi, '')
+            .split(/\s+/)
+            .filter(word => word.length > 3);
+          
+          const moodWordCounts = {};
+          moodWords.forEach(word => {
+            if (!['this', 'that', 'with', 'from', 'have', 'about', 'would', 'could', 'should', 'there', 'their', 'they', 'were', 'when'].includes(word)) {
+              moodWordCounts[word] = (moodWordCounts[word] || 0) + 1;
+            }
+          });
+          
+          // Get top words for this mood
+          const topMoodWords = Object.entries(moodWordCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([word]) => word);
+          
+          moodCorrelations.push({
+            mood,
+            words: topMoodWords,
+            count: moodEntries.length
+          });
+        }
+      });
+    }
+    
+    // Update state with analysis
+    setJournalAnalysis({
+      topWords,
+      topPeople,
+      stressFactors,
+      topTopics: topicCounts,
+      moodCorrelations,
+      loaded: true
+    });
+  };
   
   // Save a new journal entry
   const saveJournalEntry = () => {
@@ -428,26 +499,21 @@ const JournalHub = () => {
     // Update state
     setJournalEntries(updatedEntries);
     
-    // Recalculate streak data
-    const streakInfo = calculateStreakData(updatedEntries);
-    setStreakData(streakInfo);
-    
     // Update storage
     storage.meditationData.journalEntries = updatedEntries;
     setStorage(storage);
     
     // Reset form
     resetEntryForm();
+    
+    // Re-analyze journal content with the new entry
+    analyzeJournalContent(updatedEntries);
   };
   
   // Delete a journal entry
   const deleteJournalEntry = (entryId) => {
     const updatedEntries = journalEntries.filter(entry => entry.id !== entryId);
     setJournalEntries(updatedEntries);
-    
-    // Recalculate streak data
-    const streakInfo = calculateStreakData(updatedEntries);
-    setStreakData(streakInfo);
     
     // Update storage
     const storage = getStorage();
@@ -463,6 +529,9 @@ const JournalHub = () => {
     
     // Clear the confirmation dialog
     setConfirmDeleteId(null);
+    
+    // Re-analyze journal content after deletion
+    analyzeJournalContent(updatedEntries);
   };
   
   // Save daily note
@@ -545,38 +614,36 @@ const JournalHub = () => {
     }
   };
   
-  // Toggle a filter tag
-  const toggleFilterTag = (tag) => {
-    if (filterByTags.includes(tag)) {
-      setFilterByTags(prev => prev.filter(t => t !== tag));
-    } else {
-      setFilterByTags(prev => [...prev, tag]);
-    }
-  };
-  
-  // Toggle a filter category
-  const toggleFilterCategory = (categoryId) => {
-    if (filterByCategories.includes(categoryId)) {
-      setFilterByCategories(prev => prev.filter(c => c !== categoryId));
-    } else {
-      setFilterByCategories(prev => [...prev, categoryId]);
-    }
+  // Handle date selection
+  const handleDateSelect = (date) => {
+    setSelectedDate(date);
+    setDateFilter(date);
+    
+    // Switch to entries view to show filtered entries
+    setActiveView('entries');
   };
   
   // Get AI insights
-  const getAIInsights = async (promptId, entryTexts) => {
+  const getAIInsights = async (promptId) => {
     const insightPrompt = aiInsightPrompts.find(p => p.id === promptId);
-    if (!insightPrompt || !entryTexts || entryTexts.length === 0) return;
+    if (!insightPrompt || journalEntries.length === 0) return;
     
     setIsLoadingAI(true);
+    setSelectedInsight(insightPrompt);
     
     try {
+      // Get most recent entries (limit to 5 for performance)
+      const recentEntries = journalEntries
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice(0, 5)
+        .map(entry => `[${new Date(entry.timestamp).toLocaleDateString()}] ${entry.title}\n${entry.text}`);
+      
       const prompt = `
 ${insightPrompt.systemPrompt}
 
 Here are my recent journal entries:
 
-${entryTexts.join('\n\n---\n\n')}
+${recentEntries.join('\n\n---\n\n')}
 
 Please provide thoughtful insights based on these entries.
       `;
@@ -591,20 +658,17 @@ Please provide thoughtful insights based on these entries.
     }
   };
   
-  // Get all unique tags from journal entries
-  const allTags = React.useMemo(() => {
-    const tagSet = new Set();
-    journalEntries.forEach(entry => {
-      if (entry.tags && Array.isArray(entry.tags)) {
-        entry.tags.forEach(tag => tagSet.add(tag));
-      }
-    });
-    return Array.from(tagSet);
-  }, [journalEntries]);
-  
   // Filter journal entries
   const filteredEntries = React.useMemo(() => {
     let filtered = [...journalEntries];
+    
+    // Apply date filter if set
+    if (dateFilter) {
+      filtered = filtered.filter(entry => {
+        const entryDate = entry.date || entry.timestamp.split('T')[0];
+        return entryDate === dateFilter;
+      });
+    }
     
     // Apply search term filter
     if (searchTerm.trim()) {
@@ -639,8 +703,8 @@ Please provide thoughtful insights based on these entries.
     
     // Apply sorting
     filtered = filtered.sort((a, b) => {
-      const dateA = new Date(a.timestamp || a.date || 0);
-      const dateB = new Date(b.timestamp || b.date || 0);
+      const dateA = new Date(a.date || a.timestamp || 0);
+      const dateB = new Date(b.date || b.timestamp || 0);
       
       return sortBy === 'newest' 
         ? dateB - dateA // newest first
@@ -648,7 +712,7 @@ Please provide thoughtful insights based on these entries.
     });
     
     return filtered;
-  }, [journalEntries, searchTerm, filterByTags, filterByCategories, filterByMoodRange, sortBy]);
+  }, [journalEntries, searchTerm, filterByTags, filterByCategories, filterByMoodRange, sortBy, dateFilter]);
   
   // Group entries by date for the list view
   const entriesByDate = React.useMemo(() => {
@@ -665,140 +729,16 @@ Please provide thoughtful insights based on these entries.
     return groupedEntries;
   }, [filteredEntries]);
   
-  // Generate calendar data
-  const calendarData = React.useMemo(() => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    
-    // Create array of days in the current month
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const firstDayOfMonth = new Date(year, month, 1).getDay();
-    
-    const days = [];
-    
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < firstDayOfMonth; i++) {
-      days.push({ day: null, entries: [] });
-    }
-    
-    // Add days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const dayEntries = journalEntries.filter(entry => {
-        const entryDate = entry.date || entry.timestamp.split('T')[0];
-        return entryDate === date;
-      });
-      
-      // Calculate mood average for this day
-      let moodAvg = 0;
-      if (dayEntries.length > 0) {
-        const totalMood = dayEntries.reduce((sum, entry) => sum + (entry.mood || 3), 0);
-        moodAvg = totalMood / dayEntries.length;
-      }
-      
-      // Get social activity for this day (entries with 'relationships' category)
-      const socialEntries = dayEntries.filter(entry => 
-        entry.categories && entry.categories.includes('relationships')
-      );
-      
-      // Get stress indicators (entries with stress-related tags)
-      const stressEntries = dayEntries.filter(entry => 
-        (entry.tags && (entry.tags.includes('stress') || entry.tags.includes('anxiety'))) ||
-        (entry.mood && entry.mood <= 2)
-      );
-      
-      days.push({
-        day,
-        date,
-        entries: dayEntries,
-        hasNote: !!dailyNotes[date],
-        isToday: today.getDate() === day && today.getMonth() === month && today.getFullYear() === year,
-        moodAvg,
-        hasSocial: socialEntries.length > 0,
-        hasStress: stressEntries.length > 0,
-        hasGratitude: dayEntries.some(entry => entry.categories && entry.categories.includes('gratitude'))
-      });
-    }
-    
-    return {
-      year,
-      month,
-      monthName: today.toLocaleString('default', { month: 'long' }),
-      days
-    };
-  }, [journalEntries, dailyNotes]);
-  
-  // Generate dates for streak mini-calendar
-  const getStreakCalendarDates = () => {
-    const today = new Date();
-    const dates = [];
-    
-    // Generate the last 30 days
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
-      const dateString = formatDateForStorage(date);
-      
-      dates.push({
-        date: dateString,
-        hasEntry: streakData.streakDates.includes(dateString),
-        isToday: i === 0
-      });
-    }
-    
-    return dates;
-  };
-  
-  // Generate streak mini-calendar
-  const streakCalendarDates = React.useMemo(() => {
-    return getStreakCalendarDates();
-  }, [streakData]);
-  
-  // Create connections data for the relationships map
-  const connectionsData = React.useMemo(() => {
-    // Extract people mentioned in journal entries
-    const peopleRegex = /@(\w+)/g;
-    const peopleMap = {};
-    
+  // Get all unique tags from journal entries
+  const allTags = React.useMemo(() => {
+    const tagSet = new Set();
     journalEntries.forEach(entry => {
-      if (!entry.text) return;
-      
-      const matches = [...entry.text.matchAll(peopleRegex)];
-      matches.forEach(match => {
-        const person = match[1];
-        if (!peopleMap[person]) {
-          peopleMap[person] = {
-            name: person,
-            mentions: 0,
-            entries: [],
-            connections: {}
-          };
-        }
-        
-        peopleMap[person].mentions++;
-        peopleMap[person].entries.push(entry.id);
-        
-        // Look for other people mentioned in the same entry
-        matches.forEach(otherMatch => {
-          const otherPerson = otherMatch[1];
-          if (person !== otherPerson) {
-            if (!peopleMap[person].connections[otherPerson]) {
-              peopleMap[person].connections[otherPerson] = 0;
-            }
-            peopleMap[person].connections[otherPerson]++;
-          }
-        });
-      });
+      if (entry.tags && Array.isArray(entry.tags)) {
+        entry.tags.forEach(tag => tagSet.add(tag));
+      }
     });
-    
-    return Object.values(peopleMap);
+    return Array.from(tagSet);
   }, [journalEntries]);
-  
-  // Get daily note for a specific date
-  const getDailyNote = (date) => {
-    return dailyNotes[date] || '';
-  };
   
   // Get the mood emoji
   const getMoodEmoji = (mood) => {
@@ -824,28 +764,6 @@ Please provide thoughtful insights based on these entries.
     }
   };
   
-  // Get the mood background gradient
-  const getMoodGradient = (mood) => {
-    switch (mood) {
-      case 1: return 'from-red-500 to-red-600';
-      case 2: return 'from-orange-500 to-orange-600';
-      case 3: return 'from-yellow-500 to-yellow-600';
-      case 4: return 'from-emerald-500 to-emerald-600';
-      case 5: return 'from-green-500 to-green-600';
-      default: return 'from-slate-500 to-slate-600';
-    }
-  };
-  
-  // Get the energy icon
-  const getEnergyIcon = (energy) => {
-    switch (energy) {
-      case 1: return <div className="w-4 h-4 bg-red-500 rounded-full"></div>;
-      case 2: return <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>;
-      case 3: return <div className="w-4 h-4 bg-green-500 rounded-full"></div>;
-      default: return <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>;
-    }
-  };
-  
   // Get the color class for a category
   const getCategoryColorClass = (categoryId) => {
     switch (categoryId) {
@@ -861,82 +779,45 @@ Please provide thoughtful insights based on these entries.
     }
   };
   
-  // Export journal entries to JSON
-  const exportJournal = () => {
-    const dataStr = JSON.stringify({
-      entries: journalEntries,
-      dailyNotes: dailyNotes
-    });
-    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
-    
-    const exportFileDefaultName = `journal-export-${new Date().toISOString().split('T')[0]}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+  // Get daily note for a specific date
+  const getDailyNote = (date) => {
+    return dailyNotes[date] || '';
   };
   
-  // Import journal entries from JSON
-  const importJournal = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target.result);
-        
-        if (data.entries && Array.isArray(data.entries)) {
-          // Confirm import
-          if (window.confirm(`Import ${data.entries.length} journal entries? This will merge with your existing entries.`)) {
-            // Merge with existing entries
-            const mergedEntries = [...journalEntries];
-            const existingIds = new Set(journalEntries.map(entry => entry.id));
-            
-            data.entries.forEach(entry => {
-              if (!existingIds.has(entry.id)) {
-                mergedEntries.push(entry);
-              }
-            });
-            
-            // Update state and storage
-            setJournalEntries(mergedEntries);
-            
-            const storage = getStorage();
-            if (!storage.meditationData) {
-              storage.meditationData = {};
-            }
-            storage.meditationData.journalEntries = mergedEntries;
-            setStorage(storage);
-            
-            // Import daily notes if present
-            if (data.dailyNotes && typeof data.dailyNotes === 'object') {
-              Object.entries(data.dailyNotes).forEach(([date, note]) => {
-                if (!dailyNotes[date]) {
-                  saveDailyNote(date, note);
-                }
-              });
-            }
-            
-            alert(`Successfully imported ${data.entries.length} journal entries.`);
-          }
-        } else {
-          alert('Invalid journal data format.');
-        }
-      } catch (error) {
-        console.error('Error importing journal:', error);
-        alert('Error importing journal. Please make sure the file is a valid JSON export.');
-      }
-    };
-    
-    reader.readAsText(file);
+  // Mood color gradient helper
+  const getMoodGradient = (mood) => {
+    switch (mood) {
+      case 1: return 'from-red-500 to-red-600';
+      case 2: return 'from-orange-500 to-orange-600';
+      case 3: return 'from-yellow-500 to-yellow-600';
+      case 4: return 'from-emerald-500 to-emerald-600';
+      case 5: return 'from-green-500 to-green-600';
+      default: return 'from-slate-500 to-slate-600';
+    }
   };
-  
-  // Render the entries list view
+
+  // Render the entries list view - Guided journal experience
   const renderEntriesView = () => (
     <div className="space-y-6">
-      {/* Search and filter controls */}
+      {/* Filter indicator if filtering by date */}
+      {dateFilter && (
+        <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-lg flex justify-between items-center animate-pulse">
+          <div className="flex items-center gap-2">
+            <Calendar size={18} className="text-indigo-500 dark:text-indigo-400" />
+            <span className="text-sm text-indigo-600 dark:text-indigo-300">
+              Showing entries for {formatDateReadable(dateFilter)}
+            </span>
+          </div>
+          <button 
+            onClick={() => setDateFilter(null)}
+            className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm"
+          >
+            Clear filter
+          </button>
+        </div>
+      )}
+    
+      {/* Search and journaling prompts */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           {/* Search */}
@@ -980,7 +861,7 @@ Please provide thoughtful insights based on these entries.
                   ? `Filters (${filterByTags.length + filterByCategories.length})`
                   : 'Filter'}
               </span>
-              {showFilters ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
             
             {showFilters && (
@@ -992,7 +873,13 @@ Please provide thoughtful insights based on these entries.
                   {availableCategories.map(category => (
                     <button
                       key={category.id}
-                      onClick={() => toggleFilterCategory(category.id)}
+                      onClick={() => {
+                        if (filterByCategories.includes(category.id)) {
+                          setFilterByCategories(filterByCategories.filter(c => c !== category.id));
+                        } else {
+                          setFilterByCategories([...filterByCategories, category.id]);
+                        }
+                      }}
                       className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-colors ${
                         filterByCategories.includes(category.id)
                           ? getCategoryColorClass(category.id)
@@ -1013,7 +900,13 @@ Please provide thoughtful insights based on these entries.
                     allTags.map(tag => (
                       <button
                         key={tag}
-                        onClick={() => toggleFilterTag(tag)}
+                        onClick={() => {
+                          if (filterByTags.includes(tag)) {
+                            setFilterByTags(filterByTags.filter(t => t !== tag));
+                          } else {
+                            setFilterByTags([...filterByTags, tag]);
+                          }
+                        }}
                         className={`text-xs px-2 py-1 rounded-full transition-colors ${
                           filterByTags.includes(tag)
                             ? 'bg-indigo-500 text-white'
@@ -1028,22 +921,6 @@ Please provide thoughtful insights based on these entries.
                       No tags found in your journal entries.
                     </p>
                   )}
-                </div>
-                
-                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Filter by Mood
-                </h4>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xl">{getMoodEmoji(filterByMoodRange[0])}</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    value={filterByMoodRange[0]}
-                    onChange={e => setFilterByMoodRange([parseInt(e.target.value), filterByMoodRange[1]])}
-                    className="mx-2 flex-grow h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
-                  />
-                  <span className="text-xl">{getMoodEmoji(5)}</span>
                 </div>
                 
                 <div className="flex justify-between mt-4">
@@ -1068,49 +945,59 @@ Please provide thoughtful insights based on these entries.
             )}
           </div>
         </div>
-      </div>
-      
-      {/* Streak mini-calendar */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-2">
-            <Award size={20} className="text-amber-500 dark:text-amber-400" />
-            <h4 className="font-medium text-slate-700 dark:text-slate-300">
-              Journal Streak: {streakData.currentStreak} days
-            </h4>
-          </div>
-          <div className="text-sm text-slate-500 dark:text-slate-400">
-            Longest: {streakData.longestStreak} days
-          </div>
-        </div>
         
-        <div className="flex overflow-x-auto pb-2 gap-1">
-          {streakCalendarDates.map((date, index) => (
-            <div 
-              key={index}
-              className={`flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center ${
-                date.isToday ? 'border-2 border-indigo-500 dark:border-indigo-400' : ''
-              } ${date.hasEntry 
-                ? 'bg-indigo-500 dark:bg-indigo-600 text-white' 
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
-              }`}
-              title={date.date}
+        {/* Journaling prompts */}
+        <div className="mb-2">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+              <Lightbulb size={16} className="text-amber-500 dark:text-amber-400" />
+              Journaling Prompts
+            </h4>
+            <button
+              onClick={() => {
+                const randomPrompt = guidedPrompts[Math.floor(Math.random() * guidedPrompts.length)];
+                startGuidedJournal(randomPrompt.id);
+              }}
+              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
             >
-              {new Date(date.date).getDate()}
-            </div>
-          ))}
+              Try random prompt
+            </button>
+          </div>
+          
+          <div className="flex gap-3 overflow-x-auto pb-3 -mx-2 px-2 prompt-scroll-container">
+            {guidedPrompts.map((prompt) => (
+              <div
+                key={prompt.id}
+                onClick={() => startGuidedJournal(prompt.id)}
+                className="flex-shrink-0 w-48 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-800/30 transition-colors cursor-pointer border border-amber-100 dark:border-amber-800/30"
+              >
+                <h5 className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-1">
+                  {prompt.title}
+                </h5>
+                <p className="text-xs text-amber-700 dark:text-amber-400 line-clamp-2">
+                  {prompt.description}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
       
+      {/* Streak Calendar */}
+      <JournalStreakCalendar 
+        journalEntries={journalEntries} 
+        onSelectDate={handleDateSelect}
+      />
+
       {/* Journal entries list */}
-      {filteredEntries.length === 0 ? (
+      {Object.entries(entriesByDate).length === 0 ? (
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-8 text-center transition-colors">
           <BookOpen size={48} className="mx-auto mb-4 text-slate-400 dark:text-slate-500" />
           <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
             No journal entries found
           </h3>
           <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
-            {searchTerm || filterByTags.length > 0 || filterByCategories.length > 0
+            {searchTerm || filterByTags.length > 0 || filterByCategories.length > 0 || dateFilter
               ? "Try changing your search or filters to see more entries."
               : "Start writing in your journal to capture your thoughts, reflections, and experiences."}
           </p>
@@ -1138,7 +1025,7 @@ Please provide thoughtful insights based on these entries.
       ) : (
         <div className="space-y-6">
           {Object.entries(entriesByDate).map(([date, entries]) => (
-            <div key={date} className="mb-6">
+            <div key={date} id={`date-section-${date}`} className="animate-slideIn">
               <div className="flex items-center mb-3 sticky top-0 bg-slate-50 dark:bg-slate-900 p-2 rounded-lg z-10">
                 <Calendar size={18} className="text-indigo-500 dark:text-indigo-400 mr-2" />
                 <h3 className="text-md font-medium text-slate-700 dark:text-slate-300">
@@ -1313,132 +1200,57 @@ Please provide thoughtful insights based on these entries.
           </div>
         </div>
       )}
+
+      {/* CSS for custom scrollbar and animations */}
+      <style jsx>{`
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out forwards;
+        }
+        
+        .prompt-scroll-container {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+        }
+        
+        .prompt-scroll-container::-webkit-scrollbar {
+          height: 6px;
+        }
+        
+        .prompt-scroll-container::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .prompt-scroll-container::-webkit-scrollbar-thumb {
+          background-color: rgba(99, 102, 241, 0.3);
+          border-radius: 6px;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        
+        .animate-pulse {
+          animation: pulse 2s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
   
-  // Render the calendar view
+  // Render the calendar view with monthly calendar
   const renderCalendarView = () => (
     <div className="space-y-6">
-      {/* Calendar section */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 xs:p-6 transition-colors">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100">
-            {calendarData.monthName} {calendarData.year}
-          </h3>
-          
-          <div className="flex items-center">
-            <button
-              onClick={() => {
-                setSelectedDate(formatDateForStorage(new Date()));
-                resetEntryForm();
-                setShowEntryEditor(true);
-              }}
-              className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm"
-            >
-              <Plus size={16} />
-              New Entry
-            </button>
-          </div>
-        </div>
-        
-        {/* Calendar grid */}
-        <div className="grid grid-cols-7 gap-2">
-          {/* Day headers */}
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center p-2 text-sm font-medium text-slate-500 dark:text-slate-400">
-              {day}
-            </div>
-          ))}
-          
-          {/* Calendar days */}
-          {calendarData.days.map((dayData, index) => (
-            <div 
-              key={index}
-              className={`aspect-square p-1 rounded-lg border ${
-                dayData.day
-                  ? dayData.isToday
-                    ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
-                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                  : 'border-transparent'
-              } transition-colors`}
-              onClick={() => {
-                if (dayData.day) {
-                  setSelectedDate(dayData.date);
-                }
-              }}
-            >
-              {dayData.day && (
-                <div className="h-full flex flex-col">
-                  {/* Day number */}
-                  <div className={`text-center mb-1 ${
-                    dayData.isToday ? 'text-indigo-600 dark:text-indigo-400 font-medium' : ''
-                  }`}>
-                    {dayData.day}
-                  </div>
-                  
-                  {/* Indicators */}
-                  <div className="flex-1 flex flex-col justify-center items-center gap-1">
-                    {/* Mood indicator */}
-                    {dayData.entries.length > 0 && (
-                      <div 
-                        className="w-6 h-6 rounded-full flex items-center justify-center" 
-                        title={`Average mood: ${dayData.moodAvg.toFixed(1)}/5`}
-                      >
-                        {getMoodEmoji(Math.round(dayData.moodAvg))}
-                      </div>
-                    )}
-                    
-                    {/* Type indicators */}
-                    <div className="flex gap-1">
-                      {dayData.hasNote && (
-                        <div className="w-2 h-2 rounded-full bg-amber-500" title="Has daily note"></div>
-                      )}
-                      {dayData.hasSocial && (
-                        <div className="w-2 h-2 rounded-full bg-emerald-500" title="Social activity"></div>
-                      )}
-                      {dayData.hasStress && (
-                        <div className="w-2 h-2 rounded-full bg-red-500" title="Stress indicator"></div>
-                      )}
-                      {dayData.hasGratitude && (
-                        <div className="w-2 h-2 rounded-full bg-rose-500" title="Gratitude practice"></div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Entry count */}
-                  {dayData.entries.length > 0 && (
-                    <div className="text-center text-xs text-slate-500 dark:text-slate-400">
-                      {dayData.entries.length > 1 ? `${dayData.entries.length} entries` : '1 entry'}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        
-        {/* Calendar legend */}
-        <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
-          <div className="flex flex-wrap gap-4 text-xs text-slate-600 dark:text-slate-400">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-              <span>Daily Note</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-              <span>Social</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-red-500"></div>
-              <span>Stress</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-rose-500"></div>
-              <span>Gratitude</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Monthly calendar component */}
+      <MonthlyCalendar 
+        journalEntries={journalEntries}
+        onSelectDate={handleDateSelect}
+        selectedDate={selectedDate}
+      />
       
       {/* Selected date section */}
       {selectedDate && (
@@ -1496,7 +1308,7 @@ Please provide thoughtful insights based on these entries.
               </button>
             </div>
             
-            {filteredEntries.filter(entry => {
+            {journalEntries.filter(entry => {
               const entryDate = entry.date || entry.timestamp.split('T')[0];
               return entryDate === selectedDate;
             }).map(entry => (
@@ -1557,6 +1369,7 @@ Please provide thoughtful insights based on these entries.
                 <button
                   onClick={() => {
                     setSelectedEntry(entry);
+                    setDateFilter(selectedDate);
                     setActiveView('entries');
                   }}
                   className="mt-2 text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
@@ -1567,7 +1380,7 @@ Please provide thoughtful insights based on these entries.
               </div>
             ))}
             
-            {filteredEntries.filter(entry => {
+            {journalEntries.filter(entry => {
               const entryDate = entry.date || entry.timestamp.split('T')[0];
               return entryDate === selectedDate;
             }).length === 0 && (
@@ -1593,81 +1406,9 @@ Please provide thoughtful insights based on these entries.
     </div>
   );
   
-  // Render the insights view
+  // Render the insights view with AI-powered analysis
   const renderInsightsView = () => (
     <div className="space-y-6">
-      {/* AI Insights Section */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">
-          <Brain size={20} className="text-indigo-500 dark:text-indigo-400" />
-          Journal Insights
-        </h3>
-        
-        <p className="text-slate-600 dark:text-slate-400 mb-4">
-          Get AI-powered insights from your journal entries to discover patterns, themes, and opportunities for growth.
-        </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {aiInsightPrompts.map(prompt => (
-            <button
-              key={prompt.id}
-              onClick={() => {
-                const recentEntries = journalEntries
-                  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-                  .slice(0, 5)
-                  .map(entry => entry.text);
-                
-                getAIInsights(prompt.id, recentEntries);
-              }}
-              className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 text-left hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors flex flex-col"
-            >
-              <span className="text-md font-medium text-slate-800 dark:text-slate-100 mb-1">
-                {prompt.title}
-              </span>
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                {prompt.description}
-              </span>
-            </button>
-          ))}
-        </div>
-        
-        {/* AI Response */}
-        {isLoadingAI ? (
-          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6 text-center">
-            <div className="animate-pulse flex flex-col items-center">
-              <div className="rounded-full bg-slate-300 dark:bg-slate-600 h-12 w-12 mb-4"></div>
-              <div className="h-4 bg-slate-300 dark:bg-slate-600 rounded w-1/2 mb-2"></div>
-              <div className="h-4 bg-slate-300 dark:bg-slate-600 rounded w-1/3"></div>
-            </div>
-            <p className="text-slate-500 dark:text-slate-400 mt-4">
-              Analyzing your journal entries...
-            </p>
-          </div>
-        ) : aiResponse ? (
-          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6">
-            <div className="flex items-start">
-              <Brain size={24} className="text-indigo-500 dark:text-indigo-400 mt-1 mr-3 flex-shrink-0" />
-              <div>
-                <h4 className="text-md font-medium text-slate-800 dark:text-slate-100 mb-3">
-                  Journal Insights
-                </h4>
-                <div className="text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert">
-                  {aiResponse.split('\n').map((paragraph, idx) => (
-                    <p key={idx}>{paragraph}</p>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6 text-center">
-            <p className="text-slate-500 dark:text-slate-400">
-              Select an insight type above to analyze your recent journal entries.
-            </p>
-          </div>
-        )}
-      </div>
-      
       {/* Journal Stats Section */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">
@@ -1703,117 +1444,244 @@ Please provide thoughtful insights based on these entries.
           </div>
           
           <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 text-center">
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Streak</p>
-            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{streakData.currentStreak}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Categories</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+              {(() => {
+                const categorySet = new Set();
+                journalEntries.forEach(entry => {
+                  if (entry.categories) {
+                    entry.categories.forEach(cat => categorySet.add(cat));
+                  }
+                });
+                return categorySet.size;
+              })()}
+            </p>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {/* Most used categories chart */}
+        {/* Journal analysis charts */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Topics */}
           <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
-            <h4 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3">
-              Most Used Categories
+            <h4 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+              <FileText size={16} className="text-indigo-500 dark:text-indigo-400" />
+              Top Topics
             </h4>
             
-            {availableCategories.map(category => {
-              const count = journalEntries.filter(entry => 
-                entry.categories && entry.categories.includes(category.id)
-              ).length;
-              
-              if (count === 0) return null;
-              
-              const percentage = journalEntries.length > 0 
-                ? Math.round((count / journalEntries.length) * 100) 
-                : 0;
-              
-              return (
-                <div key={category.id} className="mb-3">
+            {journalAnalysis.loaded && journalAnalysis.topTopics.length > 0 ? (
+              journalAnalysis.topTopics.slice(0, 5).map(topic => (
+                <div key={topic.topic} className="mb-3">
                   <div className="flex justify-between items-center mb-1">
-                    <div className="flex items-center gap-1">
-                      {category.icon}
-                      <span className="text-sm text-slate-700 dark:text-slate-300">
-                        {category.name}
-                      </span>
-                    </div>
+                    <span className="text-sm text-slate-700 dark:text-slate-300">
+                      {topic.topic}
+                    </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">
-                      {count} entries
+                      {topic.entries} entries
                     </span>
                   </div>
                   <div className="h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" 
-                      style={{ width: `${percentage}%` }}
+                      style={{ width: `${Math.min(100, (topic.entries / journalEntries.length * 100))}%` }}
                     ></div>
                   </div>
                 </div>
-              );
-            })}
+              ))
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-slate-500 dark:text-slate-400 text-sm">
+                  Add more journal entries to see topic analysis.
+                </p>
+              </div>
+            )}
           </div>
           
-          {/* Mood over time */}
+          {/* Stress Factors */}
           <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
-            <h4 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3">
-              Recent Moods
+            <h4 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+              <Frown size={16} className="text-red-500 dark:text-red-400" />
+              Stress Factors
             </h4>
             
-            <div className="flex items-end justify-between h-32">
-              {journalEntries
-                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-                .slice(0, 7)
-                .reverse()
-                .map((entry, index) => (
-                  <div key={index} className="flex flex-col items-center">
+            {journalAnalysis.loaded && journalAnalysis.stressFactors.length > 0 ? (
+              journalAnalysis.stressFactors.slice(0, 5).map(factor => (
+                <div key={factor.factor} className="mb-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm text-slate-700 dark:text-slate-300">
+                      {factor.factor}
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {factor.count} mentions
+                    </span>
+                  </div>
+                  <div className="h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
                     <div 
-                      className="bg-gradient-to-t from-indigo-500 to-purple-500 rounded-t-sm w-8"
-                      style={{ height: `${(entry.mood || 3) * 20}px` }}
+                      className="h-full bg-gradient-to-r from-red-500 to-orange-500" 
+                      style={{ 
+                        width: `${Math.min(100, (factor.count / Math.max(...journalAnalysis.stressFactors.map(f => f.count)) * 100))}%` 
+                      }}
                     ></div>
-                    <p className="text-xl mt-2">
-                      {getMoodEmoji(entry.mood || 3)}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      {new Date(entry.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-slate-500 dark:text-slate-400 text-sm">
+                  No stress indicators detected in your journal entries.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* People Mentioned */}
+          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
+            <h4 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+              <Users size={16} className="text-emerald-500 dark:text-emerald-400" />
+              People Mentioned
+            </h4>
+            
+            {journalAnalysis.loaded && journalAnalysis.topPeople.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2">
+                {journalAnalysis.topPeople.slice(0, 6).map(person => (
+                  <div key={person.name} className="bg-slate-100 dark:bg-slate-600 p-2 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <User size={14} className="text-slate-500 dark:text-slate-400" />
+                      <span className="text-sm text-slate-700 dark:text-slate-300 truncate">
+                        {person.name}
+                      </span>
+                    </div>
+                    <span className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded-full">
+                      {person.count}
+                    </span>
                   </div>
                 ))}
-            </div>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-slate-500 dark:text-slate-400 text-sm">
+                  No people detected in your journal entries.
+                </p>
+              </div>
+            )}
+          </div>
+          
+          {/* Mood correlations */}
+          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
+            <h4 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+              <Activity size={16} className="text-blue-500 dark:text-blue-400" />
+              Mood Patterns
+            </h4>
+            
+            {journalAnalysis.loaded && journalAnalysis.moodCorrelations.length > 0 ? (
+              <div className="space-y-3">
+                {journalAnalysis.moodCorrelations.map(mood => (
+                  <div key={mood.mood} className="bg-slate-100 dark:bg-slate-600 p-3 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">
+                        {mood.mood === 'low' ? '😔' : mood.mood === 'medium' ? '😐' : '😊'}
+                      </span>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {mood.mood === 'low' ? 'Low' : mood.mood === 'medium' ? 'Neutral' : 'High'} Mood ({mood.count} entries)
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {mood.words.map(word => (
+                        <span key={word} className="text-xs px-2 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full">
+                          {word}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-slate-500 dark:text-slate-400 text-sm">
+                  Add more journal entries with mood ratings to see patterns.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
       
-      {/* Data Management */}
+      {/* AI Insights Section */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
-          Journal Data Management
+        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">
+          <Brain size={20} className="text-indigo-500 dark:text-indigo-400" />
+          AI-Powered Journal Insights
         </h3>
         
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={exportJournal}
-            className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg flex items-center gap-2 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors"
-          >
-            <Download size={18} />
-            Export Journal
-          </button>
-          
-          <label className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors cursor-pointer">
-            <Upload size={18} />
-            Import Journal
-            <input
-              type="file"
-              accept=".json"
-              onChange={importJournal}
-              className="hidden"
-            />
-          </label>
+        <p className="text-slate-600 dark:text-slate-400 mb-4">
+          Get personalized insights from your journal entries to discover patterns, themes, and opportunities for growth.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {aiInsightPrompts.map(prompt => (
+            <button
+              key={prompt.id}
+              onClick={() => getAIInsights(prompt.id)}
+              className={`bg-slate-50 dark:bg-slate-700 rounded-lg p-4 text-left hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors flex flex-col ${
+                selectedInsight?.id === prompt.id ? 'ring-2 ring-indigo-500' : ''
+              }`}
+            >
+              <span className="text-md font-medium text-slate-800 dark:text-slate-100 mb-1">
+                {prompt.title}
+              </span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">
+                {prompt.description}
+              </span>
+            </button>
+          ))}
         </div>
+        
+        {/* AI Response */}
+        {isLoadingAI ? (
+          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6 text-center">
+            <div className="animate-pulse flex flex-col items-center">
+              <div className="rounded-full bg-slate-300 dark:bg-slate-600 h-12 w-12 mb-4"></div>
+              <div className="h-4 bg-slate-300 dark:bg-slate-600 rounded w-1/2 mb-2"></div>
+              <div className="h-4 bg-slate-300 dark:bg-slate-600 rounded w-1/3"></div>
+            </div>
+            <p className="text-slate-500 dark:text-slate-400 mt-4">
+              Analyzing your journal entries...
+            </p>
+          </div>
+        ) : aiResponse ? (
+          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6">
+            <div className="flex items-start">
+              <Brain size={24} className="text-indigo-500 dark:text-indigo-400 mt-1 mr-3 flex-shrink-0" />
+              <div>
+                <h4 className="text-md font-medium text-slate-800 dark:text-slate-100 mb-3">
+                  {selectedInsight ? selectedInsight.title : 'Journal Insights'}
+                </h4>
+                <div className="text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert">
+                  {aiResponse.split('\n').map((paragraph, idx) => (
+                    paragraph ? <p key={idx}>{paragraph}</p> : <br key={idx} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6 text-center">
+            <p className="text-slate-500 dark:text-slate-400">
+              {journalEntries.length === 0 
+                ? "Add some journal entries first to get AI-powered insights."
+                : "Select an insight type above to analyze your recent journal entries."}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
   
-  // Render entry editor
+  // Render entry editor modal
   const renderEntryEditor = () => (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-xl max-h-[90vh] overflow-y-auto w-full max-w-3xl transition-all duration-300 ${
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-start justify-center">
+      <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-xl max-h-[90vh] overflow-y-auto w-full max-w-3xl mt-4 transition-all duration-300 ${
         isFullscreen ? 'fixed inset-2' : ''
       }`}>
         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center sticky top-0 bg-white dark:bg-slate-800 z-10">
@@ -1982,42 +1850,6 @@ Please provide thoughtful insights based on these entries.
             </div>
           </div>
           
-          {/* Journal prompts */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-2">
-            <Lightbulb size={16} className="text-amber-500 dark:text-amber-400" />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Journal Prompts
-              </span>
-              <button 
-                onClick={() => {
-                  const selectedPrompt = guidedPrompts[Math.floor(Math.random() * guidedPrompts.length)];
-                  startGuidedJournal(selectedPrompt.id);
-                }}
-                className="ml-auto text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-              >
-                Try a random prompt
-              </button>
-            </div>
-            
-            <div className="flex flex-nowrap gap-3 overflow-x-auto pb-2 px-1 -mx-1">
-              {guidedPrompts.map(prompt => (
-                <button
-                  key={prompt.id}
-                  onClick={() => startGuidedJournal(prompt.id)}
-                  className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg flex-shrink-0 w-48 text-left hover:bg-amber-100 dark:hover:bg-amber-800/30 transition-colors"
-                >
-                  <h5 className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-1">
-                    {prompt.title}
-                  </h5>
-                  <p className="text-xs text-amber-700 dark:text-amber-400 line-clamp-2">
-                    {prompt.description}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-          
           {/* Action buttons */}
           <div className="flex justify-end gap-3">
             <button
@@ -2060,7 +1892,7 @@ Please provide thoughtful insights based on these entries.
               <AlertTriangle className="text-red-600 dark:text-red-400" size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-2">
+            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-2">
                 Delete Journal Entry
               </h3>
               <p className="text-slate-600 dark:text-slate-400">
@@ -2161,20 +1993,6 @@ Please provide thoughtful insights based on these entries.
               <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 dark:bg-indigo-400"></div>
             )}
           </button>
-          
-          <div className="ml-auto">
-            <button
-              onClick={() => {
-                setSelectedDate(formatDateForStorage(new Date()));
-                resetEntryForm();
-                setShowEntryEditor(true);
-              }}
-              className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm"
-            >
-              <Plus size={16} />
-              <span className="hidden xs:inline">New Entry</span>
-            </button>
-          </div>
         </div>
       </div>
       

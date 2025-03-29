@@ -1277,6 +1277,8 @@ Please provide thoughtful insights based on these entries.
       {/* Monthly calendar component */}
       <MonthlyCalendar 
         journalEntries={journalEntries}
+        onSelectDate={(date) => setSelectedDate(date)}
+        onEditEntry={editEntry}
         selectedDate={selectedDate}
       />
       

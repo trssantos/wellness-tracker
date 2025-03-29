@@ -11,7 +11,8 @@ const BreathingExercise = ({
   favorites = [],
   isQuick = false
 }) => {
-  const [currentExercise, setCurrentExercise] = useState(selectedExercise || category.exercises[0]);
+  // Initialize with the selected exercise or default to first in category
+  const [currentExercise, setCurrentExercise] = useState(null);
   const [activePhase, setActivePhase] = useState('intro'); // intro, inhale, hold, exhale, complete
   const [isPlaying, setIsPlaying] = useState(false);
   const [timer, setTimer] = useState(0);
@@ -25,9 +26,26 @@ const BreathingExercise = ({
   const audioRef = useRef(null);
   const circleRef = useRef(null);
   const speechSynthesisRef = useRef(null);
+
+  // Ensure currentExercise gets set properly when component mounts or selectedExercise changes
+  useEffect(() => {
+    // If selectedExercise is provided, use it
+    if (selectedExercise) {
+      console.log('Using selected exercise:', selectedExercise.id);
+      setCurrentExercise(selectedExercise);
+    } else if (category && category.exercises && category.exercises.length > 0) {
+      // Otherwise default to first exercise in category
+      console.log('Using first exercise in category:', category.exercises[0].id);
+      setCurrentExercise(category.exercises[0]);
+    }
+  }, [selectedExercise, category]);
   
   // Get exercise configuration based on exercise ID
   useEffect(() => {
+    if (!currentExercise) return;
+    
+    console.log('Configuring exercise:', currentExercise.id);
+    
     // Configure based on exercise ID
     const config = getExerciseConfig(currentExercise.id);
     
@@ -43,7 +61,8 @@ const BreathingExercise = ({
     if (!beforeFeeling) {
       // Wait a moment before showing the dialog
       setTimeout(() => {
-        document.getElementById('before-feeling-dialog').showModal();
+        const dialog = document.getElementById('before-feeling-dialog');
+        if (dialog) dialog.showModal();
       }, 500);
     }
   }, [currentExercise, isQuick]);
@@ -61,6 +80,13 @@ const BreathingExercise = ({
   
   // Get exercise configuration
   const getExerciseConfig = (exerciseId) => {
+    if (!exerciseId) {
+      console.error('No exercise ID provided to getExerciseConfig');
+      return null;
+    }
+    
+    console.log('Getting config for:', exerciseId);
+    
     // Default configuration
     const defaultConfig = {
       inhaleDuration: 4,
@@ -145,14 +171,20 @@ const BreathingExercise = ({
   
   // Start the exercise
   const startExercise = () => {
+    if (!currentExercise) {
+      console.error('Cannot start exercise: No exercise selected');
+      return;
+    }
+    
     setIsPlaying(true);
     setActivePhase('intro');
     setCycleCount(0);
     setTimer(5); // 5 second intro
     
     // Speak the intro
-    if (!isMuted) {
-      speakText(getExerciseConfig(currentExercise.id).introText);
+    const config = getExerciseConfig(currentExercise.id);
+    if (!isMuted && config) {
+      speakText(config.introText);
     }
     
     // Hide controls after a moment
@@ -161,7 +193,7 @@ const BreathingExercise = ({
     }, 2000);
   };
   
-  // Text-to-speech function
+  // Text-to-speech function with voice settings
   const speakText = (text) => {
     if (speechSynthesisRef.current && !isMuted) {
       speechSynthesisRef.current.cancel(); // Cancel any ongoing speech
@@ -172,16 +204,16 @@ const BreathingExercise = ({
       const voiceSettings = getVoiceSettings();
       
       // Apply settings
-      utterance.rate = voiceSettings.voiceRate;
-      utterance.pitch = voiceSettings.voicePitch;
-      utterance.volume = voiceSettings.voiceVolume;
+      utterance.rate = voiceSettings?.voiceRate || 0.85;
+      utterance.pitch = voiceSettings?.voicePitch || 0.9;
+      utterance.volume = voiceSettings?.voiceVolume || 0.8;
       
       // Select voice based on settings
       const voices = speechSynthesisRef.current.getVoices();
       
       let selectedVoice = null;
       
-      if (voiceSettings.voiceType === 'female') {
+      if (!voiceSettings || voiceSettings.voiceType === 'female') {
         // Try to find a good female voice
         const femalePriorities = [
           'Google UK English Female',
@@ -255,9 +287,11 @@ const BreathingExercise = ({
   
   // Main timer effect
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || !currentExercise) return;
     
     const config = getExerciseConfig(currentExercise.id);
+    if (!config) return;
+    
     let timerId;
     
     if (timer > 0) {
@@ -307,7 +341,8 @@ const BreathingExercise = ({
             
             // Show the completion dialog after a moment
             setTimeout(() => {
-              document.getElementById('after-feeling-dialog').showModal();
+              const dialog = document.getElementById('after-feeling-dialog');
+              if (dialog) dialog.showModal();
             }, 2000);
           } else {
             // Start next cycle
@@ -339,7 +374,8 @@ const BreathingExercise = ({
           
           // Show the completion dialog after a moment
           setTimeout(() => {
-            document.getElementById('after-feeling-dialog').showModal();
+            const dialog = document.getElementById('after-feeling-dialog');
+            if (dialog) dialog.showModal();
           }, 2000);
         } else {
           // Start next cycle
@@ -357,17 +393,18 @@ const BreathingExercise = ({
     return () => {
       if (timerId) clearTimeout(timerId);
     };
-  }, [isPlaying, timer, activePhase, cycleCount, currentExercise.id, isMuted]);
+  }, [isPlaying, timer, activePhase, cycleCount, currentExercise, isMuted]);
   
   // Animation effect for the breathing circle
   useEffect(() => {
-    if (!circleRef.current) return;
+    if (!circleRef.current || !currentExercise) return;
     
     // Reset animation
     circleRef.current.style.animation = 'none';
     
     // Get exercise config
     const config = getExerciseConfig(currentExercise.id);
+    if (!config) return;
     
     // Set animation based on active phase
     if (activePhase === 'inhale') {
@@ -381,7 +418,7 @@ const BreathingExercise = ({
     } else if (activePhase === 'complete') {
       circleRef.current.style.animation = `idle-breathing 4s infinite alternate ease-in-out`;
     }
-  }, [activePhase, currentExercise.id]);
+  }, [activePhase, currentExercise]);
   
   // Toggle play/pause
   const togglePlayPause = () => {
@@ -445,8 +482,11 @@ const BreathingExercise = ({
   
   // Handle exercise completion
   const handleCompleteExercise = (afterFeeling) => {
+    if (!currentExercise) return;
+    
     // Close dialog
-    document.getElementById('after-feeling-dialog').close();
+    const dialog = document.getElementById('after-feeling-dialog');
+    if (dialog) dialog.close();
     
     // Create session data
     const sessionData = {
@@ -471,7 +511,8 @@ const BreathingExercise = ({
   // Handle setting the before feeling
   const handleBeforeFeeling = (feeling) => {
     setBeforeFeeling(feeling);
-    document.getElementById('before-feeling-dialog').close();
+    const dialog = document.getElementById('before-feeling-dialog');
+    if (dialog) dialog.close();
   };
   
   // Get phase name for display
@@ -496,11 +537,14 @@ const BreathingExercise = ({
   };
   
   // Get the favorite status
-  const isFavorite = favorites.includes(currentExercise.id);
+  const isFavorite = currentExercise ? favorites.includes(currentExercise.id) : false;
   
   // Get dynamic breathing instructions based on active phase
   useEffect(() => {
+    if (!currentExercise) return;
+    
     const config = getExerciseConfig(currentExercise.id);
+    if (!config) return;
     
     if (activePhase === 'intro') {
       setInstructions('Prepare for the exercise...');
@@ -517,11 +561,23 @@ const BreathingExercise = ({
     } else if (activePhase === 'complete') {
       setInstructions('Exercise complete');
     }
-  }, [activePhase, currentExercise.id]);
+  }, [activePhase, currentExercise]);
+  
+  // Loading state
+  if (!currentExercise) {
+    return (
+      <div className="fixed inset-0 bg-slate-900/95 z-50 flex items-center justify-center">
+        <div className="text-white">Loading exercise...</div>
+      </div>
+    );
+  }
+  
+  // Get exercise config for cycles display
+  const config = getExerciseConfig(currentExercise.id);
   
   return (
     <div 
-      className="fixed inset-0 bg-slate-900/95 z-50 flex flex-col items-center justify-center"
+      className="fixed inset-0 bg-slate-900/95 z-50 flex flex-col items-center justify-center overflow-y-auto"
       onMouseMove={handleMouseMove}
     >
       {/* Audio element for ambient sound */}
@@ -543,8 +599,8 @@ const BreathingExercise = ({
           
           <div>
             <h2 className="text-xl font-medium text-white">{currentExercise.name}</h2>
-            <p className="text-slate-300 text-sm">
-              {category.title} • Cycle {cycleCount}/{getExerciseConfig(currentExercise.id).cycles}
+            <p className="text-slate-300 text-sm text-center">
+              {category.title} • Cycle {cycleCount}/{config ? config.cycles : '?'}
             </p>
           </div>
           
@@ -562,11 +618,11 @@ const BreathingExercise = ({
         <div className="relative mb-4">
           <div 
             ref={circleRef}
-            className="w-64 h-64 bg-purple-500/20 rounded-full flex items-center justify-center"
+            className="w-48 h-48 xs:w-56 xs:h-56 sm:w-64 sm:h-64 bg-purple-500/20 rounded-full flex items-center justify-center"
           >
-            <div className="w-52 h-52 bg-purple-500/30 rounded-full flex items-center justify-center pulse-animation">
-              <div className="w-32 h-32 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
-                <Heart size={48} className="text-white" />
+            <div className="w-40 h-40 xs:w-44 xs:h-44 sm:w-52 sm:h-52 bg-purple-500/30 rounded-full flex items-center justify-center pulse-animation">
+              <div className="w-24 h-24 xs:w-28 xs:h-28 sm:w-32 sm:h-32 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
+                <Heart size={36} className="text-white" />
               </div>
             </div>
           </div>
@@ -574,35 +630,35 @@ const BreathingExercise = ({
         
         {/* Phase indicator and timer */}
         <div className="text-center">
-          <h3 className="text-2xl font-medium text-white mb-2">{getPhaseDisplayName()}</h3>
-          <p className="text-4xl font-bold text-white mb-4">{timer}</p>
+          <h3 className="text-xl xs:text-2xl font-medium text-white mb-2">{getPhaseDisplayName()}</h3>
+          <p className="text-3xl xs:text-4xl font-bold text-white mb-4">{timer}</p>
           <p className="text-lg text-slate-300">{instructions}</p>
         </div>
       </div>
       
       {/* Bottom controls */}
       <div className={`absolute bottom-0 left-0 right-0 p-6 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="flex justify-center items-center gap-8">
+        <div className="flex justify-center items-center gap-3 xs:gap-4 sm:gap-8">
           <button
             onClick={toggleMute}
-            className="p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
+            className="p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
           >
-            {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
           </button>
           
           <button
             onClick={togglePlayPause}
-            className="p-6 text-white bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full hover:from-purple-600 hover:to-indigo-600 transition-colors"
+            className="p-4 xs:p-6 text-white bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full hover:from-purple-600 hover:to-indigo-600 transition-colors"
           >
-            {isPlaying ? <Pause size={32} /> : <Play size={32} />}
+            {isPlaying ? <Pause size={24} /> : <Play size={24} />}
           </button>
           
           <button
             onClick={skipToNextPhase}
-            className="p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
+            className="p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
             disabled={activePhase === 'complete'}
           >
-            <SkipForward size={24} className={activePhase === 'complete' ? 'opacity-50' : ''} />
+            <SkipForward size={20} className={activePhase === 'complete' ? 'opacity-50' : ''} />
           </button>
         </div>
       </div>
@@ -662,7 +718,7 @@ const BreathingExercise = ({
       {/* Before feeling dialog */}
       <dialog 
         id="before-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-6 w-80 max-w-full shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How are you feeling now?
@@ -693,7 +749,7 @@ const BreathingExercise = ({
       {/* After feeling dialog */}
       <dialog 
         id="after-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-6 w-80 max-w-full shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How do you feel now?

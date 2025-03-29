@@ -10,7 +10,7 @@ const GuidedMeditation = ({
   onToggleFavorite,
   favorites = []
 }) => {
-  const [currentExercise, setCurrentExercise] = useState(selectedExercise || category.exercises[0]);
+  const [currentExercise, setCurrentExercise] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [timer, setTimer] = useState(0);
@@ -24,8 +24,28 @@ const GuidedMeditation = ({
   const speechSynthesisRef = useRef(null);
   const intervalRef = useRef(null);
   
+  // Set current exercise when component mounts or selectedExercise changes
+  useEffect(() => {
+    // If selectedExercise is provided, use it
+    if (selectedExercise) {
+      console.log('Using selected exercise:', selectedExercise.id);
+      setCurrentExercise(selectedExercise);
+    } else if (category && category.exercises && category.exercises.length > 0) {
+      // Otherwise default to first exercise in category
+      console.log('Using first exercise in category:', category.exercises[0].id);
+      setCurrentExercise(category.exercises[0]);
+    }
+  }, [selectedExercise, category]);
+  
   // Get meditation script based on exercise ID
   const getMeditationScript = (exerciseId) => {
+    if (!exerciseId) {
+      console.error('No exercise ID provided to getMeditationScript');
+      return [];
+    }
+    
+    console.log('Getting meditation script for:', exerciseId);
+    
     const scripts = {
       'body-scan': [
         { text: "Find a comfortable position, either sitting or lying down. Allow your body to relax and settle.", duration: 15 },
@@ -112,20 +132,6 @@ const GuidedMeditation = ({
     // Set up speech synthesis
     speechSynthesisRef.current = window.speechSynthesis;
     
-    // Calculate total meditation time
-    const script = getMeditationScript(currentExercise.id);
-    const totalSeconds = script.reduce((sum, step) => sum + step.duration, 0);
-    setTotalTime(totalSeconds);
-    
-    // Show the before feelings dialog
-    if (!beforeFeeling) {
-      // Wait a moment before showing the dialog
-      setTimeout(() => {
-        document.getElementById('before-feeling-dialog').showModal();
-      }, 500);
-    }
-    
-    // Clean up on unmount
     return () => {
       if (speechSynthesisRef.current) {
         speechSynthesisRef.current.cancel();
@@ -139,15 +145,46 @@ const GuidedMeditation = ({
         audioRef.current.pause();
       }
     };
-  }, [currentExercise]);
+  }, []);
+  
+  // Calculate total meditation time when exercise changes
+  useEffect(() => {
+    if (!currentExercise) return;
+    
+    console.log('Calculating total time for:', currentExercise.id);
+    
+    // Calculate total meditation time
+    const script = getMeditationScript(currentExercise.id);
+    const totalSeconds = script.reduce((sum, step) => sum + step.duration, 0);
+    setTotalTime(totalSeconds);
+    
+    // Show the before feelings dialog
+    if (!beforeFeeling) {
+      // Wait a moment before showing the dialog
+      setTimeout(() => {
+        const dialog = document.getElementById('before-feeling-dialog');
+        if (dialog) dialog.showModal();
+      }, 500);
+    }
+  }, [currentExercise, beforeFeeling]);
   
   // Start the meditation session
   const startMeditation = () => {
+    if (!currentExercise) {
+      console.error('Cannot start meditation: No exercise selected');
+      return;
+    }
+    
     setIsPlaying(true);
     setCurrentStep(0);
     
     // Get the first step
     const script = getMeditationScript(currentExercise.id);
+    if (script.length === 0) {
+      console.error('No script found for exercise:', currentExercise.id);
+      return;
+    }
+    
     setTimer(script[0].duration);
     
     // Speak the first instruction
@@ -186,7 +223,7 @@ const GuidedMeditation = ({
     }
   };
   
-  // Text-to-speech function
+  // Text-to-speech function with voice settings
   const speakText = (text) => {
     if (speechSynthesisRef.current && !isMuted) {
       speechSynthesisRef.current.cancel(); // Cancel any ongoing speech
@@ -197,16 +234,16 @@ const GuidedMeditation = ({
       const voiceSettings = getVoiceSettings();
       
       // Apply settings
-      utterance.rate = voiceSettings.voiceRate;
-      utterance.pitch = voiceSettings.voicePitch;
-      utterance.volume = voiceSettings.voiceVolume;
+      utterance.rate = voiceSettings?.voiceRate || 0.85;
+      utterance.pitch = voiceSettings?.voicePitch || 0.9;
+      utterance.volume = voiceSettings?.voiceVolume || 0.8;
       
       // Select voice based on settings
       const voices = speechSynthesisRef.current.getVoices();
       
       let selectedVoice = null;
       
-      if (voiceSettings.voiceType === 'female') {
+      if (!voiceSettings || voiceSettings.voiceType === 'female') {
         // Try to find a good female voice
         const femalePriorities = [
           'Google UK English Female',
@@ -264,7 +301,7 @@ const GuidedMeditation = ({
   
   // Main timer effect
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || !currentExercise) return;
     
     let timerId;
     
@@ -306,7 +343,8 @@ const GuidedMeditation = ({
         
         // Show the completion dialog after a moment
         setTimeout(() => {
-          document.getElementById('after-feeling-dialog').showModal();
+          const dialog = document.getElementById('after-feeling-dialog');
+          if (dialog) dialog.showModal();
         }, 2000);
       }
     }
@@ -314,10 +352,12 @@ const GuidedMeditation = ({
     return () => {
       if (timerId) clearTimeout(timerId);
     };
-  }, [isPlaying, timer, currentStep, isMuted]);
+  }, [isPlaying, timer, currentStep, currentExercise, isMuted]);
   
   // Toggle play/pause
   const togglePlayPause = () => {
+    if (!currentExercise) return;
+    
     setIsPlaying(!isPlaying);
     
     if (isPlaying) {
@@ -355,7 +395,7 @@ const GuidedMeditation = ({
   
   // Skip to next step
   const skipToNextStep = () => {
-    if (!isPlaying) return;
+    if (!isPlaying || !currentExercise) return;
     
     // Cancel current speech
     if (speechSynthesisRef.current) {
@@ -379,7 +419,7 @@ const GuidedMeditation = ({
   
   // Skip to previous step
   const skipToPreviousStep = () => {
-    if (!isPlaying || currentStep === 0) return;
+    if (!isPlaying || currentStep === 0 || !currentExercise) return;
     
     // Cancel current speech
     if (speechSynthesisRef.current) {
@@ -407,10 +447,12 @@ const GuidedMeditation = ({
       stopAmbientSound();
     } else {
       // Unmuting
-      if (isPlaying) {
+      if (isPlaying && currentExercise) {
         // Speak current instruction
         const script = getMeditationScript(currentExercise.id);
-        speakText(script[currentStep].text);
+        if (script.length > currentStep) {
+          speakText(script[currentStep].text);
+        }
         
         playAmbientSound();
       }
@@ -435,8 +477,11 @@ const GuidedMeditation = ({
   
   // Handle exercise completion
   const handleCompleteExercise = (afterFeeling) => {
+    if (!currentExercise) return;
+    
     // Close dialog
-    document.getElementById('after-feeling-dialog').close();
+    const dialog = document.getElementById('after-feeling-dialog');
+    if (dialog) dialog.close();
     
     // Create session data
     const sessionData = {
@@ -460,10 +505,11 @@ const GuidedMeditation = ({
   // Handle setting the before feeling
   const handleBeforeFeeling = (feeling) => {
     setBeforeFeeling(feeling);
-    document.getElementById('before-feeling-dialog').close();
+    const dialog = document.getElementById('before-feeling-dialog');
+    if (dialog) dialog.close();
   };
   
-  // Format time display (mm:ss)
+  // Format time as mm:ss
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -475,16 +521,27 @@ const GuidedMeditation = ({
   
   // Get the current instruction text
   const getCurrentInstructionText = () => {
+    if (!currentExercise) return "Select an exercise to begin";
+    
     const script = getMeditationScript(currentExercise.id);
     return currentStep < script.length ? script[currentStep].text : "Meditation complete";
   };
   
   // Get the favorite status
-  const isFavorite = favorites.includes(currentExercise.id);
+  const isFavorite = currentExercise ? favorites.includes(currentExercise.id) : false;
+  
+  // Loading state
+  if (!currentExercise) {
+    return (
+      <div className="fixed inset-0 bg-slate-900/95 z-50 flex items-center justify-center">
+        <div className="text-white">Loading exercise...</div>
+      </div>
+    );
+  }
   
   return (
     <div 
-      className="fixed inset-0 bg-slate-900/95 z-50 flex flex-col items-center justify-center"
+      className="fixed inset-0 bg-slate-900/95 z-50 flex flex-col items-center justify-center overflow-y-auto"
       onMouseMove={handleMouseMove}
     >
       {/* Audio element for ambient sound */}
@@ -506,7 +563,7 @@ const GuidedMeditation = ({
           
           <div>
             <h2 className="text-xl font-medium text-white">{currentExercise.name}</h2>
-            <p className="text-slate-300 text-sm">
+            <p className="text-slate-300 text-sm text-center">
               {category.title} • {formatTime(elapsedTime)} / {formatTime(totalTime)}
             </p>
           </div>
@@ -533,65 +590,65 @@ const GuidedMeditation = ({
         </div>
         
         {/* Instruction text */}
-        <div className="bg-slate-800/50 rounded-xl p-6 w-full max-w-2xl mb-8">
-          <p className="text-white text-xl font-light leading-relaxed text-center">
+        <div className="bg-slate-800/50 rounded-xl p-4 xs:p-6 w-full max-w-2xl mb-4 xs:mb-8">
+          <p className="text-white text-lg xs:text-xl sm:text-2xl font-light leading-relaxed text-center">
             {isPlaying ? getCurrentInstructionText() : "Press play to begin the guided meditation."}
           </p>
         </div>
         
         {/* Breathing animation */}
         {isPlaying && (
-          <div className="w-24 h-24 bg-indigo-500/20 rounded-full flex items-center justify-center mb-8 pulse-animation">
-            <div className="w-16 h-16 bg-indigo-500/40 rounded-full"></div>
+          <div className="w-16 h-16 xs:w-24 xs:h-24 bg-indigo-500/20 rounded-full flex items-center justify-center mb-6 xs:mb-8 pulse-animation">
+            <div className="w-10 h-10 xs:w-16 xs:h-16 bg-indigo-500/40 rounded-full"></div>
           </div>
         )}
       </div>
       
       {/* Bottom controls */}
       <div className={`absolute bottom-0 left-0 right-0 p-6 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="flex justify-center items-center gap-6">
+        <div className="flex justify-center items-center gap-3 xs:gap-4 sm:gap-6">
           <button
             onClick={toggleMute}
-            className="p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
+            className="p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
           >
-            {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
           </button>
           
           <button
             onClick={skipToPreviousStep}
-            className={`p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors ${
+            className={`p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors ${
               !isPlaying || currentStep === 0 ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             disabled={!isPlaying || currentStep === 0}
           >
-            <ArrowLeft size={24} />
+            <ArrowLeft size={20} />
           </button>
           
           <button
             onClick={togglePlayPause}
-            className="p-6 text-white bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full hover:from-purple-600 hover:to-indigo-600 transition-colors"
+            className="p-4 xs:p-6 text-white bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full hover:from-purple-600 hover:to-indigo-600 transition-colors"
           >
-            {isPlaying ? <Pause size={32} /> : <Play size={32} />}
+            {isPlaying ? <Pause size={24} /> : <Play size={24} />}
           </button>
           
           <button
             onClick={skipToNextStep}
-            className={`p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors ${
+            className={`p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors ${
               !isPlaying || currentStep >= getMeditationScript(currentExercise.id).length - 1 ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             disabled={!isPlaying || currentStep >= getMeditationScript(currentExercise.id).length - 1}
           >
-            <ArrowRight size={24} />
+            <ArrowRight size={20} />
           </button>
           
           <button
             onClick={skipToNextStep}
-            className={`p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors ${
+            className={`p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors ${
               !isPlaying ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             disabled={!isPlaying}
           >
-            <SkipForward size={24} />
+            <SkipForward size={20} />
           </button>
         </div>
       </div>
@@ -617,7 +674,7 @@ const GuidedMeditation = ({
       {/* Before feeling dialog */}
       <dialog 
         id="before-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-6 w-80 max-w-full shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How are you feeling now?
@@ -648,7 +705,7 @@ const GuidedMeditation = ({
       {/* After feeling dialog */}
       <dialog 
         id="after-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-6 w-80 max-w-full shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How do you feel now?

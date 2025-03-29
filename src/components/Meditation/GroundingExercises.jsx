@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Play, Pause, SkipForward, Volume2, VolumeX, Star, ArrowLeft, ArrowRight, Eye, Target, User, Zap } from 'lucide-react';
+import { Leaf,X, Play, Pause, SkipForward, Volume2, VolumeX, Star, ArrowLeft, ArrowRight, Eye, Target, User, Zap } from 'lucide-react';
 import { getVoiceSettings } from '../../utils/meditationStorage';
 
 const GroundingExercises = ({ 
@@ -10,7 +10,7 @@ const GroundingExercises = ({
   onToggleFavorite,
   favorites = []
 }) => {
-  const [currentExercise, setCurrentExercise] = useState(selectedExercise || category.exercises[0]);
+  const [currentExercise, setCurrentExercise] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [timer, setTimer] = useState(0);
@@ -23,8 +23,28 @@ const GroundingExercises = ({
   const speechSynthesisRef = useRef(null);
   const intervalRef = useRef(null);
   
+  // Set current exercise when component mounts or selectedExercise changes
+  useEffect(() => {
+    // If selectedExercise is provided, use it
+    if (selectedExercise) {
+      console.log('Using selected exercise:', selectedExercise.id);
+      setCurrentExercise(selectedExercise);
+    } else if (category && category.exercises && category.exercises.length > 0) {
+      // Otherwise default to first exercise in category
+      console.log('Using first exercise in category:', category.exercises[0].id);
+      setCurrentExercise(category.exercises[0]);
+    }
+  }, [selectedExercise, category]);
+  
   // Get grounding script based on exercise ID
   const getGroundingScript = (exerciseId) => {
+    if (!exerciseId) {
+      console.error('No exercise ID provided to getGroundingScript');
+      return [];
+    }
+    
+    console.log('Getting grounding script for:', exerciseId);
+    
     const scripts = {
       '5-4-3-2-1': [
         { text: "Find a comfortable position and take a deep breath.", duration: 10 },
@@ -84,20 +104,6 @@ const GroundingExercises = ({
     // Set up speech synthesis
     speechSynthesisRef.current = window.speechSynthesis;
     
-    // Calculate total meditation time
-    const script = getGroundingScript(currentExercise.id);
-    const totalSeconds = script.reduce((sum, step) => sum + step.duration, 0);
-    setTotalTime(totalSeconds);
-    
-    // Show the before feelings dialog
-    if (!beforeFeeling) {
-      // Wait a moment before showing the dialog
-      setTimeout(() => {
-        document.getElementById('before-feeling-dialog').showModal();
-      }, 500);
-    }
-    
-    // Clean up on unmount
     return () => {
       if (speechSynthesisRef.current) {
         speechSynthesisRef.current.cancel();
@@ -107,15 +113,46 @@ const GroundingExercises = ({
         clearInterval(intervalRef.current);
       }
     };
-  }, [currentExercise]);
+  }, []);
+  
+  // Calculate total time when exercise changes
+  useEffect(() => {
+    if (!currentExercise) return;
+    
+    console.log('Calculating total time for:', currentExercise.id);
+    
+    // Calculate total meditation time
+    const script = getGroundingScript(currentExercise.id);
+    const totalSeconds = script.reduce((sum, step) => sum + step.duration, 0);
+    setTotalTime(totalSeconds);
+    
+    // Show the before feelings dialog
+    if (!beforeFeeling) {
+      // Wait a moment before showing the dialog
+      setTimeout(() => {
+        const dialog = document.getElementById('before-feeling-dialog');
+        if (dialog) dialog.showModal();
+      }, 500);
+    }
+  }, [currentExercise, beforeFeeling]);
   
   // Start the grounding exercise
   const startExercise = () => {
+    if (!currentExercise) {
+      console.error('Cannot start exercise: No exercise selected');
+      return;
+    }
+    
     setIsPlaying(true);
     setCurrentStep(0);
     
     // Get the first step
     const script = getGroundingScript(currentExercise.id);
+    if (script.length === 0) {
+      console.error('No script found for exercise:', currentExercise.id);
+      return;
+    }
+    
     setTimer(script[0].duration);
     
     // Speak the first instruction
@@ -135,7 +172,7 @@ const GroundingExercises = ({
     }, 2000);
   };
   
-  // Text-to-speech function
+  // Text-to-speech function with voice settings
   const speakText = (text) => {
     if (speechSynthesisRef.current && !isMuted) {
       speechSynthesisRef.current.cancel(); // Cancel any ongoing speech
@@ -146,16 +183,16 @@ const GroundingExercises = ({
       const voiceSettings = getVoiceSettings();
       
       // Apply settings
-      utterance.rate = voiceSettings.voiceRate;
-      utterance.pitch = voiceSettings.voicePitch;
-      utterance.volume = voiceSettings.voiceVolume;
+      utterance.rate = voiceSettings?.voiceRate || 0.85;
+      utterance.pitch = voiceSettings?.voicePitch || 0.9;
+      utterance.volume = voiceSettings?.voiceVolume || 0.8;
       
       // Select voice based on settings
       const voices = speechSynthesisRef.current.getVoices();
       
       let selectedVoice = null;
       
-      if (voiceSettings.voiceType === 'female') {
+      if (!voiceSettings || voiceSettings.voiceType === 'female') {
         // Try to find a good female voice
         const femalePriorities = [
           'Google UK English Female',
@@ -213,7 +250,7 @@ const GroundingExercises = ({
   
   // Main timer effect
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || !currentExercise) return;
     
     let timerId;
     
@@ -254,7 +291,8 @@ const GroundingExercises = ({
         
         // Show the completion dialog after a moment
         setTimeout(() => {
-          document.getElementById('after-feeling-dialog').showModal();
+          const dialog = document.getElementById('after-feeling-dialog');
+          if (dialog) dialog.showModal();
         }, 2000);
       }
     }
@@ -262,10 +300,12 @@ const GroundingExercises = ({
     return () => {
       if (timerId) clearTimeout(timerId);
     };
-  }, [isPlaying, timer, currentStep, isMuted]);
+  }, [isPlaying, timer, currentStep, currentExercise, isMuted]);
   
   // Toggle play/pause
   const togglePlayPause = () => {
+    if (!currentExercise) return;
+    
     setIsPlaying(!isPlaying);
     
     if (isPlaying) {
@@ -299,7 +339,7 @@ const GroundingExercises = ({
   
   // Skip to next step
   const skipToNextStep = () => {
-    if (!isPlaying) return;
+    if (!isPlaying || !currentExercise) return;
     
     // Cancel current speech
     if (speechSynthesisRef.current) {
@@ -323,7 +363,7 @@ const GroundingExercises = ({
   
   // Skip to previous step
   const skipToPreviousStep = () => {
-    if (!isPlaying || currentStep === 0) return;
+    if (!isPlaying || currentStep === 0 || !currentExercise) return;
     
     // Cancel current speech
     if (speechSynthesisRef.current) {
@@ -350,10 +390,12 @@ const GroundingExercises = ({
       }
     } else {
       // Unmuting
-      if (isPlaying) {
+      if (isPlaying && currentExercise) {
         // Speak current instruction
         const script = getGroundingScript(currentExercise.id);
-        speakText(script[currentStep].text);
+        if (script.length > currentStep) {
+          speakText(script[currentStep].text);
+        }
       }
     }
   };
@@ -376,8 +418,11 @@ const GroundingExercises = ({
   
   // Handle exercise completion
   const handleCompleteExercise = (afterFeeling) => {
+    if (!currentExercise) return;
+    
     // Close dialog
-    document.getElementById('after-feeling-dialog').close();
+    const dialog = document.getElementById('after-feeling-dialog');
+    if (dialog) dialog.close();
     
     // Create session data
     const sessionData = {
@@ -401,7 +446,8 @@ const GroundingExercises = ({
   // Handle setting the before feeling
   const handleBeforeFeeling = (feeling) => {
     setBeforeFeeling(feeling);
-    document.getElementById('before-feeling-dialog').close();
+    const dialog = document.getElementById('before-feeling-dialog');
+    if (dialog) dialog.close();
   };
   
   // Format time display (mm:ss)
@@ -416,12 +462,16 @@ const GroundingExercises = ({
   
   // Get the current instruction text
   const getCurrentInstructionText = () => {
+    if (!currentExercise) return "Select an exercise to begin";
+    
     const script = getGroundingScript(currentExercise.id);
     return currentStep < script.length ? script[currentStep].text : "Exercise complete";
   };
   
   // Get appropriate icon for exercise
   const getExerciseIcon = () => {
+    if (!currentExercise) return <Leaf size={36} />;
+    
     switch (currentExercise.id) {
       case '5-4-3-2-1':
         return <Eye size={36} />;
@@ -432,16 +482,25 @@ const GroundingExercises = ({
       case 'object-focus':
         return <Target size={36} />;
       default:
-        return <Zap size={36} />;
+        return <Leaf size={36} />;
     }
   };
   
   // Get the favorite status
-  const isFavorite = favorites.includes(currentExercise.id);
+  const isFavorite = currentExercise ? favorites.includes(currentExercise.id) : false;
+  
+  // Loading state
+  if (!currentExercise) {
+    return (
+      <div className="fixed inset-0 bg-slate-900/95 z-50 flex items-center justify-center">
+        <div className="text-white">Loading exercise...</div>
+      </div>
+    );
+  }
   
   return (
     <div 
-      className="fixed inset-0 bg-gradient-to-b from-green-900/90 to-slate-900/90 z-50 flex flex-col items-center justify-center"
+      className="fixed inset-0 bg-gradient-to-b from-green-900/90 to-slate-900/90 z-50 flex flex-col items-center justify-center overflow-y-auto"
       onMouseMove={handleMouseMove}
     >
       {/* Header with controls */}
@@ -488,23 +547,23 @@ const GroundingExercises = ({
         
         {/* Exercise icon */}
         <div className="mb-6">
-          <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
-            <div className="w-16 h-16 rounded-full bg-green-500/30 flex items-center justify-center pulse-animation">
+          <div className="w-16 h-16 xs:w-20 xs:h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 xs:w-16 xs:h-16 rounded-full bg-green-500/30 flex items-center justify-center pulse-animation">
               {getExerciseIcon()}
             </div>
           </div>
         </div>
         
         {/* Instruction text */}
-        <div className="bg-slate-800/50 rounded-xl p-6 w-full max-w-2xl mb-8">
-          <p className="text-white text-xl font-light leading-relaxed text-center">
+        <div className="bg-slate-800/50 rounded-xl p-4 xs:p-6 w-full max-w-2xl mb-4 xs:mb-8">
+          <p className="text-white text-lg xs:text-xl sm:text-2xl font-light leading-relaxed text-center">
             {isPlaying ? getCurrentInstructionText() : "Press play to begin the grounding exercise."}
           </p>
         </div>
         
         {/* Timer */}
         {isPlaying && (
-          <div className="text-4xl font-light text-white mb-8">
+          <div className="text-3xl xs:text-4xl font-light text-white mb-6 xs:mb-8">
             {timer}
           </div>
         )}
@@ -512,49 +571,49 @@ const GroundingExercises = ({
       
       {/* Bottom controls */}
       <div className={`absolute bottom-0 left-0 right-0 p-6 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="flex justify-center items-center gap-6">
+        <div className="flex justify-center items-center gap-3 xs:gap-4 sm:gap-6">
           <button
             onClick={toggleMute}
-            className="p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
+            className="p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
           >
-            {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
           </button>
           
           <button
             onClick={skipToPreviousStep}
-            className={`p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors ${
+            className={`p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors ${
               !isPlaying || currentStep === 0 ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             disabled={!isPlaying || currentStep === 0}
           >
-            <ArrowLeft size={24} />
+            <ArrowLeft size={20} />
           </button>
           
           <button
             onClick={togglePlayPause}
-            className="p-6 text-white bg-gradient-to-r from-green-500 to-emerald-500 rounded-full hover:from-green-600 hover:to-emerald-600 transition-colors"
+            className="p-4 xs:p-6 text-white bg-gradient-to-r from-green-500 to-emerald-500 rounded-full hover:from-green-600 hover:to-emerald-600 transition-colors"
           >
-            {isPlaying ? <Pause size={32} /> : <Play size={32} />}
+            {isPlaying ? <Pause size={24} /> : <Play size={24} />}
           </button>
           
           <button
             onClick={skipToNextStep}
-            className={`p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors ${
+            className={`p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors ${
               !isPlaying || currentStep >= getGroundingScript(currentExercise.id).length - 1 ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             disabled={!isPlaying || currentStep >= getGroundingScript(currentExercise.id).length - 1}
           >
-            <ArrowRight size={24} />
+            <ArrowRight size={20} />
           </button>
           
           <button
             onClick={skipToNextStep}
-            className={`p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors ${
+            className={`p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors ${
               !isPlaying ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             disabled={!isPlaying}
           >
-            <SkipForward size={24} />
+            <SkipForward size={20} />
           </button>
         </div>
       </div>
@@ -580,7 +639,7 @@ const GroundingExercises = ({
       {/* Before feeling dialog */}
       <dialog 
         id="before-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-6 w-80 max-w-full shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How are you feeling now?
@@ -611,7 +670,7 @@ const GroundingExercises = ({
       {/* After feeling dialog */}
       <dialog 
         id="after-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-6 w-80 max-w-full shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How do you feel now?

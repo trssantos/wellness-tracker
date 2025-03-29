@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Play, Pause, Volume2, VolumeX, Star, Timer, Moon, BookOpen, Radio, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { getVoiceSettings } from '../../utils/meditationStorage';
 
 const SleepSounds = ({ 
   category, 
@@ -9,7 +10,7 @@ const SleepSounds = ({
   onToggleFavorite,
   favorites = []
 }) => {
-  const [currentExercise, setCurrentExercise] = useState(selectedExercise || category.exercises[0]);
+  const [currentExercise, setCurrentExercise] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
   const [isMuted, setIsMuted] = useState(false);
@@ -26,8 +27,28 @@ const SleepSounds = ({
   const intervalRef = useRef(null);
   const speechSynthesisRef = useRef(null);
   
+  // Set current exercise when component mounts or selectedExercise changes
+  useEffect(() => {
+    // If selectedExercise is provided, use it
+    if (selectedExercise) {
+      console.log('Using selected exercise:', selectedExercise.id);
+      setCurrentExercise(selectedExercise);
+    } else if (category && category.exercises && category.exercises.length > 0) {
+      // Otherwise default to first exercise in category
+      console.log('Using first exercise in category:', category.exercises[0].id);
+      setCurrentExercise(category.exercises[0]);
+    }
+  }, [selectedExercise, category]);
+  
   // Get sound file path based on exercise ID
   const getSoundFile = (exerciseId) => {
+    if (!exerciseId) {
+      console.error('No exercise ID provided to getSoundFile');
+      return '/ambient-sounds/soft-rain.mp3';
+    }
+    
+    console.log('Getting sound file for:', exerciseId);
+    
     // Map exercise IDs to sound files
     const soundMap = {
       'sleep-story': '/ambient-sounds/soft-rain.mp3', // Background for story
@@ -41,6 +62,8 @@ const SleepSounds = ({
   
   // Background images for visualization
   const getBackgroundImage = (exerciseId) => {
+    if (!exerciseId) return '/ambient-backgrounds/night-sky.jpg';
+    
     const imageMap = {
       'sleep-story': '/ambient-backgrounds/night-sky.jpg',
       'delta-waves': '/ambient-backgrounds/deep-sleep.jpg',
@@ -83,9 +106,30 @@ const SleepSounds = ({
     // Set up speech synthesis
     speechSynthesisRef.current = window.speechSynthesis;
     
+    return () => {
+      if (speechSynthesisRef.current) {
+        speechSynthesisRef.current.cancel();
+      }
+      
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
+  
+  // Handle exercise changes
+  useEffect(() => {
+    if (!currentExercise) return;
+    
     // Load audio file when exercise changes
     if (audioRef.current) {
-      audioRef.current.src = getSoundFile(currentExercise.id);
+      const soundFile = getSoundFile(currentExercise.id);
+      console.log('Loading sound file:', soundFile);
+      audioRef.current.src = soundFile;
       audioRef.current.load();
     }
     
@@ -96,28 +140,19 @@ const SleepSounds = ({
     if (!beforeFeeling) {
       // Wait a moment before showing the dialog
       setTimeout(() => {
-        document.getElementById('before-feeling-dialog').showModal();
+        const dialog = document.getElementById('before-feeling-dialog');
+        if (dialog) dialog.showModal();
       }, 500);
     }
-    
-    return () => {
-      // Clean up
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      
-      if (speechSynthesisRef.current) {
-        speechSynthesisRef.current.cancel();
-      }
-    };
-  }, [currentExercise, duration]);
+  }, [currentExercise, duration, beforeFeeling]);
   
   // Start the sleep sound
   const startSleepSound = () => {
+    if (!currentExercise) {
+      console.error('Cannot start sound: No exercise selected');
+      return;
+    }
+    
     setIsPlaying(true);
     
     // Play audio
@@ -158,7 +193,8 @@ const SleepSounds = ({
           
           // Show the completion dialog after a moment
           setTimeout(() => {
-            document.getElementById('after-feeling-dialog').showModal();
+            const dialog = document.getElementById('after-feeling-dialog');
+            if (dialog) dialog.showModal();
           }, 1000);
           
           return 0;
@@ -180,18 +216,64 @@ const SleepSounds = ({
     // Clear any existing speech
     speechSynthesisRef.current.cancel();
     
+    // Get voice settings
+    const voiceSettings = getVoiceSettings();
+    
     // Narrate each paragraph with pauses between
     story.forEach((paragraph, index) => {
       const utterance = new SpeechSynthesisUtterance(paragraph);
-      utterance.rate = 0.8; // Slower for sleep
-      utterance.pitch = 0.9; // Slightly deeper
-      utterance.volume = volume * 0.8; // Slightly quieter than the ambience
       
-      // Try to find a calm voice
+      // Apply voice settings
+      utterance.rate = voiceSettings?.voiceRate || 0.75; // Slower for sleep
+      utterance.pitch = voiceSettings?.voicePitch || 0.9; // Slightly deeper
+      utterance.volume = (voiceSettings?.voiceVolume || 0.8) * 0.8; // Slightly quieter than the ambience
+      
+      // Select voice based on settings
       const voices = speechSynthesisRef.current.getVoices();
-      const preferredVoice = voices.find(voice => voice.name.includes('Female') || voice.name.includes('Google')) || voices[0];
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
+      
+      let selectedVoice = null;
+      
+      if (!voiceSettings || voiceSettings.voiceType === 'female') {
+        // Try to find a good female voice
+        const femalePriorities = [
+          'Google UK English Female',
+          'Microsoft Zira',
+          'Samantha',
+          'Victoria',
+          'Female' // Generic term that might match various voices
+        ];
+        
+        // Try each priority voice until we find one
+        for (const voiceName of femalePriorities) {
+          const found = voices.find(v => v.name.includes(voiceName));
+          if (found) {
+            selectedVoice = found;
+            break;
+          }
+        }
+      } else if (voiceSettings.voiceType === 'male') {
+        // Try to find a good male voice
+        const malePriorities = [
+          'Google UK English Male',
+          'Microsoft David',
+          'Daniel',
+          'Alex',
+          'Male' // Generic term that might match various voices
+        ];
+        
+        // Try each priority voice until we find one
+        for (const voiceName of malePriorities) {
+          const found = voices.find(v => v.name.includes(voiceName));
+          if (found) {
+            selectedVoice = found;
+            break;
+          }
+        }
+      }
+      
+      // Use the selected voice or default
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
       }
       
       // Add a delay before starting (15s * index)
@@ -206,6 +288,8 @@ const SleepSounds = ({
   
   // Toggle play/pause
   const togglePlayPause = () => {
+    if (!currentExercise) return;
+    
     if (isPlaying) {
       // Pause
       setIsPlaying(false);
@@ -275,8 +359,11 @@ const SleepSounds = ({
   
   // Handle exercise completion
   const handleCompleteExercise = (afterFeeling) => {
+    if (!currentExercise) return;
+    
     // Close dialog
-    document.getElementById('after-feeling-dialog').close();
+    const dialog = document.getElementById('after-feeling-dialog');
+    if (dialog) dialog.close();
     
     // Create session data
     const sessionData = {
@@ -300,17 +387,20 @@ const SleepSounds = ({
   // Handle setting the before feeling
   const handleBeforeFeeling = (feeling) => {
     setBeforeFeeling(feeling);
-    document.getElementById('before-feeling-dialog').close();
+    const dialog = document.getElementById('before-feeling-dialog');
+    if (dialog) dialog.close();
   };
   
   // Get the favorite status
-  const isFavorite = favorites.includes(currentExercise.id);
+  const isFavorite = currentExercise ? favorites.includes(currentExercise.id) : false;
   
   // Calculate progress percentage
   const progressPercentage = duration > 0 ? ((duration * 60 - timer) / (duration * 60)) * 100 : 0;
   
   // Get icon based on exercise type
   const getExerciseIcon = () => {
+    if (!currentExercise) return <Moon size={24} />;
+    
     switch (currentExercise.id) {
       case 'sleep-story':
         return <BookOpen size={24} />;
@@ -324,8 +414,17 @@ const SleepSounds = ({
     }
   };
   
+  // Loading state
+  if (!currentExercise) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center">
+        <div className="text-white">Loading exercise...</div>
+      </div>
+    );
+  }
+  
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-95">
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-95 overflow-y-auto">
       {/* Background visualization */}
       <div 
         className="absolute inset-0 bg-cover bg-center opacity-30"
@@ -369,7 +468,7 @@ const SleepSounds = ({
       <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
         {/* Timer display */}
         <div className="mb-8 text-center">
-          <div className="text-6xl font-light text-white mb-2">
+          <div className="text-4xl xs:text-5xl sm:text-6xl font-light text-white mb-2">
             {formatTime(timer)}
           </div>
           <div className="text-slate-300 text-sm">
@@ -379,15 +478,15 @@ const SleepSounds = ({
         
         {/* Sound visualization */}
         <div className="mb-10">
-          <div className="w-20 h-20 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto">
-            <div className="w-16 h-16 bg-indigo-500/30 rounded-full flex items-center justify-center text-indigo-400 pulse-animation">
+          <div className="w-16 h-16 xs:w-20 xs:h-20 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 xs:w-16 xs:h-16 bg-indigo-500/30 rounded-full flex items-center justify-center text-indigo-400 pulse-animation">
               {getExerciseIcon()}
             </div>
           </div>
         </div>
         
         {/* Progress bar */}
-        <div className="w-full max-w-md mb-12">
+        <div className="w-full max-w-xs xs:max-w-sm sm:max-w-md mb-12">
           <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
             <div 
               className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
@@ -429,7 +528,7 @@ const SleepSounds = ({
               </button>
               
               {showVolumeControl && (
-                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg">
+                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg max-w-[calc(100vw-2rem)]">
                   <input
                     type="range"
                     min="0"
@@ -460,7 +559,7 @@ const SleepSounds = ({
               </button>
               
               {showDurationSelector && (
-                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg">
+                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg max-w-[calc(100vw-2rem)]">
                   <div className="text-center mb-2 text-white text-sm">Duration</div>
                   <div className="space-y-2">
                     {[30, 45, 60, 90, 120, 180].map(mins => (
@@ -514,7 +613,7 @@ const SleepSounds = ({
       {/* Before feeling dialog */}
       <dialog 
         id="before-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-6 w-80 max-w-full shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How are you feeling now?
@@ -545,7 +644,7 @@ const SleepSounds = ({
       {/* After feeling dialog */}
       <dialog 
         id="after-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-6 w-80 max-w-full shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How do you feel now?

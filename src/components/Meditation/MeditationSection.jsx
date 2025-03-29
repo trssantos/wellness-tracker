@@ -317,11 +317,25 @@ const MeditationSection = () => {
 
   // Function to render a category card
   const renderCategoryCard = (category) => (
-    <div 
-      key={category.id}
-      className={`${category.color} rounded-xl p-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg hover:scale-[1.02] cursor-pointer group relative category-card w-full`}
-      onClick={() => handleSelectExercise({ type: 'category', data: category })}
-    >
+      <div 
+        key={category.id}
+        className={`${category.color} rounded-xl p-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg hover:scale-[1.02] cursor-pointer group relative category-card w-full`}
+        onClick={() => {
+          // Check if there's a selectedExercise specified, otherwise use the first exercise
+          // This ensures we're selecting a specific exercise, not just a category
+          const selectedExercise = category.exercises && category.exercises.length > 0 
+            ? category.exercises[0] 
+            : null;
+            
+          console.log('Selected from category:', selectedExercise?.id || 'none available');
+          
+          handleSelectExercise({ 
+            type: 'exercise', 
+            data: selectedExercise, 
+            categoryData: category 
+          });
+        }}
+      >
       <div className="flex flex-col h-full">
         <div className="flex items-center mb-2">
           <div className="transition-transform duration-300 transform group-hover:scale-110 group-hover:rotate-3 category-icon-animation flex-shrink-0">
@@ -333,19 +347,31 @@ const MeditationSection = () => {
         </div>
         
         <div className="grid grid-cols-2 gap-1 mt-2">
-          {category.exercises.slice(0, 4).map(exercise => (
-            <div 
-              key={exercise.id} 
-              className="bg-white dark:bg-slate-700 bg-opacity-60 dark:bg-opacity-30 rounded-lg p-1 text-center flex flex-col items-center"
-            >
-              <div className="text-slate-700 dark:text-slate-300">
-                {exercise.icon}
-              </div>
-              <p className="text-xs mt-1 text-slate-700 dark:text-slate-300 truncate w-full">{exercise.name}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{exercise.duration}m</p>
-            </div>
-          ))}
-        </div>
+  {category.exercises.slice(0, 4).map(exercise => (
+    <div 
+      key={exercise.id} 
+      className="bg-white dark:bg-slate-700 bg-opacity-60 dark:bg-opacity-30 rounded-lg p-1 text-center flex flex-col items-center cursor-pointer"
+      onClick={(e) => {
+        // Stop propagation to prevent the category click handler from firing
+        e.stopPropagation();
+        
+        // Select this specific exercise
+        console.log('Selecting specific exercise from grid:', exercise.id);
+        handleSelectExercise({ 
+          type: 'exercise', 
+          data: exercise, 
+          categoryData: category 
+        });
+      }}
+    >
+      <div className="text-slate-700 dark:text-slate-300">
+        {exercise.icon}
+      </div>
+      <p className="text-xs mt-1 text-slate-700 dark:text-slate-300 truncate w-full">{exercise.name}</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400">{exercise.duration}m</p>
+    </div>
+  ))}
+</div>
       </div>
       
       {/* Add a subtle border glow effect on hover */}

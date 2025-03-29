@@ -9,7 +9,7 @@ const AmbientSounds = ({
   onToggleFavorite,
   favorites = []
 }) => {
-  const [currentExercise, setCurrentExercise] = useState(selectedExercise || category.exercises[0]);
+  const [currentExercise, setCurrentExercise] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
   const [isMuted, setIsMuted] = useState(false);
@@ -23,8 +23,28 @@ const AmbientSounds = ({
   const audioRef = useRef(null);
   const intervalRef = useRef(null);
   
+  // Set current exercise when component mounts or selectedExercise changes
+  useEffect(() => {
+    // If selectedExercise is provided, use it
+    if (selectedExercise) {
+      console.log('Using selected exercise:', selectedExercise.id);
+      setCurrentExercise(selectedExercise);
+    } else if (category && category.exercises && category.exercises.length > 0) {
+      // Otherwise default to first exercise in category
+      console.log('Using first exercise in category:', category.exercises[0].id);
+      setCurrentExercise(category.exercises[0]);
+    }
+  }, [selectedExercise, category]);
+  
   // Get sound file path based on exercise ID
   const getSoundFile = (exerciseId) => {
+    if (!exerciseId) {
+      console.error('No exercise ID provided to getSoundFile');
+      return '/ambient-sounds/rain.mp3';
+    }
+    
+    console.log('Getting sound file for:', exerciseId);
+    
     // Map exercise IDs to sound files
     const soundMap = {
       'rain': '/ambient-sounds/rain.mp3',
@@ -38,6 +58,8 @@ const AmbientSounds = ({
   
   // Background images for visualization
   const getBackgroundImage = (exerciseId) => {
+    if (!exerciseId) return '/ambient-backgrounds/rain.jpg';
+    
     const imageMap = {
       'rain': '/ambient-backgrounds/rain.jpg',
       'waves': '/ambient-backgrounds/ocean.jpg',
@@ -51,8 +73,10 @@ const AmbientSounds = ({
   // Set up on mount
   useEffect(() => {
     // Load audio file when exercise changes
-    if (audioRef.current) {
-      audioRef.current.src = getSoundFile(currentExercise.id);
+    if (currentExercise && audioRef.current) {
+      const soundFile = getSoundFile(currentExercise.id);
+      console.log('Loading sound file:', soundFile);
+      audioRef.current.src = soundFile;
       audioRef.current.load();
     }
     
@@ -60,10 +84,11 @@ const AmbientSounds = ({
     setTimer(duration * 60); // Convert minutes to seconds
     
     // Show the before feelings dialog
-    if (!beforeFeeling) {
+    if (!beforeFeeling && currentExercise) {
       // Wait a moment before showing the dialog
       setTimeout(() => {
-        document.getElementById('before-feeling-dialog').showModal();
+        const dialog = document.getElementById('before-feeling-dialog');
+        if (dialog) dialog.showModal();
       }, 500);
     }
     
@@ -77,10 +102,15 @@ const AmbientSounds = ({
         audioRef.current.pause();
       }
     };
-  }, [currentExercise, duration]);
+  }, [currentExercise, duration, beforeFeeling]);
   
   // Start the ambient sound
   const startAmbientSound = () => {
+    if (!currentExercise) {
+      console.error('Cannot start sound: No exercise selected');
+      return;
+    }
+    
     setIsPlaying(true);
     
     // Play audio
@@ -111,7 +141,8 @@ const AmbientSounds = ({
           
           // Show the completion dialog after a moment
           setTimeout(() => {
-            document.getElementById('after-feeling-dialog').showModal();
+            const dialog = document.getElementById('after-feeling-dialog');
+            if (dialog) dialog.showModal();
           }, 1000);
           
           return 0;
@@ -125,6 +156,8 @@ const AmbientSounds = ({
   
   // Toggle play/pause
   const togglePlayPause = () => {
+    if (!currentExercise) return;
+    
     if (isPlaying) {
       // Pause
       setIsPlaying(false);
@@ -177,8 +210,11 @@ const AmbientSounds = ({
   
   // Handle exercise completion
   const handleCompleteExercise = (afterFeeling) => {
+    if (!currentExercise) return;
+    
     // Close dialog
-    document.getElementById('after-feeling-dialog').close();
+    const dialog = document.getElementById('after-feeling-dialog');
+    if (dialog) dialog.close();
     
     // Create session data
     const sessionData = {
@@ -202,17 +238,27 @@ const AmbientSounds = ({
   // Handle setting the before feeling
   const handleBeforeFeeling = (feeling) => {
     setBeforeFeeling(feeling);
-    document.getElementById('before-feeling-dialog').close();
+    const dialog = document.getElementById('before-feeling-dialog');
+    if (dialog) dialog.close();
   };
   
   // Get the favorite status
-  const isFavorite = favorites.includes(currentExercise.id);
+  const isFavorite = currentExercise ? favorites.includes(currentExercise.id) : false;
   
   // Calculate progress percentage
   const progressPercentage = duration > 0 ? ((duration * 60 - timer) / (duration * 60)) * 100 : 0;
   
+  // Loading state
+  if (!currentExercise) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
+        <div className="text-white">Loading exercise...</div>
+      </div>
+    );
+  }
+  
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-90">
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-90 overflow-y-auto">
       {/* Background visualization */}
       <div 
         className="absolute inset-0 bg-cover bg-center opacity-40"
@@ -256,7 +302,7 @@ const AmbientSounds = ({
       <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
         {/* Timer display */}
         <div className="mb-8 text-center">
-          <div className="text-6xl font-light text-white mb-2">
+          <div className="text-4xl xs:text-5xl sm:text-6xl font-light text-white mb-2">
             {formatTime(timer)}
           </div>
           <div className="text-slate-300 text-sm">
@@ -265,7 +311,7 @@ const AmbientSounds = ({
         </div>
         
         {/* Progress bar */}
-        <div className="w-full max-w-md mb-12">
+        <div className="w-full max-w-xs xs:max-w-sm sm:max-w-md mb-12">
           <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
             <div 
               className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
@@ -280,9 +326,9 @@ const AmbientSounds = ({
           <div className="flex justify-center">
             <button
               onClick={togglePlayPause}
-              className="p-8 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-lg"
+              className="p-6 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-lg"
             >
-              {isPlaying ? <Pause size={36} /> : <Play size={36} />}
+              {isPlaying ? <Pause size={32} /> : <Play size={32} />}
             </button>
           </div>
           
@@ -298,7 +344,7 @@ const AmbientSounds = ({
               </button>
               
               {showVolumeControl && (
-                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg">
+                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg max-w-[calc(100vw-2rem)]">
                   <input
                     type="range"
                     min="0"
@@ -329,7 +375,7 @@ const AmbientSounds = ({
               </button>
               
               {showDurationSelector && (
-                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg">
+                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg max-w-[calc(100vw-2rem)]">
                   <div className="text-center mb-2 text-white text-sm">Duration</div>
                   <div className="space-y-2">
                     {[5, 10, 15, 30, 45, 60].map(mins => (
@@ -356,7 +402,7 @@ const AmbientSounds = ({
       {/* Before feeling dialog */}
       <dialog 
         id="before-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-6 w-80 max-w-full shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How are you feeling now?
@@ -387,7 +433,7 @@ const AmbientSounds = ({
       {/* After feeling dialog */}
       <dialog 
         id="after-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-6 w-80 max-w-full shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How do you feel now?

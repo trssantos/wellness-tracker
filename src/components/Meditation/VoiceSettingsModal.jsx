@@ -9,20 +9,30 @@ const VoiceSettingsModal = ({ onClose }) => {
   const speechSynthesisRef = useRef(window.speechSynthesis);
   
   useEffect(() => {
-    // Get available voices
+    // Function to load voices
     const loadVoices = () => {
       const voices = speechSynthesisRef.current.getVoices();
+      console.log("Loaded voices:", voices.length);
       setAvailableVoices(voices);
     };
     
-    // Some browsers need this event
-    if (speechSynthesis.onvoiceschanged !== undefined) {
-      speechSynthesis.onvoiceschanged = loadVoices;
-    }
-    
+    // Initial load attempt
     loadVoices();
     
+    // Some browsers need this event
+    if (speechSynthesisRef.current.onvoiceschanged !== undefined) {
+      speechSynthesisRef.current.onvoiceschanged = loadVoices;
+    }
+    
+    // Make another attempt after a short delay (for some browsers)
+    const timer = setTimeout(() => {
+      if (availableVoices.length === 0) {
+        loadVoices();
+      }
+    }, 500);
+    
     return () => {
+      clearTimeout(timer);
       if (speechSynthesisRef.current) {
         speechSynthesisRef.current.cancel();
       }
@@ -36,8 +46,7 @@ const VoiceSettingsModal = ({ onClose }) => {
   
   const handleReset = () => {
     const defaultSettings = {
-      useExternalVoice: false,
-      voiceType: 'female',
+      selectedVoiceName: '',
       voicePitch: 0.9,
       voiceRate: 0.85,
       voiceVolume: 0.8
@@ -55,33 +64,71 @@ const VoiceSettingsModal = ({ onClose }) => {
       utterance.pitch = settings.voicePitch;
       utterance.volume = settings.voiceVolume;
       
-      // Select voice based on user preference
+      // Get all available voices
       const voices = speechSynthesisRef.current.getVoices();
+      console.log("Available voices:", voices.map(v => v.name));
       
       let selectedVoice = null;
       
-      if (settings.voiceType === 'female') {
-        selectedVoice = voices.find(voice => 
-          voice.name.includes('Female') || 
-          voice.name.includes('female') ||
-          voice.name.includes('Samantha')
-        );
-      } else if (settings.voiceType === 'male') {
-        selectedVoice = voices.find(voice => 
-          voice.name.includes('Male') || 
-          voice.name.includes('male') ||
-          voice.name.includes('Daniel')
-        );
+      // If user has selected a specific voice, use it
+      if (settings.selectedVoiceName) {
+        selectedVoice = voices.find(v => v.name === settings.selectedVoiceName);
       }
       
-      // Use the selected voice or default
+      // If no specific voice selected or not found, use default
+      if (!selectedVoice && voices.length > 0) {
+        selectedVoice = voices[0];
+      }
+      
+      // Apply selected voice
       if (selectedVoice) {
         utterance.voice = selectedVoice;
+        console.log("Using voice:", selectedVoice.name);
       }
       
       speechSynthesisRef.current.speak(utterance);
     }
   };
+  
+  // Generate a categorized list of voices
+  const groupedVoices = (() => {
+    // Try to categorize voices
+    const defaultGroup = [];
+    const femaleGroup = [];
+    const maleGroup = [];
+    const otherGroup = [];
+    
+    availableVoices.forEach(voice => {
+      const name = voice.name.toLowerCase();
+      
+      if (name.includes('female') || 
+          name.includes('zira') || 
+          name.includes('samantha') || 
+          name.includes('victoria') || 
+          name.includes('karen')) {
+        femaleGroup.push(voice);
+      } 
+      else if (name.includes('male') || 
+              name.includes('david') || 
+              name.includes('mark') || 
+              name.includes('daniel') || 
+              name.includes('alex')) {
+        maleGroup.push(voice);
+      }
+      else {
+        // Split other voices roughly into male/female based on position
+        // This is a heuristic - often first voice is female, second is male
+        const index = availableVoices.indexOf(voice);
+        if (index % 2 === 0) {
+          defaultGroup.push(voice);
+        } else {
+          otherGroup.push(voice);
+        }
+      }
+    });
+    
+    return { femaleGroup, maleGroup, defaultGroup, otherGroup };
+  })();
   
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-70 flex items-center justify-center p-4">
@@ -99,30 +146,61 @@ const VoiceSettingsModal = ({ onClose }) => {
         <div className="p-4 space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Voice Type
+              Select Voice
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setSettings({...settings, voiceType: 'female'})}
-                className={`p-3 rounded-lg text-center transition-colors ${
-                  settings.voiceType === 'female'
-                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                Female Voice
-              </button>
-              <button
-                onClick={() => setSettings({...settings, voiceType: 'male'})}
-                className={`p-3 rounded-lg text-center transition-colors ${
-                  settings.voiceType === 'male'
-                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                }`}
-              >
-                Male Voice
-              </button>
-            </div>
+            <select 
+              className="w-full p-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600"
+              value={settings.selectedVoiceName || ""}
+              onChange={(e) => {
+                const selectedName = e.target.value;
+                setSettings({
+                  ...settings,
+                  selectedVoiceName: selectedName
+                });
+              }}
+            >
+              <option value="">System default voice</option>
+              
+              {groupedVoices.femaleGroup.length > 0 && (
+                <optgroup label="Female Voices">
+                  {groupedVoices.femaleGroup.map((voice, index) => (
+                    <option key={`female-${index}`} value={voice.name}>
+                      {voice.name} ({voice.lang})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              
+              {groupedVoices.maleGroup.length > 0 && (
+                <optgroup label="Male Voices">
+                  {groupedVoices.maleGroup.map((voice, index) => (
+                    <option key={`male-${index}`} value={voice.name}>
+                      {voice.name} ({voice.lang})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              
+              {groupedVoices.defaultGroup.length > 0 && (
+                <optgroup label="Default Voices">
+                  {groupedVoices.defaultGroup.map((voice, index) => (
+                    <option key={`default-${index}`} value={voice.name}>
+                      {voice.name} ({voice.lang})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              
+              {groupedVoices.otherGroup.length > 0 && (
+                <optgroup label="Other Voices">
+                  {groupedVoices.otherGroup.map((voice, index) => (
+                    <option key={`other-${index}`} value={voice.name}>
+                      {voice.name} ({voice.lang})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
           </div>
           
           <div>
@@ -179,9 +257,19 @@ const VoiceSettingsModal = ({ onClose }) => {
           </div>
           
           <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
               Test your voice settings:
             </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+              {availableVoices.length} voice{availableVoices.length !== 1 ? 's' : ''} available on your device
+            </p>
+            <input
+              type="text"
+              value={testText}
+              onChange={(e) => setTestText(e.target.value)}
+              placeholder="Enter test text here"
+              className="w-full p-2 mb-3 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600"
+            />
             <div className="flex gap-2">
               <button
                 onClick={testVoice}
@@ -202,7 +290,7 @@ const VoiceSettingsModal = ({ onClose }) => {
           
           <div className="mt-6 pt-3 border-t border-slate-200 dark:border-slate-700">
             <p className="text-sm text-slate-600 dark:text-slate-400 italic mb-4">
-              Note: Voice quality depends on your device and browser. For premium guided meditations, consider using the ambient sounds without voice guidance.
+              Note: Voice quality depends on your device and browser. For the best experience, test different voices and adjust pitch/speed.
             </p>
             <div className="flex justify-end space-x-3">
               <button

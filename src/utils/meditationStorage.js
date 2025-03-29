@@ -217,13 +217,16 @@ export const getMeditationStats = (data = null) => {
 
 export const getVoiceSettings = () => {
   const meditationData = getMeditationStorage();
-  return meditationData.voiceSettings || {
-    useExternalVoice: false,
-    voiceType: 'female', // 'female', 'male', or 'system'
+  
+  // Check for existing voice settings
+  const existingSettings = meditationData.voiceSettings || {
+    selectedVoiceName: '',
     voicePitch: 0.9,    // 0.5 to 1.5
     voiceRate: 0.85,    // 0.5 to 1.5
     voiceVolume: 0.8    // 0 to 1.0
   };
+  
+  return existingSettings;
 };
 
 export const saveVoiceSettings = (settings) => {
@@ -233,9 +236,60 @@ export const saveVoiceSettings = (settings) => {
   return settings;
 };
 
+/**
+ * Centralized text-to-speech function
+ * @param {string} text - Text to speak
+ * @param {boolean} isMuted - Whether audio is muted
+ * @param {object} speechSynthesisRef - Optional reference to the speech synthesis object
+ * @returns {SpeechSynthesisUtterance|null} - The utterance object or null if speech is muted
+ */
+export const speakText = (text, isMuted = false, speechSynthesisRef = null) => {
+  // Use the provided speechSynthesis reference or the global one
+  const synthesis = speechSynthesisRef?.current || window.speechSynthesis;
+  
+  if (!synthesis || isMuted) {
+    return null;
+  }
+  
+  // Cancel any ongoing speech
+  synthesis.cancel();
+  
+  const utterance = new SpeechSynthesisUtterance(text);
+  
+  // Get user's voice settings
+  const voiceSettings = getVoiceSettings();
+  
+  // Apply basic settings
+  utterance.rate = voiceSettings?.voiceRate || 0.85;
+  utterance.pitch = voiceSettings?.voicePitch || 0.9;
+  utterance.volume = voiceSettings?.voiceVolume || 0.8;
+  
+  // Get available voices
+  const voices = synthesis.getVoices();
+  
+  // Try to use the exact voice selected in settings if available
+  if (voiceSettings?.selectedVoiceName) {
+    const selectedVoice = voices.find(v => v.name === voiceSettings.selectedVoiceName);
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+      console.log("Using selected voice:", selectedVoice.name);
+    }
+  }
+  
+  
+  utterance.text = text;
+  
+  synthesis.speak(utterance);
+  
+  return utterance;
+};
+
 export default {
   getMeditationStorage,
   saveMeditationStorage,
   updateMeditationSettings,
-  getMeditationStats
+  getMeditationStats,
+  getVoiceSettings,
+  saveVoiceSettings,
+  speakText
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Play, Pause, Volume2, VolumeX, Star, Timer, Moon, BookOpen, Radio, Clock, ChevronDown, ChevronUp } from 'lucide-react';
-import { getVoiceSettings } from '../../utils/meditationStorage';
+import { getVoiceSettings, speakText } from '../../utils/meditationStorage';
 
 const SleepSounds = ({ 
   category, 
@@ -216,71 +216,13 @@ const SleepSounds = ({
     // Clear any existing speech
     speechSynthesisRef.current.cancel();
     
-    // Get voice settings
-    const voiceSettings = getVoiceSettings();
-    
     // Narrate each paragraph with pauses between
     story.forEach((paragraph, index) => {
-      const utterance = new SpeechSynthesisUtterance(paragraph);
-      
-      // Apply voice settings
-      utterance.rate = voiceSettings?.voiceRate || 0.75; // Slower for sleep
-      utterance.pitch = voiceSettings?.voicePitch || 0.9; // Slightly deeper
-      utterance.volume = (voiceSettings?.voiceVolume || 0.8) * 0.8; // Slightly quieter than the ambience
-      
-      // Select voice based on settings
-      const voices = speechSynthesisRef.current.getVoices();
-      
-      let selectedVoice = null;
-      
-      if (!voiceSettings || voiceSettings.voiceType === 'female') {
-        // Try to find a good female voice
-        const femalePriorities = [
-          'Google UK English Female',
-          'Microsoft Zira',
-          'Samantha',
-          'Victoria',
-          'Female' // Generic term that might match various voices
-        ];
-        
-        // Try each priority voice until we find one
-        for (const voiceName of femalePriorities) {
-          const found = voices.find(v => v.name.includes(voiceName));
-          if (found) {
-            selectedVoice = found;
-            break;
-          }
-        }
-      } else if (voiceSettings.voiceType === 'male') {
-        // Try to find a good male voice
-        const malePriorities = [
-          'Google UK English Male',
-          'Microsoft David',
-          'Daniel',
-          'Alex',
-          'Male' // Generic term that might match various voices
-        ];
-        
-        // Try each priority voice until we find one
-        for (const voiceName of malePriorities) {
-          const found = voices.find(v => v.name.includes(voiceName));
-          if (found) {
-            selectedVoice = found;
-            break;
-          }
-        }
-      }
-      
-      // Use the selected voice or default
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
-      
       // Add a delay before starting (15s * index)
       setTimeout(() => {
         // Only speak if still playing
         if (isPlaying && !isMuted) {
-          speechSynthesisRef.current.speak(utterance);
+          speakText(paragraph, isMuted, speechSynthesisRef);
         }
       }, 15000 * index);
     });

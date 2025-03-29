@@ -256,12 +256,6 @@ const BreathingExercise = ({
         utterance.voice = selectedVoice;
       }
       
-      // Add natural pauses between sentences for more realistic speech
-      const sentences = text.split(/(?<=[.!?])\s+/);
-      if (sentences.length > 1) {
-        // Use SSML-like approach with small pauses between sentences
-        text = sentences.join('. <break time="500ms"> ');
-      }
       
       utterance.text = text;
       
@@ -547,7 +541,7 @@ const BreathingExercise = ({
     if (!config) return;
     
     if (activePhase === 'intro') {
-      setInstructions('Prepare for the exercise...');
+      setInstructions(config.introText || 'Prepare for the exercise...');
     } else if (activePhase === 'inhale') {
       setInstructions('Inhale slowly and deeply');
     } else if (activePhase === 'hold') {

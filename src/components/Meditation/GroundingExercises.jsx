@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Leaf,X, Play, Pause, SkipForward, Volume2, VolumeX, Star, ArrowLeft, ArrowRight, Eye, Target, User, Zap } from 'lucide-react';
-import { getVoiceSettings } from '../../utils/meditationStorage';
+import { getVoiceSettings, speakText } from '../../utils/meditationStorage';
 
 const GroundingExercises = ({ 
   category, 
@@ -157,7 +157,7 @@ const GroundingExercises = ({
     
     // Speak the first instruction
     if (!isMuted) {
-      speakText(script[0].text);
+      speakText(script[0].text, isMuted, speechSynthesisRef);
     }
     
     // Start elapsed time tracking
@@ -170,82 +170,6 @@ const GroundingExercises = ({
     setTimeout(() => {
       setShowControls(false);
     }, 2000);
-  };
-  
-  // Text-to-speech function with voice settings
-  const speakText = (text) => {
-    if (speechSynthesisRef.current && !isMuted) {
-      speechSynthesisRef.current.cancel(); // Cancel any ongoing speech
-      
-      const utterance = new SpeechSynthesisUtterance(text);
-      
-      // Get user's voice settings
-      const voiceSettings = getVoiceSettings();
-      
-      // Apply settings
-      utterance.rate = voiceSettings?.voiceRate || 0.85;
-      utterance.pitch = voiceSettings?.voicePitch || 0.9;
-      utterance.volume = voiceSettings?.voiceVolume || 0.8;
-      
-      // Select voice based on settings
-      const voices = speechSynthesisRef.current.getVoices();
-      
-      let selectedVoice = null;
-      
-      if (!voiceSettings || voiceSettings.voiceType === 'female') {
-        // Try to find a good female voice
-        const femalePriorities = [
-          'Google UK English Female',
-          'Microsoft Zira',
-          'Samantha',
-          'Victoria',
-          'Female' // Generic term that might match various voices
-        ];
-        
-        // Try each priority voice until we find one
-        for (const voiceName of femalePriorities) {
-          const found = voices.find(v => v.name.includes(voiceName));
-          if (found) {
-            selectedVoice = found;
-            break;
-          }
-        }
-      } else if (voiceSettings.voiceType === 'male') {
-        // Try to find a good male voice
-        const malePriorities = [
-          'Google UK English Male',
-          'Microsoft David',
-          'Daniel',
-          'Alex',
-          'Male' // Generic term that might match various voices
-        ];
-        
-        // Try each priority voice until we find one
-        for (const voiceName of malePriorities) {
-          const found = voices.find(v => v.name.includes(voiceName));
-          if (found) {
-            selectedVoice = found;
-            break;
-          }
-        }
-      }
-      
-      // Use the selected voice or default
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
-      
-      // Add natural pauses between sentences for more realistic speech
-      const sentences = text.split(/(?<=[.!?])\s+/);
-      if (sentences.length > 1) {
-        // Use SSML-like approach with small pauses between sentences
-        text = sentences.join('. <break time="500ms"> ');
-      }
-      
-      utterance.text = text;
-      
-      speechSynthesisRef.current.speak(utterance);
-    }
   };
   
   // Main timer effect
@@ -270,7 +194,7 @@ const GroundingExercises = ({
         
         // Speak the next instruction
         if (!isMuted) {
-          speakText(script[nextStep].text);
+          speakText(script[nextStep].text, isMuted, speechSynthesisRef);
         }
       } else {
         // Exercise complete
@@ -278,7 +202,7 @@ const GroundingExercises = ({
         
         if (speechSynthesisRef.current) {
           speechSynthesisRef.current.cancel();
-          speakText("This grounding exercise is complete. Take a moment to notice how you feel.");
+          speakText("This grounding exercise is complete. Take a moment to notice how you feel.", isMuted, speechSynthesisRef);
         }
         
         // Stop elapsed time tracking
@@ -326,7 +250,7 @@ const GroundingExercises = ({
         const script = getGroundingScript(currentExercise.id);
         
         if (timer === 0 && currentStep < script.length) {
-          speakText(script[currentStep].text);
+          speakText(script[currentStep].text, isMuted, speechSynthesisRef);
         }
         
         // Resume elapsed time tracking
@@ -353,7 +277,7 @@ const GroundingExercises = ({
     if (nextStep < script.length) {
       setCurrentStep(nextStep);
       setTimer(script[nextStep].duration);
-      speakText(script[nextStep].text);
+      speakText(script[nextStep].text, isMuted, speechSynthesisRef);
     } else {
       // End of exercise
       setCurrentStep(script.length - 1);
@@ -376,7 +300,7 @@ const GroundingExercises = ({
     
     setCurrentStep(prevStep);
     setTimer(script[prevStep].duration);
-    speakText(script[prevStep].text);
+    speakText(script[prevStep].text, isMuted, speechSynthesisRef);
   };
   
   // Toggle mute
@@ -394,7 +318,7 @@ const GroundingExercises = ({
         // Speak current instruction
         const script = getGroundingScript(currentExercise.id);
         if (script.length > currentStep) {
-          speakText(script[currentStep].text);
+          speakText(script[currentStep].text, false, speechSynthesisRef);
         }
       }
     }

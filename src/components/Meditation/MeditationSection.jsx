@@ -9,9 +9,10 @@ import MeditationAnalytics from './MeditationAnalytics';
 import GuidedMeditation from './GuidedMeditation';
 import AmbientSounds from './AmbientSounds';
 import GroundingExercises from './GroundingExercises';
-import MeditationJournal from './MeditationJournal';
+import MeditationJournal from './JournalHub';
 import MeditationTips from './MeditationTips';
 import SleepSounds from './SleepSounds';
+import VoiceSettingsModal from './VoiceSettingsModal';
 
 const MeditationSection = () => {
   const [activeTab, setActiveTab] = useState('practice');
@@ -22,6 +23,7 @@ const MeditationSection = () => {
     journalEntries: [],
     recentlyUsed: []
   });
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   
   // Load meditation data from storage
   useEffect(() => {
@@ -54,6 +56,7 @@ const MeditationSection = () => {
     
     setMeditationData(updatedData);
     saveMeditationStorage(updatedData);
+    return true;
   };
   
   // Toggle favorite status of an exercise
@@ -105,6 +108,11 @@ const MeditationSection = () => {
     setSelectedExercise(null);
   };
   
+  // Toggle voice settings modal
+  const toggleVoiceSettings = () => {
+    setShowVoiceSettings(!showVoiceSettings);
+  };
+
   // Main category data for the grid
   const categories = [
     {
@@ -563,6 +571,15 @@ const MeditationSection = () => {
               <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></div>
             )}
           </button>
+          <button
+            className={`pb-3 px-2 relative transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100`}
+            onClick={toggleVoiceSettings}
+          >
+            <div className="flex items-center justify-center">
+              <Volume2 size={20} />
+              <span className="ml-2 font-medium hidden sm:inline">Voice Settings</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -750,6 +767,13 @@ const MeditationSection = () => {
         }
         return null;
       })()}
+    
+      {/* Voice Settings Modal */}
+      {showVoiceSettings && (
+        <VoiceSettingsModal 
+          onClose={() => setShowVoiceSettings(false)} 
+        />
+      )}
     
       {/* Add animation styles */}
       <style jsx>{`

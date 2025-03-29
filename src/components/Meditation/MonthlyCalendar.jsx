@@ -1,18 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import {
+import { 
+  ChevronLeft, ChevronRight, Edit2, Trash2, X, Eye,
   Brain, Heart, Briefcase, Users, Star,
   Sun, Moon, Activity, AlertTriangle
 } from 'lucide-react';
+import { getDayNotes, saveDailyNote } from '../../utils/storage';
 
-const MonthlyCalendar = ({ journalEntries = [], onSelectDate, selectedDate }) => {
+const MonthlyCalendar = ({ journalEntries = [], onSelectDate, selectedDate, onEditEntry }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState([]);
+  const [selectedDayEntries, setSelectedDayEntries] = useState([]);
+  const [showSelectedDayEntries, setShowSelectedDayEntries] = useState(false);
   
   // Generate calendar days whenever the month changes
   useEffect(() => {
     setCalendarDays(generateCalendarDays(currentMonth));
   }, [currentMonth, journalEntries]);
+  
+  // Update selected day entries when selectedDate changes
+  useEffect(() => {
+    if (selectedDate) {
+      const entriesForDate = journalEntries.filter(entry => {
+        const entryDate = entry.date || entry.timestamp?.split('T')[0];
+        return entryDate === selectedDate;
+      });
+      
+      setSelectedDayEntries(entriesForDate);
+      setShowSelectedDayEntries(true);
+    }
+  }, [selectedDate, journalEntries]);
   
   // Generate calendar days for the current month view
   const generateCalendarDays = (date) => {
@@ -102,10 +118,21 @@ const MonthlyCalendar = ({ journalEntries = [], onSelectDate, selectedDate }) =>
     return date.toISOString().split('T')[0];
   };
   
+  // Format a date as readable string
+  const formatDateReadable = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('default', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+  
   // Get entries for a specific date
   const getEntriesForDate = (dateString) => {
     return journalEntries.filter(entry => {
-      const entryDate = entry.date || entry.timestamp.split('T')[0];
+      const entryDate = entry.date || entry.timestamp?.split('T')[0];
       return entryDate === dateString;
     });
   };
@@ -155,12 +182,19 @@ const MonthlyCalendar = ({ journalEntries = [], onSelectDate, selectedDate }) =>
     }
   };
   
-  // Get average mood for entries
-  const getAverageMood = (entries) => {
-    if (!entries || entries.length === 0) return 0;
+  // Handle day click
+  const handleDayClick = (date) => {
+    // Set as selected date
+    if (onSelectDate) onSelectDate(date);
     
-    const sum = entries.reduce((total, entry) => total + (entry.mood || 3), 0);
-    return Math.round(sum / entries.length);
+    // Get entries for this date and show them
+    const entriesForDate = journalEntries.filter(entry => {
+      const entryDate = entry.date || entry.timestamp?.split('T')[0];
+      return entryDate === date;
+    });
+    
+    setSelectedDayEntries(entriesForDate);
+    setShowSelectedDayEntries(true);
   };
   
   // Navigate to previous month
@@ -238,11 +272,11 @@ const MonthlyCalendar = ({ journalEntries = [], onSelectDate, selectedDate }) =>
       </div>
       
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1 mb-4">
         {calendarDays.map((day, index) => (
           <button
             key={index}
-            onClick={() => onSelectDate(day.date)}
+            onClick={() => handleDayClick(day.date)}
             className={`min-h-14 p-1 rounded-lg flex flex-col items-center relative group ${
               day.isToday 
                 ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-500'
@@ -290,6 +324,114 @@ const MonthlyCalendar = ({ journalEntries = [], onSelectDate, selectedDate }) =>
         ))}
       </div>
       
+      {/* Selected day entries - NEW SECTION */}
+      {showSelectedDayEntries && selectedDate && (
+        <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-md font-medium text-slate-700 dark:text-slate-300">
+              Entries for {formatDateReadable(selectedDate)}
+            </h3>
+            <button 
+              onClick={() => setShowSelectedDayEntries(false)}
+              className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          
+          {/* Daily notes for selected date */}
+          <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 mb-4 transition-colors">
+            <div className="flex justify-between items-start mb-2">
+              <h5 className="text-sm font-medium text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                Daily Note
+              </h5>
+            </div>
+            
+            <textarea
+              id="daily-note-textarea"
+              value={getDayNotes(selectedDate)}
+              onChange={(e) => saveDailyNote(selectedDate, e.target.value)}
+              placeholder="Add notes for this day..."
+              className="w-full p-2 bg-white dark:bg-slate-800 rounded-lg text-amber-800 dark:text-amber-200 placeholder-amber-400 dark:placeholder-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 min-h-[80px] transition-colors"
+            />
+          </div>
+          
+          {selectedDayEntries.length > 0 ? (
+            <div className="space-y-3">
+              {selectedDayEntries.map(entry => (
+                <div 
+                  key={entry.id} 
+                  className="bg-white dark:bg-slate-700 rounded-lg shadow-sm p-4 transition-all duration-300 hover:shadow-md"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h5 className="text-md font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                      {entry.title || 'Journal Entry'}
+                      {entry.mood && (
+                        <span className="text-xl" title={`Mood: ${entry.mood}/5`}>
+                          {getMoodEmoji(entry.mood)}
+                        </span>
+                      )}
+                    </h5>
+                    
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onEditEntry && onEditEntry(entry)}
+                        className="p-1 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Entry content */}
+                  <p className="text-slate-600 dark:text-slate-300 text-sm whitespace-pre-wrap mb-2">
+                    {entry.text}
+                  </p>
+                  
+                  {/* Categories if available */}
+                  {entry.categories && entry.categories.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {entry.categories.map(categoryId => {
+                        return (
+                          <span
+                            key={categoryId}
+                            className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${getCategoryColorClass(categoryId)}`}
+                          >
+                            {getCategoryIcon(categoryId)}
+                            <span>{getCategoryName(categoryId)}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 bg-slate-50 dark:bg-slate-700 rounded-lg">
+              <p className="text-slate-500 dark:text-slate-400">
+                No journal entries for this date.
+              </p>
+              <button
+                onClick={() => {
+                  // Navigate to add entry view
+                  if (onEditEntry) onEditEntry({
+                    date: selectedDate,
+                    text: '',
+                    title: '',
+                    isNew: true
+                  });
+                }}
+                className="mt-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg inline-flex items-center gap-2 text-sm"
+              >
+                Add New Entry
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
@@ -302,6 +444,46 @@ const MonthlyCalendar = ({ journalEntries = [], onSelectDate, selectedDate }) =>
       `}</style>
     </div>
   );
+};
+
+// Helper functions
+const getMoodEmoji = (mood) => {
+  switch (mood) {
+    case 1: return '😔';
+    case 2: return '😕';
+    case 3: return '😐';
+    case 4: return '🙂';
+    case 5: return '😊';
+    default: return '😐';
+  }
+};
+
+const getCategoryColorClass = (categoryId) => {
+  switch (categoryId) {
+    case 'meditation': return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300';
+    case 'gratitude': return 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300';
+    case 'work': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+    case 'relationships': return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300';
+    case 'personal': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
+    case 'health': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
+    case 'morning': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
+    case 'evening': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+    default: return 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
+  }
+};
+
+const getCategoryName = (categoryId) => {
+  switch (categoryId) {
+    case 'meditation': return 'Meditation';
+    case 'gratitude': return 'Gratitude';
+    case 'work': return 'Work';
+    case 'relationships': return 'Relationships';
+    case 'personal': return 'Personal';
+    case 'health': return 'Health';
+    case 'morning': return 'Morning';
+    case 'evening': return 'Evening';
+    default: return categoryId;
+  }
 };
 
 export default MonthlyCalendar;

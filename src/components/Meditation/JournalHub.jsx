@@ -7,7 +7,8 @@ import {
   Info, CheckCircle, ArrowLeft, Eye, Clock, Award, Check, MoreHorizontal, ChevronRight, ChevronLeft,
   Activity, Hash, FileText, Frown, Zap, User
 } from 'lucide-react';
-import { getStorage, setStorage } from '../../utils/storage';
+import { getStorage,setStorage,getPeopleLists, addPersonToWhitelist, addPersonToBlacklist } from '../../utils/storage';
+import { analyzeSentiment } from '../../utils/sentimentAnalysis';
 import { handleDataChange } from '../../utils/dayCoachUtils';
 import { generateContent } from '../../utils/ai-service';
 import JournalStreakCalendar from './JournalStreakCalendar';
@@ -291,9 +292,12 @@ const JournalHub = () => {
   }, []);
   
   // Analyze journal content to extract insights
-  const analyzeJournalContent = (entries) => {
+const analyzeJournalContent = (entries) => {
     // Only analyze if we have entries
     if (!entries || entries.length === 0) return;
+    
+    // Get whitelist and blacklist for people
+    const { whitelist, blacklist } = getPeopleLists();
     
     // Extract all text from entries
     const allText = entries.map(entry => entry.text || '').join(' ');
@@ -306,15 +310,34 @@ const JournalHub = () => {
     const peopleCounts = {};
     peopleMatches.forEach(match => {
       const name = match[0];
+      
+      // Skip if in blacklist
+      if (blacklist.includes(name)) return;
+      
       peopleCounts[name] = (peopleCounts[name] || 0) + 1;
     });
     
     // Sort by frequency
-    const topPeople = Object.entries(peopleCounts)
+    let topPeople = Object.entries(peopleCounts)
       .filter(([name]) => !['I', 'My', 'Me', 'We', 'Our', 'They', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].includes(name)) // Filter out common words
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([name, count]) => ({ name, count }));
+      .slice(0, 15) // Get more results for filtering
+      .map(([name, count]) => ({ 
+        name, 
+        count,
+        isApproved: whitelist.includes(name), 
+        isRejected: blacklist.includes(name)
+      }));
+    
+    // Prioritize whitelisted names
+    topPeople.sort((a, b) => {
+      if (a.isApproved && !b.isApproved) return -1;
+      if (!a.isApproved && b.isApproved) return 1;
+      return b.count - a.count;
+    });
+    
+    // Take top 10 after sorting
+    topPeople = topPeople.slice(0, 10);
     
     // Find common words
     const words = allText.toLowerCase()
@@ -443,6 +466,9 @@ const JournalHub = () => {
       });
     }
     
+    // Analyze overall sentiment
+    const sentimentAnalysis = analyzeSentiment(allText);
+    
     // Update state with analysis
     setJournalAnalysis({
       topWords,
@@ -450,6 +476,7 @@ const JournalHub = () => {
       stressFactors,
       topTopics: topicCounts,
       moodCorrelations,
+      sentiment: sentimentAnalysis,
       loaded: true
     });
   };
@@ -799,23 +826,7 @@ Please provide thoughtful insights based on these entries.
   // Render the entries list view - Guided journal experience
   const renderEntriesView = () => (
     <div className="space-y-6">
-      {/* Filter indicator if filtering by date */}
-      {dateFilter && (
-        <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-lg flex justify-between items-center animate-pulse">
-          <div className="flex items-center gap-2">
-            <Calendar size={18} className="text-indigo-500 dark:text-indigo-400" />
-            <span className="text-sm text-indigo-600 dark:text-indigo-300">
-              Showing entries for {formatDateReadable(dateFilter)}
-            </span>
-          </div>
-          <button 
-            onClick={() => setDateFilter(null)}
-            className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm"
-          >
-            Clear filter
-          </button>
-        </div>
-      )}
+      
     
       {/* Search and journaling prompts */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
@@ -988,6 +999,24 @@ Please provide thoughtful insights based on these entries.
         journalEntries={journalEntries} 
         onSelectDate={handleDateSelect}
       />
+
+      {/* Filter indicator if filtering by date */}
+      {dateFilter && (
+        <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-lg flex justify-between items-center animate-pulse">
+          <div className="flex items-center gap-2">
+            <Calendar size={18} className="text-indigo-500 dark:text-indigo-400" />
+            <span className="text-sm text-indigo-600 dark:text-indigo-300">
+              Showing entries for {formatDateReadable(dateFilter)}
+            </span>
+          </div>
+          <button 
+            onClick={() => setDateFilter(null)}
+            className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm"
+          >
+            Clear filter
+          </button>
+        </div>
+      )}
 
       {/* Journal entries list */}
       {Object.entries(entriesByDate).length === 0 ? (
@@ -1248,161 +1277,10 @@ Please provide thoughtful insights based on these entries.
       {/* Monthly calendar component */}
       <MonthlyCalendar 
         journalEntries={journalEntries}
-        onSelectDate={handleDateSelect}
         selectedDate={selectedDate}
       />
       
-      {/* Selected date section */}
-      {selectedDate && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 xs:p-6 transition-colors">
-          <h4 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3">
-            {formatDateReadable(selectedDate)}
-          </h4>
-          
-          {/* Daily notes for selected date */}
-          <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 mb-4 transition-colors">
-            <div className="flex justify-between items-start mb-2">
-              <h5 className="text-sm font-medium text-amber-700 dark:text-amber-300 flex items-center gap-2">
-                <Lightbulb size={16} className="text-amber-500 dark:text-amber-400" />
-                Daily Note
-              </h5>
-              
-              <button
-                onClick={() => {
-                  const textArea = document.getElementById('daily-note-textarea');
-                  if (textArea) {
-                    textArea.focus();
-                  }
-                }}
-                className="text-xs text-amber-600 dark:text-amber-400 hover:underline"
-              >
-                Edit
-              </button>
-            </div>
-            
-            <textarea
-              id="daily-note-textarea"
-              value={getDailyNote(selectedDate)}
-              onChange={(e) => saveDailyNote(selectedDate, e.target.value)}
-              placeholder="Add notes for this day..."
-              className="w-full p-2 bg-white dark:bg-slate-800 rounded-lg text-amber-800 dark:text-amber-200 placeholder-amber-400 dark:placeholder-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 min-h-[80px] transition-colors"
-            />
-          </div>
-          
-          {/* Entries for selected date */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center mb-2">
-              <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Journal Entries
-              </h5>
-              
-              <button 
-                onClick={() => {
-                  resetEntryForm();
-                  setShowEntryEditor(true);
-                }}
-                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
-              >
-                <Plus size={14} />
-                Add Entry
-              </button>
-            </div>
-            
-            {journalEntries.filter(entry => {
-              const entryDate = entry.date || entry.timestamp.split('T')[0];
-              return entryDate === selectedDate;
-            }).map(entry => (
-              <div 
-                key={entry.id} 
-                className="bg-white dark:bg-slate-700 rounded-lg shadow-sm p-4 transition-all duration-300 hover:shadow-md"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <h5 className="text-md font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    {entry.title || 'Journal Entry'}
-                    <span className="text-xl" title={`Mood: ${entry.mood}/5`}>
-                      {getMoodEmoji(entry.mood)}
-                    </span>
-                  </h5>
-                  
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => editEntry(entry)}
-                      className="p-1 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-                      title="Edit"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => setConfirmDeleteId(entry.id)}
-                      className="p-1 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Entry content */}
-                <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-2 mb-2">
-                  {entry.text}
-                </p>
-                
-                {/* Categories */}
-                {entry.categories && entry.categories.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {entry.categories.map(categoryId => {
-                      const category = availableCategories.find(c => c.id === categoryId);
-                      return (
-                        <span
-                          key={categoryId}
-                          className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${getCategoryColorClass(categoryId)}`}
-                        >
-                          {category?.icon}
-                          <span>{category?.name || categoryId}</span>
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-                
-                {/* View entry button */}
-                <button
-                  onClick={() => {
-                    setSelectedEntry(entry);
-                    setDateFilter(selectedDate);
-                    setActiveView('entries');
-                  }}
-                  className="mt-2 text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
-                >
-                  <Eye size={14} />
-                  View full entry
-                </button>
-              </div>
-            ))}
-            
-            {journalEntries.filter(entry => {
-              const entryDate = entry.date || entry.timestamp.split('T')[0];
-              return entryDate === selectedDate;
-            }).length === 0 && (
-              <div className="text-center py-6">
-                <p className="text-slate-500 dark:text-slate-400 mb-4">
-                  No journal entries for this date.
-                </p>
-                <button
-                  onClick={() => {
-                    resetEntryForm();
-                    setShowEntryEditor(true);
-                  }}
-                  className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg inline-flex items-center gap-2 text-sm"
-                >
-                  <PenTool size={16} />
-                  Write New Entry
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      
     </div>
   );
   
@@ -1537,73 +1415,147 @@ Please provide thoughtful insights based on these entries.
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* People Mentioned */}
           <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
-            <h4 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-              <Users size={16} className="text-emerald-500 dark:text-emerald-400" />
-              People Mentioned
-            </h4>
-            
-            {journalAnalysis.loaded && journalAnalysis.topPeople.length > 0 ? (
-              <div className="grid grid-cols-2 gap-2">
-                {journalAnalysis.topPeople.slice(0, 6).map(person => (
-                  <div key={person.name} className="bg-slate-100 dark:bg-slate-600 p-2 rounded-lg flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <User size={14} className="text-slate-500 dark:text-slate-400" />
-                      <span className="text-sm text-slate-700 dark:text-slate-300 truncate">
-                        {person.name}
-                      </span>
-                    </div>
-                    <span className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded-full">
-                      {person.count}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-slate-500 dark:text-slate-400 text-sm">
-                  No people detected in your journal entries.
-                </p>
-              </div>
-            )}
+  <h4 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+    <Users size={16} className="text-emerald-500 dark:text-emerald-400" />
+    People Mentioned
+  </h4>
+  
+  {journalAnalysis.loaded && journalAnalysis.topPeople.length > 0 ? (
+    <div className="space-y-2">
+      {journalAnalysis.topPeople.map(person => (
+        <div key={person.name} className="bg-slate-100 dark:bg-slate-600 p-2 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <User size={14} className="text-slate-500 dark:text-slate-400" />
+            <span className="text-sm text-slate-700 dark:text-slate-300 truncate">
+              {person.name}
+            </span>
+            <span className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded-full">
+              {person.count}
+            </span>
           </div>
           
-          {/* Mood correlations */}
-          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
-            <h4 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-              <Activity size={16} className="text-blue-500 dark:text-blue-400" />
-              Mood Patterns
-            </h4>
-            
-            {journalAnalysis.loaded && journalAnalysis.moodCorrelations.length > 0 ? (
-              <div className="space-y-3">
-                {journalAnalysis.moodCorrelations.map(mood => (
-                  <div key={mood.mood} className="bg-slate-100 dark:bg-slate-600 p-3 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xl">
-                        {mood.mood === 'low' ? '😔' : mood.mood === 'medium' ? '😐' : '😊'}
-                      </span>
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        {mood.mood === 'low' ? 'Low' : mood.mood === 'medium' ? 'Neutral' : 'High'} Mood ({mood.count} entries)
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {mood.words.map(word => (
-                        <span key={word} className="text-xs px-2 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full">
-                          {word}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* Approval/Reject buttons */}
+          <div className="flex items-center gap-1">
+            {person.isApproved ? (
+              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300 px-2 py-0.5 rounded-full">
+                Approved
+              </span>
             ) : (
-              <div className="text-center py-4">
-                <p className="text-slate-500 dark:text-slate-400 text-sm">
-                  Add more journal entries with mood ratings to see patterns.
-                </p>
-              </div>
+              <button 
+                onClick={() => {
+                  addPersonToWhitelist(person.name);
+                  // Refresh analysis
+                  analyzeJournalContent(journalEntries);
+                }}
+                className="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-green-100 dark:hover:bg-green-900/30 text-slate-600 dark:text-slate-300 hover:text-green-600 dark:hover:text-green-300 px-2 py-0.5 rounded-full transition-colors"
+                title="Confirm this is a person"
+              >
+                Approve
+              </button>
+            )}
+            
+            {person.isRejected ? (
+              <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300 px-2 py-0.5 rounded-full">
+                Discarded
+              </span>
+            ) : (
+              <button 
+                onClick={() => {
+                  addPersonToBlacklist(person.name);
+                  // Refresh analysis
+                  analyzeJournalContent(journalEntries);
+                }}
+                className="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-300 px-2 py-0.5 rounded-full transition-colors"
+                title="This is not a person"
+              >
+                Discard
+              </button>
             )}
           </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div className="text-center py-4">
+      <p className="text-slate-500 dark:text-slate-400 text-sm">
+        No people detected in your journal entries.
+      </p>
+    </div>
+  )}
+</div>
+
+<div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 mb-6 transition-colors">
+  <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">
+    <Activity size={20} className="text-blue-500 dark:text-blue-400" />
+    Sentiment Analysis
+  </h3>
+  
+  {journalAnalysis.loaded && journalAnalysis.sentiment ? (
+    <div className="space-y-4">
+      <div className="bg-slate-100 dark:bg-slate-700 p-4 rounded-lg">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-medium text-red-500 dark:text-red-400">Negative</span>
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            {journalAnalysis.sentiment.total} words analyzed
+          </span>
+          <span className="text-sm font-medium text-green-500 dark:text-green-400">Positive</span>
+        </div>
+        
+        {/* Sentiment bar */}
+        <div className="h-4 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden relative">
+          <div 
+            className="absolute top-0 bottom-0 bg-gradient-to-r from-red-500 to-green-500 w-full"
+            style={{ 
+              transform: `translateX(${journalAnalysis.sentiment.score/2}%)`,
+              transition: 'transform 1s ease-out'
+            }}
+          ></div>
+          <div className="absolute top-0 bottom-0 left-1/2 w-1 bg-slate-50 dark:bg-slate-300"></div>
+        </div>
+        
+        {/* Score indicator */}
+        <div className="text-center mt-2">
+          <span className={`text-lg font-bold ${
+            journalAnalysis.sentiment.score > 0 
+              ? 'text-green-500 dark:text-green-400' 
+              : journalAnalysis.sentiment.score < 0
+                ? 'text-red-500 dark:text-red-400'
+                : 'text-slate-500 dark:text-slate-400'
+          }`}>
+            {journalAnalysis.sentiment.score > 0 ? '+' : ''}{journalAnalysis.sentiment.score}
+          </span>
+        </div>
+        
+        {/* Word counts */}
+        <div className="flex justify-between items-center mt-3">
+          <div className="text-center">
+            <span className="text-sm font-medium text-red-500 dark:text-red-400">
+              {journalAnalysis.sentiment.negative}
+            </span>
+            <p className="text-xs text-slate-500 dark:text-slate-400">negative words</p>
+          </div>
+          
+          <div className="text-center">
+            <span className="text-sm font-medium text-green-500 dark:text-green-400">
+              {journalAnalysis.sentiment.positive}
+            </span>
+            <p className="text-xs text-slate-500 dark:text-slate-400">positive words</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="text-sm text-slate-600 dark:text-slate-400">
+        <p>This analysis checks your journal entries for positive and negative words in both English and Portuguese. A higher score indicates more positive language overall.</p>
+      </div>
+    </div>
+  ) : (
+    <div className="text-center py-6">
+      <p className="text-slate-500 dark:text-slate-400">
+        Write more journal entries to see your sentiment analysis.
+      </p>
+    </div>
+  )}
+</div>
         </div>
       </div>
       

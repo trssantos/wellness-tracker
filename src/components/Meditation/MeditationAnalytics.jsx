@@ -430,9 +430,9 @@ const MeditationAnalytics = ({ sessions, categories }) => {
             Sessions by Day of Week
           </h3>
           
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.dailyDistribution} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+          <div className="h-64 min-h-[200px] w-full overflow-hidden">
+  <ResponsiveContainer width="100%" height="100%">
+    <BarChart data={stats.dailyDistribution} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" strokeOpacity={0.3} />
                 <XAxis dataKey="name" tick={{ fill: '#64748b' }} />
                 <YAxis tick={{ fill: '#64748b' }} />

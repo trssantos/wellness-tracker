@@ -4,11 +4,12 @@ import { BarChart2,ArrowLeft, Edit3, Trash2, Play, Clock, Calendar,
 import { getWorkoutTypes, getWorkoutLocations, getAllCompletedWorkouts } from '../../utils/workoutUtils';
 import WorkoutPlayerModal from './WorkoutPlayerModal';
 import WorkoutCalendar from './WorkoutCalendar';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [currentDate, setCurrentDate] = useState(formatDateForStorage(new Date()));
   const [completedWorkouts, setCompletedWorkouts] = useState([]);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' or 'calendar'
 

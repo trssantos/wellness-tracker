@@ -3,6 +3,7 @@ import { Sun, Moon, AlertCircle, X, Zap } from 'lucide-react';
 import { MOODS } from './MoodSelector';
 import { getStorage, setStorage } from '../utils/storage';
 import { handleDataChange } from '../utils/dayCoachUtils';
+import { formatDateForStorage } from '../utils/dateUtils';
 
 const MoodTimeTracker = ({ date, onClose }) => {
   const [currentTime, setCurrentTime] = useState('morning'); // Default to morning
@@ -24,7 +25,7 @@ const MoodTimeTracker = ({ date, onClose }) => {
       
       // Load existing data for this date
       const storage = getStorage();
-      const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+      const dateStr = typeof date === 'string' ? date : formatDateForStorage(date);
       const dayData = storage[dateStr] || {};
       
       // Load existing data
@@ -97,7 +98,7 @@ const MoodTimeTracker = ({ date, onClose }) => {
     
     try {
       const storage = getStorage();
-      const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+      const dateStr = typeof date === 'string' ? date : formatDateForStorage(date);
       const dayData = storage[dateStr] || {};
       
       // Save the data for the selected time of day

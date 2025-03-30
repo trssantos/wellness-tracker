@@ -1,5 +1,6 @@
 // src/utils/meditationStorage.js
 import { getStorage, setStorage } from './storage';
+import { formatDateForStorage } from './dateUtils';
 
 /**
  * Get meditation data from storage
@@ -153,8 +154,8 @@ export const getMeditationStats = (data = null) => {
     });
     
     weeklySessionCounts.push({
-      weekStart: weekStart.toISOString().split('T')[0],
-      weekEnd: weekEnd.toISOString().split('T')[0],
+      weekStart: formatDateForStorage(weekStart),
+      weekEnd: formatDateForStorage(weekEnd),
       count: weekSessions.length,
       minutes: weekSessions.reduce((total, session) => total + (session.duration || 0), 0)
     });

@@ -1,4 +1,5 @@
 import { getStorage } from './storage';
+import { formatDateForStorage } from './dateUtils';
 
 class ReminderService {
   constructor() {
@@ -694,7 +695,7 @@ reminderService.testTaskNotification = async () => {
     const testReminder = {
       id: 'task-test-' + Date.now(),
       taskText: 'Test Task Reminder ' + new Date().toLocaleTimeString(),
-      dateKey: new Date().toISOString().split('T')[0]
+      dateKey: formatDateForStorage(new Date())
     };
     
     const result = await reminderService.showTaskNotification(testReminder);

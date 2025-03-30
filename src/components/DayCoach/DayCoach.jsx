@@ -23,6 +23,7 @@ import DayCoachMoodTracker from './DayCoachMoodTracker';
 import { clearDayCoachMessages } from '../../utils/dayCoachUtils';
 import ClearChatDialog from './ClearChatDialog';
 import SolarisRobot from './SolarisRobot';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const DayCoach = () => {
   const [messages, setMessages] = useState([]);
@@ -191,7 +192,7 @@ const isToday = (dateStr) => {
         return;
       }
       
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatDateForStorage(new Date());
       const todayData = storage[today] || {};
       
       // Create deep copies of objects for comparison to avoid reference issues

@@ -1,4 +1,5 @@
 import { CheckSquare, Book, Dumbbell, Coffee, Moon, Sunrise, Sunset } from 'lucide-react';
+import { formatDateForStorage } from './dateUtils';
 
 // Convert mood string to numerical value for calculations
 export const getMoodValue = (mood) => {
@@ -24,7 +25,7 @@ export const processMoodComparisonData = (data, month) => {
   
   // Process each day in the current month
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = formatDateForStorage(d);
     const dayData = data[dateStr];
     
     if (dayData) {
@@ -117,7 +118,7 @@ export const analyzeMoodImpacts = (storageData, month) => {
   
   // Process each day in the current month
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = formatDateForStorage(d);
     const dayData = storageData[dateStr];
     
     if (!dayData) continue;

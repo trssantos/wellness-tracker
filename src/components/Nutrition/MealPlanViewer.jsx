@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
 import WeightTracker from './WeightTracker';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const MealPlanViewer = ({ planId, onClose, onEdit, onAddToDay }) => {
   const [plan, setPlan] = useState(null);
@@ -144,7 +145,7 @@ const MealPlanViewer = ({ planId, onClose, onEdit, onAddToDay }) => {
   
   // Mark a day as completed
   const toggleDayCompleted = (dayIndex) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateForStorage(new Date());
     
     const updatedAdherence = {
       ...adherenceData,

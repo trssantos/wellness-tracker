@@ -1,5 +1,6 @@
 import { getStorage, setStorage } from './storage';
 import { fetchCoachResponse } from './dayCoachApi';
+import { formatDateForStorage } from './dateUtils';
 
 // Initialize the day coach system
 export const initializeDayCoach = async () => {
@@ -95,6 +96,24 @@ export const saveDayCoachMessage = (message) => {
     return true;
   } catch (error) {
     console.error('Error saving day coach message:', error);
+    return false;
+  }
+};
+
+// Add a new function to dayCoachUtils.js to notify Solaris about journal entries
+export const handleJournalEntryAdded = (entryData) => {
+  try {
+    // Use the same handleDataChange function but with a specific journalEntry type
+    const dateStr = entryData.date || entryData.timestamp.split('T')[0];
+    
+    handleDataChange(dateStr, 'journal', { 
+      entryData: entryData,
+      type: 'journalEntry'
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error handling journal entry notification:', error);
     return false;
   }
 };
@@ -261,6 +280,15 @@ export const checkForSignificantChanges = (currentData = {}, previousData = {}, 
       }
     };
   }
+
+   // NEW: Check for new journal entries
+   if (currentData.journalChange && currentData.journalChange.entryData) {
+    return { 
+      shouldTrigger: true, 
+      triggerType: 'journalEntry',
+      specificContext: currentData.journalChange.entryData
+    };
+  }
   
   // New workout added
   if ((currentData.workout && !previousData.workout) || 
@@ -356,7 +384,7 @@ export const handleDataChange = (dateStr, moduleType, data) => {
     const storage = getStorage();
     
     // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateForStorage(new Date());
     
     // Skip triggering for past dates (dateStr is before today)
     if (dateStr < today) {

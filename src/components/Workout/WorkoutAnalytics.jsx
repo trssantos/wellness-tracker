@@ -6,6 +6,7 @@ import { ArrowLeft, Activity, Calendar, BarChart2, Award, TrendingUp,
 import { BarChart, LineChart, PieChart, AreaChart, Bar, Line, Pie, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { getAllCompletedWorkouts, getWorkoutTypes, calculateWorkoutStats, getWorkoutTypesWithColors } from '../../utils/workoutUtils';
 import WorkoutCalendar from './WorkoutCalendar';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 // Exercise List Component with Collapse/Expand functionality
 const CollapsibleExercises = ({ exercises, initialExpanded = false }) => {
@@ -468,7 +469,7 @@ const getAllWorkouts = () => {
     const uniqueDates = new Map();
     workouts.forEach(workout => {
       const dateStr = typeof workout.date === 'string' ? workout.date : 
-                   new Date(workout.completedAt || workout.timestamp).toISOString().split('T')[0];
+      formatDateForStorage(new Date(workout.completedAt || workout.timestamp));
       uniqueDates.set(dateStr, true);
     });
 
@@ -503,8 +504,8 @@ const getAllWorkouts = () => {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     
-    const todayStr = today.toISOString().split('T')[0];
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const todayStr = formatDateForStorage(today);
+    const yesterdayStr = formatDateForStorage(yesterday);
     
     // Check if today or yesterday had a workout
     const hasTodayWorkout = uniqueDates.has(todayStr);
@@ -520,7 +521,7 @@ const getAllWorkouts = () => {
       
       // Go backwards day by day
       for (let d = new Date(startDate); ; d.setDate(d.getDate() - 1)) {
-        const dateStr = d.toISOString().split('T')[0];
+        const dateStr = formatDateForStorage(d);
         if (uniqueDates.has(dateStr)) {
           currentStreak++;
         } else {
@@ -674,7 +675,7 @@ const getAllWorkouts = () => {
       } else {
         // Handle timestamp or completedAt
         const date = new Date(workout.completedAt || workout.timestamp);
-        dateStr = date.toISOString().split('T')[0];
+        dateStr = formatDateForStorage(date);
       }
       
       if (!caloriesByDate[dateStr]) {
@@ -710,7 +711,7 @@ const getAllWorkouts = () => {
       } else {
         // Handle timestamp or completedAt
         const date = new Date(workout.completedAt || workout.timestamp);
-        dateStr = date.toISOString().split('T')[0];
+        dateStr = formatDateForStorage(date);
       }
       
       if (!durationByDate[dateStr]) {

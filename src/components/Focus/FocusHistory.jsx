@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Clock, Target, Calendar, CheckSquare, ArrowLeft, Star, MessageCircle, AlertTriangle, Timer, HelpCircle, Info, Trash2 } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
 import { getTechniqueName, getTechniqueColor, getTechniqueIcon } from '../../utils/focusUtils';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 // Simple tooltip component
 const Tooltip = ({ content, children }) => {
@@ -456,7 +457,7 @@ const FocusHistory = ({ sessions, onSessionsUpdate }) => {
     const sessionsByDate = {};
     sessions.forEach(session => {
       const date = new Date(session.startTime || session.timestamp);
-      const dateString = date.toISOString().split('T')[0];
+      const dateString = formatDateForStorage(date);
       
       if (!sessionsByDate[dateString]) {
         sessionsByDate[dateString] = [];

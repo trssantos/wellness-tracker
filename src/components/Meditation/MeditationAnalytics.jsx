@@ -4,6 +4,7 @@ import { BarChart2, PieChart, Calendar, Clock, Award,
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
          PieChart as RPieChart, Pie, Cell, Legend } from 'recharts';
 import { getMeditationStats } from '../../utils/meditationStorage';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const MeditationAnalytics = ({ sessions, categories }) => {
   const [timeframe, setTimeframe] = useState('month'); // 'week', 'month', 'year', 'all'
@@ -125,14 +126,14 @@ const MeditationAnalytics = ({ sessions, categories }) => {
     const sessionDates = new Set();
     sortedSessions.forEach(session => {
       const date = new Date(session.timestamp);
-      sessionDates.add(date.toISOString().split('T')[0]);
+      sessionDates.add(formatDateForStorage(date));
     });
     
     // Check previous days
     let checkDate = new Date(currentDate);
     checkDate.setDate(checkDate.getDate() - 1);
     
-    while (sessionDates.has(checkDate.toISOString().split('T')[0])) {
+    while (sessionDates.has(formatDateForStorage(checkDate))) {
       streak++;
       checkDate.setDate(checkDate.getDate() - 1);
     }

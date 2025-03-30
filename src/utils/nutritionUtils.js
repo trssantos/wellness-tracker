@@ -139,8 +139,8 @@ export const analyzeFoodMoodCorrelations = (days = 30) => {
   const startDate = new Date();
   startDate.setDate(endDate.getDate() - days);
   
-  const startDateStr = startDate.toISOString().split('T')[0];
-  const endDateStr = endDate.toISOString().split('T')[0];
+  const startDateStr = startformatDateForStorage(date);
+  const endDateStr = endformatDateForStorage(date);
   
   const foodFrequency = {};
   const foodMoodImpact = {};
@@ -148,7 +148,7 @@ export const analyzeFoodMoodCorrelations = (days = 30) => {
   
   // Iterate through all dates in range
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = formatDateForStorage(d);
     
     // Skip if no data for this date
     if (!storage[dateStr]) continue;

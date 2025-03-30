@@ -4,6 +4,7 @@ import { getCategoryById, getCategoryIconComponent, deleteRecurringTransaction }
 import RecurringTransactionsManager from './RecurringTransactionsManager'; 
 import EditRecurringModal from './EditRecurringModal';
 import ConfirmationModal from './ConfirmationModal';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, currency = '€', compact = false }) => {
   const [showOptions, setShowOptions] = useState(null);
@@ -96,11 +97,11 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
       amount: bill.amount,
       category: bill.category,
       dueDate: dueDate,
-      dueDateString: dueDate.toISOString().split('T')[0], // For deduplication check
+      dueDateString: formatDateForStorage(dueDate), // For deduplication check
       frequency: bill.frequency,
       type: 'recurring',
       original: bill,
-      displayId: `recurring-${bill.id}-${dueDate.toISOString().split('T')[0]}` // Unique ID for deduplication
+      displayId: `recurring-${bill.id}-${formatDateForStorage(dueDate)}` // Unique ID for deduplication
     };
   });
 
@@ -113,7 +114,7 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
     if (tx.recurring) {
       // This transaction was created from a recurring config
       // Format: recurring-ID-YYYY-MM-DD
-      const key = `recurring-${tx.recurring}-${tx.dueDate.toISOString().split('T')[0]}`;
+      const key = `recurring-${tx.recurring}-${formatDateForStorage(tx.dueDate)}`;
       recurringTransactionDates[key] = true;
     }
   });

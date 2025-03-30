@@ -30,8 +30,8 @@ export const NutritionInsights = ({ foodEntries, date }) => {
     }
     
     // Format dates as strings for comparison
-    const startDateStr = startDate.toISOString().split('T')[0];
-    const endDateStr = currentDate.toISOString().split('T')[0];
+    const startDateStr = startformatDateForStorage(date);
+    const endDateStr = currentformatDateForStorage(date);
     
     // Iterate through all dates in storage
     Object.keys(storage).forEach(dateKey => {

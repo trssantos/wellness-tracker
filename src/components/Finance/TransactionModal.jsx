@@ -6,6 +6,7 @@ import {
 import ModalContainer from './ModalContainer';
 import InputField from './InputField';
 import { getFinanceData, addTransaction, addRecurringTransaction, getCategoriesByGroup } from '../../utils/financeUtils';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const TransactionModal = ({ onClose, onTransactionAdded }) => {
   // State variables
@@ -13,7 +14,7 @@ const TransactionModal = ({ onClose, onTransactionAdded }) => {
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('expense');
   const [category, setCategory] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(formatDateForStorage(new Date()));
   const [notes, setNotes] = useState('');
   const [categories, setCategories] = useState({ income: [], expense: [] });
   const [groupedCategories, setGroupedCategories] = useState({ income: {}, expense: {} });

@@ -8,7 +8,7 @@ const AddTransactionModal = ({ onClose, onTransactionAdded }) => {
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('expense');
   const [category, setCategory] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(formatDateForStorage(new Date()));
   const [notes, setNotes] = useState('');
   const [categories, setCategories] = useState({ income: [], expense: [] });
   const [error, setError] = useState('');

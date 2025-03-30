@@ -3,6 +3,7 @@ import { X, Calendar, DollarSign, Tag, FileText, TrendingUp, TrendingDown, Chevr
 import { updateTransaction, getFinanceData, getCategoryById } from '../../utils/financeUtils';
 import ModalContainer from './ModalContainer';
 import InputField from './InputField';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const EditTransactionModal = ({ transaction, onClose, onTransactionUpdated, currency = '$' }) => {
   // State variables
@@ -10,7 +11,7 @@ const EditTransactionModal = ({ transaction, onClose, onTransactionUpdated, curr
   const [amount, setAmount] = useState(Math.abs(transaction.amount) || '');
   const [type, setType] = useState(transaction.amount >= 0 ? 'income' : 'expense');
   const [category, setCategory] = useState(transaction.category || '');
-  const [date, setDate] = useState(transaction.date || new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(transaction.date || formatDateForStorage(new Date()));
   const [notes, setNotes] = useState(transaction.notes || '');
   const [categories, setCategories] = useState({ income: [], expense: [] });
   const [error, setError] = useState('');

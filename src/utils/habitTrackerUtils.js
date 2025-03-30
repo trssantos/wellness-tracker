@@ -1,5 +1,6 @@
 // habitTrackerUtils.js
 import { getStorage, setStorage } from './storage';
+import { formatDateForStorage } from './dateUtils';
 
 /**
  * Initialize habit tracker data if it doesn't exist
@@ -49,7 +50,7 @@ export const createHabit = (habitData) => {
     description: habitData.description || '',
     frequency: habitData.frequency || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
     steps: habitData.steps || [],
-    startDate: habitData.startDate || new Date().toISOString().split('T')[0],
+    startDate: habitData.startDate || formatDateForStorage(new Date()),
     targetDate: habitData.targetDate || '',
     timeOfDay: habitData.timeOfDay || 'anytime',
     milestones: habitData.milestones || [],
@@ -291,7 +292,7 @@ export const updateHabitStats = (habit) => {
   
   // Calculate current streak
   let currentStreak = 0;
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDateForStorage(new Date());
   const sortedDates = completionDates.sort((a, b) => new Date(b) - new Date(a));
   
   // Check if today or yesterday was completed
@@ -576,7 +577,7 @@ export const generateCompletionHistory = (habit, days = 28) => {
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateForStorage(date);
     
     result.push(getHabitStatusForDate(habit, dateStr));
   }
@@ -597,7 +598,7 @@ export const getHabitCalendarData = (habit, startDate, endDate) => {
   const end = new Date(endDate);
   
   while (current <= end) {
-    const dateStr = current.toISOString().split('T')[0];
+    const dateStr = formatDateForStorage(current);
     result.push({
       date: dateStr,
       status: getHabitStatusForDate(habit, dateStr)

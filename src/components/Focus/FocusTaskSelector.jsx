@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckSquare, Plus, Search, X, List, Calendar, Star, Tag } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const FocusTaskSelector = ({ selectedTasks, onTasksChange }) => {
   const [availableTasks, setAvailableTasks] = useState([]);
@@ -18,7 +19,7 @@ const FocusTaskSelector = ({ selectedTasks, onTasksChange }) => {
   // Get available tasks from storage
   const getAvailableTasks = () => {
     const storage = getStorage();
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateForStorage(new Date());
     const tasks = [];
     
     // Loop through storage to find task entries
@@ -81,7 +82,7 @@ const FocusTaskSelector = ({ selectedTasks, onTasksChange }) => {
     
     // Create task in Today's list
     const storage = getStorage();
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateForStorage(new Date());
     const dayData = storage[today] || {};
     
     // Create or update the custom tasks
@@ -132,14 +133,14 @@ const FocusTaskSelector = ({ selectedTasks, onTasksChange }) => {
   
   // Format date for display
   const formatDate = (dateString) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateForStorage(new Date());
     if (dateString === today) {
       return 'Today';
     }
     
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowString = tomorrow.toISOString().split('T')[0];
+    const tomorrowString = formatDateForStorage(tomorrow);
     
     if (dateString === tomorrowString) {
       return 'Tomorrow';

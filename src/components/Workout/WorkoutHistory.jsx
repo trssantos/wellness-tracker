@@ -3,6 +3,7 @@ import { Clock, Calendar, CheckSquare, ArrowLeft,
          Trash2, Dumbbell, Flame, Edit, AlertTriangle } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
 import { getWorkoutTypesWithColors } from '../../utils/workoutUtils';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const WorkoutHistory = ({ onBack, onEditWorkout }) => {
   const [workouts, setWorkouts] = useState([]);
@@ -40,7 +41,7 @@ const WorkoutHistory = ({ onBack, onEditWorkout }) => {
             processedWorkoutIds.add(workoutId);
             allWorkouts.push({
               ...workout,
-              date: workout.date || new Date(workout.timestamp || workout.completedAt).toISOString().split('T')[0],
+              date: workout.date || formatDateForStorage(new Date(workout.timestamp || workout.completedAt)),
               id: workoutId
             });
           }
@@ -456,7 +457,7 @@ const WorkoutHistory = ({ onBack, onEditWorkout }) => {
           (() => {
             const workoutsByDate = {};
             workouts.forEach(workout => {
-              const dateStr = workout.date || new Date(workout.completedAt || workout.timestamp).toISOString().split('T')[0];
+              const dateStr = workout.date || formatDateForStorage(new Date(workout.completedAt || workout.timestamp));
               
               if (!workoutsByDate[dateStr]) {
                 workoutsByDate[dateStr] = [];

@@ -10,6 +10,7 @@ import {
   getFinanceData, deleteTransaction, getCategoryById, 
   getCategoryIconComponent
 } from '../../utils/financeUtils';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const ExpenseTracker = ({ 
   compact = false, 
@@ -80,7 +81,7 @@ const ExpenseTracker = ({
     // Apply date filter
     const now = new Date();
     if (dateFilter === 'today') {
-      const today = now.toISOString().split('T')[0];
+      const today = formatDateForStorage(now);
       filtered = filtered.filter(transaction => 
         transaction.date === today
       );
@@ -226,7 +227,7 @@ const ExpenseTracker = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.setAttribute('href', url);
-    a.setAttribute('download', `transactions-export-${new Date().toISOString().split('T')[0]}.csv`);
+    a.setAttribute('download', `transactions-export-${formatDateForStorage(new Date())}.csv`);
     a.click();
   };
 

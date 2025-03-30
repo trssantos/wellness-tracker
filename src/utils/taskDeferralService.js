@@ -1,5 +1,6 @@
 // utils/taskDeferralService.js
 import { getStorage, setStorage } from './storage';
+import { formatDateForStorage } from './dateUtils';
 
 /**
  * Find the most recent previous date that has tasks in storage
@@ -40,7 +41,7 @@ export const findPreviousTaskDate = (currentDate) => {
     currentCheck.setDate(currentCheck.getDate() + 1); // Start from the day after
     
     while (currentCheck <= endDate) {
-      const checkDateStr = currentCheck.toISOString().split('T')[0];
+      const checkDateStr = formatDateForStorage(currentCheck);
       const dayData = storage[checkDateStr];
       
       // If this day has data and the task was completed, return true
@@ -71,7 +72,7 @@ export const findPreviousTaskDate = (currentDate) => {
   for (let i = 1; i <= 7; i++) {
     const prevDate = new Date(currentDateObj);
     prevDate.setDate(prevDate.getDate() - i);
-    const prevDateStr = prevDate.toISOString().split('T')[0];
+    const prevDateStr = formatDateForStorage(prevDate);
     
     const prevDayData = storage[prevDateStr];
     console.log(`Checking date ${prevDateStr}:`, prevDayData ? 'has data' : 'no data');
@@ -472,7 +473,7 @@ const getDaysInRange = (startDate, endDate) => {
   // Loop through each day from start to end
   while (currentDate <= end) {
     // Add date in YYYY-MM-DD format
-    dateArray.push(currentDate.toISOString().split('T')[0]);
+    dateArray.push(formatDateForStorage(currentDate));
     // Move to the next day
     currentDate.setDate(currentDate.getDate() + 1);
   }

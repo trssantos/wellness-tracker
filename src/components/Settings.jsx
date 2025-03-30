@@ -3,6 +3,7 @@ import { X, Download, Upload, AlertCircle, Info, ArrowRight, CheckCircle, Settin
 import { getStorage, setStorage } from '../utils/storage';
 import { BackupRestoreDemo } from './BackupRestoreDemo';
 import { AI_PROVIDERS } from '../utils/ai-service';
+import { formatDateForStorage } from '../utils/dateUtils';
 
 export const Settings = ({ onClose }) => {
   const [backupStatus, setBackupStatus] = useState(null);
@@ -63,7 +64,7 @@ export const Settings = ({ onClose }) => {
       // Create a download link
       const link = document.createElement('a');
       link.href = url;
-      link.download = `zentrack-backup-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `zentrack-backup-${formatDateForStorage(new Date())}.json`;
       
       // Append to the document, click it, and remove it
       document.body.appendChild(link);

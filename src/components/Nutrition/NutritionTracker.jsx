@@ -10,6 +10,7 @@ import NutritionStats from './NutritionStats';
 import NutritionMealPlanHub from './NutritionMealPlanHub';
 import NutritionAI from './NutritionAI';
 import { getStorage, setStorage } from '../../utils/storage';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const NutritionTracker = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -32,7 +33,7 @@ const NutritionTracker = () => {
   
   // Format date as YYYY-MM-DD for storage
   const formatStorageDate = (date) => {
-    return date.toISOString().split('T')[0];
+    return formatDateForStorage(date);
   };
   
   // Format date for display

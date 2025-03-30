@@ -1,5 +1,6 @@
 import { getStorage, setStorage } from './storage';
 import { Clock, Target, Moon, Sun, Clock4, Zap, Brain } from 'lucide-react';
+import { formatDateForStorage } from './dateUtils';
 
 
 /**
@@ -382,7 +383,7 @@ export const getFocusStreak = () => {
   
   sortedSessions.forEach(session => {
     const date = new Date(session.startTime || session.timestamp);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateForStorage(date);
     
     if (!sessionsByDay[dateStr]) {
       sessionsByDay[dateStr] = [];
@@ -399,7 +400,7 @@ export const getFocusStreak = () => {
   let streakCount = 0;
   
   // Check the current streak (from today backwards)
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDateForStorage(new Date());
   
   // Start from today or the most recent day with sessions
   let currentDay = today;
@@ -412,7 +413,7 @@ export const getFocusStreak = () => {
   
   // Loop backwards to find the streak
   while (true) {
-    const checkDateStr = checkDate.toISOString().split('T')[0];
+    const checkDateStr = formatDateForStorage(checkDate);
     
     if (sessionsByDay[checkDateStr] && sessionsByDay[checkDateStr].length > 0) {
       currentStreak++;
@@ -435,7 +436,7 @@ export const getFocusStreak = () => {
       // Check if days are consecutive
       prevDate.setDate(prevDate.getDate() + 1);
       
-      if (prevDate.toISOString().split('T')[0] === days[i]) {
+      if (formatDateForStorage(prevDate) === days[i]) {
         // Days are consecutive
         streakCount++;
       } else {

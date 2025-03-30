@@ -1,6 +1,7 @@
 // src/utils/RecurringTransactionService.js
 
 import { getStorage, setStorage } from './storage';
+import { formatDateForStorage } from './dateUtils';
 
 // A safer, extremely limited service for generating future transactions
 class RecurringTransactionService {
@@ -112,7 +113,7 @@ class RecurringTransactionService {
         }
         
         // Format as YYYY-MM-DD for comparison
-        const nextDateString = nextDate.toISOString().split('T')[0];
+        const nextDateString = formatDateForStorage(nextDate);
         
         // SAFETY CHECK: Check if we already have this transaction
         const exists = transactions.some(t => 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, AlertCircle, Check, X, ArrowRight, TrendingUp, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { getStorage } from '../utils/storage';
+import { formatDateForStorage } from '../utils/dateUtils';
 
 const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) => {
   const [pendingTasks, setPendingTasks] = useState([]);
@@ -63,7 +64,7 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
       currentCheck.setDate(currentCheck.getDate() + 1); // Start from the day after
       
       while (currentCheck <= endDate) {
-        const checkDateStr = currentCheck.toISOString().split('T')[0];
+        const checkDateStr = formatDateForStorage(currentCheck);
         const dayData = storage[checkDateStr];
         
         // If this day has data and the task was completed, return true
@@ -92,7 +93,7 @@ const PendingTasksPrompt = ({ date, previousDate, onImport, onSkip, onClose }) =
     for (let i = 1; i <= 7; i++) {
       const pastDate = new Date(currentDate);
       pastDate.setDate(currentDate.getDate() - i);
-      const pastDateStr = pastDate.toISOString().split('T')[0];
+      const pastDateStr = formatDateForStorage(pastDate);
       
       const dayData = storage[pastDateStr];
       if (!dayData || !dayData.checked) continue;

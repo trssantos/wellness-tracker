@@ -1,5 +1,6 @@
 import { getStorage, setStorage } from './storage';
 import { generateTasks, generateContent } from './ai-service';
+import { formatDateForStorage } from './dateUtils';
 
 // Fetch a response from the AI coach
 export const fetchCoachResponse = async (context) => {
@@ -25,7 +26,7 @@ export const fetchCoachResponse = async (context) => {
 const gatherUserDataWithSummarization = async () => {
   const storage = getStorage();
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = formatDateForStorage(today);
   
   // Get cached summaries if they exist
   const cachedSummaries = storage.dayCoachSummaries || {
@@ -52,12 +53,15 @@ const gatherUserDataWithSummarization = async () => {
   
   // Get recent detailed data (last 7 days)
   const recentData = getRecentDetailedData(storage, today);
-
+  
   // Get finance data (filtered to relevant dates)
   const financeData = getRelevantFinanceData(storage, today);
   
   // Get nutrition data (filtered to relevant dates)
   const nutritionData = getRelevantNutritionData(storage, today);
+  
+  // NEW: Get detailed journal entries (last 14 days)
+  const journalData = getRecentJournalData(storage, today);
   
   // Prepare final data object
   return {
@@ -70,8 +74,149 @@ const gatherUserDataWithSummarization = async () => {
     focusSessions: (storage.focusSessions || []).slice(-10), // Last 10 focus sessions
     workouts: (storage.completedWorkouts || []).slice(-10), // Last 10 workouts
     finance: financeData, // Add finance data
-    nutrition: nutritionData // Add nutrition data
+    nutrition: nutritionData, // Add nutrition data
+    journal: journalData, // NEW: Add detailed journal data
   };
+};
+
+// New function to get recent journal entries in a format Solaris can use
+const getRecentJournalData = (storage, today) => {
+  const result = {
+    entries: [],
+    stats: {
+      entryCount: 0,
+      avgMood: null,
+      avgEnergy: null,
+      recentCategories: [],
+      peopleMentioned: []
+    },
+    recentPeople: {}
+  };
+  
+  // If no meditation data exists, return empty result
+  if (!storage.meditationData || !storage.meditationData.journalEntries) {
+    return result;
+  }
+  
+  // Create date threshold for filtering (14 days ago)
+  const threshold = new Date(today);
+  threshold.setDate(threshold.getDate() - 14);
+  
+  // Filter entries to only include recent ones
+  const recentEntries = storage.meditationData.journalEntries.filter(entry => {
+    const entryDate = new Date(entry.timestamp);
+    return entryDate >= threshold;
+  });
+  
+  // Sort entries by date (newest first)
+  recentEntries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  
+  // Calculate stats for these entries
+  let moodSum = 0;
+  let moodCount = 0;
+  let energySum = 0;
+  let energyCount = 0;
+  const categoryCounts = {};
+  const peopleCounts = {};
+  
+  recentEntries.forEach(entry => {
+    // Calculate mood average
+    if (entry.mood !== undefined) {
+      moodSum += entry.mood;
+      moodCount++;
+    }
+    
+    // Calculate energy average
+    if (entry.energy !== undefined) {
+      energySum += entry.energy;
+      energyCount++;
+    }
+    
+    // Count categories
+    if (entry.categories && Array.isArray(entry.categories)) {
+      entry.categories.forEach(cat => {
+        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+      });
+    }
+    
+    // Count people mentioned
+    if (entry.people && Array.isArray(entry.people)) {
+      entry.people.forEach(person => {
+        peopleCounts[person] = (peopleCounts[person] || 0) + 1;
+      });
+    }
+  });
+  
+  // Get top categories and people
+  const topCategories = Object.entries(categoryCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([category, count]) => ({ category, count }));
+    
+  const topPeople = Object.entries(peopleCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([person, count]) => ({ person, count }));
+  
+  // Populate stats
+  result.stats.entryCount = recentEntries.length;
+  result.stats.avgMood = moodCount > 0 ? moodSum / moodCount : null;
+  result.stats.avgEnergy = energyCount > 0 ? energySum / energyCount : null;
+  result.stats.recentCategories = topCategories;
+  result.stats.peopleMentioned = topPeople;
+  
+  // Add entries to result (simplified for Solaris's needs)
+  result.entries = recentEntries.map(entry => ({
+    id: entry.id,
+    title: entry.title,
+    text: entry.text,
+    date: entry.date || entry.timestamp.split('T')[0],
+    timestamp: entry.timestamp,
+    mood: entry.mood,
+    energy: entry.energy,
+    categories: entry.categories || [],
+    people: entry.people || [],
+    tags: entry.tags || []
+  }));
+  
+  // Add a special section for people mentioned and their associated moods
+  // This helps Solaris understand relationships
+  const peopleData = {};
+  
+  recentEntries.forEach(entry => {
+    if (entry.people && Array.isArray(entry.people) && entry.mood !== undefined) {
+      entry.people.forEach(person => {
+        if (!peopleData[person]) {
+          peopleData[person] = {
+            mentions: 0,
+            moodSum: 0,
+            moodCount: 0,
+            entries: []
+          };
+        }
+        
+        peopleData[person].mentions++;
+        peopleData[person].moodSum += entry.mood;
+        peopleData[person].moodCount++;
+        peopleData[person].entries.push({
+          id: entry.id,
+          date: entry.date || entry.timestamp.split('T')[0],
+          mood: entry.mood
+        });
+      });
+    }
+  });
+  
+  // Calculate average mood for each person
+  Object.keys(peopleData).forEach(person => {
+    peopleData[person].avgMood = peopleData[person].moodCount > 0 
+      ? peopleData[person].moodSum / peopleData[person].moodCount 
+      : null;
+  });
+  
+  result.recentPeople = peopleData;
+  
+  return result;
 };
 
 // Get finance data filtered to relevant dates (recent period)
@@ -411,7 +556,7 @@ const getRecentDetailedData = (storage, today) => {
   for (let i = 0; i < 7; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateForStorage(date);
     
     if (storage[dateStr]) {
       // Include full data for the last 7 days
@@ -438,7 +583,7 @@ const buildUserPrompt = (context) => {
     Recent workouts: ${userData.workouts.length}
     Finance data: ${userData.finance?.transactions ? `${userData.finance.transactions.length} recent transactions` : 'None available'}
     Nutrition data: ${Object.keys(userData.nutrition || {}).length > 0 ? `Available for ${Object.keys(userData.nutrition).length} recent days` : 'None available'}
-   
+    Journal entries: ${userData.journal?.entries.length || 0} entries in the last 14 days
   `;
 
   // Add conversation history for context
@@ -453,10 +598,33 @@ const buildUserPrompt = (context) => {
   
   // Add specific context based on message type
   switch (messageType) {
+    case 'journalEntry':
+      // NEW: Add specific handling for journal entries
+      prompt += `
+        The user has just added a new journal entry.
+        Entry: "${specificContext.text}"
+        Mood: ${specificContext.mood || 'not specified'}
+        Energy: ${specificContext.energy || 'not specified'}
+        ${specificContext.people && specificContext.people.length > 0 ? `People mentioned: ${specificContext.people.join(', ')}` : ''}
+        ${specificContext.categories && specificContext.categories.length > 0 ? `Categories: ${specificContext.categories.join(', ')}` : ''}
+        
+        IMPORTANT INSTRUCTIONS:
+        1. Pay special attention to their journal content to personalize your response.
+        2. Extract topics, emotions, challenges, goals or people mentioned in their journal.
+        3. Acknowledge any personal or social events they mention.
+        4. If they mentioned any people by name, reference these social connections in your response.
+        5. Make your response feel personalized by connecting to something specific they mentioned.
+        6. Based on the content of their journal, suggest an action, habit, or activity that feels appropriate - this could be something new or a refinement of something they already do.
+      `;
+      break;
     case 'morningMood':
       prompt += `
         The user has just logged their morning mood as "${specificContext.mood}".
         Their energy level is ${specificContext.energy || 'not specified'}.
+        ${userData.journal && userData.journal.entries.length > 0 ? 
+          `They have ${userData.journal.entries.length} recent journal entries. Their average mood in recent entries is ${userData.journal.stats.avgMood?.toFixed(1) || 'unknown'}.` : 
+          'They haven\'t written journal entries recently.'}
+        
         Acknowledge this mood, provide a supportive response, and offer a suggestion relevant to their current state.
         The suggestion could be a new task or a way to adapt an existing habit - choose based on what seems most helpful for their current mood and energy level.
       `;
@@ -587,6 +755,51 @@ const buildUserPrompt = (context) => {
   // Add nutrition data
   if (userData.nutrition && Object.keys(userData.nutrition).length > 0) {
     prompt += `\n\nNUTRITION DATA:\n${JSON.stringify(userData.nutrition, null, 2)}`;
+  }
+
+  // Add NEW section for detailed journal data if available
+  if (userData.journal && userData.journal.entries.length > 0) {
+    prompt += `\n\nRECENT JOURNAL DATA:\n`;
+    
+    // Add journal stats
+    prompt += `Journal Stats: ${userData.journal.stats.entryCount} entries in the last 14 days\n`;
+    prompt += `Average Mood: ${userData.journal.stats.avgMood?.toFixed(1) || 'unknown'}/5\n`;
+    prompt += `Average Energy: ${userData.journal.stats.avgEnergy?.toFixed(1) || 'unknown'}/3\n`;
+    
+    // Add top categories if available
+    if (userData.journal.stats.recentCategories.length > 0) {
+      prompt += `Top Categories: ${userData.journal.stats.recentCategories.map(c => c.category).join(', ')}\n`;
+    }
+    
+    // Add people mentioned if available
+    if (userData.journal.stats.peopleMentioned.length > 0) {
+      prompt += `People Mentioned: ${userData.journal.stats.peopleMentioned.map(p => p.person).join(', ')}\n`;
+    }
+    
+    // Add detailed entries (limit to most recent 5 to keep prompt size reasonable)
+    prompt += `\nMost Recent Journal Entries:\n`;
+    userData.journal.entries.slice(0, 5).forEach(entry => {
+      prompt += `\n[${new Date(entry.timestamp).toLocaleDateString()}] ${entry.title}\n`;
+      prompt += `Mood: ${entry.mood !== undefined ? `${entry.mood}/5` : 'not specified'}, Energy: ${entry.energy !== undefined ? `${entry.energy}/3` : 'not specified'}\n`;
+      
+      if (entry.people && entry.people.length > 0) {
+        prompt += `People: ${entry.people.join(', ')}\n`;
+      }
+      
+      if (entry.categories && entry.categories.length > 0) {
+        prompt += `Categories: ${entry.categories.join(', ')}\n`;
+      }
+      
+      prompt += `${entry.text.substring(0, 300)}${entry.text.length > 300 ? '...' : ''}\n`;
+    });
+    
+    // Add relationship data if available
+    if (Object.keys(userData.journal.recentPeople).length > 0) {
+      prompt += `\nPeople Data from Journal:\n`;
+      Object.entries(userData.journal.recentPeople).forEach(([person, data]) => {
+        prompt += `${person}: ${data.mentions} mentions, Average mood: ${data.avgMood?.toFixed(1) || 'unknown'}/5\n`;
+      });
+    }
   }
   
   // Add weekly summaries (but limit to prevent prompt from getting too large)

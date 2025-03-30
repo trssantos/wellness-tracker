@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Smile, Frown, Meh, Clock, Sun, Moon, Save, Info } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
 import { MOODS } from '../MoodSelector';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const DayCoachMoodTracker = ({ onMoodUpdate, onClose }) => {
   const [morningMood, setMorningMood] = useState(null);
@@ -16,7 +17,7 @@ const DayCoachMoodTracker = ({ onMoodUpdate, onClose }) => {
   useEffect(() => {
     const loadMoodData = () => {
       const storage = getStorage();
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatDateForStorage(new Date());
       const todayData = storage[today] || {};
       
       // Load stored mood values
@@ -62,7 +63,7 @@ const DayCoachMoodTracker = ({ onMoodUpdate, onClose }) => {
     
     try {
       const storage = getStorage();
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatDateForStorage(new Date());
       const todayData = storage[today] || {};
       
       // Update mood and energy values

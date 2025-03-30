@@ -47,6 +47,7 @@ import NutritionTracker from './components/Nutrition/NutritionTracker';
 import GoalsPlaceholder from './components/BucketList/GoalsPlaceholder';
 import BucketList from './components/BucketList/BucketList';
 import MeditationSection  from './components/Meditation/MeditationSection';
+import { formatDateForStorage } from './utils/dateUtils';
 
 
 const App = () => {
@@ -120,7 +121,7 @@ const preventNavigationAway = useRef(false);
     // Add a handler for opening actions from reminders
     window.openReminderAction = () => {
       // Default action when a notification is clicked is to open today's tasks
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatDateForStorage(new Date());
       handleDaySelect(today);
     };
 
@@ -137,7 +138,7 @@ const preventNavigationAway = useRef(false);
         
         // Handle open-reminder message
         if (event.data && event.data.type === 'open-reminder') {
-          const today = new Date().toISOString().split('T')[0];
+          const today = formatDateForStorage(new Date());
           handleDaySelect(today);
         }
         
@@ -166,7 +167,7 @@ const preventNavigationAway = useRef(false);
       // Calculate the date to check
       const checkDateObj = new Date(currentDateObj);
       checkDateObj.setDate(currentDateObj.getDate() - i);
-      const checkDateStr = checkDateObj.toISOString().split('T')[0];
+      const checkDateStr = formatDateForStorage(checkDateObj);
       
       // Check if this date has pending tasks
       const hasPendingTasks = hasPendingTasksOnDate(checkDateStr);
@@ -255,7 +256,7 @@ const hasPendingTasksOnDate = (dateToCheck, targetDate) => {
     currentCheck.setDate(currentCheck.getDate() + 1); // Start from the day after
     
     while (currentCheck <= endDate) {
-      const checkDateStr = currentCheck.toISOString().split('T')[0];
+      const checkDateStr = formatDateForStorage(currentCheck);
       const checkDayData = storage[checkDateStr];
       
       // If this day has data and the task was completed, return true
@@ -290,7 +291,7 @@ const hasPendingTasksOnDate = (dateToCheck, targetDate) => {
       if (!isTaskChecked && 
           !isHabitTask(task) && 
           !targetDayTasks.has(task) &&
-          !wasCompletedInDateRange(task, dateToCheck, targetDate || new Date().toISOString().split('T')[0])) {
+          !wasCompletedInDateRange(task, dateToCheck, targetDate || formatDateForStorage(new Date()))) {
         hasUncompletedTasks = true;
         break;
       }

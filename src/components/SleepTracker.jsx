@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Moon, Sun, Clock, Star, Zap, FileText, AlertCircle } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
 import { handleDataChange } from '../utils/dayCoachUtils';
+import { formatDateForStorage } from '../utils/dateUtils';
 
 const SleepTracker = ({ date, onClose }) => {
   // Sleep data states
@@ -29,7 +30,7 @@ const SleepTracker = ({ date, onClose }) => {
     if (date) {
       // Load existing data for this date
       const storage = getStorage();
-      const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+      const dateStr = typeof date === 'string' ? date : formatDateForStorage(date);
       const dayData = storage[dateStr] || {};
       
       // Check for existing sleep data
@@ -105,7 +106,7 @@ const SleepTracker = ({ date, onClose }) => {
     
     try {
       const storage = getStorage();
-      const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+      const dateStr = typeof date === 'string' ? date : formatDateForStorage(date);
       const dayData = storage[dateStr] || {};
       
       // Save sleep data

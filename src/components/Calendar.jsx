@@ -2,6 +2,7 @@ import React from 'react';
 import { ChevronLeft, ChevronRight, Sparkles, PenTool, Dumbbell, Zap } from 'lucide-react';
 import { MOODS } from './MoodSelector';
 import { getHabitsForDate } from '../utils/habitTrackerUtils';
+import { formatDateForStorage } from '../utils/dateUtils';
 
 export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange, storageData }) => {
   const weeks = getCalendarWeeks(currentMonth);
@@ -24,7 +25,7 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
   };
 
   const getDayData = (date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateForStorage(date);
     const dayData = storageData[dateStr];
     
     if (!dayData) return { 
@@ -128,7 +129,7 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
           
           {weeks.map((week, i) => 
             week.map((date, j) => {
-              const dateStr = date.toISOString().split('T')[0];
+              const dateStr = formatDateForStorage(date);
               const { completionRate, mood, hasAITasks, hasNotes, hasWorkout, hasTaskList, habitCount, habitCompletedCount } = getDayData(date);
               const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
               const isSelected = selectedDay === dateStr;

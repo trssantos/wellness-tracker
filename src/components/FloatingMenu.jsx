@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Mic, X, Calendar, MessageCircle, Send, Sparkles } from 'lucide-react';
 import { askSolaris } from '../utils/dayCoachUtils';
+import { formatDateForStorage } from '../utils/dateUtils';
 
 // Ask Solaris Dialog Component
 const AskSolarisDialog = ({ isOpen, onClose }) => {
@@ -256,14 +257,14 @@ export const FloatingMenu = ({ onDaySelect, onVoiceInput }) => {
 
   const handleDaySelect = () => {
     // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateForStorage(new Date());
     onDaySelect(today);
     setIsExpanded(false);
   };
 
   const handleVoiceInput = () => {
     // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateForStorage(new Date());
     onVoiceInput(today);
     setIsExpanded(false);
   };

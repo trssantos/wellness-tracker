@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, RepeatIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { getCategoryById, getCategoryIconComponent } from '../../utils/financeUtils';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const CalendarView = ({ transactions = [], bills = [], onDateClick, currency = '$' }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -39,7 +40,7 @@ const CalendarView = ({ transactions = [], bills = [], onDateClick, currency = '
     // Add days of month
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
-      const dateString = date.toISOString().split('T')[0];
+      const dateString = formatDateForStorage(date);
       
       // Get transactions for this date
       const dayTransactions = transactions.filter(t => {
@@ -50,7 +51,7 @@ const CalendarView = ({ transactions = [], bills = [], onDateClick, currency = '
           return txDate.split('T')[0] === dateString;
         }
         
-        return new Date(txDate).toISOString().split('T')[0] === dateString;
+        return formatDateForStorage(new Date(txDate)) === dateString;
       });
       
       // Get bills for this date
@@ -140,7 +141,7 @@ const CalendarView = ({ transactions = [], bills = [], onDateClick, currency = '
             {day.day > 0 && (
               <>
                 <div className={`text-sm font-medium ${
-                  new Date().toISOString().split('T')[0] === day.date
+                  formatDateForStorage(new Date()) === day.date
                     ? 'text-amber-400 bg-amber-900/30 rounded-full w-6 h-6 flex items-center justify-center mx-auto'
                     : 'text-white'
                 }`}>

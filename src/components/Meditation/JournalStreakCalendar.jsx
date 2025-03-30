@@ -42,7 +42,7 @@ const JournalStreakCalendar = ({ journalEntries = [], onSelectDate }) => {
   
   // Format a date object to YYYY-MM-DD string for storage
   const formatDateForStorage = (date) => {
-    return date.toISOString().split('T')[0];
+    return formatDateForStorage(date);
   };
   
   // Calculate streak data based on journal entries

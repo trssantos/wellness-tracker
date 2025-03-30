@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Dumbbell, Activity, Droplet, Zap } from 'lucide-react';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 /**
  * A reusable calendar component for tracking workout completions
@@ -81,7 +82,7 @@ const WorkoutCalendar = ({
         date = new Date(workout.completedAt || workout.timestamp);
       }
       
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDateForStorage(date);
       
       if (!workoutMap[dateStr]) {
         workoutMap[dateStr] = [];
@@ -93,7 +94,7 @@ const WorkoutCalendar = ({
     // Add days of the month
     for (let day = 1; day <= lastDay.getDate(); day++) {
       const date = new Date(year, month, day);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDateForStorage(date);
       const hasWorkout = workoutMap[dateStr] && workoutMap[dateStr].length > 0;
       
       let dayInfo = {
@@ -187,7 +188,7 @@ const WorkoutCalendar = ({
   };
 
   const days = generateCalendarDays();
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDateForStorage(new Date());
   const isDarkMode = document.documentElement.classList.contains('dark');
 
   return (

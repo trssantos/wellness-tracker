@@ -29,7 +29,12 @@ const MeditationSection = () => {
   useEffect(() => {
     const data = getMeditationStorage();
     if (data) {
-      setMeditationData(data);
+      // Ensure all array properties exist
+    data.sessions = data.sessions || [];
+    data.favorites = data.favorites || [];
+    data.journalEntries = data.journalEntries || [];
+    data.recentlyUsed = data.recentlyUsed || [];
+    setMeditationData(data);
     }
   }, []);
   
@@ -250,10 +255,10 @@ const MeditationSection = () => {
   }
 
   // Recently used exercises
-  const recentlyUsedExercises = meditationData.recentlyUsed.map(typeId => {
+  const recentlyUsedExercises = (meditationData.recentlyUsed || []).map(typeId => {
     // Find the exercise data
-    for (const category of categories) {
-      const exercise = category.exercises.find(ex => ex.id === typeId);
+    for (const category of (categories || [])) {
+      const exercise = (category.exercises || []).find(ex => ex.id === typeId);
       if (exercise) {
         return {
           ...exercise,
@@ -267,10 +272,10 @@ const MeditationSection = () => {
   }).filter(Boolean);
   
   // Favorite exercises
-  const favoriteExercises = meditationData.favorites.map(typeId => {
+  const favoriteExercises = (meditationData.favorites || []).map(typeId => {
     // Find the exercise data
-    for (const category of categories) {
-      const exercise = category.exercises.find(ex => ex.id === typeId);
+    for (const category of (categories || [])) {
+      const exercise = (category.exercises || []).find(ex => ex.id === typeId);
       if (exercise) {
         return {
           ...exercise,

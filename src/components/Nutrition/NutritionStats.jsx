@@ -7,6 +7,7 @@ import { MoodCorrelationChart } from './Charts/MoodCorrelationChart';
 import { FoodFrequencyChart } from './Charts/FoodFrequencyChart';
 import { JunkVsHealthyChart } from './Charts/JunkVsHealthyChart';
 import { MealTimingDistributionChart } from './Charts/MealTimingDistributionChart';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 export const NutritionStats = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -108,7 +109,7 @@ export const NutritionStats = () => {
     
     // Process each day in the month
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = formatDateForStorage(d);
       
       // Check if nutrition data exists for this date
       if (storage.nutrition && storage.nutrition[dateStr]) {

@@ -7,6 +7,7 @@ import {
 import { getStorage, setStorage } from '../../utils/storage';
 import { generateContent } from '../../utils/ai-service';
 import ReactMarkdown from 'react-markdown';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const DayCoachAnalysis = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -117,7 +118,7 @@ const DayCoachAnalysis = () => {
     switch (timeframe) {
       case 'day':
         // For daily reports, we only need today
-        return [today.toISOString().split('T')[0]];
+        return [formatDateForStorage(today)];
       
       case 'week':
         startDate = new Date(today);
@@ -136,7 +137,7 @@ const DayCoachAnalysis = () => {
     
     // Generate array of dates in the range
     for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
-      dates.push(d.toISOString().split('T')[0]);
+      dates.push(formatDateForStorage(d));
     }
     
     return dates;
@@ -359,7 +360,7 @@ const DayCoachAnalysis = () => {
     
     // Collect daily data
     for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = formatDateForStorage(d);
       if (storage[dateStr]) {
         result[dateStr] = storage[dateStr];
       }

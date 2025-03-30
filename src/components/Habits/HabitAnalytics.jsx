@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, LineChart, AreaChart, Bar, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { Award, Calendar, Clock, TrendingUp, BarChart2, Activity, ArrowLeft, Filter } from 'lucide-react';
 import { getHabits, getHabitCalendarData, getHabitStatusForDate } from '../../utils/habitTrackerUtils';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const HabitAnalytics = ({ onBack }) => {
   const [habits, setHabits] = useState([]);
@@ -45,7 +46,7 @@ const HabitAnalytics = ({ onBack }) => {
       startDate.setDate(today.getDate() - 365);
     }
     
-    const dateStr = (date) => date.toISOString().split('T')[0];
+    const dateStr = (date) => formatDateForStorage(date);
     
     // Get habit data for selected range
     const habitData = getHabitCalendarData(selectedHabit, dateStr(startDate), dateStr(today));

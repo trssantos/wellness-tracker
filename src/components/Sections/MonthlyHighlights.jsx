@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckSquare, PenTool, Dumbbell, BarChart } from 'lucide-react';
 import { MOODS } from '../MoodSelector';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 export const MonthlyHighlights = ({ currentMonth, storageData }) => {
   const getMonthData = () => {
@@ -17,7 +18,7 @@ export const MonthlyHighlights = ({ currentMonth, storageData }) => {
     
     // Process each day in the current month
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = formatDateForStorage(d);
       const dayData = storageData[dateStr];
       
       if (dayData) {

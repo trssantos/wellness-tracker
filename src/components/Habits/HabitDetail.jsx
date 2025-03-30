@@ -4,6 +4,7 @@ import { trackHabitCompletion, generateCompletionHistory, updateHabitStats } fro
 import DeleteHabitConfirmation from './DeleteHabitConfirmation';
 import HabitReminderSettings from './HabitReminderSettings';
 import StreakMilestoneCelebration from './StreakMilestoneCelebration';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate, onStreakMilestone }) => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
@@ -21,7 +22,7 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate, onStreakMilest
   
   // Mark habit as completed for today
   const handleMarkCompleted = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateForStorage(new Date());
     const wasPreviouslyCompleted = habit.completions && habit.completions[today];
     
     // Toggle completion status
@@ -79,7 +80,7 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate, onStreakMilest
       const date = new Date(today);
       date.setDate(today.getDate() - (history.length - 1) + i);
       
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDateForStorage(date);
       historyDates.push(dateStr);
       statusMap[dateStr] = history[i];
     }
@@ -102,7 +103,7 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate, onStreakMilest
     const currentDate = new Date(calendarStart);
     
     for (let i = 0; i < 28; i++) {
-      const dateStr = currentDate.toISOString().split('T')[0];
+      const dateStr = formatDateForStorage(currentDate);
       const inRange = statusMap[dateStr] !== undefined;
       
       // Add day to current week
@@ -209,7 +210,7 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate, onStreakMilest
   
   // Check if habit is already completed today
   const isCompletedToday = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateForStorage(new Date());
     return habitState.completions && habitState.completions[today] === true;
   };
 

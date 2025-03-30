@@ -8,7 +8,7 @@ const AddRecurringModal = ({ onClose, onRecurringAdded }) => {
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('expense');
   const [category, setCategory] = useState('');
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(formatDateForStorage(new Date()));
   const [frequency, setFrequency] = useState('monthly');
   const [notes, setNotes] = useState('');
   const [createReminder, setCreateReminder] = useState(true);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Calendar, Target, Sparkles, RotateCcw, Save, X, Loader } from 'lucide-react';
 import { createHabit, updateHabit } from '../../utils/habitTrackerUtils';
 import { generateStepsForHabit, generateMilestonesForHabit } from '../../utils/aiHabitService';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const HabitForm = ({ habit, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -9,7 +10,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
     description: '',
     frequency: ['mon', 'wed', 'fri'],
     steps: [''],
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: formatDateForStorage(new Date()),
     targetDate: '',
     timeOfDay: 'anytime',
     milestones: [{ name: '7-day streak', value: 7 }]
@@ -30,7 +31,7 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
         description: habit.description || '',
         frequency: habit.frequency || ['mon', 'wed', 'fri'],
         steps: habit.steps && habit.steps.length > 0 ? habit.steps : [''],
-        startDate: habit.startDate || new Date().toISOString().split('T')[0],
+        startDate: habit.startDate || formatDateForStorage(new Date()),
         targetDate: habit.targetDate || '',
         timeOfDay: habit.timeOfDay || 'anytime',
         milestones: habit.milestones && habit.milestones.length > 0 ? habit.milestones : [{ name: '7-day streak', value: 7 }]

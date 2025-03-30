@@ -3,6 +3,7 @@ import { Clock, AlertCircle, TrendingUp, TrendingDown, RefreshCw, BarChart2, Cal
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { getProcrastinationStats } from '../../../utils/taskDeferralService';
 import { getStorage } from '../../../utils/storage';
+import { formatDateForStorage } from '../../../utils/dateUtils';
 
 const ProcrastinationStats = forwardRef(({ currentMonth, moodData }, ref) => {
   const [stats, setStats] = useState(null);
@@ -157,7 +158,7 @@ const ProcrastinationStats = forwardRef(({ currentMonth, moodData }, ref) => {
     // Calculate start and end dates from currentMonth
     const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
     const end = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-    console.log("Date Range:", start.toISOString().split('T')[0], "to", end.toISOString().split('T')[0]);
+    console.log("Date Range:", formatDateForStorage(start), "to", formatDateForStorage(end));
     
     // Get the raw storage data
     const storage = getStorage();

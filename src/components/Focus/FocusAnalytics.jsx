@@ -10,6 +10,7 @@ import {
   getTechniqueConfig,
   FOCUS_TECHNIQUES
 } from '../../utils/focusUtils';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const FocusAnalytics = ({ sessions }) => {
   const [timeframe, setTimeframe] = useState('week'); // 'day', 'week', 'month', 'year'
@@ -135,7 +136,7 @@ const FocusAnalytics = ({ sessions }) => {
       // Add to weekly distribution
       const weekStart = new Date(sessionDate);
       weekStart.setDate(sessionDate.getDate() - sessionDate.getDay());
-      const weekKey = weekStart.toISOString().split('T')[0];
+      const weekKey = formatDateForStorage(weekStart);
       
       if (!weeklyMap[weekKey]) {
         weeklyMap[weekKey] = { week: weekKey, duration: 0 };

@@ -1,6 +1,7 @@
 // src/utils/workoutUtils.js
 import { getStorage, setStorage } from './storage';
 import { handleDataChange } from './dayCoachUtils';
+import { formatDateForStorage } from './dateUtils';
 
 
 /**
@@ -456,7 +457,7 @@ export const getWorkoutStats = (startDate, endDate) => {
       let checkDate = new Date(mostRecentDate);
       checkDate.setDate(checkDate.getDate() - 1);
       
-      while (workoutsByDate[checkDate.toISOString().split('T')[0]]) {
+      while (workoutsByDate[formatDateForStorage(checkDate)]) {
         currentStreak++;
         checkDate.setDate(checkDate.getDate() - 1);
       }
@@ -584,7 +585,7 @@ export const calculateWorkoutStats = (workouts) => {
   const dates = new Set();
   workouts.forEach(workout => {
     const date = new Date(workout.date || workout.completedAt || workout.timestamp);
-    dates.add(date.toISOString().split('T')[0]);
+    dates.add(formatDateForStorage(date));
   });
   
   // Find earliest and latest workout dates
@@ -614,7 +615,7 @@ export const calculateWorkoutStats = (workouts) => {
   
   // Current streak
   let currentStreak = 0;
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDateForStorage(new Date());
   
   // Check if worked out today
   const hasWorkoutToday = sortedDates.includes(today);
@@ -625,7 +626,7 @@ export const calculateWorkoutStats = (workouts) => {
     
     while (true) {
       checkDate.setDate(checkDate.getDate() - 1);
-      const dateStr = checkDate.toISOString().split('T')[0];
+      const dateStr = formatDateForStorage(checkDate);
       if (sortedDates.includes(dateStr)) {
         currentStreak++;
       } else {
@@ -636,7 +637,7 @@ export const calculateWorkoutStats = (workouts) => {
     // Check if worked out yesterday
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = formatDateForStorage(yesterday);
     
     if (sortedDates.includes(yesterdayStr)) {
       currentStreak = 1;
@@ -644,7 +645,7 @@ export const calculateWorkoutStats = (workouts) => {
       
       while (true) {
         checkDate.setDate(checkDate.getDate() - 1);
-        const dateStr = checkDate.toISOString().split('T')[0];
+        const dateStr = formatDateForStorage(checkDate);
         if (sortedDates.includes(dateStr)) {
           currentStreak++;
         } else {

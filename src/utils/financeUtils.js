@@ -8,6 +8,7 @@ import {
   Scissors, Smile, Activity, FileText, UserCheck, Music, Ticket,
   Gamepad, Undo, MapPin, Lamp, Stethoscope, Pill, Flame
 } from 'lucide-react';
+import { formatDateForStorage } from './dateUtils';
 
 
 // Get finance data
@@ -644,7 +645,7 @@ export const calculateNextOccurrence = (frequency, startDate) => {
   
   // Ensure startDate is not in the future
   if (start > today) {
-    return start.toISOString().split('T')[0];
+    return formatDateForStorage(start);
   }
   
   let next = new Date(start);
@@ -681,7 +682,7 @@ export const calculateNextOccurrence = (frequency, startDate) => {
       next.setMonth(today.getMonth() + 1);
   }
   
-  return next.toISOString().split('T')[0];
+  return formatDateForStorage(next);
 };
 
 // Helper function to get days in month
@@ -693,7 +694,7 @@ const daysInMonth = (year, month) => {
 export const processRecurringTransactions = (date) => {
   const today = date ? new Date(date) : new Date();
   today.setHours(0, 0, 0, 0);
-  const todayString = today.toISOString().split('T')[0];
+  const todayString = formatDateForStorage(today);
   
   const financeData = getFinanceData();
   const processed = [];
@@ -727,7 +728,7 @@ export const processRecurringTransactions = (date) => {
     const reminderDate = new Date(nextDueDate);
     reminderDate.setDate(nextDueDate.getDate() - reminderDays);
     
-    const reminderDateString = reminderDate.toISOString().split('T')[0];
+    const reminderDateString = formatDateForStorage(reminderDate);
     if (reminderDateString === todayString && recurring.createReminder) {
       // Create a reminder/task for this upcoming transaction
       createReminderForRecurring(recurring);
@@ -1062,7 +1063,7 @@ export const getSpendingMoodCorrelation = () => {
   const transactionsByDate = {};
   
   financeData.transactions.forEach(transaction => {
-    const date = new Date(transaction.timestamp).toISOString().split('T')[0];
+    const date = formatDateForStorage(new Date(transaction.timestamp));
     
     if (!transactionsByDate[date]) {
       transactionsByDate[date] = [];
@@ -1338,7 +1339,7 @@ export const createTaskFromTransaction = (transaction) => {
   if (txDate <= today) return false;
   
   // Format the date as required for task storage
-  const dateKey = txDate.toISOString().split('T')[0];
+  const dateKey = formatDateForStorage(txDate);
   
   // Get existing storage
   const storage = getStorage();
@@ -1433,7 +1434,7 @@ export const createReminderForRecurring = (recurring) => {
   reminderDate.setDate(nextDate.getDate() - reminderDays);
   
   // Format reminder date for tasks
-  const reminderDateStr = reminderDate.toISOString().split('T')[0];
+  const reminderDateStr = formatDateForStorage(reminderDate);
   
   // Create task for this date
   const isExpense = recurring.amount < 0;

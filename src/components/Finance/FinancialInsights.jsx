@@ -10,6 +10,7 @@ import {
   getSpendingMoodCorrelation, getCategoryById, getSpendingByGroup
 } from '../../utils/financeUtils';
 import HorizontalSpendingTrend from './HorizontalSpendingTrend';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 // Define chart colors array for consistent coloring
 const CHART_COLORS = [
@@ -47,8 +48,8 @@ const FinancialInsights = ({
   const [incomeVsExpenses, setIncomeVsExpenses] = useState([]);
   const [hoveredBar, setHoveredBar] = useState(null);
   const [customDateRange, setCustomDateRange] = useState(false);
-  const [startDate, setStartDate] = useState(selectedDateRange.start.toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(selectedDateRange.end.toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(formatDateForStorage(selectedDateRange.start));
+  const [endDate, setEndDate] = useState(formatDateForStorage(selectedDateRange.end));
   const [insights, setInsights] = useState({ score: 0, insights: [] });
   const [correlations, setCorrelations] = useState([]);
   const [bills, setBills] = useState([]);
@@ -636,8 +637,8 @@ const FinancialInsights = ({
     
     // Calculate appropriate date range
     const dateRange = getDateRangeForTimeframe(period);
-    setStartDate(dateRange.start.toISOString().split('T')[0]);
-    setEndDate(dateRange.end.toISOString().split('T')[0]);
+    setStartDate(formatDateForStorage(dateRange.start));
+    setEndDate(formatDateForStorage(dateRange.end));
     
     // Update parent component's date range
     if (setSelectedDateRange) {
@@ -656,8 +657,8 @@ const FinancialInsights = ({
     newEnd.setDate(newEnd.getDate() - 1);
     const newStart = new Date(newEnd - timespan);
     
-    setStartDate(newStart.toISOString().split('T')[0]);
-    setEndDate(newEnd.toISOString().split('T')[0]);
+    setStartDate(formatDateForStorage(newStart));
+    setEndDate(formatDateForStorage(newEnd));
     
     // Update parent component's date range
     if (setSelectedDateRange) {
@@ -683,8 +684,8 @@ const FinancialInsights = ({
       newEnd.setTime(today.getTime());
     }
     
-    setStartDate(newStart.toISOString().split('T')[0]);
-    setEndDate(newEnd.toISOString().split('T')[0]);
+    setStartDate(formatDateForStorage(newStart));
+    setEndDate(formatDateForStorage(newEnd));
     
     // Update parent component's date range
     if (setSelectedDateRange) {
@@ -1449,7 +1450,7 @@ const FinancialInsights = ({
                   type="date" 
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
+                  max={formatDateForStorage(new Date())}
                   className="w-full p-1 text-xs bg-slate-600 border border-slate-500 rounded-lg text-white"
                 />
               </div>

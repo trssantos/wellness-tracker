@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, X, DollarSign, Tag } from 'lucide-react';
 import { addTransaction, getFinanceData, getCategoriesByGroup } from '../../utils/financeUtils';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const QuickTransactionModal = ({ type = 'expense', onClose, onTransactionAdded }) => {
   // State variables
@@ -53,7 +54,7 @@ const QuickTransactionModal = ({ type = 'expense', onClose, onTransactionAdded }
       name: name.trim(),
       amount: type === 'expense' ? -parseFloat(amount) : parseFloat(amount),
       category,
-      date: new Date().toISOString().split('T')[0],
+      date: formatDateForStorage(new Date()),
       notes: '',
       timestamp: new Date().toISOString()
     };

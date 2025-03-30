@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Bell, Calendar, Clock, Save, Trash2, AlertCircle } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
+import { formatDateForStorage } from '../utils/dateUtils';
 
 export const TaskReminder = ({ date, taskText, onClose, onReminderSet }) => {
   const [enabled, setEnabled] = useState(false);
@@ -10,7 +11,7 @@ export const TaskReminder = ({ date, taskText, onClose, onReminderSet }) => {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDateForStorage(new Date());
   const now = new Date();
   const defaultTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes() + 5).padStart(2, '0')}`;
 

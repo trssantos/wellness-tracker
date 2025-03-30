@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { getStorage, setStorage } from '../utils/storage';
+import { formatDateForStorage } from '../utils/dateUtils';
 
 // Updated MOODS object with dark mode compatible colors
 export const MOODS = {
@@ -18,7 +19,7 @@ export const MoodSelector = ({ date, onClose }) => {
   useEffect(() => {
     if (date) {
       const storage = getStorage();
-      const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+      const dateStr = typeof date === 'string' ? date : formatDateForStorage(date);
       setCurrentMood(storage[dateStr]?.mood || null);
     }
   }, [date]);

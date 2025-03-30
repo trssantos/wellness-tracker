@@ -13,6 +13,7 @@ import ProcrastinationStats from './Charts/ProcrastinationStats';
 import TemplateStatsWidget from '../Templates/TemplateStatsWidget';
 import SleepAnalyticsChart from './Charts/SleepAnalyticsChart';
 import TopTasksList from '../Stats/TopTasksList';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 export const Stats = ({ storageData, currentMonth: propCurrentMonth }) => {
   const [statsData, setStatsData] = useState({
@@ -105,7 +106,7 @@ const processStorageData = (data, month) => {
   
   // Process each day in the current month
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = formatDateForStorage(d);
     const dayData = data[dateStr];
     
     if (dayData) {
@@ -205,7 +206,7 @@ const processStorageData = (data, month) => {
     data.completedWorkouts.forEach(workout => {
       // Parse date from workout
       const workoutDate = new Date(workout.date || workout.completedAt || workout.timestamp);
-      const workoutDateStr = workoutDate.toISOString().split('T')[0];
+      const workoutDateStr = formatDateForStorage(workoutDate);
       const workoutId = workout.id || `completed-${workoutDateStr}-${Math.random()}`;
       
       // Only include if it's in the current month and not already processed
@@ -265,7 +266,7 @@ const processStorageData = (data, month) => {
       .sort((a, b) => new Date(b.date) - new Date(a.date));
     
     // Get current date
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateForStorage(new Date());
     
     // Find the most recent day with data
     const mostRecentDay = sortedData[0];
@@ -279,7 +280,7 @@ const processStorageData = (data, month) => {
     yesterday.setDate(yesterday.getDate() - 1);
     
     // Check if most recent day is from more than a day ago
-    if (mostRecentDate < yesterday && mostRecentDate.toISOString().split('T')[0] !== yesterday.toISOString().split('T')[0]) {
+    if (mostRecentDate < yesterday && formatDateForStorage(mostRecentDate) !== formatDateForStorage(yesterday)) {
       return 0;
     }
     
@@ -295,7 +296,7 @@ const processStorageData = (data, month) => {
       // Check if the next entry in our sorted data is the previous day
       const nextEntry = new Date(sortedData[i].date);
       
-      if (nextEntry.toISOString().split('T')[0] === previousDay.toISOString().split('T')[0]) {
+      if (formatDateForStorage(nextEntry) === formatDateForStorage(previousDay)) {
         // If it's the previous day, increment streak and update current date
         streak++;
         currentDate = previousDay;

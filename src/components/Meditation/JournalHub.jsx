@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   BookOpen, Plus, Search, Calendar, Edit2, Trash2, ChevronDown, ChevronUp, X, 
   Save, PenTool, Lightbulb, Sparkles, RefreshCw, MessageSquare, Smile, 
   Brain, BarChart2, Maximize2, Minimize2, Tag, User, Heart, Briefcase, 
-  Users, Star, Activity, Sun, Moon, Filter, Palette, Map
+  Users, Star, Activity, Sun, Moon, Filter, Palette, Map, Eye, Award,
+  ChevronRight, ChevronLeft, Clock, Zap, AlertTriangle
 } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
 import { handleDataChange } from '../../utils/dayCoachUtils';
@@ -15,12 +16,10 @@ import {
   getAllTags,
   initializeJournalSystem
 } from '../../utils/journalMigration';
-import JournalEntry from './JournalEntry';
+import { formatDateForStorage } from '../../utils/dateUtils';
 import JournalEditor from './JournalEditor';
 import MonthlyCalendar from './MonthlyCalendar';
 import JournalInsights from './JournalInsights';
-import JournalStreakCalendar from './JournalStreakCalendar';
-import { formatDateForStorage } from '../../utils/dateUtils';
 
 const JournalHub = () => {
   // View state management
@@ -28,6 +27,11 @@ const JournalHub = () => {
   const [selectedDate, setSelectedDate] = useState(formatDateForStorage(new Date()));
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [viewingEntry, setViewingEntry] = useState(null);
+  const [showAllPrompts, setShowAllPrompts] = useState(false);
+
+  const [touchStart, setTouchStart] = useState(null);
+const [touchEnd, setTouchEnd] = useState(null);
   
   // Journal entries and data
   const [journalEntries, setJournalEntries] = useState([]);
@@ -138,6 +142,91 @@ const JournalHub = () => {
     }
   ];
   
+  useEffect(() => {
+    // Only activate keyboard navigation when viewing an entry
+    if (!viewingEntry) return;
+    
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowLeft') {
+        // Navigate to previous entry
+        navigateToPreviousEntry();
+      } else if (e.key === 'ArrowRight') {
+        // Navigate to next entry
+        navigateToNextEntry();
+      } else if (e.key === 'Escape') {
+        // Close the modal on Escape
+        setViewingEntry(null);
+      }
+    };
+    
+    // Add event listener
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Remove event listener on cleanup
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [viewingEntry]); // Re-run when viewing entry changes
+
+  const navigateToPreviousEntry = () => {
+    if (!viewingEntry) return;
+    
+    const navigableEntries = filteredEntries;
+    const currentIndex = navigableEntries.findIndex(entry => entry.id === viewingEntry.id);
+    
+    if (currentIndex > 0) {
+      setViewingEntry(navigableEntries[currentIndex - 1]);
+    }
+  };
+  
+  const navigateToNextEntry = () => {
+    if (!viewingEntry) return;
+    
+    const navigableEntries = filteredEntries;
+    const currentIndex = navigableEntries.findIndex(entry => entry.id === viewingEntry.id);
+    
+    if (currentIndex < navigableEntries.length - 1) {
+      setViewingEntry(navigableEntries[currentIndex + 1]);
+    }
+  };
+
+  const handleTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+  
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+  
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const minSwipeDistance = 50; // Minimum swipe distance (in px)
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe && canNavigateToNext()) {
+      navigateToNextEntry();
+    } else if (isRightSwipe && canNavigateToPrevious()) {
+      navigateToPreviousEntry();
+    }
+  };
+  
+  // Helper functions to check if navigation is possible
+  const canNavigateToPrevious = () => {
+    if (!viewingEntry) return false;
+    const currentIndex = filteredEntries.findIndex(entry => entry.id === viewingEntry.id);
+    return currentIndex > 0;
+  };
+  
+  const canNavigateToNext = () => {
+    if (!viewingEntry) return false;
+    const currentIndex = filteredEntries.findIndex(entry => entry.id === viewingEntry.id);
+    return currentIndex < filteredEntries.length - 1;
+  };
+
   // Format a date object as a readable string
   function formatDateReadable(dateString) {
     const date = new Date(dateString);
@@ -326,21 +415,23 @@ const JournalHub = () => {
     const prompt = guidedPrompts.find(p => p.id === promptId);
     if (!prompt) return;
     
-    // Create default entry data
+    // Create entry data for the guided prompt
     const entryData = {
+      id: `new-${Date.now()}`,
       title: prompt.title,
       text: prompt.questions.map(q => `${q}\n\n`).join('\n'),
       categories: prompt.category ? [prompt.category] : [],
       tags: ['guided', promptId],
       mood: 3,
       energy: 2,
-      date: selectedDate
+      date: selectedDate,
+      timestamp: new Date().toISOString(),
+      people: []
     };
     
-    setEditingEntry(null); // Force new entry
+    setEditingEntry(entryData);
     setShowEntryEditor(true);
     
-    // Pass to the editor component via props
     return entryData;
   };
   
@@ -355,7 +446,21 @@ const JournalHub = () => {
   
   // Add a new entry
   const handleAddEntry = () => {
-    setEditingEntry(null);
+    // Create a new empty entry with default values
+    const newEntry = {
+      id: `new-${Date.now()}`,
+      title: '',
+      text: '',
+      mood: 3,
+      energy: 2,
+      categories: [],
+      tags: [],
+      people: [],
+      date: selectedDate,
+      timestamp: new Date().toISOString()
+    };
+    
+    setEditingEntry(newEntry);
     setShowEntryEditor(true);
   };
   
@@ -363,6 +468,11 @@ const JournalHub = () => {
   const handleEditEntry = (entry) => {
     setEditingEntry(entry);
     setShowEntryEditor(true);
+  };
+
+  // View a single entry in detail
+  const handleViewEntry = (entry) => {
+    setViewingEntry(entry);
   };
   
   // Filter journal entries based on search and filters
@@ -448,6 +558,139 @@ const JournalHub = () => {
     return Array.from(tagSet);
   }, [journalEntries]);
   
+  // Calculate current streak
+  const calculateCurrentStreak = () => {
+    if (!journalEntries || journalEntries.length === 0) return 0;
+    
+    // Get all entry dates
+    const entryDates = new Set();
+    journalEntries.forEach(entry => {
+      const dateStr = entry.date || entry.timestamp.split('T')[0];
+      entryDates.add(dateStr);
+    });
+    
+    // Sort dates newest to oldest
+    const sortedDates = Array.from(entryDates).sort().reverse();
+    if (sortedDates.length === 0) return 0;
+    
+    // Check if most recent entry was today or yesterday
+    const now = new Date();
+    const today = formatDateForStorage(now);
+    const yesterday = formatDateForStorage(new Date(now.setDate(now.getDate() - 1)));
+    
+    const lastEntryDate = sortedDates[0];
+    if (lastEntryDate !== today && lastEntryDate !== yesterday) return 0;
+    
+    // Count streak
+    let streak = 1;
+    let currentDate = new Date(lastEntryDate);
+    
+    for (let i = 1; i < sortedDates.length; i++) {
+      const prevDate = new Date(currentDate);
+      prevDate.setDate(currentDate.getDate() - 1);
+      const prevDateStr = formatDateForStorage(prevDate);
+      
+      if (sortedDates[i] === prevDateStr) {
+        streak++;
+        currentDate = prevDate;
+      } else {
+        break;
+      }
+    }
+    
+    return streak;
+  };
+  
+  // Get last 7 days for streak display
+  const getLast7Days = () => {
+    const days = [];
+    const today = new Date();
+    const entryDates = new Set();
+    
+    // Collect all entry dates
+    journalEntries.forEach(entry => {
+      const dateStr = entry.date || entry.timestamp.split('T')[0];
+      entryDates.add(dateStr);
+    });
+    
+    // Get the last 7 days
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateStr = formatDateForStorage(date);
+      
+      days.push({
+        date: dateStr,
+        day: date.getDate(),
+        shortName: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][date.getDay()],
+        hasEntry: entryDates.has(dateStr),
+        isToday: i === 0
+      });
+    }
+    
+    return days;
+  };
+
+  // Helper function to get category color class
+  const getCategoryColorClass = (categoryId) => {
+    switch (categoryId) {
+      case 'meditation': return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300';
+      case 'gratitude': return 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300';
+      case 'work': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+      case 'relationships': return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300';
+      case 'personal': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
+      case 'health': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
+      case 'morning': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
+      case 'evening': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+      case 'social': return 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300';
+      case 'hobbies': return 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300';
+      case 'travel': return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300';
+      default: return 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
+    }
+  };
+  
+  // Helper function to get mood color class
+  const getMoodColorClass = (mood) => {
+    switch (mood) {
+      case 1: return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
+      case 2: return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300';
+      case 3: return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
+      case 4: return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300';
+      case 5: return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+      default: return 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
+    }
+  };
+  
+  // Helper function to get mood emoji
+  const getMoodEmoji = (mood) => {
+    switch (mood) {
+      case 1: return '😔';
+      case 2: return '😕';
+      case 3: return '😐';
+      case 4: return '🙂';
+      case 5: return '😊';
+      default: return '😐';
+    }
+  };
+  
+  // Helper function to get category name
+  const getCategoryName = (categoryId) => {
+    const category = availableCategories.find(c => c.id === categoryId);
+    return category ? category.name : categoryId;
+  };
+  
+  // Helper function to get category icon
+  const getCategoryIcon = (categoryId) => {
+    const category = availableCategories.find(c => c.id === categoryId);
+    return category ? category.icon : <AlertTriangle size={16} className="text-amber-500" />;
+  };
+  
+  // Format the timestamp for display
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+  
   // Render the entries list view
   const renderEntriesView = () => (
     <div className="space-y-6">
@@ -469,7 +712,7 @@ const JournalHub = () => {
           {/* Quick add button */}
           <button
             onClick={handleAddEntry}
-            className="flex items-center gap-1 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg transition-colors"
+            className="flex items-center justify-center gap-1 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg transition-colors"
           >
             <Plus size={18} />
             <span>New Entry</span>
@@ -479,19 +722,19 @@ const JournalHub = () => {
           <div className="relative">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
+              className={`flex items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors ${
                 filterByTags.length > 0 || filterByCategories.length > 0
                   ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
               }`}
             >
               <Filter size={18} />
-              <span>
+              <span className="hidden xs:inline">
                 {filterByTags.length > 0 || filterByCategories.length > 0
                   ? `Filters (${filterByTags.length + filterByCategories.length})`
                   : 'Filter'}
               </span>
-              {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              {showFilters ? <ChevronUp size={16} className="hidden xs:block" /> : <ChevronDown size={16} className="hidden xs:block" />}
             </button>
             
             {showFilters && (
@@ -576,7 +819,7 @@ const JournalHub = () => {
           </div>
         </div>
         
-        {/* Journaling prompts */}
+        {/* Journaling prompts - Mobile optimized */}
         <div className="mb-2">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
@@ -587,53 +830,151 @@ const JournalHub = () => {
               onClick={() => {
                 const randomPrompt = guidedPrompts[Math.floor(Math.random() * guidedPrompts.length)];
                 const entryData = startGuidedJournal(randomPrompt.id);
-                // Any additional setup for a random prompt could go here
+                if (entryData) {
+                  setEditingEntry({
+                    ...entryData,
+                    id: `new-${Date.now()}`
+                  });
+                }
               }}
               className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
             >
-              Try random prompt
+              Random
             </button>
           </div>
           
-          <div className="flex gap-3 overflow-x-auto pb-3 -mx-2 px-2 prompt-scroll-container">
-            {guidedPrompts.map((prompt) => (
-              <div
-                key={prompt.id}
-                onClick={() => startGuidedJournal(prompt.id)}
-                className="flex-shrink-0 w-48 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-800/30 transition-colors cursor-pointer border border-amber-100 dark:border-amber-800/30"
-              >
-                <h5 className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-1">
-                  {prompt.title}
-                </h5>
-                <p className="text-xs text-amber-700 dark:text-amber-400 line-clamp-2">
-                  {prompt.description}
-                </p>
-              </div>
-            ))}
+          {/* Mobile view - simplified with "View all" button */}
+          <div className="block md:hidden">
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              {/* Show only first two prompts on mobile */}
+              {guidedPrompts.slice(0, 2).map((prompt) => (
+                <div
+                  key={prompt.id}
+                  onClick={() => {
+                    const entryData = startGuidedJournal(prompt.id);
+                    if (entryData) {
+                      setEditingEntry({
+                        ...entryData,
+                        id: `new-${Date.now()}`
+                      });
+                    }
+                  }}
+                  className="bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-800/30 transition-colors cursor-pointer border border-amber-100 dark:border-amber-800/30"
+                >
+                  <h5 className="text-xs font-medium text-amber-800 dark:text-amber-300 mb-1 truncate">
+                    {prompt.title}
+                  </h5>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowAllPrompts(true)}
+              className="w-full text-center text-xs text-indigo-600 dark:text-indigo-400 py-1 px-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-800/30"
+            >
+              View all prompts
+            </button>
+          </div>
+          
+          {/* Desktop view - scrollable horizontal list */}
+          <div className="hidden md:block">
+            <div className="flex gap-3 overflow-x-auto pb-3 -mx-2 px-2 prompt-scroll-container">
+              {guidedPrompts.map((prompt) => (
+                <div
+                  key={prompt.id}
+                  onClick={() => {
+                    const entryData = startGuidedJournal(prompt.id);
+                    if (entryData) {
+                      setEditingEntry({
+                        ...entryData,
+                        id: `new-${Date.now()}`
+                      });
+                    }
+                  }}
+                  className="flex-shrink-0 w-48 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-800/30 transition-colors cursor-pointer border border-amber-100 dark:border-amber-800/30"
+                >
+                  <h5 className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-1 truncate">
+                    {prompt.title}
+                  </h5>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 line-clamp-2">
+                    {prompt.description}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
       
-      {/* Streak Calendar */}
-      <JournalStreakCalendar 
-        journalEntries={journalEntries} 
-        onSelectDate={handleSelectDate}
-      />
+      {/* Mobile-optimized Journal Streak Calendar */}
+      <div className="bg-slate-800 rounded-xl p-4 transition-colors mb-4">
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-2">
+            <Calendar size={18} className="text-indigo-400" />
+            <h4 className="text-sm font-medium text-white">Journal Streak</h4>
+          </div>
+          
+          <div className="text-indigo-400 flex items-center">
+            <Award size={14} className="mr-1" />
+            <span className="font-medium text-lg mr-1">{calculateCurrentStreak()}</span>
+            <span className="text-xs">days</span>
+          </div>
+        </div>
+        
+        {/* Last 7 days visualization - Single row for mobile */}
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {getLast7Days().map((day, i) => (
+            <button
+              key={i}
+              onClick={() => handleSelectDate(day.date)}
+              className={`p-1 rounded-md flex flex-col items-center justify-center ${
+                day.isToday 
+                  ? 'bg-indigo-600 text-white' 
+                  : day.hasEntry 
+                    ? 'bg-slate-700 text-white' 
+                    : 'bg-slate-800 text-slate-500 border border-slate-700'
+              }`}
+            >
+              <span className="text-xs leading-none mb-1">{day.shortName}</span>
+              <span className="text-xs font-medium">{day.day}</span>
+              {day.hasEntry && <div className="w-1 h-1 mt-1 rounded-full bg-green-500"></div>}
+            </button>
+          ))}
+        </div>
+        
+        {/* Streak progress indicator */}
+        <div className="mt-2">
+          <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+              style={{ width: `${(calculateCurrentStreak() / 14) * 100}%` }}
+            ></div>
+          </div>
+          <div className="mt-1 flex justify-between items-center text-xs text-slate-400">
+            <span>Current streak</span>
+            <button
+              onClick={() => setActiveView('calendar')}
+              className="text-indigo-400 hover:underline text-xs"
+            >
+              View Calendar
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Filter indicator if filtering by date */}
       {dateFilter && (
-        <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-lg flex justify-between items-center animate-pulse">
+        <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-lg flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Calendar size={18} className="text-indigo-500 dark:text-indigo-400" />
-            <span className="text-sm text-indigo-600 dark:text-indigo-300">
-              Showing entries for {formatDateReadable(dateFilter)}
+            <span className="text-sm text-indigo-600 dark:text-indigo-300 truncate">
+              {formatDateReadable(dateFilter)}
             </span>
           </div>
           <button 
             onClick={() => setDateFilter(null)}
             className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm"
           >
-            Clear filter
+            Clear
           </button>
         </div>
       )}
@@ -661,7 +1002,13 @@ const JournalHub = () => {
             <button
               onClick={() => {
                 const randomPrompt = guidedPrompts[Math.floor(Math.random() * guidedPrompts.length)];
-                startGuidedJournal(randomPrompt.id);
+                const entryData = startGuidedJournal(randomPrompt.id);
+                if (entryData) {
+                  setEditingEntry({
+                    ...entryData,
+                    id: `new-${Date.now()}`
+                  });
+                }
               }}
               className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg flex items-center gap-2"
             >
@@ -671,13 +1018,13 @@ const JournalHub = () => {
           </div>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {Object.entries(entriesByDate).map(([date, entries]) => (
-            <div key={date} id={`date-section-${date}`} className="animate-slideIn">
+            <div key={date} id={`date-section-${date}`}>
               <div className="flex items-center mb-3 sticky top-0 bg-slate-50 dark:bg-slate-900 p-2 rounded-lg z-10">
                 <Calendar size={18} className="text-indigo-500 dark:text-indigo-400 mr-2" />
                 <h3 className="text-md font-medium text-slate-700 dark:text-slate-300">
-                  {formatRelativeDate(date)} - {formatDateReadable(date)}
+                  {formatRelativeDate(date)}
                 </h3>
               </div>
               
@@ -692,7 +1039,7 @@ const JournalHub = () => {
                       <h4 className="text-sm font-medium text-amber-700 dark:text-amber-300 mb-1">
                         Daily Note
                       </h4>
-                      <p className="text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">
+                      <p className="text-sm text-amber-800 dark:text-amber-200 line-clamp-3 whitespace-pre-wrap">
                         {dailyNotes[date]}
                       </p>
                     </div>
@@ -700,16 +1047,82 @@ const JournalHub = () => {
                 </div>
               )}
               
-              {/* Entries for this date */}
-              <div className="space-y-4">
+              {/* Entries for this date - Mobile-friendly cards */}
+              <div className="space-y-3">
                 {entries.map(entry => (
-                  <JournalEntry
+                  <div 
                     key={entry.id}
-                    entry={entry}
-                    onEdit={handleEditEntry}
-                    onDelete={() => setConfirmDeleteId(entry.id)}
-                    availableCategories={availableCategories}
-                  />
+                    className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors cursor-pointer"
+                    onClick={() => handleViewEntry(entry)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="text-md font-medium text-slate-800 dark:text-slate-100 flex-1 truncate">
+                        {entry.title || 'Journal Entry'}
+                      </h4>
+                      
+                      <div className="flex items-center gap-1 ml-2">
+                        {/* Edit/Delete buttons */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditEntry(entry);
+                          }}
+                          className="p-1 text-slate-500 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDeleteId(entry.id);
+                          }}
+                          className="p-1 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Categories and mood */}
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {/* Mood indicator */}
+                      {entry.mood && (
+                        <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${getMoodColorClass(entry.mood)}`}>
+                          <Smile size={12} />
+                          <span>{getMoodEmoji(entry.mood)}</span>
+                        </div>
+                      )}
+                      
+                      {/* Show first category if exists */}
+                      {entry.categories && entry.categories.length > 0 && (
+                        <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${getCategoryColorClass(entry.categories[0])}`}>
+                          {getCategoryIcon(entry.categories[0])}
+                          <span>{getCategoryName(entry.categories[0])}</span>
+                        </div>
+                      )}
+                      
+                      {/* Show truncated tag list */}
+                      {entry.tags && entry.tags.length > 0 && (
+                        <div className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
+                          <Tag size={12} />
+                          <span>{entry.tags.length > 1 ? `${entry.tags.length} tags` : entry.tags[0]}</span>
+                        </div>
+                      )}
+                      
+                      {/* View indicator */}
+                      <div className="ml-auto flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400">
+                        <Eye size={12} />
+                        <span>View</span>
+                      </div>
+                    </div>
+                    
+                    {/* Preview text */}
+                    <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 whitespace-pre-wrap">
+                      {entry.text}
+                    </p>
+                  </div>
                 ))}
               </div>
             </div>
@@ -727,89 +1140,351 @@ const JournalHub = () => {
           </div>
         </div>
       )}
-
-      {/* CSS for custom scrollbar and animations */}
-      <style jsx>{`
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .animate-slideIn {
-          animation: slideIn 0.3s ease-out forwards;
-        }
-        
-        .prompt-scroll-container {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
-        }
-        
-        .prompt-scroll-container::-webkit-scrollbar {
-          height: 6px;
-        }
-        
-        .prompt-scroll-container::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        
-        .prompt-scroll-container::-webkit-scrollbar-thumb {
-          background-color: rgba(99, 102, 241, 0.3);
-          border-radius: 6px;
-        }
-        
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-        
-        .animate-pulse {
-          animation: pulse 2s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
   
   // Render the calendar view with monthly calendar
-  const renderCalendarView = () => (
-    <div className="space-y-6">
-      {/* Monthly calendar component */}
-      <MonthlyCalendar 
-        journalEntries={journalEntries}
-        onSelectDate={(date) => setSelectedDate(date)}
-        onEditEntry={(entry) => {
-          if (entry.isDeleting) {
-            deleteJournalEntry(entry.id);
-          } else {
-            saveJournalEntry(entry);
-          }
-        }}
-        selectedDate={selectedDate}
-      />
-    </div>
-  );
+  const renderCalendarView = () => {
+    // Get entries for selected date
+    const selectedDateEntries = journalEntries.filter(entry => {
+      const entryDate = entry.date || entry.timestamp.split('T')[0];
+      return entryDate === selectedDate;
+    });
+    
+    return (
+      <div className="space-y-6">
+        {/* Monthly calendar component */}
+        <MonthlyCalendar 
+          journalEntries={journalEntries}
+          onSelectDate={(date) => {
+            setSelectedDate(date);
+            // Don't switch to entries tab anymore
+            // setActiveView('entries'); - removing this line
+          }}
+          onEditEntry={(entry) => {
+            if (entry.isDeleting) {
+              deleteJournalEntry(entry.id);
+            } else {
+              saveJournalEntry(entry);
+            }
+          }}
+          selectedDate={selectedDate}
+        />
+        
+        {/* Display entries for selected date below the calendar */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-md font-medium text-slate-800 dark:text-slate-100">
+              Entries for {formatDateReadable(selectedDate)}
+            </h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleAddEntry}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors"
+              >
+                <Plus size={14} />
+                New Entry
+              </button>
+            </div>
+          </div>
+        
+          {selectedDateEntries.length > 0 ? (
+            <div className="space-y-3">
+              {selectedDateEntries.map(entry => (
+                <div 
+                  key={entry.id}
+                  className="bg-white dark:bg-slate-700 rounded-lg shadow-sm p-4 transition-colors cursor-pointer"
+                  onClick={() => handleViewEntry(entry)}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="text-md font-medium text-slate-800 dark:text-slate-100 flex-1 truncate">
+                      {entry.title || 'Journal Entry'}
+                    </h4>
+                    
+                    <div className="flex items-center gap-1 ml-2">
+                      {/* Time indicator */}
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mr-2">
+                        {formatTimestamp(entry.timestamp)}
+                      </div>
+                      
+                      {/* Edit/Delete buttons */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditEntry(entry);
+                        }}
+                        className="p-1 text-slate-500 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDeleteId(entry.id);
+                        }}
+                        className="p-1 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Categories and mood */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {/* Mood indicator */}
+                    {entry.mood && (
+                      <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${getMoodColorClass(entry.mood)}`}>
+                        <Smile size={12} />
+                        <span>{getMoodEmoji(entry.mood)}</span>
+                      </div>
+                    )}
+                    
+                    {/* First category if exists */}
+                    {entry.categories && entry.categories.length > 0 && (
+                      <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${getCategoryColorClass(entry.categories[0])}`}>
+                        {getCategoryIcon(entry.categories[0])}
+                        <span>{getCategoryName(entry.categories[0])}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Preview text */}
+                  <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 whitespace-pre-wrap">
+                    {entry.text}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 bg-slate-50 dark:bg-slate-700 rounded-lg">
+              <p className="text-slate-500 dark:text-slate-400">
+                No journal entries for this date.
+              </p>
+              <button
+                onClick={handleAddEntry}
+                className="mt-2 px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors flex items-center gap-2 mx-auto"
+              >
+                <Plus size={16} />
+                <span>Create Entry</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+  
   
   // Render the insights view with analytics
   const renderInsightsView = () => (
     <JournalInsights journalEntries={journalEntries} />
   );
-  
-  // Helper function to get category color class
-  const getCategoryColorClass = (categoryId) => {
-    switch (categoryId) {
-      case 'meditation': return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300';
-      case 'gratitude': return 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300';
-      case 'work': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
-      case 'relationships': return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300';
-      case 'personal': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
-      case 'health': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
-      case 'morning': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
-      case 'evening': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
-      case 'social': return 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300';
-      case 'hobbies': return 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300';
-      case 'travel': return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300';
-      default: return 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
-    }
+
+  // Complete renderEntryViewModal method:
+
+  const renderEntryViewModal = () => {
+    if (!viewingEntry) return null;
+    
+    // Determine which entries to navigate through based on current view/filters
+    const navigableEntries = filteredEntries;
+    
+    // Find current entry index
+    const currentIndex = navigableEntries.findIndex(entry => entry.id === viewingEntry.id);
+    
+    // Determine if we have previous/next entries
+    const hasPrevious = currentIndex > 0;
+    const hasNext = currentIndex < navigableEntries.length - 1;
+    
+    return (
+      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div 
+          className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center sticky top-0 bg-white dark:bg-slate-800 z-10">
+            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 truncate pr-4">
+              {viewingEntry.title || 'Journal Entry'}
+            </h3>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleEditEntry(viewingEntry)}
+                className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-full"
+              >
+                <Edit2 size={18} />
+              </button>
+              <button
+                onClick={() => setViewingEntry(null)}
+                className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+          
+          {/* Entry navigation indicators with navigation buttons */}
+          <div className="px-4 py-2 bg-slate-50 dark:bg-slate-700/50 flex justify-between items-center text-xs text-slate-500 dark:text-slate-400">
+            {/* Entry count indicator */}
+            <span>{currentIndex + 1} of {navigableEntries.length}</span>
+            
+            {/* Navigation controls */}
+            <div className="flex items-center gap-2">
+              {/* Previous button */}
+              <button
+                onClick={navigateToPreviousEntry}
+                disabled={!hasPrevious}
+                className={`p-1 rounded-lg flex items-center gap-1 transition-colors ${
+                  hasPrevious 
+                    ? 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20' 
+                    : 'text-slate-400 dark:text-slate-600 cursor-not-allowed'
+                }`}
+                aria-label="Previous entry"
+              >
+                <ChevronLeft size={16} />
+                <span className="hidden sm:inline">Previous</span>
+              </button>
+              
+              {/* Next button */}
+              <button
+                onClick={navigateToNextEntry}
+                disabled={!hasNext}
+                className={`p-1 rounded-lg flex items-center gap-1 transition-colors ${
+                  hasNext 
+                    ? 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20' 
+                    : 'text-slate-400 dark:text-slate-600 cursor-not-allowed'
+                }`}
+                aria-label="Next entry"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-4">
+            {/* Date and time */}
+            <div className="flex items-center text-sm text-slate-500 dark:text-slate-400 mb-4">
+              <Calendar size={14} className="mr-1" />
+              <span>
+                {new Date(viewingEntry.timestamp).toLocaleDateString('default', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </span>
+              <span className="mx-2">•</span>
+              <Clock size={14} className="mr-1" />
+              <span>
+                {formatTimestamp(viewingEntry.timestamp)}
+              </span>
+            </div>
+            
+            {/* Categories and metadata */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {/* Mood indicator */}
+              {viewingEntry.mood && (
+                <div className={`flex items-center gap-1 text-sm px-2 py-1 rounded-full ${getMoodColorClass(viewingEntry.mood)}`}>
+                  <Smile size={16} />
+                  <span>{getMoodEmoji(viewingEntry.mood)} Mood: {viewingEntry.mood}/5</span>
+                </div>
+              )}
+              
+              {/* Energy indicator */}
+              {viewingEntry.energy && (
+                <div className="flex items-center gap-1 text-sm px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                  <Zap size={16} />
+                  <span>Energy: {viewingEntry.energy}/3</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Categories */}
+            {viewingEntry.categories && viewingEntry.categories.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Categories</h4>
+                <div className="flex flex-wrap gap-2">
+                  {viewingEntry.categories.map(categoryId => (
+                    <div 
+                      key={categoryId}
+                      className={`flex items-center gap-1 text-sm px-2 py-1 rounded-full ${getCategoryColorClass(categoryId)}`}
+                    >
+                      {getCategoryIcon(categoryId)}
+                      <span>{getCategoryName(categoryId)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Entry content */}
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4">
+              <p className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
+                {viewingEntry.text}
+              </p>
+            </div>
+            
+            {/* People mentioned */}
+            {viewingEntry.people && viewingEntry.people.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">People Mentioned</h4>
+                <div className="flex flex-wrap gap-2">
+                  {viewingEntry.people.map(person => (
+                    <div
+                      key={person}
+                      className="text-sm px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full flex items-center gap-1"
+                    >
+                      <User size={14} />
+                      {person}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Tags */}
+            {viewingEntry.tags && viewingEntry.tags.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Tags</h4>
+                <div className="flex flex-wrap gap-2">
+                  {viewingEntry.tags.map(tag => (
+                    <div
+                      key={tag}
+                      className="text-sm px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full flex items-center gap-1"
+                    >
+                      <Tag size={14} />
+                      #{tag}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Action buttons */}
+            <div className="flex justify-end space-x-2 mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <button
+                onClick={() => setConfirmDeleteId(viewingEntry.id)}
+                className="px-4 py-2 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/30 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setViewingEntry(null)}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
+  
 
   // Render delete confirmation modal
   const renderDeleteConfirmationModal = () => {
@@ -819,7 +1494,7 @@ const JournalHub = () => {
     if (!entryToDelete) return null;
     
     return (
-      <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6">
           <div className="flex items-center gap-4 mb-4">
             <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-full">
@@ -837,18 +1512,99 @@ const JournalHub = () => {
           
           <div className="flex justify-end gap-3 mt-6">
             <button
-              onClick={() => setConfirmDeleteId(null)}
+              onClick={() => {
+                setConfirmDeleteId(null);
+                if (viewingEntry && viewingEntry.id === confirmDeleteId) {
+                  setViewingEntry(null);
+                }
+              }}
               className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
             >
               Cancel
             </button>
             <button
-              onClick={() => deleteJournalEntry(confirmDeleteId)}
+              onClick={() => {
+                deleteJournalEntry(confirmDeleteId);
+                if (viewingEntry && viewingEntry.id === confirmDeleteId) {
+                  setViewingEntry(null);
+                }
+              }}
               className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center gap-2 transition-colors"
             >
               <Trash2 size={18} />
               Delete Entry
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Render the journal editor component
+  const renderJournalEditor = () => {
+    if (!showEntryEditor) return null;
+    
+    return (
+      <JournalEditor
+        entry={editingEntry}
+        date={selectedDate}
+        onSave={(entryData) => {
+          saveJournalEntry(entryData);
+        }}
+        onCancel={() => {
+          setShowEntryEditor(false);
+          setEditingEntry(null);
+        }}
+        availableCategories={availableCategories}
+        popularTags={popularTags}
+      />
+    );
+  };
+  
+  // Render all prompts modal
+  const renderAllPromptsModal = () => {
+    if (!showAllPrompts) return null;
+    
+    return (
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+        <div className="bg-slate-800 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto m-4">
+          <div className="p-4 border-b border-slate-700 flex justify-between items-center">
+            <h3 className="text-lg font-medium text-white">Reflection Prompts</h3>
+            <button
+              onClick={() => setShowAllPrompts(false)}
+              className="text-slate-400 hover:text-white p-1"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          
+          <div className="p-4 space-y-2">
+            {guidedPrompts.map((prompt) => (
+              <div 
+                key={prompt.id}
+                className="bg-slate-700 p-3 rounded-lg cursor-pointer hover:bg-slate-600 transition-colors"
+                onClick={() => {
+                  setShowAllPrompts(false);
+                  const entryData = startGuidedJournal(prompt.id);
+                  if (entryData) {
+                    setEditingEntry({
+                      ...entryData,
+                      id: `new-${Date.now()}`
+                    });
+                  }
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <Lightbulb size={16} className="text-amber-400 flex-shrink-0" />
+                  <span className="text-white font-medium">{prompt.title}</span>
+                </div>
+                
+                {/* Show the first question as a preview */}
+                <p className="text-slate-300 text-sm mt-1 pl-6">
+                  {prompt.questions[0]}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -862,7 +1618,7 @@ const JournalHub = () => {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <BookOpen className="text-indigo-500 dark:text-indigo-400" size={22} />
-            Journal & Reflections
+            Journal
           </h2>
           
           {isFullscreen && (
@@ -875,7 +1631,7 @@ const JournalHub = () => {
           )}
         </div>
         
-        {/* Tabs */}
+        {/* Tabs - Improved for mobile */}
         <div className="flex border-b border-slate-200 dark:border-slate-700">
           <button
             className={`pb-3 px-2 relative transition-colors ${
@@ -935,8 +1691,8 @@ const JournalHub = () => {
           >
             <div className="flex items-center gap-1">
               {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-              <span className="font-medium hidden xs:inline">
-                {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+              <span className="font-medium hidden sm:inline">
+                {isFullscreen ? "Exit" : "Fullscreen"}
               </span>
             </div>
           </button>
@@ -948,23 +1704,52 @@ const JournalHub = () => {
       {activeView === 'calendar' && renderCalendarView()}
       {activeView === 'insights' && renderInsightsView()}
       
-      {/* Journal Entry Editor Dialog */}
-      {showEntryEditor && (
-        <JournalEditor
-          entry={editingEntry}
-          date={selectedDate}
-          onSave={saveJournalEntry}
-          onCancel={() => {
-            setShowEntryEditor(false);
-            setEditingEntry(null);
-          }}
-          availableCategories={availableCategories}
-          popularTags={popularTags}
-        />
-      )}
+      {/* Journal Entry Editor */}
+      {showEntryEditor && renderJournalEditor()}
+      
+      {/* Entry View Modal */}
+      {viewingEntry && renderEntryViewModal()}
       
       {/* Delete Confirmation Modal */}
       {confirmDeleteId && renderDeleteConfirmationModal()}
+      
+      {/* All Prompts Modal */}
+      {showAllPrompts && renderAllPromptsModal()}
+      
+      {/* CSS for custom scrollbar and animations */}
+      <style jsx>{`
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .prompt-scroll-container {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+        }
+        
+        .prompt-scroll-container::-webkit-scrollbar {
+          height: 6px;
+        }
+        
+        .prompt-scroll-container::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .prompt-scroll-container::-webkit-scrollbar-thumb {
+          background-color: rgba(99, 102, 241, 0.3);
+          border-radius: 6px;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        
+        .animate-pulse {
+          animation: pulse 2s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 };

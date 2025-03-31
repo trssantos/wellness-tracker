@@ -13,6 +13,7 @@ import { getAllPeopleMentioned, getAllTags } from '../../utils/journalMigration'
 const JournalInsights = ({ journalEntries = [] }) => {
   const [timeframe, setTimeframe] = useState('all'); // 'week', 'month', 'year', 'all'
   const [filteredEntries, setFilteredEntries] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [journalAnalysis, setJournalAnalysis] = useState({
     topWords: [],
     topPeople: [],
@@ -64,6 +65,15 @@ const JournalInsights = ({ journalEntries = [] }) => {
       description: 'Summarize positive aspects from your journal entries'
     }
   ];
+
+  // Add a useEffect to reload people lists when the component mounts or refreshTrigger changes
+useEffect(() => {
+  loadPeopleLists();
+  if (filteredEntries.length > 0) {
+    analyzeJournalEntries();
+  }
+}, [filteredEntries, refreshTrigger]);
+
   
   // Filter entries based on timeframe and analyze them
   useEffect(() => {
@@ -296,6 +306,52 @@ const JournalInsights = ({ journalEntries = [] }) => {
       loaded: true
     });
   };
+
+  // Format AI insight text to properly render markdown-like elements
+const formatAIInsightText = (text) => {
+  if (!text) return null;
+  
+  // Split the text by sections (marked with ###)
+  const sections = text.split(/(?=###)/g);
+  
+  return (
+    <div className="space-y-4">
+      {sections.map((section, idx) => {
+        // Check if this is a heading section
+        const isHeading = section.startsWith('###');
+        
+        if (isHeading) {
+          // Extract the heading text
+          const headingMatch = section.match(/^###\s*(.*?)(?:\n|$)/);
+          const headingText = headingMatch ? headingMatch[1] : '';
+          
+          // Get the content after the heading
+          const content = section.replace(/^###\s*(.*?)(?:\n|$)/, '').trim();
+          
+          return (
+            <div key={idx} className="mb-6">
+              <h3 className="text-md font-semibold text-indigo-600 dark:text-indigo-400 mb-2">
+                {headingText}
+              </h3>
+              {content.split('\n\n').map((paragraph, pIdx) => (
+                <p key={pIdx} className="text-slate-700 dark:text-slate-300 mb-2">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          );
+        } else {
+          // Regular paragraph without heading
+          return section.split('\n\n').map((paragraph, pIdx) => (
+            <p key={`${idx}-${pIdx}`} className="text-slate-700 dark:text-slate-300">
+              {paragraph}
+            </p>
+          ));
+        }
+      })}
+    </div>
+  );
+};
   
   // Get AI insights
   const getAIInsight = async (insightType) => {
@@ -483,7 +539,8 @@ Please provide general insights that might help the journal writer gain perspect
         blacklist: storage.peopleBlacklist || []
       });
       
-      // Refresh analysis
+      // Force refresh of analysis
+      setRefreshTrigger(prev => prev + 1);
       analyzeJournalEntries();
     }
   };
@@ -513,7 +570,8 @@ Please provide general insights that might help the journal writer gain perspect
         blacklist: storage.peopleBlacklist
       });
       
-      // Refresh analysis
+      // Force refresh of analysis
+      setRefreshTrigger(prev => prev + 1);
       analyzeJournalEntries();
     }
   };
@@ -968,41 +1026,39 @@ Please provide general insights that might help the journal writer gain perspect
           ))}
         </div>
         
-        {/* AI Response */}
-        {isLoadingInsight ? (
-          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6 text-center">
-            <div className="animate-pulse flex flex-col items-center">
-              <div className="rounded-full bg-slate-300 dark:bg-slate-600 h-12 w-12 mb-4"></div>
-              <div className="h-4 bg-slate-300 dark:bg-slate-600 rounded w-1/2 mb-2"></div>
-              <div className="h-4 bg-slate-300 dark:bg-slate-600 rounded w-1/3"></div>
-            </div>
-            <p className="text-slate-500 dark:text-slate-400 mt-4">
-              Analyzing your journal entries...
-            </p>
-          </div>
-        ) : insightResult ? (
-          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6">
-            <div className="flex items-start">
-              <Brain size={24} className="text-indigo-500 dark:text-indigo-400 mt-1 mr-3 flex-shrink-0" />
-              <div>
-                <h4 className="text-md font-medium text-slate-800 dark:text-slate-100 mb-3">
-                  {selectedInsightType ? selectedInsightType.title : 'Journal Insights'}
-                </h4>
-                <div className="text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert">
-                  {insightResult.split('\n').map((paragraph, idx) => (
-                    paragraph ? <p key={idx}>{paragraph}</p> : <br key={idx} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6 text-center">
-            <p className="text-slate-500 dark:text-slate-400">
-              Select an insight type above to analyze your journal entries.
-            </p>
-          </div>
-        )}
+       {/* AI Response */}
+{isLoadingInsight ? (
+  <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6 text-center">
+    <div className="animate-pulse flex flex-col items-center">
+      <div className="rounded-full bg-slate-300 dark:bg-slate-600 h-12 w-12 mb-4"></div>
+      <div className="h-4 bg-slate-300 dark:bg-slate-600 rounded w-1/2 mb-2"></div>
+      <div className="h-4 bg-slate-300 dark:bg-slate-600 rounded w-1/3"></div>
+    </div>
+    <p className="text-slate-500 dark:text-slate-400 mt-4">
+      Analyzing your journal entries...
+    </p>
+  </div>
+) : insightResult ? (
+  <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6">
+    <div className="flex items-start">
+      <Brain size={24} className="text-indigo-500 dark:text-indigo-400 mt-1 mr-3 flex-shrink-0" />
+      <div className="flex-1">
+        <h4 className="text-md font-medium text-slate-800 dark:text-slate-100 mb-3">
+          {selectedInsightType ? selectedInsightType.title : 'Journal Insights'}
+        </h4>
+        <div className="text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert">
+          {formatAIInsightText(insightResult)}
+        </div>
+      </div>
+    </div>
+  </div>
+) : (
+  <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-6 text-center">
+    <p className="text-slate-500 dark:text-slate-400">
+      Select an insight type above to analyze your journal entries.
+    </p>
+  </div>
+)}
       </div>
     </div>
   );

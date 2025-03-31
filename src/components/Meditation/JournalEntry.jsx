@@ -181,49 +181,52 @@ const JournalEntry = ({
             {entry.title || 'Journal Entry'}
           </h4>
           
-          <div className="flex items-center gap-3">
-            {/* Mood indicator */}
-            {entry.mood && (
-              <div 
-                className={`rounded-full p-1 ${getMoodColorClass(entry.mood)}`} 
-                title={`Mood: ${entry.mood}/5`}
-              >
-                <span className="text-xl">{getMoodEmoji(entry.mood)}</span>
-              </div>
-            )}
-            
-            {/* Entry time */}
-            <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-              <Clock size={12} />
-              <span>
-                {formatTimestamp(entry.timestamp)}
-              </span>
-            </div>
-            
-            {/* Show date if needed */}
-            {showDate && (
+          <div className="flex items-center gap-2">
+            {/* Entry time and date */}
+            <div className="flex flex-col items-end">
               <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                <Calendar size={12} />
-                <span>{formatDate(entry.timestamp)}</span>
+                <Clock size={12} />
+                <span>{formatTimestamp(entry.timestamp)}</span>
+                
+                {/* Energy level - moved next to time */}
+                {entry.energy && (
+                  <div className="flex items-center gap-1 ml-2">
+                    <Zap size={12} className="text-blue-500 dark:text-blue-400" />
+                    <div className="flex">
+                      {[1, 2, 3].map((level) => (
+                        <div 
+                          key={level}
+                          className={`w-2 h-2 rounded-full mx-0.5 ${level <= entry.energy ? 'bg-blue-500' : 'bg-slate-200 dark:bg-slate-600'}`}
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+              
+              {/* Show date if needed */}
+              {showDate && (
+                <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  <Calendar size={12} />
+                  <span>{formatDate(entry.timestamp)}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         
-        {/* Energy level */}
-        {entry.energy && (
+        {/* Mood indicator on its own line */}
+        {entry.mood && (
           <div className="flex items-center gap-2 mb-3">
-            <div className="flex items-center gap-1 text-blue-700 dark:text-blue-300">
-              <Zap size={16} />
-              <span className="text-sm font-medium">Energy Level:</span>
+            <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
+              <Smile size={16} />
+              <span className="text-sm font-medium">Mood:</span>
             </div>
-            <div className="flex">
-              {[1, 2, 3].map((level) => (
-                <div 
-                  key={level}
-                  className={`w-4 h-4 rounded-full mx-0.5 ${level <= entry.energy ? 'bg-blue-500' : 'bg-slate-200 dark:bg-slate-600'}`}
-                ></div>
-              ))}
+            <div 
+              className={`rounded-full p-1 ${getMoodColorClass(entry.mood)}`} 
+              title={`Mood: ${entry.mood}/5`}
+            >
+              <span className="text-xl">{getMoodEmoji(entry.mood)}</span>
             </div>
           </div>
         )}

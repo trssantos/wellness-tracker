@@ -20,6 +20,7 @@ import JournalEditor from './JournalEditor';
 import MonthlyCalendar from './MonthlyCalendar';
 import JournalInsights from './JournalInsights';
 import JournalStreakCalendar from './JournalStreakCalendar';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const JournalHub = () => {
   // View state management
@@ -136,11 +137,6 @@ const JournalHub = () => {
       ]
     }
   ];
-  
-  // Format a date object to YYYY-MM-DD string for storage
-  function formatDateForStorage(date) {
-    return formatDateForStorage(date);
-  }
   
   // Format a date object as a readable string
   function formatDateReadable(dateString) {

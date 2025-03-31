@@ -8,6 +8,7 @@ import { getStorage,setStorage } from '../../utils/storage';
 import { getJournalEntriesForDate } from '../../utils/journalMigration';
 import JournalEntry from './JournalEntry';
 import JournalEditor from './JournalEditor';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const MonthlyCalendar = ({ journalEntries = [], onSelectDate, selectedDate, onEditEntry }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -152,10 +153,7 @@ const MonthlyCalendar = ({ journalEntries = [], onSelectDate, selectedDate, onEd
     );
   };
   
-  // Format a date to YYYY-MM-DD string
-  const formatDateForStorage = (date) => {
-    return formatDateForStorage(date);
-  };
+
   
   // Format a date as readable string
   const formatDateReadable = (dateString) => {

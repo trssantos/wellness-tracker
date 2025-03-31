@@ -5,6 +5,7 @@ import {
   Sun, Moon, Activity, AlertTriangle
 } from 'lucide-react';
 import { getStorage } from '../../utils/storage';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const JournalStreakCalendar = ({ journalEntries = [], onSelectDate }) => {
   const [streakData, setStreakData] = useState({
@@ -17,7 +18,7 @@ const JournalStreakCalendar = ({ journalEntries = [], onSelectDate }) => {
   const getDaysOfWeek = () => {
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     return days;
-  };
+  }
   
   // Get the last 7 days for the streak display
   const getLast7Days = () => {
@@ -38,11 +39,6 @@ const JournalStreakCalendar = ({ journalEntries = [], onSelectDate }) => {
     }
     
     return dates;
-  };
-  
-  // Format a date object to YYYY-MM-DD string for storage
-  const formatDateForStorage = (date) => {
-    return formatDateForStorage(date);
   };
   
   // Calculate streak data based on journal entries

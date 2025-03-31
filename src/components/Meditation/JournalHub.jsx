@@ -362,6 +362,39 @@ const [touchEnd, setTouchEnd] = useState(null);
       recentEntry: entryData
     });
   };
+
+  const getCombinedEntriesForNavigation = () => {
+    // Start with filtered journal entries
+    let combinedEntries = [...filteredEntries];
+    
+    // Process day notes and convert them to entry-like objects
+    Object.entries(dailyNotes).forEach(([date, noteText]) => {
+      // Skip empty notes
+      if (!noteText || !noteText.trim()) return;
+      
+      // Create an entry-like object for the day note
+      const dayNoteEntry = {
+        id: `day-note-${date}`,
+        title: 'Daily Note',
+        text: noteText,
+        date: date,
+        timestamp: new Date(date + 'T12:00:00').toISOString(),
+        isDayNote: true // Flag to identify as a day note
+      };
+      
+      // Add to combined entries
+      combinedEntries.push(dayNoteEntry);
+    });
+    
+    // Sort by date, newest first (or apply whatever sorting logic makes sense)
+    combinedEntries.sort((a, b) => {
+      const dateA = new Date(a.timestamp);
+      const dateB = new Date(b.timestamp);
+      return dateB - dateA;
+    });
+    
+    return combinedEntries;
+  };
   
   // Delete a journal entry
   const deleteJournalEntry = (entryId) => {
@@ -1287,15 +1320,20 @@ const [touchEnd, setTouchEnd] = useState(null);
   const renderEntryViewModal = () => {
     if (!viewingEntry) return null;
     
-    // Determine which entries to navigate through based on current view/filters
-    const navigableEntries = filteredEntries;
+    // Get combined entries for navigation (journal entries + day notes)
+    const navigableEntries = getCombinedEntriesForNavigation();
     
     // Find current entry index
-    const currentIndex = navigableEntries.findIndex(entry => entry.id === viewingEntry.id);
+    const currentIndex = navigableEntries.findIndex(entry => 
+      entry.id === viewingEntry.id
+    );
     
     // Determine if we have previous/next entries
     const hasPrevious = currentIndex > 0;
     const hasNext = currentIndex < navigableEntries.length - 1;
+    
+    // Determine if current entry is a day note
+    const isDayNote = viewingEntry.isDayNote === true;
     
     return (
       <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
@@ -1306,8 +1344,18 @@ const [touchEnd, setTouchEnd] = useState(null);
           onTouchEnd={handleTouchEnd}
         >
           <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center sticky top-0 bg-white dark:bg-slate-800 z-10">
-            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 truncate pr-4">
-              {viewingEntry.title || 'Journal Entry'}
+            <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 truncate pr-4 flex items-center gap-2">
+              {isDayNote ? (
+                <>
+                  <PenTool size={18} className="text-amber-500 dark:text-amber-400 flex-shrink-0" />
+                  <span>Daily Note</span>
+                </>
+              ) : (
+                <>
+                  <BookOpen size={18} className="text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
+                  {viewingEntry.title || 'Journal Entry'}
+                </>
+              )}
             </h3>
             
             <div className="flex items-center gap-2">
@@ -1377,91 +1425,113 @@ const [touchEnd, setTouchEnd] = useState(null);
                   day: 'numeric'
                 })}
               </span>
-              <span className="mx-2">•</span>
-              <Clock size={14} className="mr-1" />
-              <span>
-                {formatTimestamp(viewingEntry.timestamp)}
-              </span>
-            </div>
-            
-            {/* Categories and metadata */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {/* Mood indicator */}
-              {viewingEntry.mood && (
-                <div className={`flex items-center gap-1 text-sm px-2 py-1 rounded-full ${getMoodColorClass(viewingEntry.mood)}`}>
-                  <Smile size={16} />
-                  <span>{getMoodEmoji(viewingEntry.mood)} Mood: {viewingEntry.mood}/5</span>
-                </div>
-              )}
-              
-              {/* Energy indicator */}
-              {viewingEntry.energy && (
-                <div className="flex items-center gap-1 text-sm px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                  <Zap size={16} />
-                  <span>Energy: {viewingEntry.energy}/3</span>
-                </div>
+              {!isDayNote && (
+                <>
+                  <span className="mx-2">•</span>
+                  <Clock size={14} className="mr-1" />
+                  <span>
+                    {formatTimestamp(viewingEntry.timestamp)}
+                  </span>
+                </>
               )}
             </div>
             
-            {/* Categories */}
-            {viewingEntry.categories && viewingEntry.categories.length > 0 && (
-              <div className="mb-4">
-                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Categories</h4>
-                <div className="flex flex-wrap gap-2">
-                  {viewingEntry.categories.map(categoryId => (
-                    <div 
-                      key={categoryId}
-                      className={`flex items-center gap-1 text-sm px-2 py-1 rounded-full ${getCategoryColorClass(categoryId)}`}
-                    >
-                      {getCategoryIcon(categoryId)}
-                      <span>{getCategoryName(categoryId)}</span>
+            {/* Only show these sections for journal entries, not day notes */}
+            {!isDayNote && (
+              <>
+                {/* Categories and metadata */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {/* Mood indicator */}
+                  {viewingEntry.mood && (
+                    <div className={`flex items-center gap-1 text-sm px-2 py-1 rounded-full ${getMoodColorClass(viewingEntry.mood)}`}>
+                      <Smile size={16} />
+                      <span>{getMoodEmoji(viewingEntry.mood)} Mood: {viewingEntry.mood}/5</span>
                     </div>
-                  ))}
+                  )}
+                  
+                  {/* Energy indicator */}
+                  {viewingEntry.energy && (
+                    <div className="flex items-center gap-1 text-sm px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                      <Zap size={16} />
+                      <span>Energy: {viewingEntry.energy}/3</span>
+                    </div>
+                  )}
                 </div>
-              </div>
+                
+                {/* Categories */}
+                {viewingEntry.categories && viewingEntry.categories.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Categories</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {viewingEntry.categories.map(categoryId => (
+                        <div 
+                          key={categoryId}
+                          className={`flex items-center gap-1 text-sm px-2 py-1 rounded-full ${getCategoryColorClass(categoryId)}`}
+                        >
+                          {getCategoryIcon(categoryId)}
+                          <span>{getCategoryName(categoryId)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
             
-            {/* Entry content */}
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4">
-              <p className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
+            {/* Entry content - styled differently for day notes */}
+            <div className={`rounded-lg p-4 mb-4 ${
+              isDayNote 
+                ? 'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 dark:border-amber-600'
+                : 'bg-slate-50 dark:bg-slate-700/50'
+            }`}>
+              <p className={`whitespace-pre-wrap ${
+                isDayNote
+                  ? 'text-amber-800 dark:text-amber-200'
+                  : 'text-slate-800 dark:text-slate-200'
+              }`}>
                 {viewingEntry.text}
               </p>
             </div>
             
-            {/* People mentioned */}
-            {viewingEntry.people && viewingEntry.people.length > 0 && (
-              <div className="mb-4">
-                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">People Mentioned</h4>
-                <div className="flex flex-wrap gap-2">
-                  {viewingEntry.people.map(person => (
-                    <div
-                      key={person}
-                      className="text-sm px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full flex items-center gap-1"
-                    >
-                      <User size={14} />
-                      {person}
+            {/* Only show these sections for journal entries, not day notes */}
+            {!isDayNote && (
+              <>
+                {/* People mentioned */}
+                {viewingEntry.people && viewingEntry.people.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">People Mentioned</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {viewingEntry.people.map(person => (
+                        <div
+                          key={person}
+                          className="text-sm px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full flex items-center gap-1"
+                        >
+                          <User size={14} />
+                          {person}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* Tags */}
-            {viewingEntry.tags && viewingEntry.tags.length > 0 && (
-              <div className="mb-4">
-                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Tags</h4>
-                <div className="flex flex-wrap gap-2">
-                  {viewingEntry.tags.map(tag => (
-                    <div
-                      key={tag}
-                      className="text-sm px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full flex items-center gap-1"
-                    >
-                      <Tag size={14} />
-                      #{tag}
+                  </div>
+                )}
+                
+                {/* Tags */}
+                {viewingEntry.tags && viewingEntry.tags.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Tags</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {viewingEntry.tags.map(tag => (
+                        <div
+                          key={tag}
+                          className="text-sm px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full flex items-center gap-1"
+                        >
+                          <Tag size={14} />
+                          #{tag}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                )}
+              </>
             )}
             
             {/* Action buttons */}

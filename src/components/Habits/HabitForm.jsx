@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Calendar, Target, Sparkles, RotateCcw, Save, X, Loader } from 'lucide-react';
+import { HelpCircle,Plus, Trash2, Calendar, Target, Sparkles, RotateCcw, Save, X, Loader } from 'lucide-react';
 import { createHabit, updateHabit } from '../../utils/habitTrackerUtils';
 import { generateStepsForHabit, generateMilestonesForHabit } from '../../utils/aiHabitService';
 import { formatDateForStorage } from '../../utils/dateUtils';
+
+const TooltipIcon = ({ content }) => {
+  return (
+    <div className="group relative inline-block text-left">
+      <HelpCircle size={14} className="text-slate-400 dark:text-slate-500 cursor-help" />
+      <div className="absolute z-10 left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 rounded-lg bg-slate-800 dark:bg-slate-700 text-white p-3 text-xs shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200">
+        <div className="absolute w-3 h-3 bg-slate-800 dark:bg-slate-700 bottom-0 left-1/2 -ml-1.5 -mb-1.5 transform rotate-45"></div>
+        <div>{content}</div>
+      </div>
+    </div>
+  );
+};
+
 
 const HabitForm = ({ habit, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -88,7 +101,11 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
   const handleAddMilestone = () => {
     setFormData(prev => ({
       ...prev,
-      milestones: [...prev.milestones, { name: '', value: 0 }]
+      milestones: [...prev.milestones, { 
+        name: '', 
+        value: 7,
+        type: 'streak' // Add default type
+      }]
     }));
   };
   
@@ -96,6 +113,35 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
     setFormData(prev => {
       const newMilestones = [...prev.milestones];
       newMilestones[index] = { ...newMilestones[index], [field]: value };
+      
+      // If changing type, suggest appropriate values and names
+      if (field === 'type') {
+        const milestone = newMilestones[index];
+        
+        // Suggest default values and names based on type
+        switch (value) {
+          case 'streak':
+            if (!milestone.name) newMilestones[index].name = 'Complete a streak';
+            if (!milestone.value) newMilestones[index].value = 7;
+            break;
+          case 'completion':
+            if (!milestone.name) newMilestones[index].name = 'Complete habit multiple times';
+            if (!milestone.value) newMilestones[index].value = 30;
+            break;
+          case 'time':
+            if (!milestone.name) newMilestones[index].name = 'Maintain habit for days';
+            if (!milestone.value) newMilestones[index].value = 30;
+            break;
+          case 'consistency':
+            if (!milestone.name) newMilestones[index].name = 'Maintain consistency rate';
+            if (!milestone.value) newMilestones[index].value = 80;
+            break;
+          case 'manual':
+            if (!milestone.name) newMilestones[index].name = 'Custom achievement';
+            break;
+        }
+      }
+      
       return { ...prev, milestones: newMilestones };
     });
   };
@@ -557,6 +603,18 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Milestones
             </label>
+            <div className="flex items-center gap-2">
+            <TooltipIcon content={
+    <div>
+      <h5 className="font-medium mb-1">Milestone Types</h5>
+      <p><span className="font-bold text-blue-300">Streak:</span> Days in a row without missing (e.g., 7 = 7-day streak)</p>
+      <p><span className="font-bold text-green-300">Completion:</span> Total times completed (e.g., 30 = complete 30 times total)</p>
+      <p><span className="font-bold text-amber-300">Time:</span> Days since starting (e.g., 30 = maintain for 30 days)</p>
+      <p><span className="font-bold text-teal-300">Consistency:</span> Percentage completion rate (e.g., 80 = 80% completion rate)</p>
+      <p><span className="font-bold text-purple-300">Manual:</span> You decide when it's complete!</p>
+    </div>
+  } />
+ 
             <button
               type="button"
               onClick={handleGenerateMilestonesWithAI}
@@ -579,35 +637,56 @@ const HabitForm = ({ habit, onSave, onCancel }) => {
                 </>
               )}
             </button>
+            </div>
           </div>
           <div className="space-y-2 mb-2">
             {formData.milestones.map((milestone, index) => (
               <div key={index} className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                <div className="w-6 h-6 flex-shrink-0 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full flex items-center justify-center">
-                  <Target size={14} />
-                </div>
-                <input
-                  type="text"
-                  value={milestone.name}
-                  onChange={(e) => handleMilestoneChange(index, 'name', e.target.value)}
-                  placeholder="Milestone name"
-                  className="flex-1 min-w-0 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs"
-                />
-                <input
-                  type="number"
-                  value={milestone.value}
-                  onChange={(e) => handleMilestoneChange(index, 'value', parseInt(e.target.value) || 0)}
-                  placeholder="Value"
-                  className="w-14 sm:w-16 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs"
-                />
-                <button 
-                  type="button"
-                  onClick={() => handleRemoveMilestone(index)}
-                  className="p-2 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400"
-                >
-                  <Trash2 size={16} />
-                </button>
+              <div className="w-6 h-6 flex-shrink-0 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full flex items-center justify-center">
+                <Target size={14} />
               </div>
+              
+              {/* Milestone name */}
+              <input
+                type="text"
+                value={milestone.name}
+                onChange={(e) => handleMilestoneChange(index, 'name', e.target.value)}
+                placeholder="Milestone name"
+                className="flex-1 min-w-0 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs"
+              />
+              
+              {/* Type selector */}
+              <select
+                value={milestone.type || "streak"}
+                onChange={(e) => handleMilestoneChange(index, 'type', e.target.value)}
+                className="p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs"
+              >
+                <option value="streak">Streak</option>
+                <option value="completion">Completion</option>
+                <option value="time">Time</option>
+                <option value="consistency">Consistency</option>
+                <option value="manual">Manual</option>
+              </select>
+              
+              
+              {/* Target value */}
+              <input
+                type="number"
+                value={milestone.value}
+                onChange={(e) => handleMilestoneChange(index, 'value', parseInt(e.target.value) || 0)}
+                placeholder="Value"
+                className="w-14 sm:w-16 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs"
+              />
+              
+              {/* Delete button */}
+              <button 
+                type="button"
+                onClick={() => handleRemoveMilestone(index)}
+                className="p-2 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
             ))}
           </div>
           

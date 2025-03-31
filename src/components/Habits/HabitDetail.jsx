@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Edit3, Trash2, Calendar, BarChart2, CheckCircle, Trophy, Zap, Target, Award, Plus, Bell } from 'lucide-react';
-import { trackHabitCompletion, generateCompletionHistory, updateHabitStats } from '../../utils/habitTrackerUtils';
+import { AlertTriangle, X, ArrowLeft, Edit3, Trash2, Calendar, BarChart2, CheckCircle, Trophy, Zap, Target, Award, Plus, Bell,CheckCircle2, Flame, TrendingUp } from 'lucide-react';
+import { trackHabitCompletion, generateCompletionHistory, updateHabitStats, toggleMilestoneStatus } from '../../utils/habitTrackerUtils';
 import DeleteHabitConfirmation from './DeleteHabitConfirmation';
 import HabitReminderSettings from './HabitReminderSettings';
 import StreakMilestoneCelebration from './StreakMilestoneCelebration';
@@ -12,6 +12,11 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate, onStreakMilest
   const [habitState, setHabit] = useState(habit);
   const [showMilestoneCelebration, setShowMilestoneCelebration] = useState(false);
   const [showReminderSettings, setShowReminderSettings] = useState(false);
+  const [showMilestoneConfirm, setShowMilestoneConfirm] = useState(false);
+  const [milestoneToToggle, setMilestoneToToggle] = useState(null);
+  const [toggleAction, setToggleAction] = useState('complete'); // 'complete' or 'uncomplete'
+const [celebrationData, setCelebrationData] = useState({ streak: 0, habitName: '', message: '' });
+
 
   // Update completion history when habit changes
   useEffect(() => {
@@ -53,6 +58,60 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate, onStreakMilest
     
     // Call the existing onUpdate to refresh the parent component
     onUpdate();
+  };
+
+  const handleToggleMilestone = (milestoneIndex) => {
+    const milestone = habitState.milestones[milestoneIndex];
+    
+    // Store which milestone we're working with and what action we're taking
+    setMilestoneToToggle(milestoneIndex);
+    setToggleAction(milestone.achieved ? 'uncomplete' : 'complete');
+    
+    // Show confirmation for both completing and uncompleting automatic milestones
+    if (milestone.type !== 'manual') {
+      setShowMilestoneConfirm(true);
+      return;
+    }
+    
+    // For manual milestones, toggle directly
+    performMilestoneToggle(milestoneIndex);
+  };
+
+  const performMilestoneToggle = (milestoneIndex) => {
+    const milestone = habitState.milestones[milestoneIndex];
+    const wasAchieved = milestone.achieved;
+    
+    // Create a deep copy of the habit for immediate UI update
+    const habitCopy = JSON.parse(JSON.stringify(habitState));
+    
+    // Immediately update the UI by modifying our copy first
+    habitCopy.milestones[milestoneIndex] = {
+      ...habitCopy.milestones[milestoneIndex],
+      achieved: !wasAchieved,
+      achievedDate: !wasAchieved ? new Date().toISOString() : undefined
+    };
+    
+    // Immediately update local state to refresh UI
+    setHabit(habitCopy);
+    
+    // Now call the API to update storage
+    const updatedHabit = toggleMilestoneStatus(habitState.id, milestoneIndex);
+    
+    if (updatedHabit) {
+      // Only show celebration when newly completing a milestone, not when uncompleting
+      if (!wasAchieved) {
+        setCelebrationData({
+          streak: updatedHabit.stats.streakCurrent,
+          habitName: updatedHabit.name,
+          milestoneName: milestone.name,
+          milestoneType: milestone.type
+        });
+        setShowMilestoneCelebration(true);
+      }
+      
+      // Update parent component to reflect changes
+      onUpdate();
+    }
   };
   
   // Render completion history
@@ -334,21 +393,74 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate, onStreakMilest
       {/* Milestones */}
       {habit.milestones && habit.milestones.length > 0 && (
         <div className="mb-4 sm:mb-6">
-          <h3 className="text-sm sm:text-md font-medium mb-2 sm:mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
-            <Trophy size={16} className="text-amber-500" />
-            Milestones
-          </h3>
-          <div className="space-y-2 sm:space-y-3">
-            {habit.milestones.map((milestone, index) => (
-              <div key={index} className="flex items-center gap-2 sm:gap-3">
-                <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0
-                  ${milestone.achieved ? 
-                    'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 
-                    'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
-                  }`}
+        <h3 className="text-sm sm:text-md font-medium mb-2 sm:mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
+          <Trophy size={16} className="text-amber-500" />
+          Milestones
+        </h3>
+        <div className="space-y-2 sm:space-y-3">
+          {habitState.milestones.map((milestone, index) => {
+            // Determine icon and colors based on milestone type
+            const getMilestoneIcon = () => {
+              switch(milestone.type) {
+                case 'streak':
+                  return <Flame size={14} />;
+                case 'completion':
+                  return <CheckCircle2 size={14} />;
+                case 'time':
+                  return <Calendar size={14} />;
+                case 'consistency':
+                  return <TrendingUp size={14} />;
+                case 'manual':
+                  return <Target size={14} />;
+                default:
+                  return <Target size={14} />;
+              }
+            };
+            
+            // Determine background and text colors based on type
+            const getTypeColors = () => {
+              if (milestone.type === 'streak') 
+                return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
+              if (milestone.type === 'completion') 
+                return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+              if (milestone.type === 'time') 
+                return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+              if (milestone.type === 'consistency') 
+                return 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300';
+              if (milestone.type === 'manual') 
+                return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+              return 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
+            };
+            
+            const getButtonColors = () => {
+              if (!milestone.achieved) {
+                return 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600';
+              }
+              
+              if (milestone.type === 'streak') 
+                return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
+              if (milestone.type === 'completion') 
+                return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+              if (milestone.type === 'time') 
+                return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+              if (milestone.type === 'consistency') 
+                return 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300';
+              if (milestone.type === 'manual') 
+                return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+              return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
+            };
+            
+            return (
+              <div key={index} className="flex items-center gap-2 sm:gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 sm:p-3">
+                {/* Clickable milestone status icon for toggling */}
+                <button
+                  onClick={() => handleToggleMilestone(index)}
+                  className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${getButtonColors()}`}
+                  title={milestone.achieved ? "Mark as incomplete" : "Mark as complete"}
                 >
-                  {milestone.achieved ? <Trophy size={14} /> : <Target size={14} />}
-                </div>
+                  {milestone.achieved ? <Trophy size={14} /> : getMilestoneIcon()}
+                </button>
+                
                 <div className="flex-1 min-w-0">
                   <div className={`font-medium text-xs sm:text-sm truncate ${milestone.achieved ? 
                     'text-amber-700 dark:text-amber-300' : 
@@ -356,21 +468,31 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate, onStreakMilest
                   }`}>
                     {milestone.name}
                   </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                    {milestone.achieved ? (
-                      `Achieved on ${new Date(milestone.achievedDate).toLocaleDateString()}`
-                    ) : (
-                      `Target: ${milestone.value}`
-                    )}
+                  
+                  <div className="flex items-center gap-1 mt-1 flex-wrap">
+                    {/* Type badge */}
+                    <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${getTypeColors()}`}>
+                      {milestone.type || "streak"}
+                    </span>
+                    
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {milestone.achieved ? (
+                        `Achieved on ${new Date(milestone.achievedDate).toLocaleDateString()}`
+                      ) : (
+                        `Target: ${milestone.value}${milestone.type === 'consistency' ? '%' : ''}`
+                      )}
+                    </span>
                   </div>
                 </div>
+                
                 {milestone.achieved && (
                   <Award size={16} className="text-amber-500 flex-shrink-0" />
                 )}
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
+      </div>
       )}
 
       {/* Habit Steps */}
@@ -440,13 +562,15 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate, onStreakMilest
         />
       )}
 
-      {showMilestoneCelebration && (
-        <StreakMilestoneCelebration 
-          streak={habitState.stats.streakCurrent}
-          habitName={habitState.name}
-          onClose={() => setShowMilestoneCelebration(false)}
-        />
-      )}
+{showMilestoneCelebration && (
+  <StreakMilestoneCelebration 
+    streak={celebrationData.streak}
+    habitName={celebrationData.habitName}
+    milestoneName={celebrationData.milestoneName}
+    milestoneType={celebrationData.milestoneType}
+    onClose={() => setShowMilestoneCelebration(false)}
+  />
+)}
 
       {showReminderSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -456,6 +580,56 @@ const HabitDetail = ({ habit, onEdit, onBack, onDelete, onUpdate, onStreakMilest
           />
         </div>
       )}
+      {showMilestoneConfirm && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full">
+      <div className="flex items-start mb-4">
+        <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-full text-amber-600 dark:text-amber-400 mr-3 flex-shrink-0">
+          <AlertTriangle size={24} />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100">
+            {toggleAction === 'complete' ? 'Complete Milestone' : 'Reset Milestone'}
+          </h3>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
+            {toggleAction === 'complete'
+              ? `This ${habitState.milestones[milestoneToToggle]?.type} milestone is set to track automatically. Are you sure you want to manually mark it as complete?`
+              : `This will reset the milestone "${habitState.milestones[milestoneToToggle]?.name}" back to incomplete status. Are you sure?`
+            }
+          </p>
+        </div>
+        <button
+          onClick={() => setShowMilestoneConfirm(false)}
+          className="p-1 text-slate-400 hover:text-slate-500 dark:text-slate-500 dark:hover:text-slate-400 flex-shrink-0"
+        >
+          <X size={20} />
+        </button>
+      </div>
+      
+      <div className="flex space-x-3 justify-end">
+        <button
+          onClick={() => setShowMilestoneConfirm(false)}
+          className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            setShowMilestoneConfirm(false);
+            performMilestoneToggle(milestoneToToggle);
+          }}
+          className={`px-4 py-2 text-white rounded hover:bg-opacity-90 ${
+            toggleAction === 'complete'
+              ? 'bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-800'
+              : 'bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800'
+          }`}
+        >
+          {toggleAction === 'complete' ? 'Mark Complete' : 'Reset Milestone'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

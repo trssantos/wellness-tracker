@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Calendar, DollarSign, TrendingDown, Filter, ArrowDown, ArrowUp, Search } from 'lucide-react';
-import { getCategoryById, getCategoryIconComponent } from '../../utils/financeUtils';
+import { X, Calendar, DollarSign, TrendingDown, Filter, ArrowDown, ArrowUp, Search, FolderTree, Tag } from 'lucide-react';
+import { 
+  getCategoryById, 
+  getCategoryIconComponent,
+  getGroupNameFromId,
+  getCategoryGroup,
+  isCategoryInGroup
+} from '../../utils/financeUtils';
 import { formatDateForStorage } from '../../utils/dateUtils';
 
 const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, currency = '$' }) => {
@@ -8,6 +14,7 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all'); // For group budgets
   
   // Ref for click outside detection
   const modalRef = useRef(null);
@@ -26,8 +33,27 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
     };
   }, [onClose]);
   
-  // Get category info
-  const category = getCategoryById(budget.category);
+  // Check if this is a group budget
+  const isGroupBudget = budget.isGroupBudget || budget.category.startsWith('group-');
+  
+  // Get category or group info
+  const category = isGroupBudget ? null : getCategoryById(budget.category);
+  const groupName = isGroupBudget ? getGroupNameFromId(budget.category) : null;
+  
+  // Get categories in this group (if it's a group budget)
+  const getCategoriesInGroup = () => {
+    if (!isGroupBudget) return [];
+    
+    // Filter transactions in this group to extract unique categories
+    const categoriesInGroup = [...new Set(
+      categoryTransactions.map(tx => tx.category)
+    )].map(catId => ({
+      id: catId,
+      category: getCategoryById(catId)
+    })).filter(cat => cat.category); // Filter out any null categories
+    
+    return categoriesInGroup;
+  };
   
   // Format month key to show date
   const formatMonthDisplay = (monthKey) => {
@@ -36,7 +62,7 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
     return date.toLocaleDateString('default', { month: 'long', year: 'numeric' });
   };
   
-  // Filter transactions by this category and month
+  // Filter transactions by this category/group and month
   const filterTransactionsByMonthAndCategory = () => {
     // Calculate start and end date for the month
     const [year, month] = monthKey.split('-').map(Number);
@@ -46,15 +72,28 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
     
     // Filter transactions
     return transactions.filter(tx => {
-      // Match category
-      if (tx.category !== budget.category) return false;
-      
       // Match expense (negative amount)
       if (tx.amount >= 0) return false;
       
       // Match date range
       const txDate = new Date(tx.timestamp);
       if (txDate < startDate || txDate > endDate) return false;
+      
+      // Match category or group
+      if (isGroupBudget) {
+        // For group budgets, check if transaction category belongs to the group
+        if (!isCategoryInGroup(tx.category, budget.category)) {
+          return false;
+        }
+        
+        // Apply category filter if set
+        if (categoryFilter !== 'all' && tx.category !== categoryFilter) {
+          return false;
+        }
+      } else {
+        // For regular budgets, exact category match
+        if (tx.category !== budget.category) return false;
+      }
       
       // Match search query
       if (searchQuery && !tx.name.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -85,6 +124,12 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
     });
   };
   
+  // Get category transactions
+  const categoryTransactions = getCategoryTransactions();
+  
+  // Get unique categories in this group
+  const categoriesInGroup = getCategoriesInGroup();
+  
   // Handle sort click
   const handleSort = (field) => {
     if (sortBy === field) {
@@ -105,9 +150,6 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
     const date = new Date(timestamp);
     return date.toLocaleDateString();
   };
-  
-  // Get category transactions
-  const categoryTransactions = getCategoryTransactions();
   
   // Calculate total spent for these transactions
   const totalSpent = categoryTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
@@ -136,11 +178,19 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-slate-700">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-md bg-${category?.color || 'gray'}-900/50 text-${category?.color || 'gray'}-400`}>
-              {getCategoryIconComponent(budget.category, 24)}
-            </div>
+            {isGroupBudget ? (
+              <div className="p-2 rounded-md bg-blue-900/50 text-blue-400">
+                <FolderTree size={24} />
+              </div>
+            ) : (
+              <div className={`p-2 rounded-md bg-${category?.color || 'gray'}-900/50 text-${category?.color || 'gray'}-400`}>
+                {getCategoryIconComponent(budget.category, 24)}
+              </div>
+            )}
             <div>
-              <h3 className="text-lg font-medium">{category?.name || 'Category'} Transactions</h3>
+              <h3 className="text-lg font-medium">
+                {isGroupBudget ? `${groupName} Group` : (category?.name || 'Category')} Transactions
+              </h3>
               <p className="text-sm text-slate-400">{formatMonthDisplay(monthKey)}</p>
             </div>
           </div>
@@ -178,7 +228,7 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
                 className={`h-full rounded-full ${
                   totalSpent > budget.allocated 
                     ? 'bg-red-500' 
-                    : `bg-${category?.color || 'blue'}-500`
+                    : isGroupBudget ? 'bg-blue-500' : `bg-${category?.color || 'blue'}-500`
                 }`}
                 style={{ width: `${Math.min(100, Math.round((totalSpent / budget.allocated) * 100))}%` }}
               ></div>
@@ -188,15 +238,33 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
         
         {/* Filters & Search */}
         <div className="p-3 border-b border-slate-700 bg-slate-700/30 flex flex-wrap gap-2 justify-between">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search transactions..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="pl-9 pr-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
-            <Search className="absolute left-3 top-2 text-slate-400" size={16} />
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search transactions..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9 pr-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+              <Search className="absolute left-3 top-2 text-slate-400" size={16} />
+            </div>
+            
+            {/* Category filter for group budgets */}
+            {isGroupBudget && categoriesInGroup.length > 0 && (
+              <select
+                value={categoryFilter}
+                onChange={e => setCategoryFilter(e.target.value)}
+                className="bg-slate-700 border border-slate-600 rounded-lg text-sm text-white p-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              >
+                <option value="all">All Categories</option>
+                {categoriesInGroup.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.category.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           
           <div className="flex items-center gap-2">
@@ -236,37 +304,57 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
                 <tr>
                   <th className="p-3 text-left text-xs font-medium text-slate-300 border-b border-slate-600">Date</th>
                   <th className="p-3 text-left text-xs font-medium text-slate-300 border-b border-slate-600">Description</th>
+                  {isGroupBudget && (
+                    <th className="p-3 text-left text-xs font-medium text-slate-300 border-b border-slate-600">Category</th>
+                  )}
                   <th className="p-3 text-right text-xs font-medium text-slate-300 border-b border-slate-600">Amount</th>
                 </tr>
               </thead>
               <tbody>
-                {categoryTransactions.map((transaction) => (
-                  <tr key={transaction.id} className="hover:bg-slate-700/50 transition-colors">
-                    <td className="p-3 text-sm text-slate-300 border-b border-slate-700">
-                      {formatDate(transaction.timestamp)}
-                    </td>
-                    <td className="p-3 text-sm text-white border-b border-slate-700">
-                      <div className="font-medium">{transaction.name}</div>
-                      {transaction.notes && (
-                        <div className="text-xs text-slate-400 mt-0.5">{transaction.notes}</div>
+                {categoryTransactions.map((transaction) => {
+                  const txCategory = getCategoryById(transaction.category);
+                  
+                  return (
+                    <tr key={transaction.id} className="hover:bg-slate-700/50 transition-colors">
+                      <td className="p-3 text-sm text-slate-300 border-b border-slate-700">
+                        {formatDate(transaction.timestamp)}
+                      </td>
+                      <td className="p-3 text-sm text-white border-b border-slate-700">
+                        <div className="font-medium">{transaction.name}</div>
+                        {transaction.notes && (
+                          <div className="text-xs text-slate-400 mt-0.5">{transaction.notes}</div>
+                        )}
+                      </td>
+                      {isGroupBudget && (
+                        <td className="p-3 text-sm border-b border-slate-700">
+                          {txCategory && (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-${txCategory.color}-500/20 text-${txCategory.color}-300`}>
+                              {getCategoryIconComponent(transaction.category, 12)}
+                              {txCategory.name}
+                            </span>
+                          )}
+                        </td>
                       )}
-                    </td>
-                    <td className="p-3 text-sm font-medium text-right text-red-400 border-b border-slate-700">
-                      <div className="flex items-center justify-end">
-                        <TrendingDown size={14} className="mr-1" />
-                        {formatCurrency(transaction.amount)}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="p-3 text-sm font-medium text-right text-red-400 border-b border-slate-700">
+                        <div className="flex items-center justify-end">
+                          <TrendingDown size={14} className="mr-1" />
+                          {formatCurrency(transaction.amount)}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           ) : (
             <div className="p-8 text-center text-slate-400">
               <TrendingDown size={36} className="text-slate-500 mx-auto mb-2" />
-              <p>No transactions found for this category in {formatMonthDisplay(monthKey)}.</p>
+              <p>No transactions found for this {isGroupBudget ? "group" : "category"} in {formatMonthDisplay(monthKey)}.</p>
               {searchQuery && (
                 <p className="mt-2 text-sm">Try adjusting your search query.</p>
+              )}
+              {isGroupBudget && categoryFilter !== 'all' && (
+                <p className="mt-2 text-sm">Try selecting "All Categories" from the filter.</p>
               )}
             </div>
           )}

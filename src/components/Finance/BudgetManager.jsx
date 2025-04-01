@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Wallet, Edit, Trash2, Plus, AlertTriangle, Check, RefreshCw,
-  ChevronLeft, ChevronRight, Calendar, ChevronUp, ChevronDown
+  ChevronLeft, ChevronRight, Calendar, ChevronUp, ChevronDown, FolderTree
 } from 'lucide-react';
 import { 
   getFinanceData, deleteBudget, updateBudget, calculateFinancialStats, 
-  getCategoryById, getCategoryColor, getCurrentMonthKey, formatMonthKey
+  getCategoryById, getCategoryColor, getCurrentMonthKey, formatMonthKey,
+  getBudgetDisplayName, getCategoryIconComponent, getGroupNameFromId
 } from '../../utils/financeUtils';
 import EditBudgetModal from './EditBudgetModal';
 import ConfirmationModal from './ConfirmationModal';
@@ -21,12 +22,12 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [isCurrentMonth, setIsCurrentMonth] = useState(true);
   const [availableMonths, setAvailableMonths] = useState([]);
+  const [viewingBudget, setViewingBudget] = useState(null);
   
   // Month picker state
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
   const monthPickerRef = useRef(null);
-  const [viewingBudget, setViewingBudget] = useState(null);
 
   // Fetch budgets on initial render and when refreshTrigger changes
   useEffect(() => {
@@ -90,10 +91,6 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  const handleBudgetClick = (budget) => {
-    setViewingBudget(budget);
-  };
 
   // Parse month key to Date object
   const getMonthDate = (monthKey) => {
@@ -162,6 +159,11 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
     }
   };
 
+  // Handle budget click
+  const handleBudgetClick = (budget) => {
+    setViewingBudget(budget);
+  };
+
   // Handle delete budget
   const handleDeleteBudget = (budget) => {
     setConfirmDelete(budget);
@@ -187,7 +189,17 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
     if (onRefresh) onRefresh();
   };
 
-
+  // Reset all budgets for the new month
+  const handleResetBudgets = () => {
+    if (window.confirm('This will reset the spent amount for all budgets to 0. Continue?')) {
+      // Reset each budget's spent amount
+      budgets.forEach(budget => {
+        updateBudget(budget.id, { spent: 0 }, selectedMonth);
+      });
+      
+      if (onRefresh) onRefresh();
+    }
+  };
 
   // Format currency amount
   const formatCurrency = (amount) => {
@@ -229,7 +241,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
                 <div key={budget.id}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-white dark:text-white">
-                      {category ? category.name : budget.category}
+                      {getBudgetDisplayName(budget)}
                     </span>
                     <span className={`font-medium ${
                       isOverBudget 
@@ -244,7 +256,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
                       className={`h-full rounded-full ${
                         isOverBudget 
                           ? 'bg-red-500 dark:bg-red-600' 
-                          : `bg-${colorName}-500 dark:bg-${colorName}-600`
+                          : budget.isGroupBudget ? 'bg-blue-500' : `bg-${colorName}-500 dark:bg-${colorName}-600`
                       }`}
                       style={{ width: `${percentage}%` }}
                     ></div>
@@ -289,7 +301,8 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
         {/* Month Selector */}
         <div className="flex justify-between items-center mb-6">
           <h4 className="text-lg font-medium text-white flex items-center gap-2">
-            
+            <Wallet className="text-amber-400" size={20} />
+            Budget Manager
           </h4>
           
           {/* Month Navigation */}
@@ -430,7 +443,21 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
             </div>
             
             {/* Budget Categories */}
-            
+            <div className="flex justify-between items-center mb-4">
+              <h5 className="font-medium text-white dark:text-white">Budget Categories</h5>
+              
+              {isCurrentMonth && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleResetBudgets}
+                    className="px-2 py-1 rounded-lg bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors flex items-center gap-1 text-xs"
+                  >
+                    <RefreshCw size={14} />
+                    <span>Reset</span>
+                  </button>
+                </div>
+              )}
+            </div>
             
             <div className="space-y-6">
               {budgetProgress.map((budget) => {
@@ -438,22 +465,25 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
                 const percentage = calculatePercentage(budget.spent, budget.allocated);
                 const isOverBudget = budget.spent > budget.allocated;
                 const colorName = category ? category.color : 'gray';
+                const isGroupBudget = budget.isGroupBudget || budget.category.startsWith('group-');
                 
                 return (
                   <div 
-  key={budget.id} 
-  className={`p-4 rounded-lg cursor-pointer ${
-    isOverBudget 
-      ? 'bg-red-900/30 dark:bg-red-900/30 border border-red-800/50 dark:border-red-800/50' 
-      : `bg-${colorName}-900/30 dark:bg-${colorName}-900/30 border border-${colorName}-800/50 dark:border-${colorName}-800/50`
-  }`}
-  onClick={() => handleBudgetClick(budget)}
->
+                    key={budget.id} 
+                    className={`p-4 rounded-lg cursor-pointer ${
+                      isOverBudget 
+                        ? 'bg-red-900/30 dark:bg-red-900/30 border border-red-800/50 dark:border-red-800/50' 
+                        : isGroupBudget
+                          ? 'bg-blue-900/30 dark:bg-blue-900/30 border border-blue-800/50 dark:border-blue-800/50'
+                          : `bg-${colorName}-900/30 dark:bg-${colorName}-900/30 border border-${colorName}-800/50 dark:border-${colorName}-800/50`
+                    }`}
+                    onClick={() => handleBudgetClick(budget)}
+                  >
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-2 mb-3">
                       <div>
                         <div className="flex items-center gap-2">
                           <h6 className="font-medium text-white dark:text-white">
-                            {category ? category.name : budget.category}
+                            {getBudgetDisplayName(budget)}
                           </h6>
                           {isOverBudget && (
                             <span className="flex items-center gap-1 text-xs text-red-400 dark:text-red-400 font-medium">
@@ -480,7 +510,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
                           <>
                             <button
                               onClick={(e) => {
-                                e.stopPropagation(); // Prevent the click from bubbling up
+                                e.stopPropagation();
                                 handleEditBudget(budget);
                               }}
                               className="p-1.5 rounded-lg bg-slate-700 dark:bg-slate-700 text-blue-400 dark:text-blue-400 hover:bg-blue-900/30 dark:hover:bg-blue-900/30 transition-colors"
@@ -490,7 +520,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
                             </button>
                             <button
                               onClick={(e) => {
-                                e.stopPropagation(); // Prevent the click from bubbling up
+                                e.stopPropagation();
                                 handleDeleteBudget(budget);
                               }}
                               className="p-1.5 rounded-lg bg-slate-700 dark:bg-slate-700 text-red-400 dark:text-red-400 hover:bg-red-900/30 dark:hover:bg-red-900/30 transition-colors"
@@ -510,7 +540,9 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
                             className={`h-full rounded-full ${
                               isOverBudget 
                                 ? 'bg-red-500 dark:bg-red-600' 
-                                : `bg-${colorName}-500 dark:bg-${colorName}-600`
+                                : isGroupBudget
+                                  ? 'bg-blue-500 dark:bg-blue-600'
+                                  : `bg-${colorName}-500 dark:bg-${colorName}-600`
                             }`}
                             style={{ width: `${percentage}%` }}
                           ></div>
@@ -573,6 +605,17 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
         )}
       </div>
       
+      {/* Budget Transactions Modal */}
+      {viewingBudget && (
+        <BudgetTransactionsModal
+          budget={viewingBudget}
+          monthKey={selectedMonth}
+          transactions={getFinanceData().transactions || []}
+          onClose={() => setViewingBudget(null)}
+          currency={currency}
+        />
+      )}
+      
       {/* Edit Budget Modal */}
       {editingBudget && (
         <EditBudgetModal
@@ -588,23 +631,13 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
         <ConfirmationModal
           isOpen={true}
           title="Delete Budget"
-          message={`Are you sure you want to delete the "${getCategoryById(confirmDelete.category)?.name || confirmDelete.category}" budget (${formatCurrency(confirmDelete.allocated)})? This action cannot be undone.`}
+          message={`Are you sure you want to delete the "${getBudgetDisplayName(confirmDelete)}" budget (${formatCurrency(confirmDelete.allocated)})? This action cannot be undone.`}
           onConfirm={confirmDeleteBudget}
           onCancel={() => setConfirmDelete(null)}
           confirmButtonClass="bg-red-600 hover:bg-red-700"
           confirmText="Delete"
         />
       )}
-      {/* Budget Transactions Modal */}
-{viewingBudget && (
-  <BudgetTransactionsModal
-    budget={viewingBudget}
-    monthKey={selectedMonth}
-    transactions={getFinanceData().transactions || []}
-    onClose={() => setViewingBudget(null)}
-    currency={currency}
-  />
-)}
     </div>
   );
 };

@@ -1476,10 +1476,24 @@ export const calculateFinancialStats = (period = 'month', monthKey) => {
     
     // Only recalculate if we're looking at the current month
     if (currentMonthKey === getCurrentMonthKey() && period === 'month') {
-      // Sum transactions in this category for the current period
-      spent = periodTransactions
-        .filter(t => t.amount < 0 && t.category === budget.category)
-        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      // Check if this is a group budget
+      if (budget.isGroupBudget && budget.category.startsWith('group-')) {
+        const groupName = getGroupNameFromId(budget.category);
+        
+        // Sum transactions for all categories in this group
+        spent = periodTransactions
+          .filter(t => {
+            if (t.amount >= 0) return false; // Only expenses
+            const categoryGroup = getCategoryGroup(t.category);
+            return categoryGroup.toLowerCase() === groupName.toLowerCase();
+          })
+          .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      } else {
+        // Regular category budget
+        spent = periodTransactions
+          .filter(t => t.amount < 0 && t.category === budget.category)
+          .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      }
     }
     
     return {
@@ -1733,3 +1747,64 @@ const DEFAULT_TASKS = [
     ]
   }
 ];
+
+// Add this helper function to determine if a category belongs to a group
+export const getCategoryGroup = (categoryId) => {
+  const categories = getCategoriesFromConstants();
+  
+  // Look in expense categories
+  for (const category of categories.expense) {
+    if (category.id === categoryId) {
+      return category.group || 'Other';
+    }
+  }
+  
+  // Look in income categories
+  for (const category of categories.income) {
+    if (category.id === categoryId) {
+      return category.group || 'Other';
+    }
+  }
+  
+  return 'Other';
+};
+
+// Add helper to extract group name from a group ID
+export const getGroupNameFromId = (groupId) => {
+  if (!groupId || !groupId.startsWith('group-')) {
+    return null;
+  }
+  
+  // Extract the group name and format it
+  const groupName = groupId.replace('group-', '').replace(/-/g, ' ');
+  return groupName.split(' ').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
+};
+
+// Add helper to check if a category belongs to a group
+export const isCategoryInGroup = (categoryId, groupId) => {
+  if (!groupId || !groupId.startsWith('group-')) {
+    return false;
+  }
+  
+  const targetGroup = getGroupNameFromId(groupId);
+  const categoryGroup = getCategoryGroup(categoryId);
+  
+  return targetGroup && categoryGroup && 
+         targetGroup.toLowerCase() === categoryGroup.toLowerCase();
+};
+
+export const getBudgetDisplayName = (budget) => {
+  if (!budget) return 'Unknown';
+  
+  if (budget.isGroupBudget && budget.category.startsWith('group-')) {
+    // Format the group name (e.g., "group-food" => "Food Group")
+    const groupName = getGroupNameFromId(budget.category);
+    return `${groupName} Group`;
+  } else {
+    // Regular category budget - get the category name
+    const category = getCategoryById(budget.category);
+    return category ? category.name : budget.category;
+  }
+};

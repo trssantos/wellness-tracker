@@ -1159,34 +1159,60 @@ export const getSpendingMoodCorrelation = () => {
 export const calculateFinancialStats = (period = 'month') => {
   const financeData = getFinanceData();
   const now = new Date();
-  now.setHours(0, 0, 0, 0);  // Normalize today's date to midnight
+  now.setHours(23, 59, 59, 999);  // Set to end of day
   
   let startDate;
+  let endDate = new Date(now); // Default end date is today
   
-  // Calculate start date based on period
+  // Calculate start and end dates based on period
   switch (period) {
     case 'week':
+      // Calculate start of week (Sunday)
       startDate = new Date(now);
-      startDate.setDate(now.getDate() - 7);
+      const day = startDate.getDay(); // 0 for Sunday, 1 for Monday, etc.
+      startDate.setDate(startDate.getDate() - day); // Go to beginning of week (Sunday)
+      startDate.setHours(0, 0, 0, 0); // Start of day
       break;
+    
     case 'month':
-      startDate = new Date(now);
-      startDate.setMonth(now.getMonth() - 1);
+      // First day of current month
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      startDate.setHours(0, 0, 0, 0);
+      // Last day of current month
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
       break;
+    
     case 'quarter':
-      startDate = new Date(now);
-      startDate.setMonth(now.getMonth() - 3);
+      // First day of current quarter
+      const currentQuarter = Math.floor(now.getMonth() / 3);
+      startDate = new Date(now.getFullYear(), currentQuarter * 3, 1);
+      startDate.setHours(0, 0, 0, 0);
+      // Last day of current quarter
+      endDate = new Date(now.getFullYear(), (currentQuarter + 1) * 3, 0, 23, 59, 59, 999);
       break;
+    
     case 'year':
-      startDate = new Date(now);
-      startDate.setFullYear(now.getFullYear() - 1);
+      // First day of current year
+      startDate = new Date(now.getFullYear(), 0, 1);
+      startDate.setHours(0, 0, 0, 0);
+      // Last day of current year
+      endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
       break;
+    
     default:
-      startDate = new Date(now);
-      startDate.setMonth(now.getMonth() - 1);
+      // Default to current month
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  }
+  
+  // If endDate is in the future, set it to now
+  if (endDate > now) {
+    endDate = now;
   }
   
   const startDateIso = startDate.toISOString();
+  const endDateIso = endDate.toISOString();
   
   // Filter transactions for the period
   const allTransactions = financeData.transactions || [];
@@ -1204,10 +1230,11 @@ export const calculateFinancialStats = (period = 'month') => {
     return txDate > now;
   });
   
-  // Filter period transactions (as before)
-  const periodTransactions = currentTransactions.filter(t => 
-    new Date(t.timestamp) >= startDate
-  );
+  // Filter period transactions - using both start and end dates
+  const periodTransactions = currentTransactions.filter(t => {
+    const txDate = new Date(t.timestamp);
+    return txDate >= startDate && txDate <= endDate;
+  });
   
   // Calculate current stats (only transactions up to today)
   // Calculate total income
@@ -1253,18 +1280,22 @@ export const calculateFinancialStats = (period = 'month') => {
     categoryBreakdown[category] += amount;
   });
   
-  // Calculate monthly change (compare with previous month)
+  // Calculate monthly change (compare with previous period)
   let monthlyChange = 0;
   
   if (period === 'month') {
-    const previousMonth = new Date(startDate);
-    previousMonth.setMonth(previousMonth.getMonth() - 1);
-    const previousMonthEnd = new Date(startDate);
-    previousMonthEnd.setDate(previousMonthEnd.getDate() - 1);
+    // Calculate previous month's range
+    const prevMonthStart = new Date(startDate);
+    prevMonthStart.setMonth(prevMonthStart.getMonth() - 1);
     
-    const previousMonthTransactions = currentTransactions.filter(t => 
-      new Date(t.timestamp) >= previousMonth && new Date(t.timestamp) <= previousMonthEnd
-    );
+    const prevMonthEnd = new Date(startDate);
+    prevMonthEnd.setDate(prevMonthEnd.getDate() - 1);
+    prevMonthEnd.setHours(23, 59, 59, 999);
+    
+    const previousMonthTransactions = currentTransactions.filter(t => {
+      const txDate = new Date(t.timestamp);
+      return txDate >= prevMonthStart && txDate <= prevMonthEnd;
+    });
     
     const prevIncome = previousMonthTransactions
       .filter(t => t.amount > 0)
@@ -1308,7 +1339,7 @@ export const calculateFinancialStats = (period = 'month') => {
     budgets,
     spendingByGroup,
     startDate: startDateIso,
-    endDate: now.toISOString(),
+    endDate: endDateIso,
     // New properties for upcoming transactions
     current: {
       income,
@@ -1324,7 +1355,7 @@ export const calculateFinancialStats = (period = 'month') => {
       balance: projectedBalance
     }
   };
-};
+}
 
 // Create task from transaction
 export const createTaskFromTransaction = (transaction) => {

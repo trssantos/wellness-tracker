@@ -54,83 +54,94 @@ const ExpenseTracker = ({
   }, [refreshTrigger]);
 
   // Apply filters and search whenever related states change
-  useEffect(() => {
-    let filtered = [...transactions];
+useEffect(() => {
+  let filtered = [...transactions];
 
-    // Filter out future transactions
+  // Filter out future transactions
   const today = new Date();
   today.setHours(0, 0, 0, 0);
     
-    // Apply search term filter
+  // Apply search term filter
+  filtered = filtered.filter(transaction => {
+    const txDate = new Date(transaction.date || transaction.timestamp);
+    txDate.setHours(0, 0, 0, 0);
+    return txDate <= today; // Only include past and today's transactions
+  });
+  
+  // Apply search term filter
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    filtered = filtered.filter(transaction => 
+      transaction.name.toLowerCase().includes(term) || 
+      (transaction.notes && transaction.notes.toLowerCase().includes(term))
+    );
+  }
+  
+  // Apply date filter
+  const now = new Date();
+  if (dateFilter === 'today') {
+    const today = formatDateForStorage(now);
+    filtered = filtered.filter(transaction => 
+      transaction.date === today
+    );
+  } else if (dateFilter === 'week') {
+    // Get start of the week (Sunday)
+    const startOfWeek = new Date(now);
+    const day = startOfWeek.getDay(); // 0 for Sunday, 1 for Monday, etc.
+    startOfWeek.setDate(startOfWeek.getDate() - day); // Go to beginning of week (Sunday)
+    startOfWeek.setHours(0, 0, 0, 0);
+    
     filtered = filtered.filter(transaction => {
-      const txDate = new Date(transaction.date || transaction.timestamp);
-      txDate.setHours(0, 0, 0, 0);
-      return txDate <= today; // Only include past and today's transactions
+      const txDate = new Date(transaction.timestamp);
+      return txDate >= startOfWeek && txDate <= now;
     });
+  } else if (dateFilter === 'month') {
+    // Get start of the month (1st day)
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    // Last day of the month
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    // If end of month is in future, use now
+    const endDate = endOfMonth > now ? now : endOfMonth;
     
-    // Apply search term filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(transaction => 
-        transaction.name.toLowerCase().includes(term) || 
-        (transaction.notes && transaction.notes.toLowerCase().includes(term))
-      );
-    }
-    
-    
-    // Apply date filter
-    const now = new Date();
-    if (dateFilter === 'today') {
-      const today = formatDateForStorage(now);
-      filtered = filtered.filter(transaction => 
-        transaction.date === today
-      );
-    } else if (dateFilter === 'week') {
-      const oneWeekAgo = new Date(now);
-      oneWeekAgo.setDate(now.getDate() - 7);
-      filtered = filtered.filter(transaction => 
-        new Date(transaction.timestamp) >= oneWeekAgo
-      );
-    } else if (dateFilter === 'month') {
-      const oneMonthAgo = new Date(now);
-      oneMonthAgo.setMonth(now.getMonth() - 1);
-      filtered = filtered.filter(transaction => 
-        new Date(transaction.timestamp) >= oneMonthAgo
-      );
-    }
-    
-    // Apply type filter
-    if (typeFilter === 'income') {
-      filtered = filtered.filter(transaction => transaction.amount > 0);
-    } else if (typeFilter === 'expense') {
-      filtered = filtered.filter(transaction => transaction.amount < 0);
-    }
-    
-    // Apply category filter
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(transaction => transaction.category === categoryFilter);
-    }
-    
-    // Apply sorting
-    filtered.sort((a, b) => {
-      if (sortBy === 'date') {
-        return sortOrder === 'asc' 
-          ? new Date(a.timestamp) - new Date(b.timestamp)
-          : new Date(b.timestamp) - new Date(a.timestamp);
-      } else if (sortBy === 'amount') {
-        return sortOrder === 'asc' 
-          ? a.amount - b.amount
-          : b.amount - a.amount;
-      } else if (sortBy === 'name') {
-        return sortOrder === 'asc'
-          ? a.name.localeCompare(b.name)
-          : b.name.localeCompare(a.name);
-      }
-      return 0;
+    filtered = filtered.filter(transaction => {
+      const txDate = new Date(transaction.timestamp);
+      return txDate >= startOfMonth && txDate <= endDate;
     });
-    
-    setFilteredTransactions(filtered);
-  }, [transactions, searchTerm, dateFilter, typeFilter, categoryFilter, sortBy, sortOrder]);
+  }
+  
+  // Apply type filter
+  if (typeFilter === 'income') {
+    filtered = filtered.filter(transaction => transaction.amount > 0);
+  } else if (typeFilter === 'expense') {
+    filtered = filtered.filter(transaction => transaction.amount < 0);
+  }
+  
+  // Apply category filter
+  if (categoryFilter !== 'all') {
+    filtered = filtered.filter(transaction => transaction.category === categoryFilter);
+  }
+  
+  // Apply sorting
+  filtered.sort((a, b) => {
+    if (sortBy === 'date') {
+      return sortOrder === 'asc' 
+        ? new Date(a.timestamp) - new Date(b.timestamp)
+        : new Date(b.timestamp) - new Date(a.timestamp);
+    } else if (sortBy === 'amount') {
+      return sortOrder === 'asc' 
+        ? a.amount - b.amount
+        : b.amount - a.amount;
+    } else if (sortBy === 'name') {
+      return sortOrder === 'asc'
+        ? a.name.localeCompare(b.name)
+        : b.name.localeCompare(a.name);
+    }
+    return 0;
+  });
+  
+  setFilteredTransactions(filtered);
+}, [transactions, searchTerm, dateFilter, typeFilter, categoryFilter, sortBy, sortOrder]);
 
   // Handle delete transaction
   const handleDeleteTransaction = (transaction) => {

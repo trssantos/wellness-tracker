@@ -86,35 +86,53 @@ const FinancialInsights = ({
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     
-    const start = new Date();
+    let start = new Date();
+    let end = new Date(today);
     
     switch (timeframe) {
       case 'week':
-        // Start from 6 days ago to include today (7 days total)
-        start.setDate(today.getDate() - 6);
+        // Start from the beginning of the current week
+        start = new Date(today);
+        const dayOfWeek = start.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        start.setDate(start.getDate() - dayOfWeek); // Go to start of week (Sunday)
+        start.setHours(0, 0, 0, 0);
         break;
+      
       case 'month':
-        // Start from 6 months ago to include current month (7 months total)
-        start.setMonth(today.getMonth() - 6);
-        start.setDate(1); // First day of the month
+        // Start from the beginning of the current month
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+        if (end > today) end = today;
         break;
+      
       case 'quarter':
-        // Start from 6 quarters ago (18 months total)
-        start.setMonth(today.getMonth() - 18);
+        // Start from the beginning of the current quarter
+        const currentQuarter = Math.floor(today.getMonth() / 3);
+        start = new Date(today.getFullYear(), currentQuarter * 3, 1);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(today.getFullYear(), (currentQuarter + 1) * 3, 0, 23, 59, 59, 999);
+        if (end > today) end = today;
         break;
+      
       case 'year':
-        // Start from 6 years ago to include current year (7 years total)
-        start.setFullYear(today.getFullYear() - 6);
-        start.setMonth(0); // January
-        start.setDate(1); // First day of the year
+        // Start from the beginning of the current year
+        start = new Date(today.getFullYear(), 0, 1);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999);
+        if (end > today) end = today;
         break;
+      
       default:
-        start.setMonth(today.getMonth() - 6);
+        // Default to current month
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+        if (end > today) end = today;
     }
     
-    start.setHours(0, 0, 0, 0);
-    return { start, end: today };
-  };
+    return { start, end };
+  }
 
   // Fetch financial data based on current filters
   const fetchFinancialData = () => {
@@ -288,15 +306,15 @@ const FinancialInsights = ({
     if (timeRange === 'week') {
       periodType = 'day';
     } else if (timeRange === 'month') {
-      periodType = 'month';
+      periodType = 'day'; // Changed to show days in the month
     } else if (timeRange === 'quarter') {
       periodType = 'week';
     } else if (timeRange === 'year') {
       periodType = 'month';
     }
     
-    // Always show 7 periods (current + 6 previous)
-    const periods = 7;
+    // Always show appropriate number of periods based on the range
+    const periods = (periodType === 'day' && timeRange === 'month') ? Math.min(dateRange.end.getDate(), 31) : 7;
     
     // Create array of period objects
     const periodArray = [];
@@ -308,9 +326,9 @@ const FinancialInsights = ({
       // Calculate appropriate periods based on the date range duration
       const durationInDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
       
-      if (durationInDays <= 14) {
+      if (durationInDays <= 31) {
         // For short ranges, use daily periods
-        const dayStep = Math.max(1, Math.floor(durationInDays / 7));
+        const dayStep = Math.max(1, Math.floor(durationInDays / periods));
         
         for (let i = 0; i < periods; i++) {
           const day = new Date(end);
@@ -327,7 +345,7 @@ const FinancialInsights = ({
         }
       } else if (durationInDays <= 90) {
         // For medium ranges, use weekly periods
-        const weekStep = Math.max(1, Math.floor(durationInDays / 7 / 7));
+        const weekStep = Math.max(1, Math.floor(durationInDays / 7 / periods));
         
         for (let i = 0; i < periods; i++) {
           const weekStart = new Date(end);
@@ -346,7 +364,7 @@ const FinancialInsights = ({
         }
       } else {
         // For long ranges, use monthly periods
-        const monthStep = Math.max(1, Math.floor(durationInDays / 30 / 7));
+        const monthStep = Math.max(1, Math.floor(durationInDays / 30 / periods));
         
         for (let i = 0; i < periods; i++) {
           const monthStart = new Date(end);
@@ -368,42 +386,61 @@ const FinancialInsights = ({
         }
       }
     } else {
-      // Use standard periods based on selected time range
+      // Use standard periods based on current time range
       const end = dateRange.end;
-      const start = dateRange.start;
       
-      if (periodType === 'day') {
-        // DAILY VIEW: Today + 6 previous days
-        for (let i = 0; i < periods; i++) {
-          const day = new Date(end);
-          day.setDate(day.getDate() - (periods - 1 - i));
+      if (periodType === 'day' && timeRange === 'week') {
+        // DAILY VIEW for Week: Start of week to today
+        const startOfWeek = new Date(end);
+        const day = startOfWeek.getDay(); // 0 for Sunday, 1 for Monday, etc.
+        startOfWeek.setDate(startOfWeek.getDate() - day); // Go to beginning of week (Sunday)
+        
+        for (let i = 0; i <= 6; i++) {
+          const day = new Date(startOfWeek);
+          day.setDate(startOfWeek.getDate() + i);
           
           // Skip future days
-          if (day > end) continue;
+          if (day > end) break;
           
           periodArray.push({
-            label: day.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
+            label: day.toLocaleDateString('default', { weekday: 'short' }),
+            start: new Date(day.setHours(0, 0, 0, 0)),
+            end: new Date(day.setHours(23, 59, 59, 999))
+          });
+        }
+      } else if (periodType === 'day' && timeRange === 'month') {
+        // DAILY VIEW for Month: Selected days throughout the month
+        const startOfMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+        const daysInMonth = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+        const dayStep = Math.max(1, Math.floor(daysInMonth / periods));
+        
+        for (let i = 0; i < periods; i++) {
+          // Distribute days evenly through the month
+          const dayOfMonth = Math.min(1 + (i * dayStep), daysInMonth);
+          const day = new Date(end.getFullYear(), end.getMonth(), dayOfMonth);
+          
+          // Skip future days
+          if (day > end) break;
+          
+          periodArray.push({
+            label: day.getDate().toString(), // Just the day number
             start: new Date(day.setHours(0, 0, 0, 0)),
             end: new Date(day.setHours(23, 59, 59, 999))
           });
         }
       } else if (periodType === 'week') {
-        // WEEKLY VIEW: This week + 6 previous weeks
+        // WEEKLY VIEW: Weeks throughout the quarter
+        const startOfQuarter = new Date(end.getFullYear(), Math.floor(end.getMonth() / 3) * 3, 1);
+        
         for (let i = 0; i < periods; i++) {
-          const weekStart = new Date(end);
-          // Adjust to go back by (periods - 1 - i) weeks
-          weekStart.setDate(weekStart.getDate() - 7 * (periods - 1 - i));
+          const weekStart = new Date(startOfQuarter);
+          weekStart.setDate(weekStart.getDate() + (i * 7));
           
-          // Adjust to the beginning of the week (Sunday or Monday depending on locale)
-          const dayOfWeek = weekStart.getDay();
-          const diff = weekStart.getDate() - dayOfWeek;
-          weekStart.setDate(diff);
+          // Skip weeks beyond today
+          if (weekStart > end) break;
           
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
-          
-          // Skip weeks beyond the date range
-          if (weekStart < start) continue;
           
           periodArray.push({
             label: `Week ${i+1}`,
@@ -412,18 +449,19 @@ const FinancialInsights = ({
           });
         }
       } else if (periodType === 'month') {
-        // MONTHLY VIEW: This month + 6 previous months
-        for (let i = 0; i < periods; i++) {
-          const monthStart = new Date(end);
-          monthStart.setDate(1); // First day of month
-          monthStart.setMonth(monthStart.getMonth() - (periods - 1 - i));
+        // MONTHLY VIEW: Months throughout the year
+        const startOfYear = new Date(end.getFullYear(), 0, 1);
+        
+        for (let i = 0; i < 12; i++) {
+          const monthStart = new Date(startOfYear);
+          monthStart.setMonth(i);
+          
+          // Skip months beyond today
+          if (monthStart > end) break;
           
           const monthEnd = new Date(monthStart);
           monthEnd.setMonth(monthStart.getMonth() + 1);
           monthEnd.setDate(0); // Last day of month
-          
-          // Skip months beyond the date range
-          if (monthStart < start) continue;
           
           periodArray.push({
             label: monthStart.toLocaleDateString('default', { month: 'short' }),
@@ -457,178 +495,209 @@ const FinancialInsights = ({
     });
     
     setSpendingTrend(trend);
-  };
+  }
   
   // Generate income vs expenses data
-  const generateIncomeVsExpenses = (transactions, dateRange) => {
-    // Define period type based on selected time range
-    let periodType = 'month'; // Default
-    const periods = 7; // Always show 7 periods
+const generateIncomeVsExpenses = (transactions, dateRange) => {
+  // Define period type based on selected time range
+  let periodType = 'month'; // Default
+  const periods = 7; // Always show appropriate number of periods
+  
+  if (timeRange === 'week') {
+    periodType = 'day';
+  } else if (timeRange === 'month') {
+    periodType = 'week'; // Show weekly data for the month
+  } else if (timeRange === 'quarter') {
+    periodType = 'month';
+  } else if (timeRange === 'year') {
+    periodType = 'quarter';
+  }
+  
+  // Create array of period objects
+  const periodArray = [];
+  
+  if (customDateRange && chartSettings.applyCustomToIncomeExpenses) {
+    // Logic for custom date range
+    const start = dateRange.start;
+    const end = dateRange.end;
     
-    if (timeRange === 'week') {
-      periodType = 'day';
-    } else if (timeRange === 'month') {
-      periodType = 'month';
-    } else if (timeRange === 'quarter') {
-      periodType = 'week';
-    } else if (timeRange === 'year') {
-      periodType = 'month';
-    }
+    // Calculate appropriate periods based on the date range duration
+    const durationInDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
     
-    // Create array of period objects (similar to spending trend function)
-    const periodArray = [];
-    
-    if (customDateRange && chartSettings.applyCustomToIncomeExpenses) {
-      // Logic similar to generateSpendingTrend for custom date range
-      const start = dateRange.start;
-      const end = dateRange.end;
+    if (durationInDays <= 14) {
+      // For short ranges, use daily periods
+      const dayStep = Math.max(1, Math.floor(durationInDays / periods));
       
-      // Calculate appropriate periods based on the date range duration
-      const durationInDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+      for (let i = 0; i < periods; i++) {
+        const day = new Date(end);
+        day.setDate(day.getDate() - ((periods - 1 - i) * dayStep));
+        
+        // Skip days beyond the start date
+        if (day < start) continue;
+        
+        periodArray.push({
+          label: day.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
+          start: new Date(new Date(day).setHours(0, 0, 0, 0)),
+          end: new Date(new Date(day).setHours(23, 59, 59, 999))
+        });
+      }
+    } else if (durationInDays <= 90) {
+      // For medium ranges, use weekly periods
+      const weekStep = Math.max(1, Math.floor(durationInDays / 7 / periods));
       
-      if (durationInDays <= 14) {
-        // For short ranges, use daily periods
-        const dayStep = Math.max(1, Math.floor(durationInDays / 7));
+      for (let i = 0; i < periods; i++) {
+        const weekStart = new Date(end);
+        weekStart.setDate(weekStart.getDate() - ((periods - 1 - i) * 7 * weekStep));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
         
-        for (let i = 0; i < periods; i++) {
-          const day = new Date(end);
-          day.setDate(day.getDate() - ((periods - 1 - i) * dayStep));
-          
-          // Skip days beyond the start date
-          if (day < start) continue;
-          
-          periodArray.push({
-            label: day.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
-            start: new Date(new Date(day).setHours(0, 0, 0, 0)),
-            end: new Date(new Date(day).setHours(23, 59, 59, 999))
-          });
-        }
-      } else if (durationInDays <= 90) {
-        // For medium ranges, use weekly periods
-        const weekStep = Math.max(1, Math.floor(durationInDays / 7 / 7));
+        // Skip weeks beyond the start date
+        if (weekStart < start) continue;
         
-        for (let i = 0; i < periods; i++) {
-          const weekStart = new Date(end);
-          weekStart.setDate(weekStart.getDate() - ((periods - 1 - i) * 7 * weekStep));
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
-          
-          // Skip weeks beyond the start date
-          if (weekStart < start) continue;
-          
-          periodArray.push({
-            label: `${weekStart.toLocaleDateString('default', { month: 'short', day: 'numeric' })}`,
-            start: new Date(weekStart.setHours(0, 0, 0, 0)),
-            end: new Date(Math.min(weekEnd.setHours(23, 59, 59, 999), end.getTime()))
-          });
-        }
-      } else {
-        // For long ranges, use monthly periods
-        const monthStep = Math.max(1, Math.floor(durationInDays / 30 / 7));
-        
-        for (let i = 0; i < periods; i++) {
-          const monthStart = new Date(end);
-          monthStart.setMonth(monthStart.getMonth() - ((periods - 1 - i) * monthStep));
-          monthStart.setDate(1); // First day of month
-          
-          const monthEnd = new Date(monthStart);
-          monthEnd.setMonth(monthStart.getMonth() + 1);
-          monthEnd.setDate(0); // Last day of month
-          
-          // Skip months beyond the start date
-          if (monthStart < start) continue;
-          
-          periodArray.push({
-            label: monthStart.toLocaleDateString('default', { month: 'short', year: 'numeric' }),
-            start: new Date(monthStart.setHours(0, 0, 0, 0)),
-            end: new Date(Math.min(monthEnd.setHours(23, 59, 59, 999), end.getTime()))
-          });
-        }
+        periodArray.push({
+          label: `${weekStart.toLocaleDateString('default', { month: 'short', day: 'numeric' })}`,
+          start: new Date(weekStart.setHours(0, 0, 0, 0)),
+          end: new Date(Math.min(weekEnd.setHours(23, 59, 59, 999), end.getTime()))
+        });
       }
     } else {
-      // Use standard periods based on selected time range
-      const end = dateRange.end;
+      // For long ranges, use monthly periods
+      const monthStep = Math.max(1, Math.floor(durationInDays / 30 / periods));
       
-      if (periodType === 'day') {
-        // Today + 6 previous days
-        for (let i = 0; i < periods; i++) {
-          const day = new Date(end);
-          day.setDate(day.getDate() - (periods - 1 - i));
-          
-          periodArray.push({
-            label: day.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
-            start: new Date(day.setHours(0, 0, 0, 0)),
-            end: new Date(day.setHours(23, 59, 59, 999))
-          });
-        }
-      } else if (periodType === 'week') {
-        // This week + 6 previous weeks
-        for (let i = 0; i < periods; i++) {
-          const weekStart = new Date(end);
-          weekStart.setDate(weekStart.getDate() - 7 * (periods - 1 - i));
-          
-          // Adjust to the beginning of the week (Sunday or Monday depending on locale)
-          const dayOfWeek = weekStart.getDay();
-          const diff = weekStart.getDate() - dayOfWeek;
-          weekStart.setDate(diff);
-          
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
-          
-          periodArray.push({
-            label: `Week ${i+1}`,
-            start: new Date(weekStart.setHours(0, 0, 0, 0)),
-            end: new Date(Math.min(weekEnd.setHours(23, 59, 59, 999), end.getTime()))
-          });
-        }
-      } else if (periodType === 'month') {
-        // This month + 6 previous months
-        for (let i = 0; i < periods; i++) {
-          const monthStart = new Date(end);
-          monthStart.setDate(1); // First day of month
-          monthStart.setMonth(monthStart.getMonth() - (periods - 1 - i));
-          
-          const monthEnd = new Date(monthStart);
-          monthEnd.setMonth(monthStart.getMonth() + 1);
-          monthEnd.setDate(0); // Last day of month
-          
-          periodArray.push({
-            label: monthStart.toLocaleDateString('default', { month: 'short' }),
-            start: new Date(monthStart.setHours(0, 0, 0, 0)),
-            end: new Date(Math.min(monthEnd.setHours(23, 59, 59, 999), end.getTime()))
-          });
-        }
+      for (let i = 0; i < periods; i++) {
+        const monthStart = new Date(end);
+        monthStart.setMonth(monthStart.getMonth() - ((periods - 1 - i) * monthStep));
+        monthStart.setDate(1); // First day of month
+        
+        const monthEnd = new Date(monthStart);
+        monthEnd.setMonth(monthStart.getMonth() + 1);
+        monthEnd.setDate(0); // Last day of month
+        
+        // Skip months beyond the start date
+        if (monthStart < start) continue;
+        
+        periodArray.push({
+          label: monthStart.toLocaleDateString('default', { month: 'short', year: 'numeric' }),
+          start: new Date(monthStart.setHours(0, 0, 0, 0)),
+          end: new Date(Math.min(monthEnd.setHours(23, 59, 59, 999), end.getTime()))
+        });
       }
     }
+  } else {
+    // Use standard periods based on selected time range
+    const end = dateRange.end;
     
-    // Sort periods chronologically
-    periodArray.sort((a, b) => a.start - b.start);
-    
-    // Calculate income and expenses for each period
-    const data = periodArray.map(period => {
-      const periodTransactions = transactions.filter(t => {
-        const txDate = new Date(t.timestamp);
-        return txDate >= period.start && txDate <= period.end;
-      });
+    if (periodType === 'day') {
+      // Daily view for week
+      const startOfWeek = new Date(end);
+      const day = startOfWeek.getDay();
+      startOfWeek.setDate(startOfWeek.getDate() - day); // Beginning of week (Sunday)
       
-      const income = periodTransactions
-        .filter(t => t.amount > 0)
-        .reduce((sum, t) => sum + t.amount, 0);
+      for (let i = 0; i <= 6; i++) {
+        const day = new Date(startOfWeek);
+        day.setDate(startOfWeek.getDate() + i);
+        
+        if (day > end) break; // Skip future days
+        
+        periodArray.push({
+          label: day.toLocaleDateString('default', { weekday: 'short' }),
+          start: new Date(day.setHours(0, 0, 0, 0)),
+          end: new Date(day.setHours(23, 59, 59, 999))
+        });
+      }
+    } else if (periodType === 'week') {
+      // Weekly view for month
+      const startOfMonth = new Date(end.getFullYear(), end.getMonth(), 1);
       
-      const expenses = periodTransactions
-        .filter(t => t.amount < 0)
-        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      // Get number of weeks in the month
+      const endOfMonth = new Date(end.getFullYear(), end.getMonth() + 1, 0);
+      const weeksInMonth = Math.ceil((endOfMonth.getDate() - startOfMonth.getDate() + 1) / 7);
       
-      return {
-        label: period.label,
-        income,
-        expenses,
-        net: income - expenses
-      };
+      for (let i = 0; i < weeksInMonth; i++) {
+        const weekStart = new Date(startOfMonth);
+        weekStart.setDate(weekStart.getDate() + (i * 7));
+        
+        if (weekStart > end) break; // Skip future weeks
+        
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        
+        const weekLabel = `Week ${i+1}`; 
+        
+        periodArray.push({
+          label: weekLabel,
+          start: new Date(weekStart.setHours(0, 0, 0, 0)),
+          end: new Date(Math.min(weekEnd.setHours(23, 59, 59, 999), end.getTime()))
+        });
+      }
+    } else if (periodType === 'month') {
+      // Monthly view for quarter
+      const startOfQuarter = new Date(end.getFullYear(), Math.floor(end.getMonth() / 3) * 3, 1);
+      
+      for (let i = 0; i < 3; i++) {
+        const monthStart = new Date(startOfQuarter);
+        monthStart.setMonth(startOfQuarter.getMonth() + i);
+        
+        if (monthStart > end) break; // Skip future months
+        
+        const monthEnd = new Date(monthStart);
+        monthEnd.setMonth(monthStart.getMonth() + 1);
+        monthEnd.setDate(0); // Last day of month
+        
+        periodArray.push({
+          label: monthStart.toLocaleDateString('default', { month: 'short' }),
+          start: new Date(monthStart.setHours(0, 0, 0, 0)),
+          end: new Date(Math.min(monthEnd.setHours(23, 59, 59, 999), end.getTime()))
+        });
+      }
+    } else if (periodType === 'quarter') {
+      // Quarterly view for year
+      for (let i = 0; i < 4; i++) {
+        const quarterStart = new Date(end.getFullYear(), i * 3, 1);
+        
+        if (quarterStart > end) break; // Skip future quarters
+        
+        const quarterEnd = new Date(quarterStart);
+        quarterEnd.setMonth(quarterStart.getMonth() + 3);
+        quarterEnd.setDate(0); // Last day of the quarter
+        
+        periodArray.push({
+          label: `Q${i+1}`,
+          start: new Date(quarterStart.setHours(0, 0, 0, 0)),
+          end: new Date(Math.min(quarterEnd.setHours(23, 59, 59, 999), end.getTime()))
+        });
+      }
+    }
+  }
+  
+  // Sort periods chronologically
+  periodArray.sort((a, b) => a.start - b.start);
+  
+  // Calculate income and expenses for each period
+  const data = periodArray.map(period => {
+    const periodTransactions = transactions.filter(t => {
+      const txDate = new Date(t.timestamp);
+      return txDate >= period.start && txDate <= period.end;
     });
     
-    setIncomeVsExpenses(data);
-  };
+    const income = periodTransactions
+      .filter(t => t.amount > 0)
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const expenses = periodTransactions
+      .filter(t => t.amount < 0)
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    
+    return {
+      label: period.label,
+      income,
+      expenses,
+      net: income - expenses
+    };
+  });
+  
+  setIncomeVsExpenses(data);
+}
 
   // Handle date range change
   const handleDateRangeChange = (period) => {

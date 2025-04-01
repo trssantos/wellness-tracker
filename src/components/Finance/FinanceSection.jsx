@@ -110,6 +110,10 @@ const getCategoryColorClass = (category) => {
       // Wrap in try/catch for extra safety
       try {
         recurringTransactionService.init();
+
+         // Check if we need to archive budgets and create new ones for a new month
+      const { checkAndResetBudgets } = require('../../utils/financeUtils');
+      checkAndResetBudgets();
       } catch (error) {
         console.error("Failed to initialize recurring service:", error);
       }
@@ -723,18 +727,10 @@ const filterTransactionsByDate = (transactions, futureOnly = false) => {
             <div className="flex justify-between items-center gap-2 mb-4">
               <h4 className="text-base font-medium text-white dark:text-white flex items-center gap-2">
                 <Wallet className="text-amber-400 dark:text-amber-400" size={18} />
-                Budget
+                Budget Manager
               </h4>
               
-              <div className="flex gap-2">
-                <button
-                  onClick={handleResetBudgets}
-                  className="px-2 py-1 rounded-lg bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors flex items-center gap-1 text-xs"
-                >
-                  <Clock size={14} />
-                  <span>Reset</span>
-                </button>
-              </div>
+              
             </div>
             <BudgetManager 
               refreshTrigger={refreshTrigger} 

@@ -11,14 +11,31 @@ import {
 import { formatDateForStorage } from './dateUtils';
 
 
-// Get finance data
+// Add these new helper functions at the beginning of financeUtils.js
+export const getCurrentMonthKey = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+};
+
+export const formatMonthKey = (monthKey) => {
+  const [year, month] = monthKey.split('-').map(Number);
+  const date = new Date(year, month - 1, 1);
+  return date.toLocaleDateString('default', { month: 'long', year: 'numeric' });
+};
+
+// Then update getFinanceData to handle budget history
 export const getFinanceData = () => {
   const storage = getStorage();
   if (!storage.finance) {
     // Initialize finance data structure
+    const currentMonth = getCurrentMonthKey();
     storage.finance = {
       transactions: [],
-      budgets: [],
+      budgets: [], // Keep original for backward compatibility
+      budgetHistory: {
+        [currentMonth]: [] // Initialize current month's budgets
+      },
+      currentBudgetMonth: currentMonth, // Track current month
       savingsGoals: [],
       recurringTransactions: [],
       settings: {
@@ -30,8 +47,19 @@ export const getFinanceData = () => {
     setStorage(storage);
   }
   
+  // Migration: If we have budgets but no budget history, create it
+  if (storage.finance.budgets && storage.finance.budgets.length > 0 && 
+      (!storage.finance.budgetHistory || Object.keys(storage.finance.budgetHistory).length === 0)) {
+    const currentMonth = getCurrentMonthKey();
+    if (!storage.finance.budgetHistory) {
+      storage.finance.budgetHistory = {};
+    }
+    storage.finance.budgetHistory[currentMonth] = [...storage.finance.budgets];
+    storage.finance.currentBudgetMonth = currentMonth;
+    setStorage(storage);
+  }
+  
   // Always use the categories from constants, not storage
-  // This ensures new categories are always available without requiring resets
   return {
     ...storage.finance,
     categories: getCategoriesFromConstants()
@@ -421,8 +449,21 @@ export const addBudget = (budget) => {
   budget.allocated = parseFloat(budget.allocated);
   budget.spent = parseFloat(budget.spent || 0);
   
-  // Add to budgets array
+  // Get current month
+  const currentMonth = financeData.currentBudgetMonth || getCurrentMonthKey();
+  
+  // Initialize budget history if needed
+  if (!financeData.budgetHistory) {
+    financeData.budgetHistory = {};
+  }
+  if (!financeData.budgetHistory[currentMonth]) {
+    financeData.budgetHistory[currentMonth] = [];
+  }
+  
+  // Add to both regular budgets (for backward compatibility) and budget history
+  financeData.budgets = financeData.budgets || [];
   financeData.budgets.push(budget);
+  financeData.budgetHistory[currentMonth].push(budget);
   
   // Save updated data
   saveFinanceData(financeData);
@@ -431,11 +472,16 @@ export const addBudget = (budget) => {
 };
 
 // Update a budget
-export const updateBudget = (budgetId, updatedData) => {
+export const updateBudget = (budgetId, updatedData, monthKey) => {
   const financeData = getFinanceData();
-  const index = financeData.budgets.findIndex(b => b.id === budgetId);
   
-  if (index !== -1) {
+  // Use provided month key or current month
+  const month = monthKey || financeData.currentBudgetMonth || getCurrentMonthKey();
+  
+  // First update in regular budgets for backward compatibility
+  const regularIndex = financeData.budgets ? financeData.budgets.findIndex(b => b.id === budgetId) : -1;
+  
+  if (regularIndex !== -1) {
     // Update the budget, converting amount to number if needed
     if (updatedData.allocated !== undefined) {
       updatedData.allocated = parseFloat(updatedData.allocated);
@@ -445,23 +491,102 @@ export const updateBudget = (budgetId, updatedData) => {
       updatedData.spent = parseFloat(updatedData.spent);
     }
     
-    financeData.budgets[index] = {
-      ...financeData.budgets[index],
+    financeData.budgets[regularIndex] = {
+      ...financeData.budgets[regularIndex],
       ...updatedData
     };
+  }
+  
+  // Now update in budget history
+  if (financeData.budgetHistory && financeData.budgetHistory[month]) {
+    const historyIndex = financeData.budgetHistory[month].findIndex(b => b.id === budgetId);
     
+    if (historyIndex !== -1) {
+      financeData.budgetHistory[month][historyIndex] = {
+        ...financeData.budgetHistory[month][historyIndex],
+        ...updatedData
+      };
+      
+      saveFinanceData(financeData);
+      return financeData.budgetHistory[month][historyIndex];
+    }
+  }
+  
+  // If we updated the regular budget but not the history (shouldn't happen), save anyway
+  if (regularIndex !== -1) {
     saveFinanceData(financeData);
-    return financeData.budgets[index];
+    return financeData.budgets[regularIndex];
   }
   
   return null;
 };
 
+
 // Delete a budget
-export const deleteBudget = (budgetId) => {
+export const deleteBudget = (budgetId, monthKey) => {
   const financeData = getFinanceData();
-  financeData.budgets = financeData.budgets.filter(b => b.id !== budgetId);
+  
+  // Use provided month key or current month
+  const month = monthKey || financeData.currentBudgetMonth || getCurrentMonthKey();
+  
+  // Remove from regular budgets for backward compatibility
+  if (financeData.budgets) {
+    financeData.budgets = financeData.budgets.filter(b => b.id !== budgetId);
+  }
+  
+  // Remove from budget history if it exists
+  if (financeData.budgetHistory && financeData.budgetHistory[month]) {
+    financeData.budgetHistory[month] = financeData.budgetHistory[month].filter(b => b.id !== budgetId);
+  }
+  
   saveFinanceData(financeData);
+};
+
+// Add function to create new month's budgets based on previous month
+export const archiveAndCreateNewBudgets = () => {
+  const financeData = getFinanceData();
+  const currentMonth = getCurrentMonthKey();
+  
+  // Skip if current month is already correct
+  if (financeData.currentBudgetMonth === currentMonth) {
+    return false;
+  }
+  
+  // Get previous month's budgets
+  const prevMonth = financeData.currentBudgetMonth;
+  
+  if (!prevMonth || !financeData.budgetHistory || !financeData.budgetHistory[prevMonth]) {
+    // No previous month data, just update the current month
+    financeData.currentBudgetMonth = currentMonth;
+    if (!financeData.budgetHistory) {
+      financeData.budgetHistory = {};
+    }
+    if (!financeData.budgetHistory[currentMonth]) {
+      financeData.budgetHistory[currentMonth] = financeData.budgets || [];
+    }
+    saveFinanceData(financeData);
+    return false;
+  }
+  
+  // Copy previous month's budgets to new month with reset spent amounts
+  const newBudgets = financeData.budgetHistory[prevMonth].map(budget => ({
+    ...budget,
+    id: `budget-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    spent: 0,
+    previousMonth: {
+      month: prevMonth,
+      spent: budget.spent,
+      allocated: budget.allocated
+    }
+  }));
+  
+  // Save to current month
+  financeData.budgetHistory[currentMonth] = newBudgets;
+  financeData.budgets = newBudgets; // Also update regular budgets for compatibility
+  financeData.currentBudgetMonth = currentMonth;
+  
+  saveFinanceData(financeData);
+  return true;
 };
 
 // Add a savings goal
@@ -511,6 +636,19 @@ export const updateSavingsGoal = (goalId, updatedData) => {
   }
   
   return null;
+};
+
+export const checkAndResetBudgets = () => {
+  const currentMonth = getCurrentMonthKey();
+  const financeData = getFinanceData();
+  
+  // If we're already in the correct month, we're done
+  if (financeData.currentBudgetMonth === currentMonth) {
+    return false;
+  }
+  
+  // Archive and create new budgets
+  return archiveAndCreateNewBudgets();
 };
 
 // Contribute to a savings goal
@@ -1156,10 +1294,13 @@ export const getSpendingMoodCorrelation = () => {
 
 
 // Calculate financial stats
-export const calculateFinancialStats = (period = 'month') => {
+export const calculateFinancialStats = (period = 'month', monthKey) => {
   const financeData = getFinanceData();
   const now = new Date();
   now.setHours(23, 59, 59, 999);  // Set to end of day
+  
+  // Use the specified month key or the current month
+  const currentMonthKey = monthKey || financeData.currentBudgetMonth || getCurrentMonthKey();
   
   let startDate;
   let endDate = new Date(now); // Default end date is today
@@ -1310,12 +1451,36 @@ export const calculateFinancialStats = (period = 'month') => {
     monthlyChange = balance - prevBalance;
   }
   
-  // Calculate budget progress
-  const budgets = financeData.budgets.map(budget => {
-    // Sum transactions in this category for the current period
-    const spent = periodTransactions
-      .filter(t => t.amount < 0 && t.category === budget.category)
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  // Safely get budgets for the current month
+  let monthBudgets = [];
+  
+  // First try from budget history
+  if (financeData.budgetHistory && financeData.budgetHistory[currentMonthKey]) {
+    monthBudgets = financeData.budgetHistory[currentMonthKey];
+  } 
+  // If no budget history, try from regular budgets (backward compatibility)
+  else if (financeData.budgets) {
+    monthBudgets = financeData.budgets;
+  }
+  
+  // Ensure monthBudgets is definitely an array before mapping
+  if (!Array.isArray(monthBudgets)) {
+    monthBudgets = [];
+  }
+  
+  // Calculate budget progress for the current month
+  const budgets = monthBudgets.map(budget => {
+    // For historical data, use the values already stored
+    // For current month, calculate from transactions
+    let spent = budget.spent || 0;
+    
+    // Only recalculate if we're looking at the current month
+    if (currentMonthKey === getCurrentMonthKey() && period === 'month') {
+      // Sum transactions in this category for the current period
+      spent = periodTransactions
+        .filter(t => t.amount < 0 && t.category === budget.category)
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    }
     
     return {
       ...budget,
@@ -1340,6 +1505,7 @@ export const calculateFinancialStats = (period = 'month') => {
     spendingByGroup,
     startDate: startDateIso,
     endDate: endDateIso,
+    selectedMonth: currentMonthKey,
     // New properties for upcoming transactions
     current: {
       income,

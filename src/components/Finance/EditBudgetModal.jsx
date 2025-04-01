@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Tag, DollarSign, FileText } from 'lucide-react';
-import { updateBudget, getFinanceData, getCategoryById } from '../../utils/financeUtils';
+import { X, Tag, DollarSign, FileText, Calendar } from 'lucide-react';
+import { updateBudget, getFinanceData, getCategoryById, formatMonthKey } from '../../utils/financeUtils';
 import ModalContainer from './ModalContainer';
 import InputField from './InputField';
 
@@ -13,6 +13,9 @@ const EditBudgetModal = ({ budget, onClose, onBudgetUpdated, currency = '$' }) =
   const [categories, setCategories] = useState({ expense: [] });
   const [error, setError] = useState('');
   const [categoryName, setCategoryName] = useState('');
+  
+  // Get the month key from the budget if available
+  const monthKey = budget.monthKey || null;
 
   // Fetch categories on mount
   useEffect(() => {
@@ -46,7 +49,7 @@ const EditBudgetModal = ({ budget, onClose, onBudgetUpdated, currency = '$' }) =
     
     try {
       // Update budget
-      updateBudget(budget.id, updatedBudget);
+      updateBudget(budget.id, updatedBudget, monthKey);
       
       // Notify parent component
       if (onBudgetUpdated) {
@@ -82,6 +85,23 @@ const EditBudgetModal = ({ budget, onClose, onBudgetUpdated, currency = '$' }) =
             </div>
           </div>
         </div>
+        
+        {/* Month Display - if monthKey is provided */}
+        {monthKey && (
+          <div>
+            <label className="block text-sm font-medium text-white dark:text-white mb-2">
+              Month
+            </label>
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
+                <Calendar size={18} />
+              </div>
+              <div className="w-full pl-10 py-3 bg-slate-700 dark:bg-slate-700 text-white dark:text-white border border-slate-600 dark:border-slate-600 rounded-lg">
+                {formatMonthKey(monthKey)}
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Budget Amount */}
         <div>
@@ -133,21 +153,21 @@ const EditBudgetModal = ({ budget, onClose, onBudgetUpdated, currency = '$' }) =
         </div>
         
         {/* Form Actions */}
-<div className="flex flex-col xs:flex-row justify-end gap-3 pt-2">
-  <button
-    type="button"
-    onClick={onClose}
-    className="w-full xs:w-auto mb-2 xs:mb-0 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
-  >
-    Cancel
-  </button>
-  <button
-    type="submit"
-    className="w-full xs:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
-  >
-    Save Changes
-  </button>
-</div>
+        <div className="flex flex-col xs:flex-row justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full xs:w-auto mb-2 xs:mb-0 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="w-full xs:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+          >
+            Save Changes
+          </button>
+        </div>
       </form>
     </ModalContainer>
   );

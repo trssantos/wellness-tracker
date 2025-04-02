@@ -211,11 +211,31 @@ const DayCoachAnalysis = () => {
         });
       
       case 'journaling':
-        // Check if there are journal entries in the timeframe
-        return dates.some(date => {
+        // UPDATED: Check both day notes AND journal entries in the meditation module
+        // First check day notes
+        const hasDayNotes = dates.some(date => {
           const dayData = storage[date];
           return dayData && dayData.notes && dayData.notes.trim().length > 0;
         });
+        
+        if (hasDayNotes) return true;
+        
+        // Then check meditation journal entries
+        if (storage.meditationData && storage.meditationData.journalEntries) {
+          const startDate = new Date(dates[0]);
+          const endDate = new Date(dates[dates.length - 1]);
+          endDate.setHours(23, 59, 59, 999); // End of the day
+          
+          return storage.meditationData.journalEntries.some(entry => {
+            const entryDate = entry.date ? new Date(entry.date) : 
+                             (entry.timestamp ? new Date(entry.timestamp) : null);
+            
+            if (!entryDate) return false;
+            return entryDate >= startDate && entryDate <= endDate;
+          });
+        }
+        
+        return false;
         
       default:
         return false;
@@ -366,6 +386,21 @@ const DayCoachAnalysis = () => {
       }
     }
     
+    // ADDED: Include journal entries in the data
+    if (storage.meditationData && storage.meditationData.journalEntries) {
+      // Create a dedicated section for journal entries
+      result.journalEntries = storage.meditationData.journalEntries.filter(entry => {
+        // Extract the date from the entry
+        const entryDate = entry.date ? new Date(entry.date) : 
+                        (entry.timestamp ? new Date(entry.timestamp) : null);
+        
+        if (!entryDate) return false;
+        
+        // Include entries within the date range
+        return entryDate >= startDate && entryDate <= today;
+      });
+    }
+    
     // Add global data
     if (storage.habits) result.habits = storage.habits;
     
@@ -471,6 +506,7 @@ For this workout analysis:
         specificPrompt = `Focus EXCLUSIVELY on journal entries and the thoughts, feelings, and experiences the user has recorded. DO NOT discuss other areas unless they are mentioned in the journal or directly correlated.
 
 For this journaling analysis:
+- Consider BOTH day notes and journal entries
 - Identify recurring themes, topics, or concerns in the journal entries
 - Note any social connections or relationships mentioned and their apparent significance
 - Detect any emotional patterns or shifts expressed in writing
@@ -525,6 +561,18 @@ For this journaling analysis:
         simplifiedUserData.focusSessions = userData.focusSessions;
       } else if (key === 'workouts' && (tab === 'overview' || tab === 'workouts')) {
         simplifiedUserData.workouts = userData.workouts;
+      } else if (key === 'journalEntries' && (tab === 'overview' || tab === 'journaling' || tab === 'mood')) {
+        // Include journal entries data from meditation module
+        simplifiedUserData.journalEntries = userData.journalEntries.map(entry => ({
+          date: entry.date || (entry.timestamp ? entry.timestamp.split('T')[0] : 'unknown'),
+          title: entry.title,
+          text: entry.text,
+          mood: entry.mood,
+          energy: entry.energy,
+          categories: entry.categories,
+          people: entry.people,
+          tags: entry.tags
+        }));
       }
     }
     

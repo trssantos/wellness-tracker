@@ -71,45 +71,6 @@ export const migrateLegacyNotes = () => {
 };
 
 /**
- * Sync journal entries with day notes (for backward compatibility)
- * This ensures that old modules still work with the new data structure
- */
-export const syncJournalToDayNotes = (dateStr, entries) => {
-  try {
-    const storage = getStorage();
-    const dayData = storage[dateStr] || {};
-    
-    // If there are no entries, don't modify day notes
-    if (!entries || entries.length === 0) return false;
-    
-    // If there are entries, update the day notes field
-    // Create a combined note from all entries for the day
-    const combinedNote = entries
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-      .map(entry => `[${new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}] ${entry.title}\n${entry.text}`)
-      .join('\n\n---\n\n');
-    
-    // Only update if the content has changed
-    if (dayData.notes !== combinedNote) {
-      storage[dateStr] = {
-        ...dayData,
-        notes: combinedNote,
-        notesSynced: true // Flag to indicate this was auto-synced
-      };
-      
-      setStorage(storage);
-      handleDataChange(dateStr, 'journal', { notes: combinedNote });
-      return true;
-    }
-    
-    return false;
-  } catch (error) {
-    console.error('Error syncing journal to day notes:', error);
-    return false;
-  }
-};
-
-/**
  * Get all journal entries for a specific date
  */
 export const getJournalEntriesForDate = (dateStr) => {

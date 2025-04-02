@@ -47,7 +47,7 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
         completionRate = Math.round((checkedItems / totalItems) * 100);
       }
     }
-
+  
     // Check for mood at root level first, then in aiContext
     let mood = dayData.mood;
     if (!mood && dayData.aiContext?.mood) {
@@ -59,16 +59,16 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
                         (dayData.customTasks && dayData.customTasks.length > 0) ||
                         (dayData.defaultTasks && dayData.defaultTasks.length > 0) ||
                         (dayData.checked && Object.keys(dayData.checked).length > 0);
-
+  
     // Get habit data for this date
     const habits = getHabitsForDate(dateStr);
     const habitCount = habits.length;
-
+  
     // Check for workout data in both formats:
     // 1. New format: Array of workouts
     // 2. Legacy format: Single workout object
     const hasWorkout = Array.isArray(dayData.workouts) && dayData.workouts.length > 0 || !!dayData.workout;
-
+  
     // Count completed habits
     let habitCompletedCount = 0;
     habits.forEach(habit => {
@@ -77,11 +77,23 @@ export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange
       }
     });
     
+    // IMPORTANT CHANGE: Check for journal entries in addition to day notes
+    // Get the meditation data to check for journal entries
+    const storage = getStorage();
+    const meditationData = storage.meditationData || {};
+    const journalEntries = meditationData.journalEntries || [];
+    
+    // Check if there are any journal entries for this date
+    const hasJournalEntries = journalEntries.some(entry => {
+      const entryDate = entry.date || entry.timestamp?.split('T')[0];
+      return entryDate === dateStr;
+    });
+    
     return {
       completionRate,
       mood,
       hasAITasks: !!dayData.aiTasks,
-      hasNotes: !!dayData.notes,
+      hasNotes: !!dayData.notes || hasJournalEntries, // Check both notes and journal entries
       hasWorkout,
       hasTaskList,
       habitCount,

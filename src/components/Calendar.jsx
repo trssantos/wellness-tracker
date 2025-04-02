@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Sparkles, PenTool, Dumbbell, Zap } from 'luc
 import { MOODS } from './MoodSelector';
 import { getHabitsForDate } from '../utils/habitTrackerUtils';
 import { formatDateForStorage } from '../utils/dateUtils';
+import { getStorage } from '../utils/storage';
 
 export const Calendar = ({ selectedDay, onSelectDay, currentMonth, onMonthChange, storageData }) => {
   const weeks = getCalendarWeeks(currentMonth);

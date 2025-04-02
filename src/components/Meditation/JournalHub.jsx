@@ -10,7 +10,6 @@ import { getStorage, setStorage } from '../../utils/storage';
 import { handleDataChange } from '../../utils/dayCoachUtils';
 import { 
   migrateLegacyNotes, 
-  syncJournalToDayNotes, 
   getJournalEntriesForDate,
   getAllPeopleMentioned,
   getAllTags,
@@ -347,7 +346,6 @@ const [touchEnd, setTouchEnd] = useState(null);
       return entryDate === dateStr;
     });
     
-    syncJournalToDayNotes(dateStr, entriesForDate);
     
     // Update local state
     loadJournalEntries();
@@ -433,8 +431,6 @@ const [touchEnd, setTouchEnd] = useState(null);
         const entryDate = entry.date || entry.timestamp.split('T')[0];
         return entryDate === dateStr;
       });
-      
-      syncJournalToDayNotes(dateStr, entriesForDate);
       
       // Notify other modules of the change
       handleDataChange(dateStr, 'journal', { 

@@ -933,7 +933,7 @@ export const getSpendingByGroup = (transactions, dateRange) => {
     });
   }
   
-  // Only include expense transactions
+  // Only include expense transactions (amount < 0)
   filteredTransactions = filteredTransactions.filter(tx => tx.amount < 0);
   
   // Group by category group
@@ -1541,8 +1541,10 @@ export const calculateFinancialStats = (period = 'month', monthKey) => {
 export const createTaskFromTransaction = (transaction) => {
   if (!transaction) return false;
   
-  // Get transaction date
+  // Get transaction date and normalize to start of day for proper comparison
   const txDate = new Date(transaction.date || transaction.timestamp);
+  txDate.setHours(0, 0, 0, 0);
+  
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
@@ -1578,10 +1580,6 @@ export const createTaskFromTransaction = (transaction) => {
   // Create the default tasks if none exists
   if (!dayTasks) {
     dayTasks = [
-      {
-        title: "Daily Tasks",
-        items: ["Complete morning routine", "Check email"]
-      }
     ];
   }
   

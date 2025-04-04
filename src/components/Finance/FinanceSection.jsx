@@ -197,23 +197,24 @@ const filterTransactionsByDate = (transactions, futureOnly = false) => {
     const moodCorrelations = getSpendingMoodCorrelation();
     setCorrelations(moodCorrelations);
     
-    // Prepare chart data - for category breakdown
-    const categoryData = [];
-    Object.entries(newStats.categoryBreakdown).forEach(([categoryId, amount]) => {
-      const category = getCategoryById(categoryId);
-      if (category) {
-        categoryData.push({
-          id: categoryId,
-          name: category.name,
-          value: amount,
-          color: category.color
-        });
-      }
+    // Prepare chart data - for category breakdown - EXPENSES ONLY
+const categoryData = [];
+Object.entries(newStats.categoryBreakdown).forEach(([categoryId, amount]) => {
+  const category = getCategoryById(categoryId);
+  // Only include expense categories
+  if (category && category.id.startsWith('expense-')) {
+    categoryData.push({
+      id: categoryId,
+      name: category.name,
+      value: amount,
+      color: category.color
     });
-    
-    // Sort by amount, descending
-    categoryData.sort((a, b) => b.value - a.value);
-    setChartData(categoryData);
+  }
+});
+
+// Sort by amount, descending
+categoryData.sort((a, b) => b.value - a.value);
+setChartData(categoryData);
   }, [selectedPeriod, refreshTrigger]);
 
   // Toggle expanded sections

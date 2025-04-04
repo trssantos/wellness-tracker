@@ -207,7 +207,7 @@ const AddTransactionModal = ({ onClose, onTransactionAdded }) => {
                 className="input-field pl-10"
                 required
               />
-              <Calendar className="absolute left-3 top-3 text-slate-400" size={18} />
+              <Calendar className="absolute left-3 top-3 text-slate-700 dark:text-slate-300" size={18} />
             </div>
           </div>
           

@@ -232,16 +232,17 @@ const FinancialInsights = ({
       breakdown[category] += amount;
     });
     
-    // Prepare chart data for category breakdown
+    // Prepare chart data for category breakdown - EXPENSES ONLY
     const categoryData = [];
-    Object.entries(breakdown).forEach(([categoryId, amount]) => {
+    Object.entries(stats.categoryBreakdown || {}).forEach(([categoryId, amount]) => {
       const category = getCategoryById(categoryId);
-      if (category) {
+      // Only include expense categories
+      if (category && category.id.startsWith('expense-')) {
         categoryData.push({
           id: categoryId,
           name: category.name,
           value: amount,
-          color: category.color, // Use the color from category definition
+          color: category.color || 'gray', // Use the color from category definition, default to gray
           group: category.group || 'Other'
         });
       }

@@ -116,7 +116,7 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
                 </div>
                 
                 <div className="flex justify-between items-start mb-2">
-                  <h5 className="font-medium text-white dark:text-white">{goal.name}</h5>
+                  <h5 className="text-sm text-white dark:text-white">{goal.name}</h5>
                   <div className="text-right">
                     <div className="font-bold text-lg finance-text-amber-400 dark:finance-text-amber-400">
                       {formatCurrency(goal.current)}

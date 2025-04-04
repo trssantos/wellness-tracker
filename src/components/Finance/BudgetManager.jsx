@@ -300,10 +300,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
       <div className="bg-slate-800 dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-700 dark:border-slate-700">
         {/* Month Selector */}
         <div className="flex justify-between items-center mb-6">
-          <h4 className="text-lg font-medium text-white flex items-center gap-2">
-            <Wallet className="text-amber-400" size={20} />
-            Budget Manager
-          </h4>
+          
           
           {/* Month Navigation */}
           <div className="flex items-center gap-2 relative">

@@ -193,9 +193,9 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
             const timeUntil = formatTimeDistance(item.dueDate);
             
             const statusClass = 
-              daysLeft <= 3 ? 'bg-gray-900/30 dark:bg-gray-700/50 border-gray-800/50 dark:border-gray-600/50' :
-              daysLeft <= 7 ? 'bg-amber-900/30 dark:bg-amber-700/50 border-amber-800/50 dark:border-amber-600/50' :
-              'bg-blue-900/30 dark:bg-blue-700/50 border-blue-800/50 dark:border-blue-600/50';
+              daysLeft <= 3 ? 'bg-gray-100 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600/50' :
+              daysLeft <= 7 ? 'bg-amber-50 dark:bg-amber-700/50 border-amber-200 dark:border-amber-600/50' :
+              'bg-blue-50 dark:bg-blue-700/50 border-blue-200 dark:border-blue-600/50';
               
             // Get category details if available
             const category = getCategoryById(item.category);
@@ -210,38 +210,38 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
                     className="flex-1 cursor-pointer"
                     onClick={() => onBillClick && onBillClick(item.original || item)}
                   >
-                    <div className="font-medium text-white flex items-center gap-1">
+                    <div className="font-medium text-slate-900 dark:text-white flex items-center gap-1">
                       {item.name}
                       {item.amount > 0 ? (
-                        <TrendingUp size={14} className="text-green-400" />
+                        <TrendingUp size={14} className="text-green-600 dark:text-green-400" />
                       ) : (
-                        <TrendingDown size={14} className="text-red-400" />
+                        <TrendingDown size={14} className="text-red-600 dark:text-red-400" />
                       )}
                       {item.type === 'recurring' && (
-                        <RepeatIcon size={14} className="text-amber-400" title={`Repeats ${item.frequency}`} />
+                        <RepeatIcon size={14} className="text-amber-600 dark:text-amber-400" title={`Repeats ${item.frequency}`} />
                       )}
                     </div>
                     
                     <div className="flex flex-col xs:flex-row xs:items-center gap-1 mt-1">
-                      <div className="text-xs text-slate-300 flex items-center gap-1">
+                      <div className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1">
                         <Calendar size={12} />
                         <span>
-                          {item.dueDate.toLocaleDateString()} <span className="text-slate-400">({timeUntil})</span>
+                          {item.dueDate.toLocaleDateString()} <span className="text-slate-600 dark:text-slate-400">({timeUntil})</span>
                         </span>
                       </div>
                       
                       {category && (
                         <div className="text-xs flex items-center gap-1 mt-1 xs:mt-0 xs:ml-2">
-                          <span className="bg-slate-700/70 dark:bg-slate-700/70 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                          <span className="bg-slate-200 dark:bg-slate-700/70 px-1.5 py-0.5 rounded-full flex items-center gap-1">
                             {getCategoryIconComponent(item.category, 10)}
-                            <span className="text-slate-300">{category.name}</span>
+                            <span className="text-slate-700 dark:text-slate-300">{category.name}</span>
                           </span>
                         </div>
                       )}
                     </div>
                   </div>
                   
-                  <div className={`text-lg font-bold ${item.amount > 0 ? 'text-green-400' : 'text-red-300'}`}>
+                  <div className={`text-lg font-bold ${item.amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-300'}`}>
                     {item.amount > 0 ? '+' : '-'}
                     {formatCurrency(item.amount)}
                   </div>
@@ -249,11 +249,11 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
                 
                 {/* Progress Bar for Days Left */}
                 <div className="mt-2">
-                  <div className="flex justify-between text-xs text-slate-400 mb-1">
+                  <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1">
                     <span>{daysLeft} {daysLeft === 1 ? 'day' : 'days'} left</span>
                     <span>{item.dueDate.toLocaleDateString('default', { weekday: 'short' })}</span>
                   </div>
-                  <div className="h-1.5 bg-slate-700 dark:bg-slate-600 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
                     <div 
                       className={`h-full rounded-full ${
                         daysLeft <= 3 ? 'bg-red-500 dark:bg-red-600' : 
@@ -267,10 +267,10 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
             );
           })
         ) : (
-          <div className="bg-slate-700/50 dark:bg-slate-700/50 rounded-lg p-4 flex items-center justify-center h-32">
+          <div className="bg-slate-100 dark:bg-slate-700/50 rounded-lg p-4 flex items-center justify-center h-32">
             <div className="text-center">
-              <Calendar size={24} className="text-slate-500 dark:text-slate-500 mx-auto mb-2" />
-              <p className="text-slate-800 dark:text-slate-400 text-sm">No upcoming transactions this week</p>
+              <Calendar size={24} className="text-slate-400 dark:text-slate-500 mx-auto mb-2" />
+              <p className="text-slate-700 dark:text-slate-400 text-sm">No upcoming transactions this week</p>
             </div>
           </div>
         )}
@@ -282,52 +282,52 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
   return (
     <div className="space-y-4">
       {/* Financial Summary Card */}
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-700 dark:border-slate-700">
-        <h3 className="text-slate-800 dark:text-slate-100 font-medium mb-3">30-Day Outlook</h3>
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+        <h3 className="text-slate-900 dark:text-slate-100 font-medium mb-3">30-Day Outlook</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-          <div className="bg-green-900/30 dark:bg-green-900/30 p-3 rounded-lg border border-green-800/50 dark:border-green-800/50">
-            <div className="text-sm text-slate-300 dark:text-slate-300">Upcoming Income</div>
-            <div className="text-lg font-bold text-green-400 dark:text-green-400 flex items-center">
+          <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-lg border border-green-200 dark:border-green-800/50">
+            <div className="text-sm text-slate-700 dark:text-slate-300">Upcoming Income</div>
+            <div className="text-lg font-bold text-green-600 dark:text-green-400 flex items-center">
               <TrendingUp size={16} className="mr-1" />
               {formatCurrency(totalUpcomingIncome)}
             </div>
           </div>
           
-          <div className="bg-red-900/30 dark:bg-red-900/30 p-3 rounded-lg border border-red-800/50 dark:border-red-800/50">
-            <div className="text-sm text-slate-300 dark:text-slate-300">Upcoming Expenses</div>
-            <div className="text-lg font-bold text-red-400 dark:text-red-400 flex items-center">
+          <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-lg border border-red-200 dark:border-red-800/50">
+            <div className="text-sm text-slate-700 dark:text-slate-300">Upcoming Expenses</div>
+            <div className="text-lg font-bold text-red-600 dark:text-red-400 flex items-center">
               <TrendingDown size={16} className="mr-1" />
               {formatCurrency(totalUpcomingExpenses)}
             </div>
           </div>
           
-          <div className={`${netCashFlow >= 0 ? 'bg-blue-900/30 dark:bg-blue-900/30 border-blue-800/50 dark:border-blue-800/50' : 'bg-amber-900/30 dark:bg-amber-900/30 border-amber-800/50 dark:border-amber-800/50'} p-3 rounded-lg border`}>
-            <div className="text-sm text-slate-300 dark:text-slate-300">Net Cash Flow</div>
-            <div className={`text-lg font-bold flex items-center ${netCashFlow >= 0 ? 'text-blue-400 dark:text-blue-400' : 'text-amber-400 dark:text-amber-400'}`}>
+          <div className={`${netCashFlow >= 0 ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800/50'} p-3 rounded-lg border`}>
+            <div className="text-sm text-slate-700 dark:text-slate-300">Net Cash Flow</div>
+            <div className={`text-lg font-bold flex items-center ${netCashFlow >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'}`}>
               <PiggyBank size={16} className="mr-1" />
               {netCashFlow >= 0 ? '+' : '-'}{formatCurrency(Math.abs(netCashFlow))}
             </div>
           </div>
         </div>
         
-        <div className="text-xs text-slate-800 dark:text-slate-400 italic">
+        <div className="text-xs text-slate-700 dark:text-slate-400 italic">
           Based on scheduled transactions for the next 30 days
         </div>
       </div>
       
       {/* Upcoming Transactions Section */}
       {allUpcoming.length === 0 ? (
-        <div className="bg-slate-700/50 dark:bg-slate-700/50 rounded-lg p-4 flex items-center justify-center h-40">
+        <div className="bg-slate-100 dark:bg-slate-700/50 rounded-lg p-4 flex items-center justify-center h-40">
           <div className="text-center">
-            <Calendar size={24} className="text-slate-500 dark:text-slate-500 mx-auto mb-2" />
-            <p className="text-slate-800 dark:text-slate-400 text-sm">No upcoming transactions</p>
+            <Calendar size={24} className="text-slate-400 dark:text-slate-500 mx-auto mb-2" />
+            <p className="text-slate-700 dark:text-slate-400 text-sm">No upcoming transactions</p>
           </div>
         </div>
       ) : (
         <>
-          <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mt-6 mb-2 flex items-center gap-2">
-            <Calendar className="text-amber-400 dark:text-amber-400" size={20} />
+          <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mt-6 mb-2 flex items-center gap-2">
+            <Calendar className="text-amber-600 dark:text-amber-400" size={20} />
             Upcoming Transactions
           </h3>
           
@@ -339,9 +339,9 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
               return (
                 <div key={period} className="space-y-2">
                   <h4 className={`text-sm font-medium flex items-center gap-1 
-                    ${period === 'This Week' ? 'text-red-400 dark:text-red-400' : 
-                      period === 'Next Week' ? 'text-amber-400 dark:text-amber-400' : 
-                      period === 'This Month' ? 'text-blue-400 dark:text-blue-400' : 'text-slate-800 dark:text-slate-400'}`}>
+                    ${period === 'This Week' ? 'text-red-600 dark:text-red-400' : 
+                      period === 'Next Week' ? 'text-amber-600 dark:text-amber-400' : 
+                      period === 'This Month' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-400'}`}>
                     {period === 'This Week' ? <AlertCircle size={16} /> : 
                      period === 'Next Week' ? <Clock size={16} /> : 
                      <Calendar size={16} />}
@@ -354,9 +354,9 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
                       const timeUntil = formatTimeDistance(item.dueDate);
                       
                       const statusClass = 
-                        daysLeft <= 3 ? 'bg-red-900/30 dark:bg-red-900/30 border-red-800/50 dark:border-red-800/50' :
-                        daysLeft <= 7 ? 'bg-amber-900/30 dark:bg-amber-900/30 border-amber-800/50 dark:border-amber-800/50' :
-                        'bg-blue-900/30 dark:bg-blue-900/30 border-blue-800/50 dark:border-blue-800/50';
+                        daysLeft <= 3 ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800/50' :
+                        daysLeft <= 7 ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800/50' :
+                        'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50';
                         
                       // Get category details if available
                       const category = getCategoryById(item.category);
@@ -371,31 +371,31 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
                               className="flex-1 cursor-pointer"
                               onClick={() => onBillClick && onBillClick(item.original || item)}
                             >
-                              <div className="font-medium text-slate-800 dark:text-slate-100 flex items-center gap-1">
+                              <div className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1">
                                 {item.name}
                                 {item.amount > 0 ? (
-                                  <TrendingUp size={14} className="text-green-400 dark:text-green-400" />
+                                  <TrendingUp size={14} className="text-green-600 dark:text-green-400" />
                                 ) : (
-                                  <TrendingDown size={14} className="text-red-400 dark:text-red-400" />
+                                  <TrendingDown size={14} className="text-red-600 dark:text-red-400" />
                                 )}
                                 {item.type === 'recurring' && (
-                                  <RepeatIcon size={14} className="text-amber-400 dark:text-amber-400" title={`Repeats ${item.frequency}`} />
+                                  <RepeatIcon size={14} className="text-amber-600 dark:text-amber-400" title={`Repeats ${item.frequency}`} />
                                 )}
                               </div>
                               
                               <div className="flex flex-col xs:flex-row xs:items-center gap-1 mt-1">
-                                <div className="text-xs text-slate-300 dark:text-slate-300 flex items-center gap-1">
+                                <div className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1">
                                   <Calendar size={12} />
                                   <span>
-                                    {item.dueDate.toLocaleDateString()} <span className="text-slate-800 dark:text-slate-400">({timeUntil})</span>
+                                    {item.dueDate.toLocaleDateString()} <span className="text-slate-600 dark:text-slate-400">({timeUntil})</span>
                                   </span>
                                 </div>
                                 
                                 {category && (
                                   <div className="text-xs flex items-center gap-1 mt-1 xs:mt-0 xs:ml-2">
-                                    <span className="bg-slate-700/70 dark:bg-slate-700/70 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                    <span className="bg-slate-200 dark:bg-slate-700/70 px-1.5 py-0.5 rounded-full flex items-center gap-1">
                                       {getCategoryIconComponent(item.category, 10)}
-                                      <span className="text-slate-300 dark:text-slate-300">{category.name}</span>
+                                      <span className="text-slate-700 dark:text-slate-300">{category.name}</span>
                                     </span>
                                   </div>
                                 )}
@@ -403,7 +403,7 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
                             </div>
                             
                             <div className="flex items-center">
-                              <div className={`text-lg font-bold mr-2 ${item.amount > 0 ? 'text-green-400 dark:text-green-400' : 'text-red-300 dark:text-red-300'}`}>
+                              <div className={`text-lg font-bold mr-2 ${item.amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-300'}`}>
                                 {item.amount > 0 ? '+' : '-'}
                                 {formatCurrency(item.amount)}
                               </div>
@@ -413,15 +413,15 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
                                 <div className="relative">
                                   <button 
                                     onClick={() => setShowOptions(showOptions === item.displayId ? null : item.displayId)}
-                                    className="p-1 rounded-full hover:bg-slate-700/70 dark:hover:bg-slate-700/70 text-slate-300 dark:text-slate-300"
+                                    className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700/70 text-slate-700 dark:text-slate-300"
                                   >
                                     <MoreHorizontal size={16} />
                                   </button>
                                   
                                   {showOptions === item.displayId && (
-                                    <div className="absolute right-0 top-8 z-10 bg-slate-700 dark:bg-slate-700 rounded-lg shadow-lg p-1 min-w-36">
+                                    <div className="absolute right-0 top-8 z-10 bg-white dark:bg-slate-700 rounded-lg shadow-lg p-1 min-w-36">
                                       <button
-                                        className="flex items-center gap-2 text-blue-400 dark:text-blue-400 hover:bg-slate-600/70 dark:hover:bg-slate-600/70 w-full text-left px-3 py-2 rounded"
+                                        className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-600/70 w-full text-left px-3 py-2 rounded"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleEditRecurring(item);
@@ -431,7 +431,7 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
                                         <span>Edit Recurring</span>
                                       </button>
                                       <button
-                                        className="flex items-center gap-2 text-red-400 dark:text-red-400 hover:bg-slate-600/70 dark:hover:bg-slate-600/70 w-full text-left px-3 py-2 rounded"
+                                        className="flex items-center gap-2 text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-600/70 w-full text-left px-3 py-2 rounded"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleDeleteRecurring(item);
@@ -449,11 +449,11 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
                           
                           {/* Progress Bar for Days Left */}
                           <div className="mt-2">
-                            <div className="flex justify-between text-xs text-slate-800 dark:text-slate-400 mb-1">
+                            <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1">
                               <span>{daysLeft} {daysLeft === 1 ? 'day' : 'days'} left</span>
                               <span>{item.dueDate.toLocaleDateString('default', { weekday: 'short' })}</span>
                             </div>
-                            <div className="h-1.5 bg-slate-700 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                               <div 
                                 className={`h-full rounded-full ${
                                   daysLeft <= 3 ? 'bg-red-500 dark:bg-red-500' : 
@@ -466,7 +466,7 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
                           
                           {/* For recurring bills, show additional info */}
                           {item.type === 'recurring' && (
-                            <div className="mt-2 text-xs text-slate-800 dark:text-slate-400 flex items-center gap-1">
+                            <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
                               <RepeatIcon size={12} />
                               <span>Repeats {item.frequency}</span>
                             </div>

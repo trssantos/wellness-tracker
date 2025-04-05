@@ -521,7 +521,7 @@ const FinanceSection = () => {
                             {recentTransactions.slice(0, 3).map((transaction, index) => {
                               const category = getCategoryById(transaction.category);
                               return (
-                                <tr key={transaction.id || index} className="hover:bg-slate-700/70 dark:hover:bg-slate-700/70 transition-colors">
+                                <tr key={transaction.id || index} className="hover:bg-slate-200/70 dark:hover:bg-slate-700/70 transition-colors">
                                   <td className="p-2 text-slate-800 dark:text-slate-100 text-xs">
                                     {new Date(transaction.timestamp).toLocaleDateString(undefined, {month: 'numeric', day: 'numeric', year: 'numeric'})}
                                   </td>

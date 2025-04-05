@@ -144,7 +144,7 @@ const CategoryGroupAnalysis = ({
                   
                   return (
                     <div key={subcat.id} className={`flex items-center justify-between px-3 py-2 ${SUBCATEGORY_BG}`}>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-gray-800 dark:text-white">
                         {getCategoryIconComponent(subcat.id, 16)}
                         <span className="text-sm text-gray-800 dark:text-white">{subcat.name}</span>
                       </div>

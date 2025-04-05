@@ -519,17 +519,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
             <div className="flex justify-between items-center mb-4">
               <h5 className="font-medium text-slate-800 dark:text-slate-100">Budget Categories</h5>
               
-              {isCurrentMonth && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleResetBudgets}
-                    className="px-2 py-1 rounded-lg bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors flex items-center gap-1 text-xs"
-                  >
-                    <RefreshCw size={14} />
-                    <span>Reset</span>
-                  </button>
-                </div>
-              )}
+  
             </div>
             
             <div className="space-y-6">

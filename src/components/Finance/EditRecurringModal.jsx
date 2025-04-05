@@ -88,7 +88,7 @@ const EditRecurringModal = ({ recurring, onClose, onRecurringUpdated, currency =
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Description */}
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-white dark:text-white mb-2">
+          <label htmlFor="name" className="block text-sm font-medium text-slate-800 dark:text-slate-100 mb-2">
             Description
           </label>
           <InputField
@@ -102,7 +102,7 @@ const EditRecurringModal = ({ recurring, onClose, onRecurringUpdated, currency =
         
         {/* Amount */}
         <div>
-          <label htmlFor="amount" className="block text-sm font-medium text-white dark:text-white mb-2">
+          <label htmlFor="amount" className="block text-sm font-medium text-slate-800 dark:text-slate-100 mb-2">
             Amount
           </label>
           <InputField
@@ -117,7 +117,7 @@ const EditRecurringModal = ({ recurring, onClose, onRecurringUpdated, currency =
         
         {/* Category */}
         <div>
-          <label htmlFor="category" className="block text-sm font-medium text-white dark:text-white mb-2">
+          <label htmlFor="category" className="block text-sm font-medium text-slate-800 dark:text-slate-100 mb-2">
             Category
           </label>
           <div className="relative">
@@ -127,7 +127,7 @@ const EditRecurringModal = ({ recurring, onClose, onRecurringUpdated, currency =
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full pl-10 pr-10 py-3 bg-slate-700 dark:bg-slate-700 text-white dark:text-white border border-slate-600 dark:border-slate-600 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+              className="w-full pl-10 pr-10 py-3 bg-slate-700 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-600 dark:border-slate-600 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
               required
             >
               <option value="">Select a category</option>
@@ -149,7 +149,7 @@ const EditRecurringModal = ({ recurring, onClose, onRecurringUpdated, currency =
         
         {/* Next Date */}
         <div>
-          <label htmlFor="nextDate" className="block text-sm font-medium text-white dark:text-white mb-2">
+          <label htmlFor="nextDate" className="block text-sm font-medium text-slate-800 dark:text-slate-100 mb-2">
             Next Occurrence Date
           </label>
           <InputField
@@ -163,7 +163,7 @@ const EditRecurringModal = ({ recurring, onClose, onRecurringUpdated, currency =
         
         {/* Frequency */}
         <div>
-          <label htmlFor="frequency" className="block text-sm font-medium text-white dark:text-white mb-2">
+          <label htmlFor="frequency" className="block text-sm font-medium text-slate-800 dark:text-slate-100 mb-2">
             Frequency
           </label>
           <div className="relative">
@@ -173,7 +173,7 @@ const EditRecurringModal = ({ recurring, onClose, onRecurringUpdated, currency =
             <select
               value={frequency}
               onChange={(e) => setFrequency(e.target.value)}
-              className="w-full pl-10 pr-10 py-3 bg-slate-700 dark:bg-slate-700 text-white dark:text-white border border-slate-600 dark:border-slate-600 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+              className="w-full pl-10 pr-10 py-3 bg-slate-700 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-600 dark:border-slate-600 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
               required
             >
               <option value="daily">Daily</option>
@@ -192,7 +192,7 @@ const EditRecurringModal = ({ recurring, onClose, onRecurringUpdated, currency =
         {/* Reminder Settings */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label htmlFor="createReminder" className="text-sm font-medium text-white dark:text-white flex items-center gap-2">
+            <label htmlFor="createReminder" className="text-sm font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <Bell size={16} className="text-amber-400" />
               <span>Create Reminder</span>
             </label>
@@ -211,7 +211,7 @@ const EditRecurringModal = ({ recurring, onClose, onRecurringUpdated, currency =
           {createReminder && (
             <div className="p-3 bg-amber-900/30 rounded-lg border border-amber-800/50">
               <div className="flex items-center">
-                <span className="text-sm text-white dark:text-white mr-2">Remind me</span>
+                <span className="text-sm text-slate-800 dark:text-slate-100 mr-2">Remind me</span>
                 <select
                   value={reminderDays}
                   onChange={(e) => setReminderDays(e.target.value)}
@@ -224,7 +224,7 @@ const EditRecurringModal = ({ recurring, onClose, onRecurringUpdated, currency =
                   <option value="5">5 days</option>
                   <option value="7">1 week</option>
                 </select>
-                <span className="text-sm text-white dark:text-white ml-2">before due date</span>
+                <span className="text-sm text-slate-800 dark:text-slate-100 ml-2">before due date</span>
               </div>
             </div>
           )}
@@ -232,7 +232,7 @@ const EditRecurringModal = ({ recurring, onClose, onRecurringUpdated, currency =
         
         {/* Notes */}
         <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-white dark:text-white mb-2">
+          <label htmlFor="notes" className="block text-sm font-medium text-slate-800 dark:text-slate-100 mb-2">
             Notes (Optional)
           </label>
           <div className="relative">
@@ -242,7 +242,7 @@ const EditRecurringModal = ({ recurring, onClose, onRecurringUpdated, currency =
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full pl-10 py-3 bg-slate-700 dark:bg-slate-700 text-white dark:text-white border border-slate-600 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+              className="w-full pl-10 py-3 bg-slate-700 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-600 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
               placeholder="Add notes about this recurring transaction"
               rows="3"
             ></textarea>

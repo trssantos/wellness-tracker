@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Tag, DollarSign, FileText, Calendar } from 'lucide-react';
+import { Tag, DollarSign, FileText, Calendar } from 'lucide-react';
 import { updateBudget, getFinanceData, getCategoryById, formatMonthKey } from '../../utils/financeUtils';
 import ModalContainer from './ModalContainer';
 import InputField from './InputField';
@@ -65,7 +65,7 @@ const EditBudgetModal = ({ budget, onClose, onBudgetUpdated, currency = '$' }) =
   return (
     <ModalContainer title="Edit Budget" onClose={onClose}>
       {error && (
-        <div className="bg-red-900/30 text-red-400 p-3 rounded-lg mb-4">
+        <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-3 rounded-lg mb-4">
           {error}
         </div>
       )}
@@ -73,14 +73,14 @@ const EditBudgetModal = ({ budget, onClose, onBudgetUpdated, currency = '$' }) =
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Category (display only) */}
         <div>
-          <label className="block text-sm font-medium text-white dark:text-white mb-2">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Category
           </label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-800 dark:text-slate-400 pointer-events-none">
               <Tag size={18} />
             </div>
-            <div className="w-full pl-10 py-3 bg-slate-700 dark:bg-slate-700 text-white dark:text-white border border-slate-600 dark:border-slate-600 rounded-lg">
+            <div className="w-full pl-10 py-3 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-white border border-slate-300 dark:border-slate-600 rounded-lg">
               {categoryName}
             </div>
           </div>
@@ -89,14 +89,14 @@ const EditBudgetModal = ({ budget, onClose, onBudgetUpdated, currency = '$' }) =
         {/* Month Display - if monthKey is provided */}
         {monthKey && (
           <div>
-            <label className="block text-sm font-medium text-white dark:text-white mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Month
             </label>
             <div className="relative">
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-800 dark:text-slate-400 pointer-events-none">
                 <Calendar size={18} />
               </div>
-              <div className="w-full pl-10 py-3 bg-slate-700 dark:bg-slate-700 text-white dark:text-white border border-slate-600 dark:border-slate-600 rounded-lg">
+              <div className="w-full pl-10 py-3 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-white border border-slate-300 dark:border-slate-600 rounded-lg">
                 {formatMonthKey(monthKey)}
               </div>
             </div>
@@ -105,7 +105,7 @@ const EditBudgetModal = ({ budget, onClose, onBudgetUpdated, currency = '$' }) =
         
         {/* Budget Amount */}
         <div>
-          <label htmlFor="allocated" className="block text-sm font-medium text-white dark:text-white mb-2">
+          <label htmlFor="allocated" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Budget Amount
           </label>
           <InputField
@@ -120,7 +120,7 @@ const EditBudgetModal = ({ budget, onClose, onBudgetUpdated, currency = '$' }) =
         
         {/* Spent Amount */}
         <div>
-          <label htmlFor="spent" className="block text-sm font-medium text-white dark:text-white mb-2">
+          <label htmlFor="spent" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Spent Amount
           </label>
           <InputField
@@ -135,17 +135,17 @@ const EditBudgetModal = ({ budget, onClose, onBudgetUpdated, currency = '$' }) =
         
         {/* Notes */}
         <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-white dark:text-white mb-2">
+          <label htmlFor="notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Notes (Optional)
           </label>
           <div className="relative">
-            <div className="absolute left-3 top-3 text-slate-400 pointer-events-none">
+            <div className="absolute left-3 top-3 text-slate-800 dark:text-slate-400 pointer-events-none">
               <FileText size={18} />
             </div>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full pl-10 py-3 bg-slate-700 dark:bg-slate-700 text-white dark:text-white border border-slate-600 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+              className="w-full pl-10 py-3 bg-white dark:bg-slate-700 text-slate-800 dark:text-white border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
               placeholder="Add notes about this budget"
               rows="3"
             ></textarea>
@@ -157,13 +157,13 @@ const EditBudgetModal = ({ budget, onClose, onBudgetUpdated, currency = '$' }) =
           <button
             type="button"
             onClick={onClose}
-            className="w-full xs:w-auto mb-2 xs:mb-0 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
+            className="w-full xs:w-auto mb-2 xs:mb-0 px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-lg"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="w-full xs:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+            className="w-full xs:w-auto px-4 py-2 bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg"
           >
             Save Changes
           </button>

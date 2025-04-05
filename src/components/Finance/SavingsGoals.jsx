@@ -116,18 +116,18 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
                 </div>
                 
                 <div className="flex justify-between items-start mb-2">
-                  <h5 className="text-sm text-white dark:text-white">{goal.name}</h5>
+                  <h5 className="text-sm text-slate-800 dark:text-slate-100">{goal.name}</h5>
                   <div className="text-right">
                     <div className="font-bold text-lg finance-text-amber-400 dark:finance-text-amber-400">
                       {formatCurrency(goal.current)}
                     </div>
-                    <div className="text-xs text-slate-400 dark:text-slate-400">
+                    <div className="text-xs text-slate-800 dark:text-slate-400">
                       of {formatCurrency(goal.target)} goal
                     </div>
                   </div>
                 </div>
                 
-                <div className="h-4 bg-slate-700 dark:bg-slate-700 rounded-full overflow-hidden mb-2">
+                <div className="h-4 bg-slate-300 dark:bg-slate-700 rounded-full overflow-hidden mb-2">
                   <div 
                     className={`h-full finance-bg-${color}-500 dark:finance-bg-${color}-600 rounded-full relative shimmer-effect`}
                     style={{ width: `${percentage}%` }}
@@ -135,8 +135,8 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
                 </div>
                 
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-300 dark:text-slate-400">{percentage}% complete</span>
-                  <span className="text-slate-300 dark:text-slate-400">
+                  <span className="text-slate-800 dark:text-slate-400">{percentage}% complete</span>
+                  <span className="text-slate-800 dark:text-slate-400">
                     {formatCurrency(goal.target - goal.current)} to go
                   </span>
                 </div>
@@ -144,7 +144,7 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
             );
           })
         ) : (
-          <div className="text-center text-slate-400 dark:text-slate-400 p-2">
+          <div className="text-center text-slate-800 dark:text-slate-400 p-2">
             No savings goals found
           </div>
         )}
@@ -164,7 +164,7 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h4 className="text-lg font-medium text-white dark:text-white flex items-center gap-2">
+        <h4 className="text-lg font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2">
           <PiggyBank className="finance-text-amber-400 dark:finance-text-amber-400" size={20} />
           Savings Goals
         </h4>
@@ -211,8 +211,8 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
                 </div>
                 
                 <div className="mb-4">
-                  <h5 className="text-xl font-medium text-white dark:text-white mb-1">{goal.name}</h5>
-                  <div className="flex items-center text-sm text-slate-400 dark:text-slate-400">
+                  <h5 className="text-xl font-medium text-slate-800 dark:text-slate-100 mb-1">{goal.name}</h5>
+                  <div className="flex items-center text-sm text-slate-800 dark:text-slate-400">
                     <Calendar size={14} className="mr-1" />
                     <span>Started {formatDate(goal.createdAt)}</span>
                     
@@ -227,8 +227,8 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
                 
                 <div className="mb-6">
                   <div className="flex justify-between items-end mb-2">
-                    <div className="text-sm text-slate-400 dark:text-slate-400">Progress</div>
-                    <div className="text-sm font-medium text-white dark:text-white">
+                    <div className="text-sm text-slate-800 dark:text-slate-400">Progress</div>
+                    <div className="text-sm font-medium text-slate-800 dark:text-slate-100">
                       {percentage}%
                     </div>
                   </div>
@@ -250,15 +250,15 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
                 
                 <div className="flex justify-between items-end mb-4">
                   <div>
-                    <div className="text-sm text-slate-400 dark:text-slate-400">Saved</div>
-                    <div className="text-lg font-bold text-white dark:text-white">
+                    <div className="text-sm text-slate-800 dark:text-slate-400">Saved</div>
+                    <div className="text-lg font-bold text-slate-800 dark:text-slate-100">
                       {formatCurrency(goal.current)}
                     </div>
                   </div>
                   
                   <div className="text-right">
-                    <div className="text-sm text-slate-400 dark:text-slate-400">Target</div>
-                    <div className="text-lg font-bold text-white dark:text-white">
+                    <div className="text-sm text-slate-800 dark:text-slate-400">Target</div>
+                    <div className="text-lg font-bold text-slate-800 dark:text-slate-100">
                       {formatCurrency(goal.target)}
                     </div>
                   </div>
@@ -280,7 +280,7 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
                   
                   <button
                     onClick={() => handleEditGoal(goal)}
-                    className="px-3 py-1.5 bg-slate-700 dark:bg-slate-700 hover:bg-slate-600 dark:hover:bg-slate-600 text-white dark:text-white rounded-lg text-sm flex items-center"
+                    className="px-3 py-1.5 bg-slate-700 dark:bg-slate-700 hover:bg-slate-600 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 rounded-lg text-sm flex items-center"
                   >
                     <Settings size={14} className="mr-1" /> Edit Goal
                   </button>
@@ -300,7 +300,7 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
             <div className="inline-block p-4 rounded-full finance-bg-amber-900/40 dark:finance-bg-amber-900/40 finance-text-amber-400 dark:finance-text-amber-400 mb-4">
               <PiggyBank size={40} />
             </div>
-            <h5 className="text-xl font-medium text-white dark:text-white mb-2">No Savings Goals Yet</h5>
+            <h5 className="text-xl font-medium text-slate-800 dark:text-slate-100 mb-2">No Savings Goals Yet</h5>
             <p className="text-slate-300 dark:text-slate-400 mb-6 max-w-md mx-auto">
               Start saving for your future by creating a savings goal. Track your progress and stay motivated.
             </p>

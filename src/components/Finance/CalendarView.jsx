@@ -98,23 +98,23 @@ const CalendarView = ({ transactions = [], bills = [], onDateClick, currency = '
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   
   return (
-    <div className="bg-slate-800 dark:bg-slate-800 rounded-lg p-4">
+    <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow border border-slate-200 dark:border-slate-700">
       {/* Calendar header */}
       <div className="flex justify-between items-center mb-4">
         <button
           onClick={handlePreviousMonth}
-          className="p-2 rounded-lg hover:bg-slate-700 text-slate-300"
+          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300"
         >
           <ChevronLeft size={20} />
         </button>
         
-        <h3 className="text-lg font-medium text-white">
+        <h3 className="text-lg font-medium text-slate-800 dark:text-white">
           {currentMonth.toLocaleDateString('default', { month: 'long', year: 'numeric' })}
         </h3>
         
         <button
           onClick={handleNextMonth}
-          className="p-2 rounded-lg hover:bg-slate-700 text-slate-300"
+          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300"
         >
           <ChevronRight size={20} />
         </button>
@@ -124,7 +124,7 @@ const CalendarView = ({ transactions = [], bills = [], onDateClick, currency = '
       <div className="grid grid-cols-7 gap-1">
         {/* Day names */}
         {dayNames.map(day => (
-          <div key={day} className="text-center text-xs text-slate-400 py-2">
+          <div key={day} className="text-center text-xs text-slate-500 dark:text-slate-400 py-2 font-medium">
             {day}
           </div>
         ))}
@@ -133,8 +133,8 @@ const CalendarView = ({ transactions = [], bills = [], onDateClick, currency = '
         {calendarData.map((day, index) => (
           <div 
             key={index}
-            className={`p-1 min-h-[80px] text-center border border-slate-700 rounded ${
-              day.day ? 'cursor-pointer hover:bg-slate-700' : ''
+            className={`p-1 min-h-[80px] text-center border border-slate-200 dark:border-slate-700 rounded ${
+              day.day ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700' : ''
             }`}
             onClick={() => day.day && onDateClick && onDateClick(day.date)}
           >
@@ -142,8 +142,8 @@ const CalendarView = ({ transactions = [], bills = [], onDateClick, currency = '
               <>
                 <div className={`text-sm font-medium ${
                   formatDateForStorage(new Date()) === day.date
-                    ? 'text-amber-400 bg-amber-900/30 rounded-full w-6 h-6 flex items-center justify-center mx-auto'
-                    : 'text-white'
+                    ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 rounded-full w-6 h-6 flex items-center justify-center mx-auto'
+                    : 'text-slate-800 dark:text-white'
                 }`}>
                   {day.day}
                 </div>
@@ -163,7 +163,7 @@ const CalendarView = ({ transactions = [], bills = [], onDateClick, currency = '
                         );
                       })}
                       {day.transactions.length > 3 && (
-                        <span className="text-xs text-slate-400">+{day.transactions.length - 3}</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">+{day.transactions.length - 3}</span>
                       )}
                     </div>
                   )}
@@ -177,8 +177,8 @@ const CalendarView = ({ transactions = [], bills = [], onDateClick, currency = '
                           className="text-xs flex items-center gap-1 justify-center"
                           title={`${bill.name}: ${formatCurrency(bill.amount)}`}
                         >
-                          <RepeatIcon size={10} className="text-amber-400" />
-                          <span className={`text-xs ${bill.amount > 0 ? 'text-green-400' : 'text-red-400'} truncate max-w-[60px]`}>
+                          <RepeatIcon size={10} className="text-amber-500 dark:text-amber-400" />
+                          <span className={`text-xs ${bill.amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} truncate max-w-[60px]`}>
                             {bill.name}
                           </span>
                         </div>
@@ -186,7 +186,7 @@ const CalendarView = ({ transactions = [], bills = [], onDateClick, currency = '
                       
                       {day.bills.length > 2 && (
                         <div 
-                          className="text-xs bg-amber-900/30 text-amber-400 px-1 py-0.5 rounded w-full"
+                          className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded w-full"
                           title={`${day.bills.length} recurring item(s)`}
                         >
                           {formatCurrency(day.bills.reduce((sum, bill) => sum + Math.abs(bill.amount), 0))}
@@ -199,14 +199,14 @@ const CalendarView = ({ transactions = [], bills = [], onDateClick, currency = '
                   {(day.transactions.length > 0 || day.bills.length > 0) && (
                     <div className="mt-1 text-xs w-full">
                       <div className="flex justify-between px-1">
-                        <span className="text-green-400">
+                        <span className="text-green-600 dark:text-green-400">
                           {formatCurrency(
                             [...day.transactions, ...day.bills]
                               .filter(item => item.amount > 0)
                               .reduce((sum, item) => sum + Math.abs(item.amount), 0)
                           )}
                         </span>
-                        <span className="text-red-400">
+                        <span className="text-red-600 dark:text-red-400">
                           {formatCurrency(
                             [...day.transactions, ...day.bills]
                               .filter(item => item.amount < 0)

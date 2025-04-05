@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { X, PiggyBank, DollarSign, FileText, Calendar } from 'lucide-react';
+import { PiggyBank, DollarSign, FileText, Calendar } from 'lucide-react';
 import { addSavingsGoal } from '../../utils/financeUtils';
+import ModalContainer from './ModalContainer';
+import InputField from './InputField';
 
 const AddSavingsGoalModal = ({ onClose, onSavingsAdded, currency = '$' }) => {
   // State variables
@@ -66,175 +68,128 @@ const AddSavingsGoalModal = ({ onClose, onSavingsAdded, currency = '$' }) => {
   };
 
   return (
-    <dialog 
-      className="modal-base fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-      open
-    >
-      <div 
-        className="modal-content max-w-md w-full overflow-auto max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <h3 className="modal-title">Add Savings Goal</h3>
-          <button
-            onClick={onClose}
-            className="modal-close-button"
-          >
-            <X size={20} />
-          </button>
+    <ModalContainer title="Add Savings Goal" onClose={onClose}>
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-3 rounded-lg mb-4">
+          {error}
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Goal Name */}
+        <div>
+          <label htmlFor="name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Goal Name
+          </label>
+          <InputField
+            icon={PiggyBank}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="E.g., Emergency Fund"
+            required
+          />
         </div>
         
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-3 rounded-lg mb-4">
-            {error}
+        {/* Goal Color */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Goal Color
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {colors.map(c => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setColor(c.id)}
+                className={`w-8 h-8 rounded-full bg-${c.id}-500 dark:bg-${c.id}-600 ${
+                  color === c.id ? 'ring-2 ring-offset-2 ring-amber-500 dark:ring-offset-slate-800 dark:ring-amber-400' : ''
+                }`}
+                title={c.name}
+              />
+            ))}
           </div>
-        )}
+        </div>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Goal Name */}
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Goal Name
-            </label>
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
-                <PiggyBank size={18} />
-              </div>
-              <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="input-field pl-10 w-full"
-                placeholder="E.g., Emergency Fund"
-                required
-              />
+        {/* Target Amount */}
+        <div>
+          <label htmlFor="target" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Target Amount
+          </label>
+          <InputField
+            icon={DollarSign}
+            type="number"
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            placeholder="0.00"
+            required
+          />
+        </div>
+        
+        {/* Current Amount */}
+        <div>
+          <label htmlFor="current" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Current Amount (Optional)
+          </label>
+          <InputField
+            icon={DollarSign}
+            type="number"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            placeholder="0.00"
+          />
+        </div>
+        
+        {/* Target Date */}
+        <div>
+          <label htmlFor="targetDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Target Date (Optional)
+          </label>
+          <InputField
+            icon={Calendar}
+            type="date"
+            value={targetDate}
+            onChange={(e) => setTargetDate(e.target.value)}
+          />
+        </div>
+        
+        {/* Notes */}
+        <div>
+          <label htmlFor="notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Notes (Optional)
+          </label>
+          <div className="relative">
+            <div className="absolute left-3 top-3 text-slate-800 dark:text-slate-400 pointer-events-none">
+              <FileText size={18} />
             </div>
+            <textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full pl-10 py-3 bg-white dark:bg-slate-700 text-slate-800 dark:text-white border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+              placeholder="Why are you saving for this goal?"
+              rows="3"
+            ></textarea>
           </div>
-          
-          {/* Goal Color */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Goal Color
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {colors.map(c => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setColor(c.id)}
-                  className={`w-8 h-8 rounded-full bg-${c.id}-500 dark:bg-${c.id}-600 ${
-                    color === c.id ? 'ring-2 ring-offset-2 ring-slate-400 dark:ring-slate-800' : ''
-                  }`}
-                  title={c.name}
-                />
-              ))}
-            </div>
-          </div>
-          
-          {/* Target Amount */}
-          <div>
-            <label htmlFor="target" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Target Amount
-            </label>
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
-                <DollarSign size={18} />
-              </div>
-              <input
-                id="target"
-                type="number"
-                value={target}
-                onChange={(e) => setTarget(e.target.value)}
-                className="input-field pl-10 w-full"
-                placeholder="0.00"
-                min="0.01"
-                step="0.01"
-                required
-              />
-            </div>
-          </div>
-          
-          {/* Current Amount */}
-          <div>
-            <label htmlFor="current" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Current Amount (Optional)
-            </label>
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
-                <DollarSign size={18} />
-              </div>
-              <input
-                id="current"
-                type="number"
-                value={current}
-                onChange={(e) => setCurrent(e.target.value)}
-                className="input-field pl-10 w-full"
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-              />
-            </div>
-          </div>
-          
-          {/* Target Date */}
-          <div>
-            <label htmlFor="targetDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Target Date (Optional)
-            </label>
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none">
-                <Calendar size={18} />
-              </div>
-              <input
-                id="targetDate"
-                type="date"
-                value={targetDate}
-                onChange={(e) => setTargetDate(e.target.value)}
-                className="input-field pl-10 w-full"
-              />
-            </div>
-          </div>
-          
-          {/* Notes */}
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Notes (Optional)
-            </label>
-            <div className="relative">
-              <div className="absolute left-3 top-3 text-slate-400 pointer-events-none">
-                <FileText size={18} />
-              </div>
-              <textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="textarea-field pl-10 w-full"
-                placeholder="Why are you saving for this goal?"
-                rows="3"
-              ></textarea>
-            </div>
-          </div>
-          
-          {/* Form Actions */}
-          <div className="flex flex-col xs:flex-row justify-end gap-3 pt-2">
-  <button
-    type="button"
-    onClick={onClose}
-    className="w-full xs:w-auto mb-2 xs:mb-0 btn-secondary"
-  >
-    Cancel
-  </button>
-  <button
-    type="submit"
-    className="w-full xs:w-auto btn-primary"
-  >
-    Add Goal
-  </button>
-</div>
-        </form>
-      </div>
-    </dialog>
+        </div>
+        
+        {/* Form Actions */}
+        <div className="flex flex-col xs:flex-row justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full xs:w-auto mb-2 xs:mb-0 px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="w-full xs:w-auto px-4 py-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg"
+          >
+            Add Goal
+          </button>
+        </div>
+      </form>
+    </ModalContainer>
   );
 };
 

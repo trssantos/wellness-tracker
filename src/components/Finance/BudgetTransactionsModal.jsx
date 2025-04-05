@@ -172,63 +172,63 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
     >
       <div 
         ref={modalRef}
-        className="bg-slate-800 text-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden"
+        className="bg-white dark:bg-slate-800 text-slate-800 dark:text-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b border-slate-700">
+        <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
             {isGroupBudget ? (
-              <div className="p-2 rounded-md bg-blue-900/50 text-blue-400">
+              <div className="p-2 rounded-md bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
                 <FolderTree size={24} />
               </div>
             ) : (
-              <div className={`p-2 rounded-md bg-${category?.color || 'gray'}-900/50 text-${category?.color || 'gray'}-400`}>
+              <div className={`p-2 rounded-md bg-${category?.color || 'gray'}-100 dark:bg-${category?.color || 'gray'}-900/50 text-${category?.color || 'gray'}-600 dark:text-${category?.color || 'gray'}-400`}>
                 {getCategoryIconComponent(budget.category, 24)}
               </div>
             )}
             <div>
-              <h3 className="text-lg font-medium">
+              <h3 className="text-lg font-medium text-slate-800 dark:text-white">
                 {isGroupBudget ? `${groupName} Group` : (category?.name || 'Category')} Transactions
               </h3>
-              <p className="text-sm text-slate-400">{formatMonthDisplay(monthKey)}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{formatMonthDisplay(monthKey)}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
           >
             <X size={20} />
           </button>
         </div>
         
         {/* Budget Summary */}
-        <div className="p-4 border-b border-slate-700 bg-slate-700/30">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30">
           <div className="flex flex-wrap gap-4 justify-between items-center">
             <div>
-              <div className="text-sm text-slate-300 mb-1">Budget Progress</div>
+              <div className="text-sm text-slate-500 dark:text-slate-300 mb-1">Budget Progress</div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold">{formatCurrency(totalSpent)}</span>
-                <span className="text-slate-400">of {formatCurrency(budget.allocated)}</span>
-                <span className={`text-sm ${totalSpent > budget.allocated ? 'text-red-400' : 'text-green-400'}`}>
+                <span className="text-xl font-bold text-slate-800 dark:text-white">{formatCurrency(totalSpent)}</span>
+                <span className="text-slate-600 dark:text-slate-400">of {formatCurrency(budget.allocated)}</span>
+                <span className={`text-sm ${totalSpent > budget.allocated ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                   ({Math.round((totalSpent / budget.allocated) * 100)}%)
                 </span>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm text-slate-300 mb-1">Transactions</div>
-              <div className="text-xl font-bold">{transactionCount}</div>
+              <div className="text-sm text-slate-500 dark:text-slate-300 mb-1">Transactions</div>
+              <div className="text-xl font-bold text-slate-800 dark:text-white">{transactionCount}</div>
             </div>
           </div>
           
           {/* Progress Bar */}
           <div className="mt-2">
-            <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+            <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div 
                 className={`h-full rounded-full ${
                   totalSpent > budget.allocated 
-                    ? 'bg-red-500' 
-                    : isGroupBudget ? 'bg-blue-500' : `bg-${category?.color || 'blue'}-500`
+                    ? 'bg-red-500 dark:bg-red-600' 
+                    : isGroupBudget ? 'bg-blue-500 dark:bg-blue-600' : `bg-${category?.color || 'blue'}-500 dark:bg-${category?.color || 'blue'}-600`
                 }`}
                 style={{ width: `${Math.min(100, Math.round((totalSpent / budget.allocated) * 100))}%` }}
               ></div>
@@ -237,7 +237,7 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
         </div>
         
         {/* Filters & Search */}
-        <div className="p-3 border-b border-slate-700 bg-slate-700/30 flex flex-wrap gap-2 justify-between">
+        <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30 flex flex-wrap gap-2 justify-between">
           <div className="flex items-center gap-2">
             <div className="relative">
               <input
@@ -245,9 +245,9 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
                 placeholder="Search transactions..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="pl-9 pr-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="pl-9 pr-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
               />
-              <Search className="absolute left-3 top-2 text-slate-400" size={16} />
+              <Search className="absolute left-3 top-2 text-slate-800 dark:text-slate-400" size={16} />
             </div>
             
             {/* Category filter for group budgets */}
@@ -255,7 +255,7 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
               <select
                 value={categoryFilter}
                 onChange={e => setCategoryFilter(e.target.value)}
-                className="bg-slate-700 border border-slate-600 rounded-lg text-sm text-white p-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-white p-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
               >
                 <option value="all">All Categories</option>
                 {categoriesInGroup.map(cat => (
@@ -268,11 +268,11 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
           </div>
           
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">Sort By:</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">Sort By:</span>
             <button 
               onClick={() => handleSort('date')}
               className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
-                sortBy === 'date' ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-300'
+                sortBy === 'date' ? 'bg-amber-500 dark:bg-amber-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
               }`}
             >
               <Calendar size={12} />
@@ -284,7 +284,7 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
             <button 
               onClick={() => handleSort('amount')}
               className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
-                sortBy === 'amount' ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-300'
+                sortBy === 'amount' ? 'bg-amber-500 dark:bg-amber-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
               }`}
             >
               <DollarSign size={12} />
@@ -300,14 +300,14 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
         <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
           {categoryTransactions.length > 0 ? (
             <table className="w-full border-collapse">
-              <thead className="bg-slate-700">
+              <thead className="bg-slate-100 dark:bg-slate-700">
                 <tr>
-                  <th className="p-3 text-left text-xs font-medium text-slate-300 border-b border-slate-600">Date</th>
-                  <th className="p-3 text-left text-xs font-medium text-slate-300 border-b border-slate-600">Description</th>
+                  <th className="p-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 border-b border-slate-200 dark:border-slate-600">Date</th>
+                  <th className="p-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 border-b border-slate-200 dark:border-slate-600">Description</th>
                   {isGroupBudget && (
-                    <th className="p-3 text-left text-xs font-medium text-slate-300 border-b border-slate-600">Category</th>
+                    <th className="p-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 border-b border-slate-200 dark:border-slate-600">Category</th>
                   )}
-                  <th className="p-3 text-right text-xs font-medium text-slate-300 border-b border-slate-600">Amount</th>
+                  <th className="p-3 text-right text-xs font-medium text-slate-500 dark:text-slate-300 border-b border-slate-200 dark:border-slate-600">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -315,27 +315,27 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
                   const txCategory = getCategoryById(transaction.category);
                   
                   return (
-                    <tr key={transaction.id} className="hover:bg-slate-700/50 transition-colors">
-                      <td className="p-3 text-sm text-slate-300 border-b border-slate-700">
+                    <tr key={transaction.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                      <td className="p-3 text-sm text-slate-500 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
                         {formatDate(transaction.timestamp)}
                       </td>
-                      <td className="p-3 text-sm text-white border-b border-slate-700">
+                      <td className="p-3 text-sm text-slate-800 dark:text-white border-b border-slate-200 dark:border-slate-700">
                         <div className="font-medium">{transaction.name}</div>
                         {transaction.notes && (
-                          <div className="text-xs text-slate-400 mt-0.5">{transaction.notes}</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{transaction.notes}</div>
                         )}
                       </td>
                       {isGroupBudget && (
-                        <td className="p-3 text-sm border-b border-slate-700">
+                        <td className="p-3 text-sm border-b border-slate-200 dark:border-slate-700">
                           {txCategory && (
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-${txCategory.color}-500/20 text-${txCategory.color}-300`}>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-${txCategory.color}-100 dark:bg-${txCategory.color}-900/30 text-${txCategory.color}-600 dark:text-${txCategory.color}-400`}>
                               {getCategoryIconComponent(transaction.category, 12)}
                               {txCategory.name}
                             </span>
                           )}
                         </td>
                       )}
-                      <td className="p-3 text-sm font-medium text-right text-red-400 border-b border-slate-700">
+                      <td className="p-3 text-sm font-medium text-right text-red-600 dark:text-red-400 border-b border-slate-200 dark:border-slate-700">
                         <div className="flex items-center justify-end">
                           <TrendingDown size={14} className="mr-1" />
                           {formatCurrency(transaction.amount)}
@@ -347,8 +347,8 @@ const BudgetTransactionsModal = ({ budget, monthKey, transactions, onClose, curr
               </tbody>
             </table>
           ) : (
-            <div className="p-8 text-center text-slate-400">
-              <TrendingDown size={36} className="text-slate-500 mx-auto mb-2" />
+            <div className="p-8 text-center text-slate-500 dark:text-slate-400">
+              <TrendingDown size={36} className="text-slate-400 dark:text-slate-500 mx-auto mb-2" />
               <p>No transactions found for this {isGroupBudget ? "group" : "category"} in {formatMonthDisplay(monthKey)}.</p>
               {searchQuery && (
                 <p className="mt-2 text-sm">Try adjusting your search query.</p>

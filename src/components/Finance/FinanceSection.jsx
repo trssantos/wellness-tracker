@@ -27,7 +27,7 @@ import recurringTransactionService from '../../utils/RecurringTransactionService
 import { 
   calculateFinancialStats, processRecurringTransactions, 
   getFinancialInsights, getSpendingMoodCorrelation, getFinanceData,
-  getCategoryById, addBudget, addSavingsGoal, updateBudget,getCategoryIconComponent
+  getCategoryById, addBudget, addSavingsGoal, updateBudget, getCategoryIconComponent
 } from '../../utils/financeUtils';
 
 const FinanceSection = () => {
@@ -68,30 +68,30 @@ const FinanceSection = () => {
   const [calendarMode, setCalendarMode] = useState(false);
 
   // Add this helper function to your FinanceSection.jsx
-const getCategoryColorClass = (category) => {
-  if (!category) return 'bg-slate-600';
-  
-  // Map color names to Tailwind classes
-  const colorMap = {
-    'blue': 'bg-blue-500/20 text-blue-300',
-    'green': 'bg-green-500/20 text-green-300', 
-    'amber': 'bg-amber-500/20 text-amber-300',
-    'red': 'bg-red-500/20 text-red-300',
-    'purple': 'bg-purple-500/20 text-purple-300',
-    'pink': 'bg-pink-500/20 text-pink-300',
-    'indigo': 'bg-indigo-500/20 text-indigo-300',
-    'teal': 'bg-teal-500/20 text-teal-300',
-    'emerald': 'bg-emerald-500/20 text-emerald-300',
-    'cyan': 'bg-cyan-500/20 text-cyan-300',
-    'violet': 'bg-violet-500/20 text-violet-300',
-    'fuchsia': 'bg-fuchsia-500/20 text-fuchsia-300',
-    'rose': 'bg-rose-500/20 text-rose-300',
-    'slate': 'bg-slate-500/20 text-slate-300',
-    'gray': 'bg-gray-500/20 text-gray-300'
+  const getCategoryColorClass = (category) => {
+    if (!category) return 'bg-slate-600 dark:bg-slate-600';
+    
+    // Map color names to Tailwind classes
+    const colorMap = {
+      'blue': 'bg-blue-500/20 dark:bg-blue-600/20 text-blue-300 dark:text-blue-300',
+      'green': 'bg-green-500/20 dark:bg-green-600/20 text-green-300 dark:text-green-300', 
+      'amber': 'bg-amber-500/20 dark:bg-amber-600/20 text-amber-300 dark:text-amber-300',
+      'red': 'bg-red-500/20 dark:bg-red-600/20 text-red-300 dark:text-red-300',
+      'purple': 'bg-purple-500/20 dark:bg-purple-600/20 text-purple-300 dark:text-purple-300',
+      'pink': 'bg-pink-500/20 dark:bg-pink-600/20 text-pink-300 dark:text-pink-300',
+      'indigo': 'bg-indigo-500/20 dark:bg-indigo-600/20 text-indigo-300 dark:text-indigo-300',
+      'teal': 'bg-teal-500/20 dark:bg-teal-600/20 text-teal-300 dark:text-teal-300',
+      'emerald': 'bg-emerald-500/20 dark:bg-emerald-600/20 text-emerald-300 dark:text-emerald-300',
+      'cyan': 'bg-cyan-500/20 dark:bg-cyan-600/20 text-cyan-300 dark:text-cyan-300',
+      'violet': 'bg-violet-500/20 dark:bg-violet-600/20 text-violet-300 dark:text-violet-300',
+      'fuchsia': 'bg-fuchsia-500/20 dark:bg-fuchsia-600/20 text-fuchsia-300 dark:text-fuchsia-300',
+      'rose': 'bg-rose-500/20 dark:bg-rose-600/20 text-rose-300 dark:text-rose-300',
+      'slate': 'bg-slate-500/20 dark:bg-slate-600/20 text-slate-300 dark:text-slate-300',
+      'gray': 'bg-gray-500/20 dark:bg-gray-600/20 text-gray-300 dark:text-gray-300'
+    };
+    
+    return colorMap[category.color] || 'bg-slate-600 dark:bg-slate-600 text-slate-800 dark:text-slate-100';
   };
-  
-  return colorMap[category.color] || 'bg-slate-600 text-white';
-};
 
 
   // Define tab items with icons and labels
@@ -111,9 +111,9 @@ const getCategoryColorClass = (category) => {
       try {
         recurringTransactionService.init();
 
-         // Check if we need to archive budgets and create new ones for a new month
-      const { checkAndResetBudgets } = require('../../utils/financeUtils');
-      checkAndResetBudgets();
+        // Check if we need to archive budgets and create new ones for a new month
+        const { checkAndResetBudgets } = require('../../utils/financeUtils');
+        checkAndResetBudgets();
       } catch (error) {
         console.error("Failed to initialize recurring service:", error);
       }
@@ -152,21 +152,21 @@ const getCategoryColorClass = (category) => {
   }, []);
 
   // Function to filter transactions by date (past or future)
-const filterTransactionsByDate = (transactions, futureOnly = false) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  return transactions.filter(transaction => {
-    const txDate = new Date(transaction.date || transaction.timestamp);
-    txDate.setHours(0, 0, 0, 0);
+  const filterTransactionsByDate = (transactions, futureOnly = false) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
-    if (futureOnly) {
-      return txDate > today; // Future transactions only
-    } else {
-      return txDate <= today; // Past and today's transactions only
-    }
-  });
-};
+    return transactions.filter(transaction => {
+      const txDate = new Date(transaction.date || transaction.timestamp);
+      txDate.setHours(0, 0, 0, 0);
+      
+      if (futureOnly) {
+        return txDate > today; // Future transactions only
+      } else {
+        return txDate <= today; // Past and today's transactions only
+      }
+    });
+  };
 
 
   // Calculate stats when period changes or data is refreshed
@@ -198,23 +198,23 @@ const filterTransactionsByDate = (transactions, futureOnly = false) => {
     setCorrelations(moodCorrelations);
     
     // Prepare chart data - for category breakdown - EXPENSES ONLY
-const categoryData = [];
-Object.entries(newStats.categoryBreakdown).forEach(([categoryId, amount]) => {
-  const category = getCategoryById(categoryId);
-  // Only include expense categories
-  if (category && category.id.startsWith('expense-')) {
-    categoryData.push({
-      id: categoryId,
-      name: category.name,
-      value: amount,
-      color: category.color
+    const categoryData = [];
+    Object.entries(newStats.categoryBreakdown).forEach(([categoryId, amount]) => {
+      const category = getCategoryById(categoryId);
+      // Only include expense categories
+      if (category && category.id.startsWith('expense-')) {
+        categoryData.push({
+          id: categoryId,
+          name: category.name,
+          value: amount,
+          color: category.color
+        });
+      }
     });
-  }
-});
 
-// Sort by amount, descending
-categoryData.sort((a, b) => b.value - a.value);
-setChartData(categoryData);
+    // Sort by amount, descending
+    categoryData.sort((a, b) => b.value - a.value);
+    setChartData(categoryData);
   }, [selectedPeriod, refreshTrigger]);
 
   // Toggle expanded sections
@@ -276,9 +276,9 @@ setChartData(categoryData);
   return (
     <div className="space-y-3">
       {/* Finance Header */}
-      <div className="bg-slate-800 dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
         <div className="flex justify-between items-center mb-3">
-          <h2 className="text-lg font-semibold text-white dark:text-white flex items-center gap-2 transition-colors">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2 transition-colors">
             <Coins className="text-amber-500 dark:text-amber-400" size={24} />
             Finance
           </h2>
@@ -287,7 +287,7 @@ setChartData(categoryData);
             <select 
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="bg-slate-700 dark:bg-slate-700 text-white dark:text-white rounded-lg px-2 py-1 text-xs border-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+              className="bg-slate-700 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-lg px-2 py-1 text-xs border-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
             >
               <option value="week">This Week</option>
               <option value="month">This Month</option>
@@ -297,7 +297,7 @@ setChartData(categoryData);
             
             <button 
               onClick={() => setShowSettings(true)}
-              className="p-1.5 rounded-lg bg-slate-700 dark:bg-slate-700 text-white dark:text-white hover:bg-slate-600 dark:hover:bg-slate-600 transition-colors"
+              className="p-1.5 rounded-lg bg-slate-700 dark:bg-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-600 dark:hover:bg-slate-600 transition-colors"
               title="Settings"
             >
               <Settings size={20} />
@@ -307,79 +307,78 @@ setChartData(categoryData);
         
         {/* Stats Summary */}
         {stats && (
-  <div className="grid grid-cols-2 gap-2 mb-3">
-    {/* Balance */}
-    <div className="bg-amber-900/30 dark:bg-amber-900/30 p-3 rounded-lg border border-amber-800/50 dark:border-amber-800/50">
-      <div className="flex items-center mb-1">
-        <div className="flex items-center gap-1">
-          <DollarSign size={16} className="text-amber-400 dark:text-amber-400" />
-          <h4 className="font-medium text-white dark:text-white text-sm">Balance</h4>
-        </div>
-      </div>
-      <div className="flex justify-between items-end">
-        <div className="text-xs text-slate-400 dark:text-slate-400">
-          Projected
-          <span className={`ml-1 flex items-center ${stats.upcoming.net >= 0 
-            ? 'text-green-400 dark:text-green-400' 
-            : 'text-red-400 dark:text-red-400'}`}>
-            {stats.upcoming.net <= 0 ? (
-              <TrendingDown size={10} className="mr-0.5" />
-            ) : (
-              <TrendingUp size={10} className="mr-0.5" />
-            )}
-            {formatCurrency(stats.projected.balance)}
-          </span>
-        </div>
-        <span className="font-bold text-lg text-amber-300 dark:text-amber-300 break-words">
-          {formatCurrency(stats.current.balance)}
-        </span>
-      </div>
-    </div>
-    
-    {/* Income */}
-    <div className="bg-green-900/30 dark:bg-green-900/30 p-3 rounded-lg border border-green-800/50 dark:border-green-800/50">
-      <div className="flex items-center mb-1">
-        <div className="flex items-center gap-1">
-          <TrendingUp size={16} className="text-green-400 dark:text-green-400" />
-          <h4 className="font-medium text-white dark:text-white text-sm">Income</h4>
-        </div>
-      </div>
-      <div className="flex justify-between items-end">
-        <div className="text-xs text-slate-400 dark:text-slate-400">
-          Upcoming
-          <span className="ml-1 text-green-400 dark:text-green-400">
-            +{formatCurrency(stats.upcoming.income)}
-          </span>
-        </div>
-        <span className="font-bold text-lg text-green-300 dark:text-green-300 break-words">
-          {formatCurrency(stats.current.income)}
-        </span>
-      </div>
-    </div>
-    
-    {/* Expenses (Full Width) */}
-    <div className="bg-red-900/30 dark:bg-red-900/30 p-3 rounded-lg border border-red-800/50 dark:border-red-800/50 col-span-2 mb-1">
-      <div className="flex items-center mb-1">
-        <div className="flex items-center gap-1">
-          <TrendingDown size={16} className="text-red-400 dark:text-red-400" />
-          <h4 className="font-medium text-white dark:text-white text-sm">Expenses</h4>
-        </div>
-      </div>
-      <div className="flex justify-between items-end">
-        <div className="text-xs text-slate-400 dark:text-slate-400">
-          Upcoming
-          <span className="ml-1 text-red-400 dark:text-red-400">
-            -{formatCurrency(stats.upcoming.expenses)}
-          </span>
-        </div>
-        <span className="font-bold text-lg text-red-300 dark:text-red-300 break-words">
-          {formatCurrency(stats.current.expenses)}
-        </span>
-      </div>
-    </div>
-  </div>
-)}
-
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {/* Balance */}
+            <div className="bg-amber-900/30 dark:bg-amber-900/30 p-3 rounded-lg border border-amber-800/50 dark:border-amber-800/50">
+              <div className="flex items-center mb-1">
+                <div className="flex items-center gap-1">
+                  <DollarSign size={16} className="text-amber-400 dark:text-amber-400" />
+                  <h4 className="font-medium text-slate-800 dark:text-slate-100 text-sm">Balance</h4>
+                </div>
+              </div>
+              <div className="flex justify-between items-end">
+                <div className="text-xs text-slate-800 dark:text-slate-400">
+                  Projected
+                  <span className={`ml-1 flex items-center ${stats.upcoming.net >= 0 
+                    ? 'text-green-400 dark:text-green-400' 
+                    : 'text-red-400 dark:text-red-400'}`}>
+                    {stats.upcoming.net <= 0 ? (
+                      <TrendingDown size={10} className="mr-0.5" />
+                    ) : (
+                      <TrendingUp size={10} className="mr-0.5" />
+                    )}
+                    {formatCurrency(stats.projected.balance)}
+                  </span>
+                </div>
+                <span className="font-bold text-lg text-amber-300 dark:text-amber-300 break-words">
+                  {formatCurrency(stats.current.balance)}
+                </span>
+              </div>
+            </div>
+            
+            {/* Income */}
+            <div className="bg-green-900/30 dark:bg-green-900/30 p-3 rounded-lg border border-green-800/50 dark:border-green-800/50">
+              <div className="flex items-center mb-1">
+                <div className="flex items-center gap-1">
+                  <TrendingUp size={16} className="text-green-400 dark:text-green-400" />
+                  <h4 className="font-medium text-slate-800 dark:text-slate-100 text-sm">Income</h4>
+                </div>
+              </div>
+              <div className="flex justify-between items-end">
+                <div className="text-xs text-slate-800 dark:text-slate-400">
+                  Upcoming
+                  <span className="ml-1 text-green-400 dark:text-green-400">
+                    +{formatCurrency(stats.upcoming.income)}
+                  </span>
+                </div>
+                <span className="font-bold text-lg text-green-300 dark:text-green-300 break-words">
+                  {formatCurrency(stats.current.income)}
+                </span>
+              </div>
+            </div>
+            
+            {/* Expenses (Full Width) */}
+            <div className="bg-red-900/30 dark:bg-red-900/30 p-3 rounded-lg border border-red-800/50 dark:border-red-800/50 col-span-2 mb-1">
+              <div className="flex items-center mb-1">
+                <div className="flex items-center gap-1">
+                  <TrendingDown size={16} className="text-red-400 dark:text-red-400" />
+                  <h4 className="font-medium text-slate-800 dark:text-slate-100 text-sm">Expenses</h4>
+                </div>
+              </div>
+              <div className="flex justify-between items-end">
+                <div className="text-xs text-slate-800 dark:text-slate-400">
+                  Upcoming
+                  <span className="ml-1 text-red-400 dark:text-red-400">
+                    -{formatCurrency(stats.upcoming.expenses)}
+                  </span>
+                </div>
+                <span className="font-bold text-lg text-red-300 dark:text-red-300 break-words">
+                  {formatCurrency(stats.current.expenses)}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Action Buttons */}
         <div className="flex flex-col gap-2">
@@ -412,7 +411,7 @@ setChartData(categoryData);
       </div>
       
       {/* Tab Navigation */}
-      <div className="bg-slate-800 dark:bg-slate-800 rounded-xl overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden">
         <div className="flex justify-between">
           {tabItems.map(tab => (
             <button
@@ -421,7 +420,7 @@ setChartData(categoryData);
               className={`flex-1 py-2 flex flex-col items-center gap-1 transition-colors ${
                 activeTab === tab.id 
                   ? 'bg-amber-600 dark:bg-amber-600 text-white' 
-                  : 'bg-slate-700 dark:bg-slate-700 text-white dark:text-white hover:bg-slate-600 dark:hover:bg-slate-600'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-400 dark:hover:bg-slate-600'
               }`}
             >
               {tab.icon}
@@ -432,7 +431,7 @@ setChartData(categoryData);
       </div>
       
       {/* Main Content Area */}
-      <div className="bg-slate-800 dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
         {activeTab === 'overview' && (
           <div className="space-y-4">
             {/* Upcoming Bills Section */}
@@ -443,136 +442,136 @@ setChartData(categoryData);
               >
                 <div className="flex items-center gap-2">
                   <Calendar size={18} className="text-amber-400 dark:text-amber-400" />
-                  <h4 className="font-medium text-white dark:text-white">Upcoming Bills</h4>
+                  <h4 className="font-medium text-slate-800 dark:text-slate-100">Upcoming Bills</h4>
                 </div>
                 {expandedSections.upcoming ? 
-                  <ChevronUp size={18} className="text-slate-400 dark:text-slate-400" /> : 
-                  <ChevronDown size={18} className="text-slate-400 dark:text-slate-400" />}
+                  <ChevronUp size={18} className="text-slate-800 dark:text-slate-400" /> : 
+                  <ChevronDown size={18} className="text-slate-800 dark:text-slate-400" />}
               </div>
               
               {expandedSections.upcoming && (
-  <div className="mb-3">
-    <UpcomingBills 
-      transactions={transactions}
-      bills={bills}
-      currency={currency}
-      onRefresh={handleRefresh}
-      onBillClick={(item) => {
-        console.log('Bill clicked:', item);
-      }}
-      compact={true} 
-    />
-    
-    <div className="mt-2 text-center">
-      <button 
-        onClick={() => navigateToTab('upcoming')}
-        className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
-      >
-        <span>View calendar</span>
-        <ArrowRight size={16} />
-      </button>
-    </div>
-  </div>
-)}
+                <div className="mb-3">
+                  <UpcomingBills 
+                    transactions={transactions}
+                    bills={bills}
+                    currency={currency}
+                    onRefresh={handleRefresh}
+                    onBillClick={(item) => {
+                      console.log('Bill clicked:', item);
+                    }}
+                    compact={true} 
+                  />
+                  
+                  <div className="mt-2 text-center">
+                    <button 
+                      onClick={() => navigateToTab('upcoming')}
+                      className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
+                    >
+                      <span>View calendar</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Recent Transactions */}
             <div>
-  <div 
-    onClick={() => toggleSection('transactions')} 
-    className="flex items-center justify-between mb-2 cursor-pointer"
-  >
-    <div className="flex items-center gap-2">
-      <CreditCard size={18} className="text-amber-400 dark:text-amber-400" />
-      <h4 className="font-medium text-white dark:text-white">Recent Transactions</h4>
-    </div>
-    {expandedSections.transactions ? 
-      <ChevronUp size={18} className="text-slate-400 dark:text-slate-400" /> : 
-      <ChevronDown size={18} className="text-slate-400 dark:text-slate-400" />}
-  </div>
-  
-  {expandedSections.transactions && (
-    <div className="mb-3">
-      {/* Filter to get only past and today's transactions */}
-      {(() => {
-        const recentTransactions = filterTransactionsByDate(transactions, false);
-        
-        if (recentTransactions.length === 0) {
-          return (
-            <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
-              <CreditCard size={42} className="text-slate-500 mb-2" />
-              <p>No transactions found</p>
-            </div>
-          );
-        }
-        
-        return (
-          <div className="rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-slate-700 text-xs text-white">
-                <tr>
-                  <th className="p-2 text-left">Date</th>
-                  <th className="p-2 text-left">Description</th>
-                  <th className="p-2 text-left">Category</th>
-                  <th className="p-2 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-600 bg-slate-700/50">
-                {/* Limit to just 3 most recent transactions */}
-                {recentTransactions.slice(0, 3).map((transaction, index) => {
-                  const category = getCategoryById(transaction.category);
-                  return (
-                    <tr key={transaction.id || index} className="hover:bg-slate-700/70 transition-colors">
-                      <td className="p-2 text-white text-xs">
-                        {new Date(transaction.timestamp).toLocaleDateString(undefined, {month: 'numeric', day: 'numeric', year: 'numeric'})}
-                      </td>
-                      <td className="p-2 text-white text-xs max-w-[80px] truncate">
-                        {transaction.name}
-                      </td>
-                      <td className="p-2 text-xs">
-                        {category && (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${getCategoryColorClass(category)}`}>
-                            {getCategoryIconComponent(category.id, 12)}
-                            <span className="hidden sm:inline">{category.name}</span>
-                          </span>
-                        )}
-                      </td>
-                      <td className={`p-2 text-right font-medium text-xs ${
-                        transaction.amount > 0 
-                          ? 'text-green-400' 
-                          : 'text-red-400'
-                      }`}>
-                        <div className="flex items-center justify-end">
-                          {transaction.amount > 0 ? (
-                            <TrendingUp size={14} className="mr-1 text-green-500" />
-                          ) : (
-                            <TrendingDown size={14} className="mr-1 text-red-500" />
-                          )}
-                          {transaction.amount > 0 ? '+' : ''}
-                          {formatCurrency(transaction.amount)}
+              <div 
+                onClick={() => toggleSection('transactions')} 
+                className="flex items-center justify-between mb-2 cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <CreditCard size={18} className="text-amber-400 dark:text-amber-400" />
+                  <h4 className="font-medium text-slate-800 dark:text-slate-100">Recent Transactions</h4>
+                </div>
+                {expandedSections.transactions ? 
+                  <ChevronUp size={18} className="text-slate-800 dark:text-slate-400" /> : 
+                  <ChevronDown size={18} className="text-slate-800 dark:text-slate-400" />}
+              </div>
+              
+              {expandedSections.transactions && (
+                <div className="mb-3">
+                  {/* Filter to get only past and today's transactions */}
+                  {(() => {
+                    const recentTransactions = filterTransactionsByDate(transactions, false);
+                    
+                    if (recentTransactions.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center justify-center p-6 text-slate-800 dark:text-slate-400 bg-slate-700/50 dark:bg-slate-700/50 rounded-lg">
+                          <CreditCard size={42} className="text-slate-500 dark:text-slate-500 mb-2" />
+                          <p>No transactions found</p>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        );
-      })()}
-      
-      <div className="mt-2 text-center">
-        <button 
-          onClick={() => navigateToTab('transactions')}
-          className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
-        >
-          <span>View all transactions</span>
-          <ArrowRight size={16} />
-        </button>
-      </div>
-    </div>
-  )}
-</div>
+                      );
+                    }
+                    
+                    return (
+                      <div className="rounded-lg overflow-hidden">
+                        <table className="w-full">
+                          <thead className="bg-slate-100 dark:bg-slate-700 text-xs text-slate-800 dark:text-slate-100">
+                            <tr>
+                              <th className="p-2 text-left">Date</th>
+                              <th className="p-2 text-left">Description</th>
+                              <th className="p-2 text-left">Category</th>
+                              <th className="p-2 text-right">Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-600 bg-slate-200/50 dark:bg-slate-700/50">
+                            {/* Limit to just 3 most recent transactions */}
+                            {recentTransactions.slice(0, 3).map((transaction, index) => {
+                              const category = getCategoryById(transaction.category);
+                              return (
+                                <tr key={transaction.id || index} className="hover:bg-slate-700/70 dark:hover:bg-slate-700/70 transition-colors">
+                                  <td className="p-2 text-slate-800 dark:text-slate-100 text-xs">
+                                    {new Date(transaction.timestamp).toLocaleDateString(undefined, {month: 'numeric', day: 'numeric', year: 'numeric'})}
+                                  </td>
+                                  <td className="p-2 text-slate-800 dark:text-slate-100 text-xs max-w-[80px] truncate">
+                                    {transaction.name}
+                                  </td>
+                                  <td className="p-2 text-xs">
+                                    {category && (
+                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs text-slate-800 ${getCategoryColorClass(category)}`}>
+                                        {getCategoryIconComponent(category.id, 12)}
+                                        <span className="hidden sm:inline">{category.name}</span>
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className={`p-2 text-right font-medium text-xs ${
+                                    transaction.amount > 0 
+                                      ? 'text-green-400 dark:text-green-400' 
+                                      : 'text-red-400 dark:text-red-400'
+                                  }`}>
+                                    <div className="flex items-center justify-end">
+                                      {transaction.amount > 0 ? (
+                                        <TrendingUp size={14} className="mr-1 text-green-500 dark:text-green-500" />
+                                      ) : (
+                                        <TrendingDown size={14} className="mr-1 text-red-500 dark:text-red-500" />
+                                      )}
+                                      {transaction.amount > 0 ? '+' : ''}
+                                      {formatCurrency(transaction.amount)}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })()}
+                  
+                  <div className="mt-2 text-center">
+                    <button 
+                      onClick={() => navigateToTab('transactions')}
+                      className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
+                    >
+                      <span>View all transactions</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
            
             
             {/* Budget Overview */}
@@ -583,11 +582,11 @@ setChartData(categoryData);
               >
                 <div className="flex items-center gap-2">
                   <Wallet size={18} className="text-amber-400 dark:text-amber-400" />
-                  <h4 className="font-medium text-white dark:text-white">Budget Overview</h4>
+                  <h4 className="font-medium text-slate-800 dark:text-slate-100">Budget Overview</h4>
                 </div>
                 {expandedSections.budget ? 
-                  <ChevronUp size={18} className="text-slate-400 dark:text-slate-400" /> : 
-                  <ChevronDown size={18} className="text-slate-400 dark:text-slate-400" />}
+                  <ChevronUp size={18} className="text-slate-800 dark:text-slate-400" /> : 
+                  <ChevronDown size={18} className="text-slate-800 dark:text-slate-400" />}
               </div>
               
               {expandedSections.budget && (
@@ -602,14 +601,14 @@ setChartData(categoryData);
                           return (
                             <div key={budget.id || budget.category}>
                               <div className="flex justify-between text-xs mb-1">
-                                <span className="text-white">{category ? category.name : 'Budget'}</span>
-                                <span className="text-white">
+                                <span className="text-slate-800 dark:text-slate-100">{category ? category.name : 'Budget'}</span>
+                                <span className="text-slate-800 dark:text-slate-100">
                                   {formatCurrency(budget.spent)} / {formatCurrency(budget.allocated)}
                                 </span>
                               </div>
-                              <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
+                              <div className="h-4 bg-slate-300 dark:bg-slate-600 rounded-full overflow-hidden">
                                 <div 
-                                  className="h-full bg-blue-500 rounded-full"
+                                  className="h-full bg-blue-500 dark:bg-blue-500 rounded-full"
                                   style={{ width: `${percentage}%` }}
                                 ></div>
                               </div>
@@ -617,23 +616,23 @@ setChartData(categoryData);
                           );
                         })}
                         
-                        <div className="flex justify-between items-center pt-2 border-t border-slate-600">
-                          <div className="text-xs text-slate-300">
+                        <div className="flex justify-between items-center pt-2 border-t border-slate-600 dark:border-slate-600">
+                          <div className="text-xs text-slate-800 dark:text-slate-300">
                             <div>Total Budget: {formatCurrency(stats.budgets.reduce((sum, b) => sum + b.allocated, 0))}</div>
                             <div>Spent: {formatCurrency(stats.budgets.reduce((sum, b) => sum + b.spent, 0))} ({Math.round((stats.budgets.reduce((sum, b) => sum + b.spent, 0) / stats.budgets.reduce((sum, b) => sum + b.allocated, 0)) * 100)}%)</div>
                           </div>
                           
                           <button 
                             onClick={() => navigateToTab('budget')}
-                            className="px-3 py-1 bg-amber-600 text-white text-xs rounded-lg"
+                            className="px-3 py-1 bg-amber-600 dark:bg-amber-600 text-white text-xs rounded-lg"
                           >
                             View All
                           </button>
                         </div>
                       </>
                     ) : (
-                      <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
-                        <Wallet size={42} className="text-slate-500 mb-2" />
+                      <div className="flex flex-col items-center justify-center p-6 text-slate-800 dark:text-slate-400 bg-slate-700/50 dark:bg-slate-700/50 rounded-lg">
+                        <Wallet size={42} className="text-slate-500 dark:text-slate-500 mb-2" />
                         <p>No budgets created yet</p>
                       </div>
                     )}
@@ -650,11 +649,11 @@ setChartData(categoryData);
               >
                 <div className="flex items-center gap-2">
                   <PiggyBank size={18} className="text-amber-400 dark:text-amber-400" />
-                  <h4 className="font-medium text-white dark:text-white">Savings Goals</h4>
+                  <h4 className="font-medium text-slate-800 dark:text-slate-100">Savings Goals</h4>
                 </div>
                 {expandedSections.savings ? 
-                  <ChevronUp size={18} className="text-slate-400 dark:text-slate-400" /> : 
-                  <ChevronDown size={18} className="text-slate-400 dark:text-slate-400" />}
+                  <ChevronUp size={18} className="text-slate-800 dark:text-slate-400" /> : 
+                  <ChevronDown size={18} className="text-slate-800 dark:text-slate-400" />}
               </div>
               
               {expandedSections.savings && (
@@ -677,18 +676,18 @@ setChartData(categoryData);
               >
                 <div className="flex items-center gap-2">
                   <BarChart2 size={18} className="text-amber-400 dark:text-amber-400" />
-                  <h4 className="font-medium text-white dark:text-white">Spending Breakdown</h4>
+                  <h4 className="font-medium text-slate-800 dark:text-slate-100">Spending Breakdown</h4>
                 </div>
                 {expandedSections.insights ? 
-                  <ChevronUp size={18} className="text-slate-400 dark:text-slate-400" /> : 
-                  <ChevronDown size={18} className="text-slate-400 dark:text-slate-400" />}
+                  <ChevronUp size={18} className="text-slate-800 dark:text-slate-400" /> : 
+                  <ChevronDown size={18} className="text-slate-800 dark:text-slate-400" />}
               </div>
               
               {expandedSections.insights && (
                 <div className="mb-3">
                   {chartData.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
-                      <BarChart2 size={42} className="text-slate-500 mb-2" />
+                    <div className="flex flex-col items-center justify-center p-6 text-slate-800 dark:text-slate-400 bg-slate-700/50 dark:bg-slate-700/50 rounded-lg">
+                      <BarChart2 size={42} className="text-slate-500 dark:text-slate-500 mb-2" />
                       <p>No spending data to display</p>
                     </div>
                   ) : (
@@ -726,7 +725,7 @@ setChartData(categoryData);
         {activeTab === 'budget' && (
           <div>
             <div className="flex justify-between items-center gap-2 mb-4">
-              <h4 className="text-base font-medium text-white dark:text-white flex items-center gap-2">
+              <h4 className="text-base font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <Wallet className="text-amber-400 dark:text-amber-400" size={18} />
                 Budget Manager
               </h4>
@@ -750,40 +749,40 @@ setChartData(categoryData);
         )}
         
         {activeTab === 'upcoming' && (
-  <div>
-    {/* Header section remains the same */}
-    
-    {calendarMode ? (
-      <CalendarView 
-        transactions={transactions}
-        bills={bills}
-        currency={currency}
-        onDateClick={(date) => {
-          console.log('Date clicked:', date);
-        }}
-      />
-    ) : (
-      <>
-        {transactions.length === 0 && bills.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-6 text-slate-400 bg-slate-700/50 rounded-lg">
-            <Calendar size={42} className="text-slate-500 mb-2" />
-            <p>No upcoming bills</p>
+          <div>
+            {/* Header section remains the same */}
+            
+            {calendarMode ? (
+              <CalendarView 
+                transactions={transactions}
+                bills={bills}
+                currency={currency}
+                onDateClick={(date) => {
+                  console.log('Date clicked:', date);
+                }}
+              />
+            ) : (
+              <>
+                {transactions.length === 0 && bills.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-6 text-slate-800 dark:text-slate-400 bg-slate-700/50 dark:bg-slate-700/50 rounded-lg">
+                    <Calendar size={42} className="text-slate-500 dark:text-slate-500 mb-2" />
+                    <p>No upcoming bills</p>
+                  </div>
+                ) : (
+                  <UpcomingBills 
+                    transactions={transactions}
+                    bills={bills}
+                    currency={currency}
+                    onRefresh={handleRefresh} // Add this line
+                    onBillClick={(item) => {
+                      console.log('Bill clicked:', item);
+                    }}
+                  />
+                )}
+              </>
+            )}
           </div>
-        ) : (
-          <UpcomingBills 
-            transactions={transactions}
-            bills={bills}
-            currency={currency}
-            onRefresh={handleRefresh} // Add this line
-            onBillClick={(item) => {
-              console.log('Bill clicked:', item);
-            }}
-          />
         )}
-      </>
-    )}
-  </div>
-)}
         
         {activeTab === 'insights' && (
           <FinancialInsights 
@@ -800,32 +799,32 @@ setChartData(categoryData);
       
       {/* Wellbeing Integration Section */}
       {activeTab === 'overview' && correlations.length > 0 && (
-        <div className="bg-slate-800 dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
-          <h3 className="text-base font-medium text-white dark:text-white mb-3 transition-colors flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
+          <h3 className="text-base font-medium text-slate-800 dark:text-slate-100 mb-3 transition-colors flex items-center gap-2">
             <Zap className="text-amber-400 dark:text-amber-400" size={18} />
             Financial Wellbeing Insights
           </h3>
           
           <div className="bg-amber-900/30 dark:bg-amber-900/30 rounded-lg p-3 mb-3">
             <div className="flex flex-col gap-3">
-              <div className="bg-slate-800 dark:bg-slate-800 p-3 rounded-lg shadow-sm">
+              <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign size={16} className="text-amber-400 dark:text-amber-400" />
-                  <p className="font-medium text-white dark:text-white text-sm">Spending Pattern</p>
+                  <p className="font-medium text-slate-800 dark:text-slate-100 text-sm">Spending Pattern</p>
                 </div>
                 <div className="space-y-1 text-xs">
                   <div className="flex items-center gap-1">
                     <TrendingUp size={12} className={correlations[0].type === 'negative' ? 
                       "text-red-400 dark:text-red-400" : "text-green-400 dark:text-green-400"} />
-                    <span className="text-white dark:text-white break-words">
+                    <span className="text-slate-800 dark:text-slate-100 break-words">
                       {correlations[0].categoryName 
                         ? `Higher spending on ${correlations[0].categoryName}`
                         : `Overall spending of ${formatCurrency(correlations[0].spending)}`}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Tag size={12} className="text-slate-400 dark:text-slate-400" />
-                    <span className="text-white dark:text-white break-words">
+                    <Tag size={12} className="text-slate-800 dark:text-slate-400" />
+                    <span className="text-slate-800 dark:text-slate-100 break-words">
                       {correlations[0].categoryName 
                         ? `Category: ${correlations[0].categoryName}`
                         : `Date: ${new Date(correlations[0].date).toLocaleDateString()}`}
@@ -838,12 +837,12 @@ setChartData(categoryData);
                 <ArrowRight size={18} className="hidden xs:inline-block rotate-90 xs:rotate-0 mx-auto" />
               </div>
               
-              <div className="bg-slate-800 dark:bg-slate-800 p-3 rounded-lg shadow-sm">
+              <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
                   <BarChart2 size={16} className="text-purple-400 dark:text-purple-400" />
-                  <p className="font-medium text-white dark:text-white text-sm">Mood Correlation</p>
+                  <p className="font-medium text-slate-800 dark:text-slate-100 text-sm">Mood Correlation</p>
                 </div>
-                <p className="text-xs text-white dark:text-white mb-2 break-words">
+                <p className="text-xs text-slate-800 dark:text-slate-100 mb-2 break-words">
                   {correlations[0].categoryName 
                     ? `There's a pattern between your spending on ${correlations[0].categoryName} and lower mood scores the following day.`
                     : `Days with higher overall spending tend to be followed by lower mood scores the next day.`}
@@ -855,7 +854,7 @@ setChartData(categoryData);
             </div>
           </div>
           
-          <p className="text-xs text-white dark:text-white break-words">
+          <p className="text-xs text-slate-800 dark:text-slate-100 break-words">
             The finance module connects with your mood tracking to provide insights into how financial health affects your overall wellbeing.
           </p>
         </div>

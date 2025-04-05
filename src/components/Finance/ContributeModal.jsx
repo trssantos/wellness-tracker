@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, DollarSign, Calendar, FileText } from 'lucide-react';
+import { DollarSign, Calendar, FileText } from 'lucide-react';
 import { contributeSavingsGoal } from '../../utils/financeUtils';
 import ModalContainer from './ModalContainer';
 import InputField from './InputField';
@@ -42,22 +42,22 @@ const ContributeModal = ({ goal, onClose, onContribute, currency = '$' }) => {
   return (
     <ModalContainer title={`Contribute to ${goal.name}`} onClose={onClose}>
       {error && (
-        <div className="bg-red-900/30 text-red-400 p-3 rounded-lg mb-4">
+        <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-3 rounded-lg mb-4">
           {error}
         </div>
       )}
       
       <div className="mb-6">
-        <div className="p-4 rounded-lg bg-slate-700/50 dark:bg-slate-700/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-700/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <div className="text-sm text-slate-400 dark:text-slate-400">Current Progress</div>
-            <div className="text-lg font-bold text-white dark:text-white">
+            <div className="text-sm text-slate-600 dark:text-slate-400">Current Progress</div>
+            <div className="text-lg font-bold text-slate-800 dark:text-white">
               {formatCurrency(goal.current)} / {formatCurrency(goal.target)}
             </div>
           </div>
           <div>
-            <div className="text-sm text-slate-400 dark:text-slate-400">Remaining</div>
-            <div className="text-lg font-bold text-white dark:text-white">
+            <div className="text-sm text-slate-600 dark:text-slate-400">Remaining</div>
+            <div className="text-lg font-bold text-slate-800 dark:text-white">
               {formatCurrency(Math.max(0, goal.target - goal.current))}
             </div>
           </div>
@@ -67,7 +67,7 @@ const ContributeModal = ({ goal, onClose, onContribute, currency = '$' }) => {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Contribution Amount */}
         <div>
-          <label htmlFor="amount" className="block text-sm font-medium text-white dark:text-white mb-2">
+          <label htmlFor="amount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Contribution Amount
           </label>
           <InputField
@@ -83,20 +83,20 @@ const ContributeModal = ({ goal, onClose, onContribute, currency = '$' }) => {
         
         {/* Form Actions */}
         <div className="flex flex-col xs:flex-row justify-end gap-3 pt-2">
-  <button
-    type="button"
-    onClick={onClose}
-    className="w-full xs:w-auto mb-2 xs:mb-0 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
-  >
-    Cancel
-  </button>
-  <button
-    type="submit"
-    className={`w-full xs:w-auto px-4 py-2 rounded-lg font-medium text-white finance-bg-${goal.color || 'blue'}-600 hover:finance-bg-${goal.color || 'blue'}-700 dark:finance-bg-${goal.color || 'blue'}-600 dark:hover:finance-bg-${goal.color || 'blue'}-700`}
-  >
-    Make Contribution
-  </button>
-</div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full xs:w-auto mb-2 xs:mb-0 px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="w-full xs:w-auto px-4 py-2 rounded-lg font-medium text-white bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+          >
+            Make Contribution
+          </button>
+        </div>
       </form>
     </ModalContainer>
   );

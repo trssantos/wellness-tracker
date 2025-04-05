@@ -240,13 +240,13 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
               return (
                 <div key={budget.id}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-white dark:text-white">
+                    <span className="text-slate-800 dark:text-slate-100">
                       {getBudgetDisplayName(budget)}
                     </span>
                     <span className={`font-medium ${
                       isOverBudget 
                         ? 'text-red-400 dark:text-red-400' 
-                        : 'text-white dark:text-white'
+                        : 'text-slate-800 dark:text-slate-100'
                     }`}>
                       {formatCurrency(budget.spent)} / {formatCurrency(budget.allocated)}
                     </span>
@@ -265,14 +265,14 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
               );
             })
           ) : (
-            <div className="text-center text-slate-400 dark:text-slate-400 p-2">
+            <div className="text-center text-slate-800 dark:text-slate-400 p-2">
               No budgets found
             </div>
           )}
         </div>
         
         <div className="flex justify-between items-center mt-4 pt-2 border-t border-slate-600 dark:border-slate-600">
-          <div className="text-sm text-slate-400 dark:text-slate-400">
+          <div className="text-sm text-slate-800 dark:text-slate-400">
             <div className="font-medium text-white">
               Total Budget: {formatCurrency(budgetProgress.reduce((sum, b) => sum + b.allocated, 0))}
             </div>
@@ -297,7 +297,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
   return (
     <div className="space-y-4">
       {/* Budget Overview */}
-      <div className="bg-slate-800 dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-700 dark:border-slate-700">
+      <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm border border-slate-700 dark:border-slate-700">
         {/* Month Selector */}
         <div className="flex justify-between items-center mb-6">
           
@@ -405,35 +405,35 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
           <>
             <div className="flex flex-wrap gap-4 mb-6">
               <div className="flex-1 min-w-[250px] xs:min-w-[200px] bg-amber-900/30 dark:bg-amber-900/30 p-4 rounded-lg border border-amber-800/50 dark:border-amber-800/50">
-                <h5 className="font-medium text-white dark:text-white mb-1">Total Budget</h5>
+                <h5 className="font-medium text-slate-800 dark:text-slate-100 mb-1">Total Budget</h5>
                 <div className="text-lg font-bold text-amber-300 dark:text-amber-300">
                   {formatCurrency(budgetProgress.reduce((sum, b) => sum + b.allocated, 0))}
                 </div>
-                <div className="text-sm text-slate-400 dark:text-slate-400 mt-1">
+                <div className="text-sm text-slate-800 dark:text-slate-400 mt-1">
                   {budgetProgress.length} budget categories
                 </div>
               </div>
               
               <div className="flex-1 min-w-[200px] bg-green-900/30 dark:bg-green-900/30 p-4 rounded-lg border border-green-800/50 dark:border-green-800/50">
-                <h5 className="font-medium text-white dark:text-white mb-1">Total Spent</h5>
+                <h5 className="font-medium text-slate-800 dark:text-slate-100 mb-1">Total Spent</h5>
                 <div className="text-lg font-bold text-green-300 dark:text-green-300">
                   {formatCurrency(budgetProgress.reduce((sum, b) => sum + b.spent, 0))}
                 </div>
-                <div className="text-sm text-slate-400 dark:text-slate-400 mt-1">
+                <div className="text-sm text-slate-800 dark:text-slate-400 mt-1">
                   {Math.round((budgetProgress.reduce((sum, b) => sum + b.spent, 0) / 
                     budgetProgress.reduce((sum, b) => sum + b.allocated, 0)) * 100)}% of budget
                 </div>
               </div>
               
               <div className="flex-1 min-w-[200px] bg-blue-900/30 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-800/50 dark:border-blue-800/50">
-                <h5 className="font-medium text-white dark:text-white mb-1">Remaining</h5>
+                <h5 className="font-medium text-slate-800 dark:text-slate-100 mb-1">Remaining</h5>
                 <div className="text-lg font-bold text-blue-300 dark:text-blue-300">
                   {formatCurrency(
                     budgetProgress.reduce((sum, b) => sum + b.allocated, 0) - 
                     budgetProgress.reduce((sum, b) => sum + b.spent, 0)
                   )}
                 </div>
-                <div className="text-sm text-slate-400 dark:text-slate-400 mt-1">
+                <div className="text-sm text-slate-800 dark:text-slate-400 mt-1">
                   {budgetProgress.filter(b => b.spent > b.allocated).length} categories over budget
                 </div>
               </div>
@@ -441,7 +441,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
             
             {/* Budget Categories */}
             <div className="flex justify-between items-center mb-4">
-              <h5 className="font-medium text-white dark:text-white">Budget Categories</h5>
+              <h5 className="font-medium text-slate-800 dark:text-slate-100">Budget Categories</h5>
               
               {isCurrentMonth && (
                 <div className="flex gap-2">
@@ -479,7 +479,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
                     <div className="flex flex-col md:flex-row justify-between md:items-center gap-2 mb-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h6 className="font-medium text-white dark:text-white">
+                          <h6 className="font-medium text-slate-800 dark:text-slate-100">
                             {getBudgetDisplayName(budget)}
                           </h6>
                           {isOverBudget && (
@@ -489,7 +489,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-slate-400 dark:text-slate-400">
+                        <p className="text-sm text-slate-800 dark:text-slate-400">
                           {budget.notes || 'No description'}
                         </p>
                         
@@ -550,7 +550,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
                         <span className={`text-lg font-bold ${
                           isOverBudget 
                             ? 'text-red-400 dark:text-red-400' 
-                            : 'text-white dark:text-white'
+                            : 'text-slate-800 dark:text-slate-100'
                         }`}>
                           {formatCurrency(budget.spent)} / {formatCurrency(budget.allocated)}
                         </span>
@@ -572,7 +572,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
           <div className="text-center p-12 bg-slate-700/50 dark:bg-slate-700/50 rounded-lg">
             <Calendar size={48} className="text-slate-500 mx-auto mb-3" />
             <div className="text-xl font-medium text-white mb-2">No Budgets Found</div>
-            <div className="text-slate-400 dark:text-slate-400 mb-6 max-w-md mx-auto">
+            <div className="text-slate-800 dark:text-slate-400 mb-6 max-w-md mx-auto">
               {hasDataForMonth(selectedMonth) ? 
                 "There are no budgets configured for this month." :
                 "No budget data exists for this month. You can create budgets for the current month."

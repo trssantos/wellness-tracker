@@ -43,7 +43,7 @@ const QuickEntryFAB = ({ onTransactionAdded }) => {
           <>
             <button
               onClick={handleIncomeClick}
-              className="flex items-center gap-2 bg-green-500 text-white rounded-full px-4 py-2 shadow-lg animate-fadeIn"
+              className="flex items-center gap-2 bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white rounded-full px-4 py-2 shadow-lg animate-fadeIn"
               style={{ animationDelay: '0.1s' }}
             >
               <TrendingUp size={18} />
@@ -52,7 +52,7 @@ const QuickEntryFAB = ({ onTransactionAdded }) => {
             
             <button
               onClick={handleExpenseClick}
-              className="flex items-center gap-2 bg-red-500 text-white rounded-full px-4 py-2 shadow-lg animate-fadeIn"
+              className="flex items-center gap-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-full px-4 py-2 shadow-lg animate-fadeIn"
               style={{ animationDelay: '0.2s' }}
             >
               <TrendingDown size={18} />
@@ -66,8 +66,8 @@ const QuickEntryFAB = ({ onTransactionAdded }) => {
           onClick={handleToggle}
           className={`p-4 rounded-full shadow-lg transition-all duration-300 ${
             isOpen 
-              ? 'bg-red-500 hover:bg-red-600 rotate-45' 
-              : 'bg-amber-500 hover:bg-amber-600'
+              ? 'bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 rotate-45' 
+              : 'bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700'
           }`}
         >
           <Plus size={24} className="text-white" />

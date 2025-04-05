@@ -74,7 +74,7 @@ const SettingsModal = ({ onClose, onSettingsUpdated }) => {
   return (
     <ModalContainer title="Finance Settings" onClose={onClose}>
       {success && (
-        <div className="bg-green-900/30 text-green-400 p-3 rounded-lg mb-4 flex items-center">
+        <div className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 p-3 rounded-lg mb-4 flex items-center">
           <Save className="mr-2" size={18} />
           Settings saved successfully!
         </div>
@@ -83,20 +83,20 @@ const SettingsModal = ({ onClose, onSettingsUpdated }) => {
       <div className="space-y-6">
         {/* Currency Settings */}
         <div>
-          <h4 className="text-white dark:text-white font-medium mb-4 flex items-center gap-2">
-            <DollarSign className="text-amber-400" size={18} />
+          <h4 className="text-slate-800 dark:text-white font-medium mb-4 flex items-center gap-2">
+            <DollarSign className="text-amber-500 dark:text-amber-400" size={18} />
             Currency Settings
           </h4>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-300 mb-2">
+              <label className="block text-sm text-slate-600 dark:text-slate-300 mb-2">
                 Currency
               </label>
               <select
                 value={currency}
                 onChange={handleCurrencyChange}
-                className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
               >
                 {currencies.map(c => (
                   <option key={c.code} value={c.code}>
@@ -107,14 +107,14 @@ const SettingsModal = ({ onClose, onSettingsUpdated }) => {
             </div>
             
             <div>
-              <label className="block text-sm text-slate-300 mb-2">
+              <label className="block text-sm text-slate-600 dark:text-slate-300 mb-2">
                 Currency Symbol
               </label>
               <input
                 type="text"
                 value={currencySymbol}
                 onChange={(e) => setCurrencySymbol(e.target.value)}
-                className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
                 maxLength={3}
               />
             </div>
@@ -123,8 +123,8 @@ const SettingsModal = ({ onClose, onSettingsUpdated }) => {
         
         {/* Date Format Settings */}
         <div>
-          <h4 className="text-white dark:text-white font-medium mb-4 flex items-center gap-2">
-            <Calendar className="text-amber-400" size={18} />
+          <h4 className="text-slate-800 dark:text-white font-medium mb-4 flex items-center gap-2">
+            <Calendar className="text-amber-500 dark:text-amber-400" size={18} />
             Date Format
           </h4>
           
@@ -132,7 +132,7 @@ const SettingsModal = ({ onClose, onSettingsUpdated }) => {
             <select
               value={dateFormat}
               onChange={(e) => setDateFormat(e.target.value)}
-              className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
             >
               {dateFormats.map(format => (
                 <option key={format.value} value={format.value}>
@@ -145,13 +145,13 @@ const SettingsModal = ({ onClose, onSettingsUpdated }) => {
         
         {/* Budget Reset Settings */}
         <div>
-          <h4 className="text-white dark:text-white font-medium mb-4 flex items-center gap-2">
-            <RefreshCw className="text-amber-400" size={18} />
+          <h4 className="text-slate-800 dark:text-white font-medium mb-4 flex items-center gap-2">
+            <RefreshCw className="text-amber-500 dark:text-amber-400" size={18} />
             Budget Reset
           </h4>
           
-          <div className="bg-blue-900/30 p-4 rounded-lg">
-            <p className="text-white dark:text-white mb-3">
+          <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
+            <p className="text-slate-700 dark:text-white mb-3">
               Budgets are automatically reset at the beginning of each month, while maintaining your budget history.
             </p>
             
@@ -162,7 +162,7 @@ const SettingsModal = ({ onClose, onSettingsUpdated }) => {
                   onSettingsUpdated();
                 }
               }}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg text-sm"
             >
               Reset All Budgets Now
             </button>
@@ -171,14 +171,14 @@ const SettingsModal = ({ onClose, onSettingsUpdated }) => {
       </div>
       
       <div className="flex flex-col xs:flex-row justify-end gap-3 mt-6">
-  <button
-    onClick={handleSave}
-    className="w-full xs:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg flex items-center justify-center gap-2"
-  >
-    <Save size={18} />
-    Save Settings
-  </button>
-</div>
+        <button
+          onClick={handleSave}
+          className="w-full xs:w-auto px-4 py-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg flex items-center justify-center gap-2"
+        >
+          <Save size={18} />
+          Save Settings
+        </button>
+      </div>
     </ModalContainer>
   );
 };

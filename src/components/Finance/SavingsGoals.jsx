@@ -198,7 +198,7 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h4 className="text-lg font-medium text-slate-900 dark:text-white flex items-center gap-2">
+        <h4 className="text-l font-medium text-slate-900 dark:text-white flex items-center gap-2">
           <PiggyBank className="text-amber-600 dark:text-amber-400" size={20} />
           Savings Goals
         </h4>
@@ -245,7 +245,7 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
                 </div>
                 
                 <div className="mb-4">
-                  <h5 className="text-xl font-medium text-slate-900 dark:text-white mb-1">{goal.name}</h5>
+                  <h5 className="text-l font-medium text-slate-900 dark:text-white mb-1">{goal.name}</h5>
                   <div className="flex items-center text-sm text-slate-700 dark:text-slate-300">
                     <Calendar size={14} className="mr-1" />
                     <span>Started {formatDate(goal.createdAt)}</span>
@@ -285,14 +285,14 @@ const SavingsGoals = ({ compact = false, refreshTrigger = 0, onRefresh, currency
                 <div className="flex justify-between items-end mb-4">
                   <div>
                     <div className="text-sm text-slate-700 dark:text-slate-300">Saved</div>
-                    <div className="text-lg font-bold text-slate-900 dark:text-white">
+                    <div className="text-l font-bold text-slate-900 dark:text-white">
                       {formatCurrency(goal.current)}
                     </div>
                   </div>
                   
                   <div className="text-right">
                     <div className="text-sm text-slate-700 dark:text-slate-300">Target</div>
-                    <div className="text-lg font-bold text-slate-900 dark:text-white">
+                    <div className="text-l font-bold text-slate-900 dark:text-white">
                       {formatCurrency(goal.target)}
                     </div>
                   </div>

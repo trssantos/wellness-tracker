@@ -347,7 +347,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
         
         <div className="flex justify-between items-center mt-4 pt-2 border-t border-slate-300 dark:border-slate-600">
           <div className="text-sm text-slate-800 dark:text-slate-400">
-            <div className="font-medium text-slate-900 dark:text-white">
+            <div className="text-sm text-slate-900 dark:text-white">
               Total Budget: {formatCurrency(budgetProgress.reduce((sum, b) => sum + b.allocated, 0))}
             </div>
             <div className="text-slate-700 dark:text-slate-300">
@@ -481,7 +481,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
           <>
             <div className="flex flex-wrap gap-4 mb-6">
               <div className="flex-1 min-w-[250px] xs:min-w-[200px] bg-amber-50 dark:bg-amber-900/30 p-4 rounded-lg border border-amber-200 dark:border-amber-800/50">
-                <h5 className="font-medium text-slate-800 dark:text-slate-100 mb-1">Total Budget</h5>
+                <h5 className="text-sm text-slate-800 dark:text-slate-100 mb-1">Total Budget</h5>
                 <div className="text-lg font-bold text-amber-600 dark:text-amber-300">
                   {formatCurrency(budgetProgress.reduce((sum, b) => sum + b.allocated, 0))}
                 </div>
@@ -606,7 +606,7 @@ const BudgetManager = ({ compact = false, refreshTrigger = 0, onRefresh, currenc
                       </div>
                       
                       <div className="w-full md:w-1/4 text-right">
-                        <span className={`text-lg font-bold ${
+                        <span className={`text-sm font-bold ${
                           isOverBudget 
                             ? 'text-red-600 dark:text-red-400' 
                             : 'text-slate-900 dark:text-slate-100'

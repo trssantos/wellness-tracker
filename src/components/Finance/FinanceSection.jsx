@@ -307,9 +307,9 @@ const FinanceSection = () => {
         
         {/* Stats Summary */}
         {stats && (
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
             {/* Balance */}
-            <div className="bg-amber-900/30 dark:bg-amber-900/30 p-3 rounded-lg border border-amber-800/50 dark:border-amber-800/50">
+            <div className="bg-amber-900/30 dark:bg-amber-900/30 p-3 rounded-lg border border-amber-800/50 dark:border-amber-800/50 col-span-1">
               <div className="flex items-center mb-1">
                 <div className="flex items-center gap-1">
                   <DollarSign size={16} className="text-amber-400 dark:text-amber-400" />
@@ -337,7 +337,7 @@ const FinanceSection = () => {
             </div>
             
             {/* Income */}
-            <div className="bg-green-900/30 dark:bg-green-900/30 p-3 rounded-lg border border-green-800/50 dark:border-green-800/50">
+            <div className="bg-green-900/30 dark:bg-green-900/30 p-3 rounded-lg border border-green-800/50 dark:border-green-800/50 col-span-1">
               <div className="flex items-center mb-1">
                 <div className="flex items-center gap-1">
                   <TrendingUp size={16} className="text-green-400 dark:text-green-400" />
@@ -358,7 +358,7 @@ const FinanceSection = () => {
             </div>
             
             {/* Expenses (Full Width) */}
-            <div className="bg-red-900/30 dark:bg-red-900/30 p-3 rounded-lg border border-red-800/50 dark:border-red-800/50 col-span-2 mb-1">
+            <div className="bg-red-900/30 dark:bg-red-900/30 p-3 rounded-lg border border-red-800/50 dark:border-red-800/50 col-span-1 sm:col-span-2 mb-1">
               <div className="flex items-center mb-1">
                 <div className="flex items-center gap-1">
                   <TrendingDown size={16} className="text-red-400 dark:text-red-400" />

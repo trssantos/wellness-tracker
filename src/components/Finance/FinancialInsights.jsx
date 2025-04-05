@@ -234,7 +234,7 @@ const FinancialInsights = ({
     
     // Prepare chart data for category breakdown - EXPENSES ONLY
     const categoryData = [];
-    Object.entries(stats.categoryBreakdown || {}).forEach(([categoryId, amount]) => {
+    Object.entries(breakdown || {}).forEach(([categoryId, amount]) => {
       const category = getCategoryById(categoryId);
       // Only include expense categories
       if (category && category.id.startsWith('expense-')) {
@@ -780,13 +780,13 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
   const getInsightColorClass = (type) => {
     switch (type) {
       case 'positive':
-        return 'finance-bg-green-900/50 finance-text-green-400';
+        return 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400';
       case 'negative':
-        return 'finance-bg-red-900/50 finance-text-red-400';
+        return 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400';
       case 'warning':
-        return 'finance-bg-amber-900/50 finance-text-amber-400';
+        return 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400';
       default:
-        return 'finance-bg-blue-900/50 finance-text-blue-400';
+        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400';
     }
   };
 
@@ -794,13 +794,13 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
   const getInsightBgClass = (type) => {
     switch (type) {
       case 'positive':
-        return 'finance-bg-green-900/30 finance-border-green-800/50';
+        return 'bg-green-50 border-green-200 dark:bg-green-900/30 dark:border-green-800/50';
       case 'negative':
-        return 'finance-bg-red-900/30 finance-border-red-800/50';
+        return 'bg-red-50 border-red-200 dark:bg-red-900/30 dark:border-red-800/50';
       case 'warning':
-        return 'finance-bg-amber-900/30 finance-border-amber-800/50';
+        return 'bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-800/50';
       default:
-        return 'finance-bg-blue-900/30 finance-border-blue-800/50';
+        return 'bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50';
     }
   };
 
@@ -854,7 +854,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
       case 'categoryBreakdown':
         return (
           <div className="space-y-6">
-            <h3 className="text-xl font-medium text-white mb-4">Category Breakdown</h3>
+            <h3 className="text-xl font-medium text-gray-800 dark:text-white mb-4">Category Breakdown</h3>
             <CategoryGroupAnalysis 
               spendingByGroup={spendingByGroup} 
               totalExpenses={stats?.expenses || 0}
@@ -868,9 +868,9 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
         
         if (!foodGroup) {
           return (
-            <div className="text-center p-6 bg-slate-700/50 rounded-lg">
-              <Utensils size={48} className="text-slate-500 mx-auto mb-3" />
-              <p className="text-slate-400">No food expenses to analyze.</p>
+            <div className="text-center p-6 bg-gray-100 dark:bg-slate-700/50 rounded-lg">
+              <Utensils size={48} className="text-gray-400 dark:text-slate-500 mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-slate-400">No food expenses to analyze.</p>
             </div>
           );
         }
@@ -895,34 +895,34 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
         
         return (
           <div className="space-y-6">
-            <h3 className="text-xl font-medium text-white mb-4 flex items-center gap-2">
-              <Utensils className="text-green-400" size={24} />
+            <h3 className="text-xl font-medium text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+              <Utensils className="text-green-600 dark:text-green-400" size={24} />
               Food Spending Analysis
             </h3>
             
             {/* Food spending summary */}
-            <div className="bg-slate-800/60 rounded-lg border border-slate-700 p-4">
+            <div className="bg-white dark:bg-slate-800/60 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
               <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
                 <div>
-                  <div className="text-sm text-slate-400">Total Food Spending</div>
-                  <div className="text-xl font-bold text-white">{formatCurrency(foodTotal)}</div>
-                  <div className="text-xs text-slate-400 mt-1">
+                  <div className="text-sm text-gray-500 dark:text-slate-400">Total Food Spending</div>
+                  <div className="text-xl font-bold text-gray-800 dark:text-white">{formatCurrency(foodTotal)}</div>
+                  <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                     {Math.round((foodTotal / stats.expenses) * 100)}% of your total expenses
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-white">{Math.round(groceryPercent)}%</div>
-                    <div className="text-xs text-slate-400">Groceries</div>
+                    <div className="text-2xl font-bold text-gray-800 dark:text-white">{Math.round(groceryPercent)}%</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Groceries</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-white">{Math.round(diningOutPercent)}%</div>
-                    <div className="text-xs text-slate-400">Dining Out</div>
+                    <div className="text-2xl font-bold text-gray-800 dark:text-white">{Math.round(diningOutPercent)}%</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Dining Out</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-white">{Math.round(coffeePercent)}%</div>
-                    <div className="text-xs text-slate-400">Coffee</div>
+                    <div className="text-2xl font-bold text-gray-800 dark:text-white">{Math.round(coffeePercent)}%</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400">Coffee</div>
                   </div>
                 </div>
               </div>
@@ -932,10 +932,10 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                 {groceries && (
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-white">Groceries</span>
-                      <span className="text-white">{formatCurrency(groceryTotal)}</span>
+                      <span className="text-gray-700 dark:text-white">Groceries</span>
+                      <span className="text-gray-700 dark:text-white">{formatCurrency(groceryTotal)}</span>
                     </div>
-                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-green-500 rounded-full"
                         style={{ width: `${groceryPercent}%` }}
@@ -947,10 +947,10 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                 {restaurants && (
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-white">Restaurants</span>
-                      <span className="text-white">{formatCurrency(restaurants.total)}</span>
+                      <span className="text-gray-700 dark:text-white">Restaurants</span>
+                      <span className="text-gray-700 dark:text-white">{formatCurrency(restaurants.total)}</span>
                     </div>
-                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-amber-500 rounded-full"
                         style={{ width: `${(restaurants.total / foodTotal) * 100}%` }}
@@ -962,10 +962,10 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                 {takeaway && (
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-white">Takeaway</span>
-                      <span className="text-white">{formatCurrency(takeaway.total)}</span>
+                      <span className="text-gray-700 dark:text-white">Takeaway</span>
+                      <span className="text-gray-700 dark:text-white">{formatCurrency(takeaway.total)}</span>
                     </div>
-                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-red-500 rounded-full"
                         style={{ width: `${(takeaway.total / foodTotal) * 100}%` }}
@@ -977,10 +977,10 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                 {coffee && (
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-white">Coffee & Cafes</span>
-                      <span className="text-white">{formatCurrency(coffee.total)}</span>
+                      <span className="text-gray-700 dark:text-white">Coffee & Cafes</span>
+                      <span className="text-gray-700 dark:text-white">{formatCurrency(coffee.total)}</span>
                     </div>
-                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-purple-500 rounded-full"
                         style={{ width: `${(coffee.total / foodTotal) * 100}%` }}
@@ -992,21 +992,21 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
             </div>
             
             {/* Analysis Section */}
-            <div className="bg-slate-800/60 rounded-lg border border-slate-700 p-4">
-              <h4 className="text-lg font-medium text-white mb-3">Food Budget Analysis</h4>
+            <div className="bg-white dark:bg-slate-800/60 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
+              <h4 className="text-lg font-medium text-gray-800 dark:text-white mb-3">Food Budget Analysis</h4>
               
               <div className="space-y-4">
                 {homeVsOutRatio > 0 && (
                   <div className={`p-3 rounded-lg ${
-                    homeVsOutRatio > 1.5 ? 'bg-red-900/30 border border-red-800/50' :
-                    homeVsOutRatio > 1 ? 'bg-amber-900/30 border border-amber-800/50' :
-                    'bg-green-900/30 border border-green-800/50'
+                    homeVsOutRatio > 1.5 ? 'bg-red-50 border border-red-200 dark:bg-red-900/30 dark:border-red-800/50' :
+                    homeVsOutRatio > 1 ? 'bg-amber-50 border border-amber-200 dark:bg-amber-900/30 dark:border-amber-800/50' :
+                    'bg-green-50 border border-green-200 dark:bg-green-900/30 dark:border-green-800/50'
                   }`}>
                     <div className="flex items-start gap-2">
                       <div className={`p-2 rounded-lg ${
-                        homeVsOutRatio > 1.5 ? 'bg-red-900/50 text-red-400' :
-                        homeVsOutRatio > 1 ? 'bg-amber-900/50 text-amber-400' :
-                        'bg-green-900/50 text-green-400'
+                        homeVsOutRatio > 1.5 ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' :
+                        homeVsOutRatio > 1 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400' :
+                        'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400'
                       }`}>
                         {homeVsOutRatio > 1 ? 
                           <TrendingUp size={18} /> : 
@@ -1014,12 +1014,12 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                         }
                       </div>
                       <div>
-                        <h5 className="font-medium text-white">
+                        <h5 className="font-medium text-gray-800 dark:text-white">
                           {homeVsOutRatio > 1.5 ? 'High Eating Out Ratio' :
                            homeVsOutRatio > 1 ? 'Moderate Eating Out Ratio' :
                            'Good Home Cooking Ratio'}
                         </h5>
-                        <p className="text-sm text-slate-300">
+                        <p className="text-sm text-gray-600 dark:text-slate-300">
                           {homeVsOutRatio > 0 ? 
                             `You're spending ${homeVsOutRatio.toFixed(1)}x more on dining out than on groceries.` :
                             'You have no eating out expenses recorded.'
@@ -1033,14 +1033,14 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                 )}
                 
                 {coffee && coffeePercent > 10 && (
-                  <div className="bg-amber-900/30 border border-amber-800/50 p-3 rounded-lg">
+                  <div className="bg-amber-50 border border-amber-200 dark:bg-amber-900/30 dark:border-amber-800/50 p-3 rounded-lg">
                     <div className="flex items-start gap-2">
-                      <div className="p-2 rounded-lg bg-amber-900/50 text-amber-400">
+                      <div className="p-2 rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
                         <Coffee size={18} />
                       </div>
                       <div>
-                        <h5 className="font-medium text-white">Coffee Shop Spending</h5>
-                        <p className="text-sm text-slate-300">
+                        <h5 className="font-medium text-gray-800 dark:text-white">Coffee Shop Spending</h5>
+                        <p className="text-sm text-gray-600 dark:text-slate-300">
                           Coffee shops represent {Math.round(coffeePercent)}% of your food budget.
                           You could save approximately {formatCurrency(coffeeTotal * 0.7)} per month
                           by making coffee at home more often.
@@ -1053,8 +1053,8 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                 {/* Add monthly trend analysis if available */}
                 {incomeVsExpenses.length > 0 && (
                   <div className="pt-3">
-                    <h5 className="text-white font-medium mb-2">Monthly Food Spending Trend</h5>
-                    <p className="text-sm text-slate-300">
+                    <h5 className="text-gray-800 dark:text-white font-medium mb-2">Monthly Food Spending Trend</h5>
+                    <p className="text-sm text-gray-600 dark:text-slate-300">
                       Your food spending this month is {
                         spendingTrend[spendingTrend.length - 1]?.spending > 
                         spendingTrend[spendingTrend.length - 2]?.spending ?
@@ -1078,16 +1078,16 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
         return (
           <div className="space-y-6">
             {/* Financial Health Score */}
-            <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-slate-700">
               <div className="flex flex-col sm:flex-row items-center gap-6">
                 <div className="relative mb-4 sm:mb-0">
-                  <div className="w-28 sm:w-36 h-28 sm:h-36 rounded-full bg-slate-700 flex items-center justify-center mx-auto">
-                    <div className="w-20 sm:w-28 h-20 sm:h-28 rounded-full bg-slate-800 flex items-center justify-center relative">
+                  <div className="w-28 sm:w-36 h-28 sm:h-36 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center mx-auto">
+                    <div className="w-20 sm:w-28 h-20 sm:h-28 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center relative">
                       <svg className="w-full h-full" viewBox="0 0 36 36">
                         <path
                           d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                           fill="none"
-                          stroke="#2D3748"
+                          stroke="#E5E7EB"
                           strokeWidth="2"
                           className="dark:stroke-slate-600"
                         />
@@ -1102,20 +1102,20 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                         />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center flex-col">
-                        <span className="text-2xl sm:text-3xl font-bold text-white">
+                        <span className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">
                           {insights.score}
                         </span>
-                        <span className="text-xs text-slate-400">out of 100</span>
+                        <span className="text-xs text-gray-500 dark:text-slate-400">out of 100</span>
                       </div>
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex-1 text-center sm:text-left">
-                  <h5 className="text-xl font-medium text-white mb-2">
+                  <h5 className="text-xl font-medium text-gray-800 dark:text-white mb-2">
                     Financial Health Score
                   </h5>
-                  <p className="text-slate-300 mb-4">
+                  <p className="text-gray-600 dark:text-slate-300 mb-4">
                     {insights.score > 70
                       ? "Your financial health is excellent! You're managing your money effectively."
                       : insights.score > 40
@@ -1126,32 +1126,32 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                   
                   {/* Score breakdown */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <div className="bg-slate-700 rounded-lg p-2 sm:p-3">
-                      <div className="text-sm font-medium text-white mb-1 flex items-center justify-center sm:justify-start">
-                        <TrendingUp size={16} className="mr-1 finance-text-green-400" />
+                    <div className="bg-gray-100 dark:bg-slate-700 rounded-lg p-2 sm:p-3">
+                      <div className="text-sm font-medium text-gray-700 dark:text-white mb-1 flex items-center justify-center sm:justify-start">
+                        <TrendingUp size={16} className="mr-1 text-green-600 dark:text-green-400" />
                         Income
                       </div>
-                      <div className="text-xl sm:text-2xl font-bold text-white">
+                      <div className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
                         {formatCurrency(stats?.income || 0)}
                       </div>
                     </div>
                     
-                    <div className="bg-slate-700 rounded-lg p-2 sm:p-3">
-                      <div className="text-sm font-medium text-white mb-1 flex items-center justify-center sm:justify-start">
-                        <TrendingDown size={16} className="mr-1 finance-text-red-400" />
+                    <div className="bg-gray-100 dark:bg-slate-700 rounded-lg p-2 sm:p-3">
+                      <div className="text-sm font-medium text-gray-700 dark:text-white mb-1 flex items-center justify-center sm:justify-start">
+                        <TrendingDown size={16} className="mr-1 text-red-600 dark:text-red-400" />
                         Expenses
                       </div>
-                      <div className="text-xl sm:text-2xl font-bold text-white">
+                      <div className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
                         {formatCurrency(stats?.expenses || 0)}
                       </div>
                     </div>
                     
-                    <div className="bg-slate-700 rounded-lg p-2 sm:p-3">
-                      <div className="text-sm font-medium text-white mb-1 flex items-center justify-center sm:justify-start">
-                        <PiggyBank size={16} className="mr-1 finance-text-amber-400" />
+                    <div className="bg-gray-100 dark:bg-slate-700 rounded-lg p-2 sm:p-3">
+                      <div className="text-sm font-medium text-gray-700 dark:text-white mb-1 flex items-center justify-center sm:justify-start">
+                        <PiggyBank size={16} className="mr-1 text-amber-600 dark:text-amber-400" />
                         Savings Rate
                       </div>
-                      <div className="text-xl sm:text-2xl font-bold text-white">
+                      <div className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
                         {stats && stats.income > 0 
                           ? Math.round(((stats.income - stats.expenses) / stats.income) * 100) 
                           : 0}%
@@ -1163,39 +1163,39 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
             </div>
 
             {/* Spending Trend Section */}
-<div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
-  {/* The header is now inside the HorizontalSpendingTrend component */}
-  <HorizontalSpendingTrend 
-    data={spendingTrend} 
-    currency={currency}
-    timeRange={timeRange}
-    showAverage={true}
-    compact={isMobile}
-  />
-  
-  {/* Time-based explanation - this is optional as it's also in the component */}
-  <div className="mt-2 text-center">
-    <button 
-      onClick={() => setActiveView('categoryBreakdown')}
-      className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1 mx-auto"
-    >
-      <span>View category breakdown</span>
-      <ArrowRight size={16} />
-    </button>
-  </div>
-</div>
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-slate-700">
+              {/* The header is now inside the HorizontalSpendingTrend component */}
+              <HorizontalSpendingTrend 
+                data={spendingTrend} 
+                currency={currency}
+                timeRange={timeRange}
+                showAverage={true}
+                compact={isMobile}
+              />
+              
+              {/* Time-based explanation - this is optional as it's also in the component */}
+              <div className="mt-2 text-center">
+                <button 
+                  onClick={() => setActiveView('categoryBreakdown')}
+                  className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-500 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
+                >
+                  <span>View category breakdown</span>
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            </div>
             
             {/* ENHANCED: Category Group Analysis */}
-            <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-slate-700">
               <div className="flex justify-between items-center mb-4">
-                <h5 className="font-medium text-white mb-0 flex items-center gap-2">
-                  <BarChart2 className="finance-text-amber-400" size={18} />
+                <h5 className="font-medium text-gray-800 dark:text-white mb-0 flex items-center gap-2">
+                  <BarChart2 className="text-amber-600 dark:text-amber-400" size={18} />
                   Spending Categories
                 </h5>
                 
                 <button 
                   onClick={() => setActiveView('categoryBreakdown')}
-                  className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                  className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-500 dark:hover:text-amber-300 flex items-center gap-1"
                 >
                   <span>Detailed Analysis</span>
                   <ArrowRight size={16} />
@@ -1212,16 +1212,16 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
             
             {/* Food Analysis Summary - if we have food data */}
             {spendingByGroup.some(group => group.name === 'Food') && (
-              <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-slate-700">
                 <div className="flex justify-between items-center mb-4">
-                  <h5 className="font-medium text-white mb-0 flex items-center gap-2">
-                    <Utensils className="text-amber-400" size={18} />
+                  <h5 className="font-medium text-gray-800 dark:text-white mb-0 flex items-center gap-2">
+                    <Utensils className="text-amber-600 dark:text-amber-400" size={18} />
                     Food Spending
                   </h5>
                   
                   <button 
                     onClick={() => setActiveView('foodAnalysis')}
-                    className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                    className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-500 dark:hover:text-amber-300 flex items-center gap-1"
                   >
                     <span>Detailed Analysis</span>
                     <ArrowRight size={16} />
@@ -1247,51 +1247,51 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                   
                   return (
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between gap-2 bg-green-900/30 p-3 rounded-lg border border-green-800/50">
+                      <div className="flex items-center justify-between gap-2 bg-green-50 dark:bg-green-900/30 p-3 rounded-lg border border-green-200 dark:border-green-800/50">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-green-900/50 rounded-lg">
-                            <ShoppingBag size={20} className="text-green-400" />
+                          <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg">
+                            <ShoppingBag size={20} className="text-green-600 dark:text-green-400" />
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-white">Groceries</div>
-                            <div className="text-xs text-slate-300">
+                            <div className="text-sm font-medium text-gray-800 dark:text-white">Groceries</div>
+                            <div className="text-xs text-gray-600 dark:text-slate-300">
                               {Math.round((groceryTotal / foodTotal) * 100)}% of food budget
                             </div>
                           </div>
                         </div>
-                        <div className="text-lg font-bold text-white">{formatCurrency(groceryTotal)}</div>
+                        <div className="text-lg font-bold text-gray-800 dark:text-white">{formatCurrency(groceryTotal)}</div>
                       </div>
                       
-                      <div className="flex items-center justify-between gap-2 bg-amber-900/30 p-3 rounded-lg border border-amber-800/50">
+                      <div className="flex items-center justify-between gap-2 bg-amber-50 dark:bg-amber-900/30 p-3 rounded-lg border border-amber-200 dark:border-amber-800/50">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-amber-900/50 rounded-lg">
-                            <Utensils size={20} className="text-amber-400" />
+                          <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
+                            <Utensils size={20} className="text-amber-600 dark:text-amber-400" />
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-white">Dining Out</div>
-                            <div className="text-xs text-slate-300">
+                            <div className="text-sm font-medium text-gray-800 dark:text-white">Dining Out</div>
+                            <div className="text-xs text-gray-600 dark:text-slate-300">
                               {Math.round((diningOutTotal / foodTotal) * 100)}% of food budget
                             </div>
                           </div>
                         </div>
-                        <div className="text-lg font-bold text-white">{formatCurrency(diningOutTotal)}</div>
+                        <div className="text-lg font-bold text-gray-800 dark:text-white">{formatCurrency(diningOutTotal)}</div>
                       </div>
                       
                       {/* Home vs Eating Out Ratio Indicator */}
-                      <div className="mt-2 pt-2 border-t border-slate-700">
+                      <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700">
                         <div className="flex justify-between items-center">
-                          <div className="text-xs text-slate-400">Home vs Eating Out Ratio</div>
+                          <div className="text-xs text-gray-500 dark:text-slate-400">Home vs Eating Out Ratio</div>
                           <div className={`text-sm font-medium ${
-                            homeVsOutRatio > 1.5 ? 'text-red-400' :
-                            homeVsOutRatio > 1 ? 'text-amber-400' :
-                            'text-green-400'
+                            homeVsOutRatio > 1.5 ? 'text-red-600 dark:text-red-400' :
+                            homeVsOutRatio > 1 ? 'text-amber-600 dark:text-amber-400' :
+                            'text-green-600 dark:text-green-400'
                           }`}>
                             {homeVsOutRatio > 0 ? `${homeVsOutRatio.toFixed(1)}x` : 'No data'}
                           </div>
                         </div>
                         
                         {homeVsOutRatio > 0 && (
-                          <div className="text-xs text-slate-400 mt-1">
+                          <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                             {homeVsOutRatio > 1.5 ? 'High dining out expenses compared to groceries.' :
                              homeVsOutRatio > 1 ? 'Moderate dining out compared to groceries.' :
                              'Great job cooking at home more than eating out!'}
@@ -1305,8 +1305,8 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
             )}
             
             {/* Key Insights */}
-            <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
-              <h5 className="text-lg font-medium text-white mb-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-slate-700">
+              <h5 className="text-lg font-medium text-gray-800 dark:text-white mb-4">
                 Key Insights & Recommendations
               </h5>
               
@@ -1322,10 +1322,10 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                           {renderIcon(insight.icon, 18)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h6 className="font-medium text-white mb-1 break-words">
+                          <h6 className="font-medium text-gray-800 dark:text-white mb-1 break-words">
                             {insight.title}
                           </h6>
-                          <p className="text-slate-300 text-sm break-words">
+                          <p className="text-gray-600 dark:text-slate-300 text-sm break-words">
                             {insight.description}
                           </p>
                         </div>
@@ -1333,7 +1333,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center text-slate-400 p-6">
+                  <div className="text-center text-gray-500 dark:text-slate-400 p-6">
                     Not enough financial data to generate insights. Add more transactions and budgets to get personalized recommendations.
                   </div>
                 )}
@@ -1347,15 +1347,15 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
   return (
     <div className="space-y-6">
       {/* Header Section with improved Time Navigation - MOBILE OPTIMIZED */}
-      <div className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700">
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-slate-700">
         <div className="flex flex-col gap-4 mb-4">
           <div className="flex justify-between items-start">
             <div>
-              <h4 className="text-lg font-medium text-white flex items-center gap-2 mb-2">
-                <BarChart2 className="finance-text-amber-400" size={20} />
+              <h4 className="text-lg font-medium text-gray-800 dark:text-white flex items-center gap-2 mb-2">
+                <BarChart2 className="text-amber-600 dark:text-amber-400" size={20} />
                 <span className="truncate max-w-xs">Financial Insights</span>
                 {!isMobile && (
-                  <span className="text-sm text-slate-400 font-normal">
+                  <span className="text-sm text-gray-500 dark:text-slate-400 font-normal">
                     {customDateRange 
                       ? `Custom Range` 
                       : timeRange === 'week' 
@@ -1370,7 +1370,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                 )}
               </h4>
               {!isMobile && (
-                <p className="text-slate-400 text-sm">
+                <p className="text-gray-500 dark:text-slate-400 text-sm">
                   Gain insights into your spending patterns and financial health.
                 </p>
               )}
@@ -1383,7 +1383,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                 className={`px-2 py-1 rounded-lg text-xs ${
                   timeRange === 'week' && !customDateRange 
                     ? 'bg-amber-600 text-white' 
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
                 }`}
               >
                 Week
@@ -1393,7 +1393,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                 className={`px-2 py-1 rounded-lg text-xs ${
                   timeRange === 'month' && !customDateRange 
                     ? 'bg-amber-600 text-white' 
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
                 }`}
               >
                 Month
@@ -1403,7 +1403,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                 className={`px-2 py-1 rounded-lg text-xs ${
                   timeRange === 'quarter' && !customDateRange 
                     ? 'bg-amber-600 text-white' 
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
                 }`}
               >
                 Quarter
@@ -1413,7 +1413,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                 className={`px-2 py-1 rounded-lg text-xs ${
                   timeRange === 'year' && !customDateRange 
                     ? 'bg-amber-600 text-white' 
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
                 }`}
               >
                 Year
@@ -1426,7 +1426,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                 className={`p-1 rounded-lg text-xs ${
                   customDateRange || chartSettings.showCustomDateSettings
                     ? 'bg-blue-600 text-white' 
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
                 }`}
               >
                 <Settings size={14} />
@@ -1441,7 +1441,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
               className={`px-3 py-1.5 text-sm rounded-lg ${
                 activeView === 'overview' 
                   ? 'bg-amber-600 text-white' 
-                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
               }`}
             >
               Overview
@@ -1451,7 +1451,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
               className={`px-3 py-1.5 text-sm rounded-lg ${
                 activeView === 'categoryBreakdown' 
                   ? 'bg-amber-600 text-white' 
-                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
               }`}
             >
               Category Groups
@@ -1461,7 +1461,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
               className={`px-3 py-1.5 text-sm rounded-lg ${
                 activeView === 'foodAnalysis' 
                   ? 'bg-amber-600 text-white' 
-                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
               }`}
               disabled={!spendingByGroup.some(group => group.name === 'Food')}
             >
@@ -1470,21 +1470,21 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
           </div>
           
           {/* Time Navigation Controls - MOBILE OPTIMIZED */}
-          <div className="flex items-center justify-between bg-slate-700 rounded-lg p-2">
+          <div className="flex items-center justify-between bg-gray-100 dark:bg-slate-700 rounded-lg p-2">
             <button 
               onClick={handleNavigatePrevious}
-              className="p-1 rounded-lg bg-slate-600 hover:bg-slate-500 text-slate-300"
+              className="p-1 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-slate-600 dark:hover:bg-slate-500 dark:text-slate-300"
             >
               <ChevronLeft size={16} />
             </button>
             
-            <span className="text-xs text-slate-300 px-1 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-48">
+            <span className="text-xs text-gray-700 dark:text-slate-300 px-1 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-48">
               {new Date(startDate).toLocaleDateString()} — {new Date(endDate).toLocaleDateString()}
             </span>
             
             <button 
               onClick={handleNavigateNext}
-              className="p-1 rounded-lg bg-slate-600 hover:bg-slate-500 text-slate-300"
+              className="p-1 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-slate-600 dark:hover:bg-slate-500 dark:text-slate-300"
               disabled={new Date(endDate) >= new Date()}
             >
               <ChevronRight size={16} />
@@ -1494,26 +1494,26 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
         
         {/* Custom Date Settings Panel - MOBILE OPTIMIZED */}
         {chartSettings.showCustomDateSettings && (
-          <div className="mt-4 p-3 bg-slate-700 rounded-lg border border-slate-600">
+          <div className="mt-4 p-3 bg-gray-100 dark:bg-slate-700 rounded-lg border border-gray-300 dark:border-slate-600">
             <div className="flex justify-between items-center mb-2">
-              <h5 className="text-white font-medium text-sm">Custom Date Settings</h5>
+              <h5 className="text-gray-800 dark:text-white font-medium text-sm">Custom Date Settings</h5>
             </div>
             
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div>
-                <label className="block text-xs text-slate-300 mb-1">
+                <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">
                   Start Date
                 </label>
                 <input 
                   type="date" 
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full p-1 text-xs bg-slate-600 border border-slate-500 rounded-lg text-white"
+                  className="w-full p-1 text-xs bg-white border border-gray-300 rounded-lg text-gray-700 dark:bg-slate-600 dark:border-slate-500 dark:text-white"
                 />
               </div>
               
               <div>
-                <label className="block text-xs text-slate-300 mb-1">
+                <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">
                   End Date
                 </label>
                 <input 
@@ -1521,13 +1521,13 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   max={formatDateForStorage(new Date())}
-                  className="w-full p-1 text-xs bg-slate-600 border border-slate-500 rounded-lg text-white"
+                  className="w-full p-1 text-xs bg-white border border-gray-300 rounded-lg text-gray-700 dark:bg-slate-600 dark:border-slate-500 dark:text-white"
                 />
               </div>
             </div>
             
             <div className="space-y-1 mb-3">
-              <label className="text-xs text-white">Apply custom date to:</label>
+              <label className="text-xs text-gray-800 dark:text-white">Apply custom date to:</label>
               
               <div className="grid grid-cols-2 gap-1 text-xs">
                 <div className="flex items-center">
@@ -1541,7 +1541,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                     }))}
                     className="mr-1 h-3 w-3"
                   />
-                  <label htmlFor="applyToSpendingTrend" className="text-slate-300 text-xs">
+                  <label htmlFor="applyToSpendingTrend" className="text-gray-700 dark:text-slate-300 text-xs">
                     Spending Trend Chart
                   </label>
                 </div>
@@ -1557,7 +1557,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                     }))}
                     className="mr-1 h-3 w-3"
                   />
-                  <label htmlFor="applyToIncomeExpenses" className="text-slate-300 text-xs">
+                  <label htmlFor="applyToIncomeExpenses" className="text-gray-700 dark:text-slate-300 text-xs">
                     Income vs Expenses
                   </label>
                 </div>

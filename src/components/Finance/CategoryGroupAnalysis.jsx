@@ -1,150 +1,165 @@
 import React, { useState } from 'react';
-import { PieChart, BarChart2, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
-import { getCategoryById, getCategoryIconComponent } from '../../utils/financeUtils';
+import { ChevronUp, ChevronDown, ShoppingCart, Utensils, Home, Car } from 'lucide-react';
+import { getCategoryIconComponent, getCategoryById } from '../../utils/financeUtils';
 
-const CategoryGroupAnalysis = ({ spendingByGroup, totalExpenses, currency = '$', compact = false }) => {
-  const [expandedGroup, setExpandedGroup] = useState(null);
-  
-  // Format currency amounts
+// Category color map with light and dark mode variants
+const CATEGORY_COLORS = {
+  'Food': 'bg-emerald-100/80 dark:bg-emerald-800/30 hover:bg-emerald-100 dark:hover:bg-emerald-800/40',
+  'Housing': 'bg-amber-100/80 dark:bg-amber-800/30 hover:bg-amber-100 dark:hover:bg-amber-800/40',
+  'Transportation': 'bg-purple-100/80 dark:bg-purple-800/30 hover:bg-purple-100 dark:hover:bg-purple-800/40',
+  'Utilities': 'bg-blue-100/80 dark:bg-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-800/40',
+  'Shopping': 'bg-pink-100/80 dark:bg-pink-800/30 hover:bg-pink-100 dark:hover:bg-pink-800/40',
+  'Entertainment': 'bg-indigo-100/80 dark:bg-indigo-800/30 hover:bg-indigo-100 dark:hover:bg-indigo-800/40',
+  'Healthcare': 'bg-red-100/80 dark:bg-red-800/30 hover:bg-red-100 dark:hover:bg-red-800/40',
+  'Personal': 'bg-cyan-100/80 dark:bg-cyan-800/30 hover:bg-cyan-100 dark:hover:bg-cyan-800/40',
+  'Education': 'bg-violet-100/80 dark:bg-violet-800/30 hover:bg-violet-100 dark:hover:bg-violet-800/40',
+  'Other': 'bg-gray-100/80 dark:bg-gray-800/30 hover:bg-gray-100 dark:hover:bg-gray-800/40',
+};
+
+// Progress bar colors for both modes
+const PROGRESS_BAR_COLORS = {
+  'Food': 'bg-emerald-500',
+  'Housing': 'bg-amber-500',
+  'Transportation': 'bg-purple-500',
+  'Utilities': 'bg-blue-500',
+  'Shopping': 'bg-pink-500',
+  'Entertainment': 'bg-indigo-500',
+  'Healthcare': 'bg-red-500',
+  'Personal': 'bg-cyan-500',
+  'Education': 'bg-violet-500',
+  'Other': 'bg-gray-500',
+};
+
+// Subcategory backgrounds for both modes
+const SUBCATEGORY_BG = 'bg-gray-200/80 dark:bg-slate-600/80';
+
+const getCategoryColor = (category) => {
+  return CATEGORY_COLORS[category] || 'bg-gray-100/80 dark:bg-gray-800/30 hover:bg-gray-100 dark:hover:bg-gray-800/40';
+};
+
+const getProgressBarColor = (category) => {
+  return PROGRESS_BAR_COLORS[category] || 'bg-blue-500';
+};
+
+const getCategoryIcon = (category) => {
+  switch (category) {
+    case 'Food':
+      return <ShoppingCart size={18} />;
+    case 'Housing':
+      return <Home size={18} />;
+    case 'Transportation':
+      return <Car size={18} />;
+    case 'Dining Out':
+      return <Utensils size={18} />;
+    default:
+      return null;
+  }
+};
+
+const CategoryGroupAnalysis = ({ 
+  spendingByGroup, 
+  totalExpenses, 
+  currency = '€', 
+  compact = false 
+}) => {
+  // State for expanded categories
+  const [expandedCategories, setExpandedCategories] = useState({});
+
+  // Format currency
   const formatCurrency = (amount) => {
     return `${currency}${parseFloat(amount).toFixed(2)}`;
   };
-  
-  // Toggle group expansion
-  const toggleGroup = (groupName) => {
-    if (expandedGroup === groupName) {
-      setExpandedGroup(null);
-    } else {
-      setExpandedGroup(groupName);
-    }
+
+  // Toggle category expansion
+  const toggleCategory = (categoryName) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryName]: !prev[categoryName]
+    }));
   };
-  
-  // Get color for a category group
-  const getGroupColor = (groupName) => {
-    const colorMap = {
-      'Housing': 'amber',
-      'Food': 'green',
-      'Transportation': 'blue',
-      'Utilities': 'teal',
-      'Shopping': 'pink',
-      'Healthcare': 'rose',
-      'Entertainment': 'purple',
-      'Subscriptions': 'violet',
-      'Personal': 'cyan',
-      'Other': 'gray'
-    };
-    
-    return colorMap[groupName] || 'gray';
+
+  // Get percentage of total expenses
+  const getPercentage = (amount) => {
+    return totalExpenses > 0 ? Math.round((amount / totalExpenses) * 100) : 0;
   };
-  
-  if (!spendingByGroup || spendingByGroup.length === 0) {
-    return (
-      <div className="text-center p-6 text-slate-400">
-        <PieChart size={48} className="text-slate-600 mx-auto mb-3" />
-        <p>No expense data to analyze by category.</p>
-      </div>
-    );
-  }
-  
-  // For compact view, limit to top 3 groups
-  const groupsToShow = compact ? spendingByGroup.slice(0, 3) : spendingByGroup;
-  
+
+  // Sort groups by amount spent (descending)
+  const sortedGroups = [...spendingByGroup].sort((a, b) => b.total - a.total);
+
+  // Limit to top categories if compact view
+  const displayGroups = compact ? sortedGroups.slice(0, 3) : sortedGroups;
+
   return (
-    <div className="space-y-4">
-      {/* Category Group Breakdown Header */}
-      {!compact && (
-        <div className="flex items-center gap-2 mb-2">
-          <BarChart2 size={18} className="text-amber-400" />
-          <h4 className="text-base font-medium text-white">Category Group Analysis</h4>
-        </div>
-      )}
-      
-      {/* Category Groups */}
-      {groupsToShow.map((group) => {
-        const isExpanded = expandedGroup === group.name;
-        const groupColor = getGroupColor(group.name);
-        const percentOfTotal = totalExpenses > 0 ? (group.total / totalExpenses) * 100 : 0;
+    <div className="space-y-2">
+      {displayGroups.map(group => {
+        const isExpanded = expandedCategories[group.name] || false;
+        const percentage = getPercentage(group.total);
+        const categoryColor = getCategoryColor(group.name);
+        const progressBarColor = getProgressBarColor(group.name);
+        const categoryIcon = getCategoryIcon(group.name);
+        const subcategoryCount = group.subcategories.length;
         
         return (
-          <div key={group.name} className={`finance-bg-${groupColor}-900/30 rounded-lg border finance-border-${groupColor}-800/50 overflow-hidden`}>
-            {/* Group Header */}
+          <div 
+            key={group.name} 
+            className={`rounded-lg overflow-hidden transition-all ${categoryColor}`}
+          >
+            {/* Category Header */}
             <div 
-              className="p-3 flex items-center justify-between cursor-pointer"
-              onClick={() => toggleGroup(group.name)}
+              className="flex items-center justify-between p-3 cursor-pointer"
+              onClick={() => toggleCategory(group.name)}
             >
-              <div>
-                <h5 className="font-medium text-white text-sm sm:text-base">{group.name}</h5>
-                <div className="text-xs text-slate-300">{Math.round(percentOfTotal)}% of total expenses</div>
+              <div className="flex items-center gap-2 text-gray-800 dark:text-white">
+                {categoryIcon}
+                <div>
+                  <h4 className="font-medium text-gray-800 dark:text-white">{group.name}</h4>
+                  <p className="text-xs text-gray-600 dark:text-slate-300">{percentage}% of total expenses • {subcategoryCount} {subcategoryCount === 1 ? 'category' : 'categories'}</p>
+                </div>
               </div>
               
               <div className="flex items-center gap-2">
-                <div className="text-right">
-                  <div className="font-bold text-white text-sm sm:text-base">{formatCurrency(group.total)}</div>
-                  <div className="text-xs text-slate-300">
-                    {group.subcategories.length} {group.subcategories.length === 1 ? 'category' : 'categories'}
-                  </div>
-                </div>
-                
-                {isExpanded ? 
-                  <ChevronUp size={18} className="text-slate-400" /> : 
-                  <ChevronDown size={18} className="text-slate-400" />
-                }
+                <span className="font-semibold text-gray-800 dark:text-white">{formatCurrency(group.total)}</span>
+                {!compact && (
+                  isExpanded ? 
+                  <ChevronUp size={16} className="text-gray-600 dark:text-slate-300" /> : 
+                  <ChevronDown size={16} className="text-gray-600 dark:text-slate-300" />
+                )}
               </div>
             </div>
             
-            {/* Subcategories - Only show if expanded */}
+            {/* Progress Bar */}
+            <div className="h-2 w-full bg-white dark:bg-slate-700">
+              <div 
+                className={`h-full ${progressBarColor}`}
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+            
+            {/* Subcategories */}
             {isExpanded && (
-              <div className="px-3 pb-3 border-t border-slate-700/50 pt-3 space-y-3">
-                {/* Subcategory breakdown mini chart */}
-                <div className="h-8 bg-slate-700 rounded-full overflow-hidden flex">
-                  {group.subcategories.map((subcat, index) => {
-                    const subcatPercent = Math.max(5, (subcat.total / group.total) * 100);
-                    const category = getCategoryById(subcat.id);
-                    const color = category?.color || 'gray';
-                    
-                    return (
-                      <div 
-                        key={subcat.id} 
-                        className={`h-full finance-bg-${color}-500 dark:finance-bg-${color}-600`}
-                        style={{ width: `${subcatPercent}%` }}
-                        title={`${subcat.name}: ${formatCurrency(subcat.total)}`}
-                      ></div>
-                    );
-                  })}
-                </div>
-                
-                {/* Subcategory list */}
-                <div className="space-y-2 mt-3">
-                  {group.subcategories.map((subcat) => {
-                    const subcatPercent = (subcat.total / group.total) * 100;
-                    
-                    return (
-                      <div key={subcat.id} className="flex items-center justify-between bg-slate-700/50 p-2 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          {getCategoryIconComponent(subcat.id, 14)}
-                          <span className="text-sm text-white">{subcat.name}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm font-medium text-white">{formatCurrency(subcat.total)}</div>
-                          <div className="text-xs bg-slate-600 px-1.5 py-0.5 rounded-full text-slate-300 min-w-[36px] text-center">
-                            {Math.round(subcatPercent)}%
-                          </div>
-                        </div>
+              <div className="divide-y divide-white/30 dark:divide-slate-700/30">
+                {group.subcategories.map(subcat => {
+                  const subcatPercentage = Math.round((subcat.total / group.total) * 100);
+                  const subcategory = getCategoryById(subcat.id);
+                  
+                  return (
+                    <div key={subcat.id} className={`flex items-center justify-between px-3 py-2 ${SUBCATEGORY_BG}`}>
+                      <div className="flex items-center gap-2">
+                        {getCategoryIconComponent(subcat.id, 16)}
+                        <span className="text-sm text-gray-800 dark:text-white">{subcat.name}</span>
                       </div>
-                    );
-                  })}
-                </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-800 dark:text-white">{formatCurrency(subcat.total)}</span>
+                        <span className="text-xs text-gray-600 dark:text-slate-300">{subcatPercentage}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
                 
-                {/* Insights section */}
-                {group.subcategories.length >= 2 && (
-                  <div className="mt-3 bg-slate-700/30 p-3 rounded-lg text-sm border border-slate-600/30">
-                    <p className="text-white">
-                      <span className="font-medium">{group.subcategories[0].name}</span> is your biggest expense in this category
-                      {group.subcategories.length > 2 && (
-                        <>, accounting for {Math.round((group.subcategories[0].total / group.total) * 100)}% of your {group.name.toLowerCase()} spending</>
-                      )}.
-                    </p>
+                {/* Category Insight */}
+                {group.subcategories.length > 0 && (
+                  <div className="p-3 bg-slate-300/50 dark:bg-slate-600/50 text-sm text-gray-700 dark:text-slate-200">
+                    {group.subcategories[0].name} is your biggest expense in this category.
                   </div>
                 )}
               </div>
@@ -153,13 +168,10 @@ const CategoryGroupAnalysis = ({ spendingByGroup, totalExpenses, currency = '$',
         );
       })}
       
-      {/* View all link for compact mode */}
-      {compact && spendingByGroup.length > 3 && (
-        <div className="text-center">
-          <button className="text-amber-400 hover:text-amber-300 text-sm inline-flex items-center">
-            <span>View all {spendingByGroup.length} categories</span>
-            <ChevronRight size={16} className="ml-1" />
-          </button>
+      {/* Show message if no data */}
+      {displayGroups.length === 0 && (
+        <div className="text-center p-4 bg-gray-100 dark:bg-slate-700 rounded-lg">
+          <p className="text-gray-600 dark:text-slate-300">No spending data available.</p>
         </div>
       )}
     </div>

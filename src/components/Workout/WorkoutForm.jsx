@@ -1157,40 +1157,50 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
       
       {formData.exercises.length > 0 ? (
         <div className="space-y-2">
-          {formData.exercises.map((exercise, index) => (
-            <div
-              key={index}
-              className="flex justify-between items-start p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-            >
-              <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
-                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-blue-700 dark:text-blue-300 font-medium">{index + 1}</span>
-                </div>
-                <div className="flex-1 min-w-0 overflow-hidden">
-                  <div className="font-medium text-slate-700 dark:text-slate-200 text-sm truncate">
-                    {exercise.name}
-                  </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
-                    {exercise.sets} sets × {exercise.reps} reps
-                    {exercise.weight && ` • ${exercise.weight} lbs`}
-                    {exercise.restTime && ` • ${exercise.restTime}s rest`}
-                  </div>
-                  {exercise.notes && (
-                    <div className="text-xs italic text-slate-500 dark:text-slate-400 mt-1 line-clamp-1 max-w-full overflow-hidden">
-                      {exercise.notes}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => removeExercise(index)}
-                className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full ml-1 flex-shrink-0"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
+         
+         {formData.exercises.map((exercise, index) => (
+  <div
+    key={index}
+    className="flex items-start p-3 bg-slate-800 border border-slate-700 rounded-lg"
+  >
+    {/* Number badge */}
+    <div className="w-8 h-8 mr-3 bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+      <span className="text-blue-300 font-medium">{index + 1}</span>
+    </div>
+    
+    {/* Content - with explicit width constraint */}
+    <div className="w-[75%]"> 
+      {/* Exercise name with text wrapping */}
+      <div className="font-medium text-slate-200 text-sm break-words">
+        {exercise.name}
+      </div>
+      
+      {/* Exercise details */}
+      <div className="text-xs text-slate-400 mt-1 break-words">
+        {exercise.sets}×{exercise.reps}
+        {exercise.weight ? ` • ${exercise.weight}` : ''}
+      </div>
+      
+      {/* Notes - with text wrapping, limited to 3 lines */}
+      {exercise.notes && (
+        <div className="text-xs italic text-slate-400 mt-1 break-words line-clamp-3">
+          {exercise.notes}
+        </div>
+      )}
+    </div>
+    
+    {/* Delete button */}
+    <div className="w-[10%] flex justify-end">
+      <button
+        type="button"
+        onClick={() => removeExercise(index)}
+        className="p-2 text-red-400 hover:bg-red-900/20 rounded-full flex-shrink-0"
+      >
+        <Trash2 size={16} />
+      </button>
+    </div>
+  </div>
+))}
         </div>
       ) : (
         <div className="text-center py-8 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">

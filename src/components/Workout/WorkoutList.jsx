@@ -99,7 +99,7 @@ const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onCreateWithA
             >
               <div className="flex items-center mb-2 sm:mb-3">
                 <div className="w-[85%] sm:w-[90%] overflow-hidden">
-                  <h3 className="font-medium text-slate-800 dark:text-slate-100 text-sm sm:text-base truncate">
+                  <h3 className="font-medium text-slate-800 dark:text-slate-100 text-sm sm:text-base break-words">
                     {workout.name}
                   </h3>
                 </div>

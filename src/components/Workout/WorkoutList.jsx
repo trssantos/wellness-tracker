@@ -98,7 +98,7 @@ const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onCreateWithA
               onClick={() => onSelectWorkout(workout.id)}
             >
               <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <h3 className="font-medium text-slate-800 dark:text-slate-100 text-sm sm:text-base truncate pr-2">{workout.name}</h3>
+              <h3 className="font-medium text-slate-800 dark:text-slate-100 text-sm sm:text-base truncate pr-2 min-w-0 flex-1">{workout.name}</h3>
                 <ChevronRight size={16} className="text-slate-400 flex-shrink-0" />
               </div>
               

@@ -281,7 +281,7 @@ const WorkoutHistory = ({ onBack, onEditWorkout }) => {
               <div className="text-xs text-slate-500 dark:text-slate-400 mb-1 transition-colors">
                 {formatDate(workout.date || startTime)} at {formatTime(startTime)}
               </div>
-              <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-1 transition-colors">
+              <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-1 transition-colors truncate">
                 {workout.name || 'Workout'}
               </h2>
               
@@ -364,7 +364,7 @@ const WorkoutHistory = ({ onBack, onEditWorkout }) => {
               <Calendar size={18} className="text-green-500 dark:text-green-400" />
               <div className="text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors">Date</div>
             </div>
-            <div className="text-xl font-bold text-green-700 dark:text-green-300 transition-colors">
+            <div className="text-xl font-bold text-green-700 dark:text-green-300 transition-colors truncate">
               {formatDate(workout.date || startTime)}
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400 transition-colors">

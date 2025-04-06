@@ -1011,190 +1011,195 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
         
         {/* Exercises Section */}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-          {/* Section Header */}
-          <button
-            onClick={() => setActiveInfoSection(activeInfoSection === 'exercises' ? '' : 'exercises')}
-            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <Activity size={16} className="text-red-600 dark:text-red-400" />
-              </div>
-              <h3 className="font-medium text-slate-800 dark:text-slate-100">Exercises</h3>
-            </div>
-            {activeInfoSection === 'exercises' ? 
-              <ChevronUp size={20} className="text-slate-500 dark:text-slate-400" /> : 
-              <ChevronDown size={20} className="text-slate-500 dark:text-slate-400" />
-            }
-          </button>
+  {/* Section Header */}
+  <button
+    onClick={() => setActiveInfoSection(activeInfoSection === 'exercises' ? '' : 'exercises')}
+    className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+  >
+    <div className="flex items-center gap-2">
+      <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+        <Activity size={16} className="text-red-600 dark:text-red-400" />
+      </div>
+      <h3 className="font-medium text-slate-800 dark:text-slate-100">Exercises</h3>
+    </div>
+    {activeInfoSection === 'exercises' ? 
+      <ChevronUp size={20} className="text-slate-500 dark:text-slate-400" /> : 
+      <ChevronDown size={20} className="text-slate-500 dark:text-slate-400" />
+    }
+  </button>
+  
+  {/* Section Content */}
+  {activeInfoSection === 'exercises' && (
+    <div className="p-4">
+      {/* Exercise Form */}
+      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4 border border-slate-200 dark:border-slate-700">
+        <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-3">Add Exercise</h4>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <div>
+            <label htmlFor="exercise-name" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+              Exercise Name*
+            </label>
+            <input
+              type="text"
+              id="exercise-name"
+              name="name"
+              value={currentExercise.name}
+              onChange={handleExerciseChange}
+              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+              placeholder="e.g., Barbell Squat"
+            />
+          </div>
           
-          {/* Section Content */}
-          {activeInfoSection === 'exercises' && (
-            <div className="p-4">
-              {/* Exercise Form */}
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4 border border-slate-200 dark:border-slate-700">
-                <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-3">Add Exercise</h4>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <label htmlFor="exercise-name" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Exercise Name*
-                    </label>
-                    <input
-                      type="text"
-                      id="exercise-name"
-                      name="name"
-                      value={currentExercise.name}
-                      onChange={handleExerciseChange}
-                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
-                      placeholder="e.g., Barbell Squat"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label htmlFor="exercise-sets" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                        Sets
-                      </label>
-                      <input
-                        type="number"
-                        id="exercise-sets"
-                        name="sets"
-                        value={currentExercise.sets}
-                        onChange={handleExerciseChange}
-                        min="1"
-                        className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="exercise-reps" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                        Reps
-                      </label>
-                      <input
-                        type="number"
-                        id="exercise-reps"
-                        name="reps"
-                        value={currentExercise.reps}
-                        onChange={handleExerciseChange}
-                        min="1"
-                        className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <label htmlFor="exercise-weight" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Weight (optional)
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        id="exercise-weight"
-                        name="weight"
-                        value={currentExercise.weight}
-                        onChange={handleExerciseChange}
-                        className="w-full p-2 pr-12 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
-                        placeholder="Weight"
-                      />
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 dark:text-slate-400 text-sm">
-                        lbs
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="exercise-rest" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Rest Time (seconds)
-                    </label>
-                    <input
-                      type="number"
-                      id="exercise-rest"
-                      name="restTime"
-                      value={currentExercise.restTime}
-                      onChange={handleExerciseChange}
-                      min="0"
-                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
-                    />
-                  </div>
-                </div>
-                
-                <div className="mb-3">
-                  <label htmlFor="exercise-notes" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Notes (optional)
-                  </label>
-                  <input
-                    type="text"
-                    id="exercise-notes"
-                    name="notes"
-                    value={currentExercise.notes}
-                    onChange={handleExerciseChange}
-                    className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
-                    placeholder="e.g., Focus on form, slow tempo"
-                  />
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={addExercise}
-                  disabled={!currentExercise.name.trim()}
-                  className={`w-full py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
-                    !currentExercise.name.trim()
-                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
-                      : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
-                  }`}
-                >
-                  <Plus size={16} />
-                  Add Exercise
-                </button>
-              </div>
-              
-              {/* Exercise List */}
-              <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-3">
-                Exercises ({formData.exercises.length})
-              </h4>
-              
-              {formData.exercises.length > 0 ? (
-                <div className="space-y-2">
-                  {formData.exercises.map((exercise, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-blue-700 dark:text-blue-300 font-medium">{index + 1}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-slate-700 dark:text-slate-200 text-sm truncate">
-                            {exercise.name}
-                          </div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
-                            {exercise.sets} sets × {exercise.reps} reps
-                            {exercise.weight && ` • ${exercise.weight} lbs`}
-                            {exercise.restTime && ` • ${exercise.restTime}s rest`}
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeExercise(index)}
-                        className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full ml-1"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                  No exercises added yet. Add your first exercise above.
-                </div>
-              )}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label htmlFor="exercise-sets" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                Sets
+              </label>
+              <input
+                type="number"
+                id="exercise-sets"
+                name="sets"
+                value={currentExercise.sets}
+                onChange={handleExerciseChange}
+                min="1"
+                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+              />
             </div>
-          )}
+            <div>
+              <label htmlFor="exercise-reps" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                Reps
+              </label>
+              <input
+                type="number"
+                id="exercise-reps"
+                name="reps"
+                value={currentExercise.reps}
+                onChange={handleExerciseChange}
+                min="1"
+                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+              />
+            </div>
+          </div>
         </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <div>
+            <label htmlFor="exercise-weight" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+              Weight (optional)
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                id="exercise-weight"
+                name="weight"
+                value={currentExercise.weight}
+                onChange={handleExerciseChange}
+                className="w-full p-2 pr-12 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+                placeholder="Weight"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 dark:text-slate-400 text-sm">
+                lbs
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label htmlFor="exercise-rest" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+              Rest Time (seconds)
+            </label>
+            <input
+              type="number"
+              id="exercise-rest"
+              name="restTime"
+              value={currentExercise.restTime}
+              onChange={handleExerciseChange}
+              min="0"
+              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+            />
+          </div>
+        </div>
+        
+        <div className="mb-3">
+          <label htmlFor="exercise-notes" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+            Notes (optional)
+          </label>
+          <input
+            type="text"
+            id="exercise-notes"
+            name="notes"
+            value={currentExercise.notes}
+            onChange={handleExerciseChange}
+            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+            placeholder="e.g., Focus on form, slow tempo"
+          />
+        </div>
+        
+        <button
+          type="button"
+          onClick={addExercise}
+          disabled={!currentExercise.name.trim()}
+          className={`w-full py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+            !currentExercise.name.trim()
+              ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
+              : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
+          }`}
+        >
+          <Plus size={16} />
+          Add Exercise
+        </button>
+      </div>
+      
+      {/* Exercise List */}
+      <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-3">
+        Exercises ({formData.exercises.length})
+      </h4>
+      
+      {formData.exercises.length > 0 ? (
+        <div className="space-y-2">
+          {formData.exercises.map((exercise, index) => (
+            <div
+              key={index}
+              className="flex justify-between items-start p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+            >
+              <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
+                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-blue-700 dark:text-blue-300 font-medium">{index + 1}</span>
+                </div>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="font-medium text-slate-700 dark:text-slate-200 text-sm truncate">
+                    {exercise.name}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
+                    {exercise.sets} sets × {exercise.reps} reps
+                    {exercise.weight && ` • ${exercise.weight} lbs`}
+                    {exercise.restTime && ` • ${exercise.restTime}s rest`}
+                  </div>
+                  {exercise.notes && (
+                    <div className="text-xs italic text-slate-500 dark:text-slate-400 mt-1 line-clamp-1 max-w-full overflow-hidden">
+                      {exercise.notes}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeExercise(index)}
+                className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full ml-1 flex-shrink-0"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+          No exercises added yet. Add your first exercise above.
+        </div>
+      )}
+    </div>
+  )}
+</div>
         
         {/* Form Actions */}
         {errors.submit && (

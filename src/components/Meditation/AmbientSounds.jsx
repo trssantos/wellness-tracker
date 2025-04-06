@@ -56,6 +56,44 @@ const AmbientSounds = ({
       setCurrentExercise(category.exercises[0]);
     }
   }, [selectedExercise, category]);
+
+  useEffect(() => {
+    // Initialize audio elements when component mounts
+    if (audioRef.current) {
+      // Set initial properties
+      audioRef.current.loop = true;
+      audioRef.current.volume = isMuted ? 0 : volume;
+      
+      // Add event listeners to help debug potential issues
+      audioRef.current.addEventListener('play', () => {
+        console.log('Audio started playing');
+      });
+      
+      audioRef.current.addEventListener('pause', () => {
+        console.log('Audio paused');
+      });
+      
+      audioRef.current.addEventListener('error', (e) => {
+        console.error('Audio error:', e);
+      });
+      
+      console.log('Audio element initialized');
+    }
+    
+    return () => {
+      // Clean up
+      if (audioRef.current) {
+        // Remove event listeners
+        audioRef.current.removeEventListener('play', () => {});
+        audioRef.current.removeEventListener('pause', () => {});
+        audioRef.current.removeEventListener('error', () => {});
+        
+        // Stop playback and clear source
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+    };
+  }, []);
   
   // Load available sounds for current exercise
   useEffect(() => {
@@ -90,12 +128,30 @@ const AmbientSounds = ({
   
   // Get current sound file path
   const getCurrentSoundFile = () => {
-    const sound = getCurrentSound();
-    if (!sound) return '';
+    if (!availableSounds || availableSounds.length === 0) {
+      console.warn('No available sounds when getting current sound file');
+      return '';
+    }
+    
+    // Check if selected index is in range
+    if (selectedSoundIndex >= availableSounds.length) {
+      console.warn('Selected sound index out of range, using first sound');
+      setSelectedSoundIndex(0);
+      const sound = availableSounds[0];
+      if (!sound) return '';
+      
+      return soundService.getFilePath('ambient', sound.file);
+    }
+    
+    const sound = availableSounds[selectedSoundIndex];
+    if (!sound) {
+      console.warn('Selected sound is undefined');
+      return '';
+    }
+    
     return soundService.getFilePath('ambient', sound.file);
   };
   
-  // Set up on mount
   useEffect(() => {
     // Load audio file when exercise or selected sound changes
     if (currentExercise && audioRef.current && secondaryAudioRef.current) {
@@ -113,8 +169,26 @@ const AmbientSounds = ({
       }
     }
     
-    // Initialize timer based on selected duration
-    setTimer(duration * 60); // Convert minutes to seconds
+    return () => {
+      // Clean up audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      
+      if (secondaryAudioRef.current) {
+        secondaryAudioRef.current.pause();
+      }
+    };
+  }, [currentExercise, secondaryAudioActive]);
+  
+  // Second useEffect for timer initialization that does NOT depend on secondaryAudioActive
+  useEffect(() => {
+    // Only initialize timer on mount or when duration/exercise changes
+    // but NOT when secondaryAudioActive changes
+    if (!isPlaying) {
+      // Initialize timer based on selected duration
+      setTimer(duration * 60); // Convert minutes to seconds
+    }
     
     // Show the before feelings dialog
     if (!beforeFeeling && currentExercise) {
@@ -126,20 +200,12 @@ const AmbientSounds = ({
     }
     
     return () => {
-      // Clean up
+      // Clean up timer
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
-      
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      
-      if (secondaryAudioRef.current) {
-        secondaryAudioRef.current.pause();
-      }
     };
-  }, [currentExercise, duration, beforeFeeling, secondaryAudioActive]);
+  }, [currentExercise, duration, beforeFeeling]);
   
   // Start the ambient sound
   const startAmbientSound = () => {
@@ -198,27 +264,103 @@ const AmbientSounds = ({
   
   // Toggle play/pause
   const togglePlayPause = () => {
-    if (!currentExercise || !availableSounds.length) return;
+    if (!currentExercise || !availableSounds || availableSounds.length === 0) {
+      console.log('Cannot toggle play/pause: No exercise or sounds available');
+      return;
+    }
     
     if (isPlaying) {
-      // Pause
+      // Pausing
+      console.log('Pausing audio playback');
       setIsPlaying(false);
       
-      // Pause both audio elements
+      // Pause the active audio
       if (audioRef.current) {
         audioRef.current.pause();
       }
       
-      if (secondaryAudioRef.current) {
-        secondaryAudioRef.current.pause();
-      }
-      
+      // Clear the timer interval
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     } else {
-      // Play/resume
-      startAmbientSound();
+      // Starting or resuming playback
+      console.log('Starting or resuming audio playback');
+      
+      // Make sure we have a valid sound file
+      const soundFile = getCurrentSoundFile();
+      if (!soundFile) {
+        console.error('No valid sound file to play');
+        return;
+      }
+      
+      // Ensure the audio element has the correct source
+      if (!audioRef.current.src || audioRef.current.src === window.location.href || 
+          !audioRef.current.src.includes(availableSounds[selectedSoundIndex].file)) {
+        console.log('Setting audio source before playing:', soundFile);
+        audioRef.current.src = soundFile;
+        audioRef.current.load();
+      }
+      
+      // Set the audio volume
+      audioRef.current.volume = isMuted ? 0 : volume;
+      
+      // Try to play
+      audioRef.current.play()
+        .then(() => {
+          // Successfully started playback
+          console.log('Audio playback started successfully');
+          setIsPlaying(true);
+          
+          // Start the timer interval
+          intervalRef.current = setInterval(() => {
+            setTimer(prev => {
+              if (prev <= 1) {
+                // Timer finished
+                if (intervalRef.current) {
+                  clearInterval(intervalRef.current);
+                }
+                
+                // Stop playing
+                setIsPlaying(false);
+                
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                }
+                
+                // Show the completion dialog after a moment
+                setTimeout(() => {
+                  const dialog = document.getElementById('after-feeling-dialog');
+                  if (dialog) dialog.showModal();
+                }, 1000);
+                
+                return 0;
+              }
+              return prev - 1;
+            });
+            
+            setElapsedTime(prev => prev + 1);
+          }, 1000);
+        })
+        .catch(error => {
+          // Failed to start playback
+          console.error('Failed to start audio playback:', error);
+          
+          // Try a different approach - sometimes reloading helps
+          console.log('Trying to reload audio and play again...');
+          audioRef.current.load();
+          
+          setTimeout(() => {
+            audioRef.current.play()
+              .then(() => {
+                console.log('Audio playback started on second attempt');
+                setIsPlaying(true);
+              })
+              .catch(e => {
+                console.error('Failed to play audio on second attempt:', e);
+              });
+          }, 300);
+        });
     }
   };
   
@@ -270,13 +412,18 @@ const AmbientSounds = ({
       return;
     }
     
+    console.log('Switching sound to index:', index, availableSounds[index].name);
+    
     // Get sound file for the newly selected sound
     const newSoundFile = soundService.getFilePath('ambient', availableSounds[index].file);
+    console.log('New sound file path:', newSoundFile);
+    
+    // Update the selected index right away
+    setSelectedSoundIndex(index);
     
     // If not currently playing, just update source without playing
     if (!isPlaying) {
-      setSelectedSoundIndex(index);
-      const activeAudio = secondaryAudioActive ? secondaryAudioRef.current : audioRef.current;
+      const activeAudio = audioRef.current;
       if (activeAudio) {
         activeAudio.src = newSoundFile;
         activeAudio.load();
@@ -285,84 +432,58 @@ const AmbientSounds = ({
       return;
     }
     
-    // If we are playing, prepare for crossfade
+    // SIMPLER APPROACH: Instead of trying to do a complex crossfade, we'll use a simpler approach
     try {
-      // Determine which audio element is currently active
-      const activeAudio = secondaryAudioActive ? secondaryAudioRef.current : audioRef.current;
-      const inactiveAudio = secondaryAudioActive ? audioRef.current : secondaryAudioRef.current;
+      const activeAudio = audioRef.current;
       
-      if (!activeAudio || !inactiveAudio) return;
+      // Remember the current playback time and volume
+      const currentVolume = isMuted ? 0 : volume;
       
-      // Set new source on the inactive audio element
-      inactiveAudio.src = newSoundFile;
-      inactiveAudio.load();
+      // Prepare for immediate switch
+      console.log('Switching audio directly');
       
-      // Set volume to 0 initially
-      inactiveAudio.volume = 0;
+      // Pause the current audio
+      activeAudio.pause();
       
-      // Start playing the new audio
-      inactiveAudio.play().then(() => {
-        // Crossfade between the two audio elements
-        const duration = 1000; // 1 second crossfade
-        const interval = 50; // Update every 50ms
-        const steps = duration / interval;
-        const volumeStep = activeAudio.volume / steps;
+      // Change source and reload
+      activeAudio.src = newSoundFile;
+      activeAudio.load();
+      
+      // Set up the oncanplaythrough event to start playing when loaded
+      activeAudio.oncanplaythrough = () => {
+        // Remove the handler to prevent multiple calls
+        activeAudio.oncanplaythrough = null;
         
-        let currentStep = 0;
+        // Set volume
+        activeAudio.volume = currentVolume;
         
-        const fadeInterval = setInterval(() => {
-          currentStep++;
-          
-          // Increase volume of new audio
-          inactiveAudio.volume = Math.min(isMuted ? 0 : volume, (volumeStep * currentStep));
-          
-          // Decrease volume of old audio
-          activeAudio.volume = Math.max(0, activeAudio.volume - volumeStep);
-          
-          // Check if crossfade is complete
-          if (currentStep >= steps) {
-            clearInterval(fadeInterval);
-            
-            // Stop the old audio
-            activeAudio.pause();
-            
-            // Toggle which audio element is now active
-            setSecondaryAudioActive(!secondaryAudioActive);
-            
-            // Update sound index
-            setSelectedSoundIndex(index);
-          }
-        }, interval);
-      }).catch(error => {
-        console.error("Error starting crossfade:", error);
+        // Set the loop property
+        activeAudio.loop = true;
         
-        // Fallback - direct switch if crossfade fails
-        activeAudio.src = newSoundFile;
-        activeAudio.load();
-        if (isPlaying) {
-          activeAudio.play().catch(e => console.error("Couldn't play audio:", e));
-        }
-        setSelectedSoundIndex(index);
-      });
+        // Play the audio
+        console.log('Starting playback of new sound');
+        activeAudio.play()
+          .then(() => {
+            console.log('Successfully switched to new sound');
+          })
+          .catch(err => {
+            console.error('Error playing new sound:', err);
+          });
+      };
+      
+      // Handle errors
+      activeAudio.onerror = (e) => {
+        console.error('Error loading audio:', e);
+      };
       
       // Close the selector
       setShowSoundSelector(false);
     } catch (error) {
       console.error("Error during sound selection:", error);
-      
-      // Fallback to direct switch
-      setSelectedSoundIndex(index);
-      const activeAudio = secondaryAudioActive ? secondaryAudioRef.current : audioRef.current;
-      if (activeAudio) {
-        activeAudio.src = newSoundFile;
-        activeAudio.load();
-        if (isPlaying) {
-          activeAudio.play().catch(e => console.error("Couldn't play audio:", e));
-        }
-      }
       setShowSoundSelector(false);
     }
   };
+  
   
   // Format time as mm:ss
   const formatTime = (seconds) => {
@@ -436,18 +557,13 @@ const AmbientSounds = ({
         style={{ backgroundImage: `url(${getBackgroundImage(currentExercise.id)})` }}
       ></div>
       
-      {/* Primary audio element */}
-      <audio 
-        ref={audioRef} 
-        src={getCurrentSoundFile()} 
-        loop 
-      />
-      
-      {/* Secondary audio element for crossfading */}
-      <audio 
-        ref={secondaryAudioRef} 
-        loop 
-      />
+      {/* Audio element */}
+<audio 
+  ref={audioRef} 
+  src={getCurrentSoundFile()} 
+  loop={true}
+  preload="auto"
+/>
       
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-4 z-10">

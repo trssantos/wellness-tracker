@@ -143,7 +143,45 @@ const GroundingExercises = ({
         { text: "Finally, notice 1 thing you can taste right now.", duration: 15 },
         { text: "Take a deep breath. Notice how you feel more present and grounded in this moment.", duration: 15 }
       ],
-      // Other scripts remain the same
+      '3-3-3': [
+        { text: "Let's begin this quick grounding exercise. Take a deep breath.", duration: 10 },
+        { text: "Now, name 3 things you can see around you. Just observe without judgment.", duration: 15 },
+        { text: "Next, identify 3 sounds you can hear right now.", duration: 15 },
+        { text: "Finally, move 3 parts of your body. Perhaps wiggle your fingers, rotate your shoulders, or move your ankles.", duration: 15 },
+        { text: "Take another deep breath. Notice how this brief exercise has brought you back to the present moment.", duration: 10 }
+      ],
+      'progressive-relaxation': [
+        { text: "Find a comfortable position, either sitting or lying down. Take a few deep breaths to begin.", duration: 15 },
+        { text: "Focus your attention on your feet. Tense all the muscles in your feet for 5 seconds.", duration: 10 },
+        { text: "Now release and relax your feet completely. Notice the difference between tension and relaxation.", duration: 10 },
+        { text: "Move your attention to your calf muscles. Tense them for 5 seconds.", duration: 10 },
+        { text: "Release and relax your calves. Feel the tension flowing away.", duration: 10 },
+        { text: "Now tense your thigh muscles for 5 seconds.", duration: 10 },
+        { text: "Release and relax. Feel the warmth and heaviness in your legs.", duration: 10 },
+        { text: "Tighten your abdominal muscles for 5 seconds.", duration: 10 },
+        { text: "Release and relax your abdomen.", duration: 10 },
+        { text: "Now clench your fists and tense your arms for 5 seconds.", duration: 10 },
+        { text: "Release and relax your hands and arms.", duration: 10 },
+        { text: "Shrug your shoulders up to your ears for 5 seconds.", duration: 10 },
+        { text: "Release and relax, letting your shoulders drop down completely.", duration: 10 },
+        { text: "Tense all the muscles in your face for 5 seconds.", duration: 10 },
+        { text: "Release and relax, feeling the tension melting away from your face.", duration: 10 },
+        { text: "Finally, tense your entire body at once for 5 seconds.", duration: 10 },
+        { text: "And release everything. Feel the relaxation flowing throughout your entire body.", duration: 15 },
+        { text: "Take a few deep breaths, noticing how much more relaxed your body feels now.", duration: 15 }
+      ],
+      'object-focus': [
+        { text: "Choose an object nearby that you can see clearly. Any small item will do.", duration: 10 },
+        { text: "Focus all your attention on this object. Examine it as if you're seeing it for the first time.", duration: 15 },
+        { text: "Notice its color. Is it one color or many? Are there variations in shade?", duration: 15 },
+        { text: "Observe the shape and form. Notice the contours, edges, and any patterns.", duration: 15 },
+        { text: "Consider the texture. How would it feel if you touched it?", duration: 15 },
+        { text: "Think about the object's function or purpose. How is it used?", duration: 15 },
+        { text: "If your mind wanders, gently bring your focus back to the object.", duration: 10 },
+        { text: "Take one more moment to observe the object fully, with all your attention.", duration: 15 },
+        { text: "Now, gradually expand your awareness beyond the object to the room around you.", duration: 10 },
+        { text: "Notice how this focused attention has helped clear your mind and ground you in the present moment.", duration: 15 }
+      ]
     };
     
     return scripts[exerciseId] || [];

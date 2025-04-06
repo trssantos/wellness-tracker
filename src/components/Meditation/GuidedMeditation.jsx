@@ -179,23 +179,83 @@ const GuidedMeditation = ({
       console.error('No exercise ID provided to getMeditationScript');
       return [];
     }
-    
-    console.log('Getting meditation script for:', exerciseId);
-    
-    const scripts = {
-      'body-scan': [
-        { text: "Find a comfortable position, either sitting or lying down. Allow your body to relax and settle.", duration: 15 },
-        { text: "Take a few deep breaths. Inhale through your nose, exhale through your mouth.", duration: 15 },
-        { text: "Bring your awareness to your feet. Notice any sensations - warmth, coolness, tingling.", duration: 15 },
-        // ... rest of the script remains the same
-      ],
-      'loving-kindness': [
-        { text: "Sit comfortably, allowing your body to relax while keeping your back straight.", duration: 15 },
-        { text: "Take a few deep breaths, feeling your chest and abdomen expand and contract.", duration: 15 },
-        // ... rest of the script remains the same
-      ],
-      // ... other meditation scripts remain the same
-    };
+  const scripts = {
+    'body-scan': [
+      { text: "Find a comfortable position, either sitting or lying down. Allow your body to relax and settle.", duration: 15 },
+      { text: "Take a few deep breaths. Inhale through your nose, exhale through your mouth.", duration: 15 },
+      { text: "Bring your awareness to your feet. Notice any sensations - warmth, coolness, tingling.", duration: 15 },
+      { text: "Move your awareness up to your calves and knees. Just notice without judgment.", duration: 15 },
+      { text: "Continue upward to your thighs and hips. Feel the weight of your body against the surface below.", duration: 15 },
+      { text: "Notice your lower back and abdomen. Feel the gentle movement with each breath.", duration: 15 },
+      { text: "Bring awareness to your chest and upper back. Notice the expansion and contraction as you breathe.", duration: 15 },
+      { text: "Feel your shoulders, allowing any tension to dissolve with each breath.", duration: 15 },
+      { text: "Notice your arms and hands. Are they heavy? Light? Warm? Cool?", duration: 15 },
+      { text: "Bring awareness to your neck and throat. Gently release any tension here.", duration: 15 },
+      { text: "Now focus on your face - jaw, cheeks, eyes, forehead. Let all the tiny muscles relax.", duration: 15 },
+      { text: "Finally, bring awareness to your whole body at once. Feel its presence completely.", duration: 20 },
+      { text: "Rest in this awareness for a few moments.", duration: 20 },
+      { text: "When you're ready, slowly begin to deepen your breath and gently move your fingers and toes.", duration: 15 },
+      { text: "Take your time to slowly open your eyes, carrying this awareness with you.", duration: 15 }
+    ],
+    'loving-kindness': [
+      { text: "Sit comfortably, allowing your body to relax while keeping your back straight.", duration: 15 },
+      { text: "Take a few deep breaths, feeling your chest and abdomen expand and contract.", duration: 15 },
+      { text: "Bring to mind someone you love deeply - a child, friend, partner, or pet.", duration: 15 },
+      { text: "Picture them clearly and feel the warmth of your affection for them.", duration: 15 },
+      { text: "Silently repeat: May you be happy. May you be healthy. May you be safe. May you live with ease.", duration: 20 },
+      { text: "Now bring to mind yourself. Picture yourself with kindness and compassion.", duration: 15 },
+      { text: "Repeat: May I be happy. May I be healthy. May I be safe. May I live with ease.", duration: 20 },
+      { text: "Next, think of someone you feel neutral about - perhaps a neighbor or colleague you don't know well.", duration: 15 },
+      { text: "Extend the same wishes: May you be happy. May you be healthy. May you be safe. May you live with ease.", duration: 20 },
+      { text: "Now, if you're ready, think of someone difficult in your life. Start with someone mildly difficult.", duration: 15 },
+      { text: "Remember they too wish for happiness. May you be happy. May you be healthy. May you be safe. May you live with ease.", duration: 20 },
+      { text: "Finally, extend these wishes to all beings everywhere: May all beings be happy. May all beings be healthy. May all beings be safe. May all live with ease.", duration: 20 },
+      { text: "Feel your heart opening to send kindness in all directions.", duration: 15 },
+      { text: "Rest in the warmth of loving kindness for a few more breaths.", duration: 20 },
+      { text: "When you're ready, gently bring your awareness back to your surroundings.", duration: 15 }
+    ],
+    'mindfulness': [
+      { text: "Find a comfortable seated position where you can be alert yet relaxed.", duration: 15 },
+      { text: "Allow your eyes to close gently or maintain a soft gaze.", duration: 15 },
+      { text: "Take a few deep breaths to settle into the present moment.", duration: 15 },
+      { text: "Now let your breath return to its natural rhythm - not forcing or controlling it.", duration: 15 },
+      { text: "Notice the sensation of breath at the nostrils, chest, or abdomen - wherever it's most obvious to you.", duration: 20 },
+      { text: "Simply observe the in-breath... and the out-breath.", duration: 15 },
+      { text: "When you notice your mind has wandered, gently acknowledge it without judgment.", duration: 15 },
+      { text: "Then return your attention to the breath. This is the practice of mindfulness.", duration: 15 },
+      { text: "You might notice sounds around you. Just acknowledge them and return to the breath.", duration: 15 },
+      { text: "You might notice physical sensations. Just acknowledge them and return to the breath.", duration: 15 },
+      { text: "You might notice emotions or thoughts arising. Just acknowledge them and return to the breath.", duration: 15 },
+      { text: "Each time you notice wandering and return to breath, you're strengthening mindfulness.", duration: 15 },
+      { text: "Continue observing your breath, moment by moment.", duration: 30 },
+      { text: "Notice the beginning, middle, and end of each breath.", duration: 15 },
+      { text: "Remember that thoughts will come and go. Your task is simply to notice and return to the breath.", duration: 15 },
+      { text: "Take a few more breaths with this awareness.", duration: 15 },
+      { text: "Gradually widen your attention to include your whole body.", duration: 15 },
+      { text: "When you're ready, slowly open your eyes or lift your gaze, carrying this mindfulness with you.", duration: 15 }
+    ],
+    'gratitude': [
+      { text: "Begin by taking a comfortable position. Relax your body and quiet your mind.", duration: 15 },
+      { text: "Take a few deep breaths, allowing yourself to settle into the present moment.", duration: 15 },
+      { text: "Bring to mind something simple that you're grateful for today.", duration: 15 },
+      { text: "Perhaps it's the warmth of the sun, a comfortable bed, or a friendly smile you received.", duration: 15 },
+      { text: "Notice how it feels in your body when you hold this gratitude in your awareness.", duration: 15 },
+      { text: "Now recall a person in your life who has supported you or shown you kindness.", duration: 15 },
+      { text: "It could be a family member, friend, teacher, or even a stranger who helped you.", duration: 15 },
+      { text: "Take a moment to fully appreciate their presence in your life.", duration: 15 },
+      { text: "Feel the sense of connection this brings.", duration: 15 },
+      { text: "Now reflect on an aspect of your body or health that you're grateful for.", duration: 15 },
+      { text: "Perhaps it's the ability to see, hear, walk, or simply breathe without effort.", duration: 15 },
+      { text: "Take a moment to truly appreciate this gift that supports you every day.", duration: 15 },
+      { text: "Now bring to mind a challenge you've faced that ultimately taught you something valuable.", duration: 15 },
+      { text: "Recognize how this difficulty helped you grow or develop a strength you now possess.", duration: 15 },
+      { text: "Finally, consider the wider world - nature, community, or culture - and something from it that enriches your life.", duration: 15 },
+      { text: "It might be music, art, forests, oceans, or the kindness of strangers.", duration: 15 },
+      { text: "Take a few moments to bask in the feeling of gratitude for all these aspects of life.", duration: 20 },
+      { text: "Notice how gratitude feels in your body - perhaps a warmth, lightness, or openness.", duration: 15 },
+      { text: "When you're ready, gently return your awareness to the present moment, carrying this gratitude with you.", duration: 15 }
+    ]
+  };
     
     return scripts[exerciseId] || [];
   };

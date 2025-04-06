@@ -23,7 +23,7 @@ const getWorkoutTypeLabel = (type) => {
   return foundType ? foundType.label : 'Workout';
 };
 
-const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onCreateWithAI, onViewAnalytics,onViewHistory }) => {
+const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onCreateWithAI, onViewAnalytics, onViewHistory }) => {
   return (
     <div className="px-2 sm:px-0 w-full overflow-hidden">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2 sm:gap-0">
@@ -38,7 +38,7 @@ const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onCreateWithA
               <span className="hidden sm:inline">Analytics</span>
             </button>
           )}
-<button
+          <button
             onClick={onViewHistory}
             className="text-sm sm:text-base bg-violet-500 hover:bg-violet-600 dark:bg-violet-600 dark:hover:bg-violet-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1"
           >
@@ -90,7 +90,7 @@ const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onCreateWithA
           </div>
         </div>
       ) : (
-        <div className="space-y-4 overflow-x-hidden">
+        <div className="space-y-4 overflow-hidden">
           {workouts.map(workout => (
             <div 
               key={workout.id}
@@ -98,32 +98,38 @@ const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onCreateWithA
               onClick={() => onSelectWorkout(workout.id)}
             >
               <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <h3 className="font-medium text-slate-800 dark:text-slate-100 text-sm sm:text-base truncate pr-2 min-w-0 flex-1">{workout.name}</h3>
-                <ChevronRight size={16} className="text-slate-400 flex-shrink-0" />
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <h3 className="font-medium text-slate-800 dark:text-slate-100 text-sm sm:text-base truncate">
+                    {workout.name}
+                  </h3>
+                </div>
+                <ChevronRight size={16} className="text-slate-400 flex-shrink-0 ml-2" />
               </div>
               
               <div className="flex flex-wrap gap-2 mb-3">
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-xs">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-xs flex-shrink-0">
                   {getWorkoutTypeIcon(workout.type)}
                   {getWorkoutTypeLabel(workout.type)}
                 </span>
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs flex-shrink-0">
                   <Clock size={14} />
                   {workout.duration} min
                 </span>
               </div>
               
-              <div className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">
+              <div className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 overflow-hidden mb-3">
                 {workout.notes || `A ${getWorkoutTypeLabel(workout.type).toLowerCase()} workout with ${workout.exercises.length} exercises.`}
               </div>
               
               <div className="flex flex-wrap items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700">
-                <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                  <Calendar size={14} />
-                  {workout.frequency.map(day => day.charAt(0).toUpperCase()).join(', ')}
+                <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 overflow-hidden">
+                  <Calendar size={14} className="flex-shrink-0" />
+                  <span className="truncate max-w-[120px]">
+                    {workout.frequency.map(day => day.charAt(0).toUpperCase()).join(', ')}
+                  </span>
                 </div>
                 
-                <div className="text-xs text-blue-600 dark:text-blue-400">
+                <div className="text-xs text-blue-600 dark:text-blue-400 flex-shrink-0">
                   {workout.exercises.length} exercises
                 </div>
               </div>

@@ -287,7 +287,7 @@ const FinanceSection = () => {
             <select 
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="bg-slate-700 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-lg px-2 py-1 text-xs border-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+              className="bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-lg px-2 py-1 text-xs border-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
             >
               <option value="week">This Week</option>
               <option value="month">This Month</option>
@@ -297,7 +297,7 @@ const FinanceSection = () => {
             
             <button 
               onClick={() => setShowSettings(true)}
-              className="p-1.5 rounded-lg bg-slate-700 dark:bg-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-600 dark:hover:bg-slate-600 transition-colors"
+              className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-600 dark:hover:bg-slate-600 transition-colors"
               title="Settings"
             >
               <Settings size={20} />
@@ -312,7 +312,7 @@ const FinanceSection = () => {
             <div className="bg-amber-900/30 dark:bg-amber-900/30 p-3 rounded-lg border border-amber-800/50 dark:border-amber-800/50 col-span-1">
               <div className="flex items-center mb-1">
                 <div className="flex items-center gap-1">
-                  <DollarSign size={16} className="text-amber-400 dark:text-amber-400" />
+                  <DollarSign size={16} className="text-amber-600 dark:text-amber-400" />
                   <h4 className="font-medium text-slate-800 dark:text-slate-100 text-sm">Balance</h4>
                 </div>
               </div>
@@ -320,8 +320,8 @@ const FinanceSection = () => {
                 <div className="text-xs text-slate-800 dark:text-slate-400">
                   Projected
                   <span className={`ml-1 flex items-center ${stats.upcoming.net >= 0 
-                    ? 'text-green-400 dark:text-green-400' 
-                    : 'text-red-400 dark:text-red-400'}`}>
+                    ? 'text-green-500 dark:text-green-400' 
+                    : 'text-red-500 dark:text-red-400'}`}>
                     {stats.upcoming.net <= 0 ? (
                       <TrendingDown size={10} className="mr-0.5" />
                     ) : (
@@ -330,7 +330,7 @@ const FinanceSection = () => {
                     {formatCurrency(stats.projected.balance)}
                   </span>
                 </div>
-                <span className="font-bold text-lg text-amber-300 dark:text-amber-300 break-words">
+                <span className="font-bold text-lg text-amber-500 dark:text-amber-300 break-words">
                   {formatCurrency(stats.current.balance)}
                 </span>
               </div>
@@ -347,11 +347,11 @@ const FinanceSection = () => {
               <div className="flex justify-between items-end">
                 <div className="text-xs text-slate-800 dark:text-slate-400">
                   Upcoming
-                  <span className="ml-1 text-green-400 dark:text-green-400">
+                  <span className="ml-1 text-green-500 dark:text-green-400">
                     +{formatCurrency(stats.upcoming.income)}
                   </span>
                 </div>
-                <span className="font-bold text-lg text-green-300 dark:text-green-300 break-words">
+                <span className="font-bold text-lg text-green-500 dark:text-green-300 break-words">
                   {formatCurrency(stats.current.income)}
                 </span>
               </div>
@@ -368,11 +368,11 @@ const FinanceSection = () => {
               <div className="flex justify-between items-end">
                 <div className="text-xs text-slate-800 dark:text-slate-400">
                   Upcoming
-                  <span className="ml-1 text-red-400 dark:text-red-400">
+                  <span className="ml-1 text-red-500 dark:text-red-400">
                     -{formatCurrency(stats.upcoming.expenses)}
                   </span>
                 </div>
-                <span className="font-bold text-lg text-red-300 dark:text-red-300 break-words">
+                <span className="font-bold text-lg text-red-500 dark:text-red-300 break-words">
                   {formatCurrency(stats.current.expenses)}
                 </span>
               </div>
@@ -420,7 +420,7 @@ const FinanceSection = () => {
               className={`flex-1 py-2 flex flex-col items-center gap-1 transition-colors ${
                 activeTab === tab.id 
                   ? 'bg-amber-600 dark:bg-amber-600 text-white' 
-                  : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-400 dark:hover:bg-slate-600'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600'
               }`}
             >
               {tab.icon}
@@ -572,6 +572,50 @@ const FinanceSection = () => {
                 </div>
               )}
             </div>
+
+            {/* Quick Insights - Spending Breakdown */}
+            <div>
+              <div 
+                onClick={() => toggleSection('insights')} 
+                className="flex items-center justify-between mb-2 cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <BarChart2 size={18} className="text-amber-400 dark:text-amber-400" />
+                  <h4 className="font-medium text-slate-800 dark:text-slate-100">Spending Breakdown</h4>
+                </div>
+                {expandedSections.insights ? 
+                  <ChevronUp size={18} className="text-slate-800 dark:text-slate-400" /> : 
+                  <ChevronDown size={18} className="text-slate-800 dark:text-slate-400" />}
+              </div>
+              
+              {expandedSections.insights && (
+                <div className="mb-3">
+                  {chartData.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-6 text-slate-800 dark:text-slate-400 bg-slate-700/50 dark:bg-slate-700/50 rounded-lg">
+                      <BarChart2 size={42} className="text-slate-500 dark:text-slate-500 mb-2" />
+                      <p>No spending data to display</p>
+                    </div>
+                  ) : (
+                    <>
+                      <SpendingChart 
+                        data={chartData} 
+                        currency={currency}
+                      />
+                    </>
+                  )}
+                  
+                  <div className="mt-2 text-center">
+                    <button 
+                      onClick={() => navigateToTab('insights')}
+                      className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
+                    >
+                      <span>View detailed insights</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
            
             
             {/* Budget Overview */}
@@ -668,49 +712,7 @@ const FinanceSection = () => {
               )}
             </div>
             
-            {/* Quick Insights - Spending Breakdown */}
-            <div>
-              <div 
-                onClick={() => toggleSection('insights')} 
-                className="flex items-center justify-between mb-2 cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  <BarChart2 size={18} className="text-amber-400 dark:text-amber-400" />
-                  <h4 className="font-medium text-slate-800 dark:text-slate-100">Spending Breakdown</h4>
-                </div>
-                {expandedSections.insights ? 
-                  <ChevronUp size={18} className="text-slate-800 dark:text-slate-400" /> : 
-                  <ChevronDown size={18} className="text-slate-800 dark:text-slate-400" />}
-              </div>
-              
-              {expandedSections.insights && (
-                <div className="mb-3">
-                  {chartData.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-6 text-slate-800 dark:text-slate-400 bg-slate-700/50 dark:bg-slate-700/50 rounded-lg">
-                      <BarChart2 size={42} className="text-slate-500 dark:text-slate-500 mb-2" />
-                      <p>No spending data to display</p>
-                    </div>
-                  ) : (
-                    <>
-                      <SpendingChart 
-                        data={chartData} 
-                        currency={currency}
-                      />
-                    </>
-                  )}
-                  
-                  <div className="mt-2 text-center">
-                    <button 
-                      onClick={() => navigateToTab('insights')}
-                      className="text-sm text-amber-400 dark:text-amber-400 hover:text-amber-300 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
-                    >
-                      <span>View detailed insights</span>
-                      <ArrowRight size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            
           </div>
         )}
         

@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, AlertCircle, TrendingUp, TrendingDown, PiggyBank, RepeatIcon, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, TrendingUp, TrendingDown, PiggyBank, RepeatIcon, MoreHorizontal, Edit, Trash2, FileText, RefreshCw } from 'lucide-react';
 import { getCategoryById, getCategoryIconComponent, deleteRecurringTransaction } from '../../utils/financeUtils';
 import RecurringTransactionsManager from './RecurringTransactionsManager'; 
 import EditRecurringModal from './EditRecurringModal';
 import ConfirmationModal from './ConfirmationModal';
+import CalendarView from './CalendarView';
 import { formatDateForStorage } from '../../utils/dateUtils';
 
 const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, currency = '€', compact = false }) => {
   const [showOptions, setShowOptions] = useState(null);
   const [editingRecurring, setEditingRecurring] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [calendarMode, setCalendarMode] = useState(false);
   
   // Get today's date and reset time to midnight for proper comparison
   const today = new Date();
@@ -278,216 +280,269 @@ const UpcomingBills = ({ transactions = [], bills = [], onBillClick, onRefresh, 
     );
   }
 
-  // Full view for the Upcoming Bills tab
+  // Full view for the Upcoming Bills tab with Calendar/List toggle
   return (
     <div className="space-y-4">
-      {/* Financial Summary Card */}
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-        <h3 className="text-slate-900 dark:text-slate-100 font-medium mb-3">30-Day Outlook</h3>
+      {/* View toggle and header */}
+      <div className="flex justify-between items-center mb-4">
+        <h4 className="text-base font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <Calendar className="text-amber-400 dark:text-amber-400" size={18} />
+          Upcoming Transactions
+        </h4>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-          <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-lg border border-green-200 dark:border-green-800/50">
-            <div className="text-sm text-slate-700 dark:text-slate-300">Upcoming Income</div>
-            <div className="text-lg font-bold text-green-600 dark:text-green-400 flex items-center">
-              <TrendingUp size={16} className="mr-1" />
-              {formatCurrency(totalUpcomingIncome)}
-            </div>
+        <div className="flex items-center gap-2">
+          <div className="flex bg-slate-200 dark:bg-slate-700 rounded-lg overflow-hidden p-1">
+            <button
+              onClick={() => setCalendarMode(false)}
+              className={`px-3 py-1 text-xs rounded-md flex items-center gap-1 transition-colors ${
+                !calendarMode
+                  ? 'bg-amber-500 dark:bg-amber-600 text-white'
+                  : 'text-slate-800 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'
+              }`}
+            >
+              <FileText size={14} />
+              <span className="hidden xs:inline">List</span>
+            </button>
+            <button
+              onClick={() => setCalendarMode(true)}
+              className={`px-3 py-1 text-xs rounded-md flex items-center gap-1 transition-colors ${
+                calendarMode
+                  ? 'bg-amber-500 dark:bg-amber-600 text-white'
+                  : 'text-slate-800 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'
+              }`}
+            >
+              <Calendar size={14} />
+              <span className="hidden xs:inline">Calendar</span>
+            </button>
           </div>
           
-          <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-lg border border-red-200 dark:border-red-800/50">
-            <div className="text-sm text-slate-700 dark:text-slate-300">Upcoming Expenses</div>
-            <div className="text-lg font-bold text-red-600 dark:text-red-400 flex items-center">
-              <TrendingDown size={16} className="mr-1" />
-              {formatCurrency(totalUpcomingExpenses)}
-            </div>
-          </div>
-          
-          <div className={`${netCashFlow >= 0 ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800/50'} p-3 rounded-lg border`}>
-            <div className="text-sm text-slate-700 dark:text-slate-300">Net Cash Flow</div>
-            <div className={`text-lg font-bold flex items-center ${netCashFlow >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'}`}>
-              <PiggyBank size={16} className="mr-1" />
-              {netCashFlow >= 0 ? '+' : '-'}{formatCurrency(Math.abs(netCashFlow))}
-            </div>
-          </div>
-        </div>
-        
-        <div className="text-xs text-slate-700 dark:text-slate-400 italic">
-          Based on scheduled transactions for the next 30 days
         </div>
       </div>
-      
-      {/* Upcoming Transactions Section */}
-      {allUpcoming.length === 0 ? (
-        <div className="bg-slate-100 dark:bg-slate-700/50 rounded-lg p-4 flex items-center justify-center h-40">
-          <div className="text-center">
-            <Calendar size={24} className="text-slate-400 dark:text-slate-500 mx-auto mb-2" />
-            <p className="text-slate-700 dark:text-slate-400 text-sm">No upcoming transactions</p>
-          </div>
-        </div>
+
+      {calendarMode ? (
+        <CalendarView 
+          transactions={transactions}
+          bills={bills}
+          currency={currency}
+          onDateClick={(date) => {
+            console.log('Date clicked:', date);
+            if (onBillClick) {
+              // You can optionally pass something to onBillClick when a date is clicked
+              // or handle this differently based on your requirements
+            }
+          }}
+        />
       ) : (
         <>
-          <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mt-6 mb-2 flex items-center gap-2">
-            <Calendar className="text-amber-600 dark:text-amber-400" size={20} />
-            Upcoming Transactions
-          </h3>
-          
-          {/* Time-based Transaction Grouping */}
-          <div className="space-y-4">
-            {periodOrder.map(period => {
-              if (!groupedItems[period] || groupedItems[period].length === 0) return null;
+          {/* Financial Summary Card */}
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+            <h3 className="text-slate-900 dark:text-slate-100 font-medium mb-3">30-Day Outlook</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+              <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-lg border border-green-200 dark:border-green-800/50">
+                <div className="text-sm text-slate-700 dark:text-slate-300">Upcoming Income</div>
+                <div className="text-lg font-bold text-green-600 dark:text-green-400 flex items-center">
+                  <TrendingUp size={16} className="mr-1" />
+                  {formatCurrency(totalUpcomingIncome)}
+                </div>
+              </div>
               
-              return (
-                <div key={period} className="space-y-2">
-                  <h4 className={`text-sm font-medium flex items-center gap-1 
-                    ${period === 'This Week' ? 'text-red-600 dark:text-red-400' : 
-                      period === 'Next Week' ? 'text-amber-600 dark:text-amber-400' : 
-                      period === 'This Month' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-400'}`}>
-                    {period === 'This Week' ? <AlertCircle size={16} /> : 
-                     period === 'Next Week' ? <Clock size={16} /> : 
-                     <Calendar size={16} />}
-                    {period}
-                  </h4>
+              <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-lg border border-red-200 dark:border-red-800/50">
+                <div className="text-sm text-slate-700 dark:text-slate-300">Upcoming Expenses</div>
+                <div className="text-lg font-bold text-red-600 dark:text-red-400 flex items-center">
+                  <TrendingDown size={16} className="mr-1" />
+                  {formatCurrency(totalUpcomingExpenses)}
+                </div>
+              </div>
+              
+              <div className={`${netCashFlow >= 0 ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800/50'} p-3 rounded-lg border`}>
+                <div className="text-sm text-slate-700 dark:text-slate-300">Net Cash Flow</div>
+                <div className={`text-lg font-bold flex items-center ${netCashFlow >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                  <PiggyBank size={16} className="mr-1" />
+                  {netCashFlow >= 0 ? '+' : '-'}{formatCurrency(Math.abs(netCashFlow))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="text-xs text-slate-700 dark:text-slate-400 italic">
+              Based on scheduled transactions for the next 30 days
+            </div>
+          </div>
+          
+          {/* Upcoming Transactions Section */}
+          {allUpcoming.length === 0 ? (
+            <div className="bg-slate-100 dark:bg-slate-700/50 rounded-lg p-4 flex items-center justify-center h-40">
+              <div className="text-center">
+                <Calendar size={24} className="text-slate-400 dark:text-slate-500 mx-auto mb-2" />
+                <p className="text-slate-700 dark:text-slate-400 text-sm">No upcoming transactions</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mt-6 mb-2 flex items-center gap-2">
+                <Calendar className="text-amber-600 dark:text-amber-400" size={20} />
+                Upcoming Transactions
+              </h3>
+              
+              {/* Time-based Transaction Grouping */}
+              <div className="space-y-4">
+                {periodOrder.map(period => {
+                  if (!groupedItems[period] || groupedItems[period].length === 0) return null;
                   
-                  <div className="space-y-2">
-                    {groupedItems[period].map(item => {
-                      const daysLeft = Math.ceil((item.dueDate - today) / (1000 * 60 * 60 * 24));
-                      const timeUntil = formatTimeDistance(item.dueDate);
+                  return (
+                    <div key={period} className="space-y-2">
+                      <h4 className={`text-sm font-medium flex items-center gap-1 
+                        ${period === 'This Week' ? 'text-red-600 dark:text-red-400' : 
+                          period === 'Next Week' ? 'text-amber-600 dark:text-amber-400' : 
+                          period === 'This Month' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-400'}`}>
+                        {period === 'This Week' ? <AlertCircle size={16} /> : 
+                         period === 'Next Week' ? <Clock size={16} /> : 
+                         <Calendar size={16} />}
+                        {period}
+                      </h4>
                       
-                      const statusClass = 
-                        daysLeft <= 3 ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800/50' :
-                        daysLeft <= 7 ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800/50' :
-                        'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50';
-                        
-                      // Get category details if available
-                      const category = getCategoryById(item.category);
-                      
-                      return (
-                        <div 
-                          key={item.displayId}
-                          className={`${statusClass} rounded-lg p-3 border relative transition-colors`}
-                        >
-                          <div className="flex justify-between items-start">
+                      <div className="space-y-2">
+                        {groupedItems[period].map(item => {
+                          const daysLeft = Math.ceil((item.dueDate - today) / (1000 * 60 * 60 * 24));
+                          const timeUntil = formatTimeDistance(item.dueDate);
+                          
+                          const statusClass = 
+                            daysLeft <= 3 ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800/50' :
+                            daysLeft <= 7 ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800/50' :
+                            'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50';
+                            
+                          // Get category details if available
+                          const category = getCategoryById(item.category);
+                          
+                          return (
                             <div 
-                              className="flex-1 cursor-pointer"
-                              onClick={() => onBillClick && onBillClick(item.original || item)}
+                              key={item.displayId}
+                              className={`${statusClass} rounded-lg p-3 border relative transition-colors`}
                             >
-                              <div className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1">
-                                {item.name}
-                                {item.amount > 0 ? (
-                                  <TrendingUp size={14} className="text-green-600 dark:text-green-400" />
-                                ) : (
-                                  <TrendingDown size={14} className="text-red-600 dark:text-red-400" />
-                                )}
-                                {item.type === 'recurring' && (
-                                  <RepeatIcon size={14} className="text-amber-600 dark:text-amber-400" title={`Repeats ${item.frequency}`} />
-                                )}
-                              </div>
-                              
-                              <div className="flex flex-col xs:flex-row xs:items-center gap-1 mt-1">
-                                <div className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                                  <Calendar size={12} />
-                                  <span>
-                                    {item.dueDate.toLocaleDateString()} <span className="text-slate-600 dark:text-slate-400">({timeUntil})</span>
-                                  </span>
+                              <div className="flex justify-between items-start">
+                                <div 
+                                  className="flex-1 cursor-pointer"
+                                  onClick={() => onBillClick && onBillClick(item.original || item)}
+                                >
+                                  <div className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1">
+                                    {item.name}
+                                    {item.amount > 0 ? (
+                                      <TrendingUp size={14} className="text-green-600 dark:text-green-400" />
+                                    ) : (
+                                      <TrendingDown size={14} className="text-red-600 dark:text-red-400" />
+                                    )}
+                                    {item.type === 'recurring' && (
+                                      <RepeatIcon size={14} className="text-amber-600 dark:text-amber-400" title={`Repeats ${item.frequency}`} />
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex flex-col xs:flex-row xs:items-center gap-1 mt-1">
+                                    <div className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                      <Calendar size={12} />
+                                      <span>
+                                        {item.dueDate.toLocaleDateString()} <span className="text-slate-600 dark:text-slate-400">({timeUntil})</span>
+                                      </span>
+                                    </div>
+                                    
+                                    {category && (
+                                      <div className="text-xs flex items-center gap-1 mt-1 xs:mt-0 xs:ml-2">
+                                        <span className="bg-slate-200 dark:bg-slate-700/70 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                          {getCategoryIconComponent(item.category, 10)}
+                                          <span className="text-slate-700 dark:text-slate-300">{category.name}</span>
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                                 
-                                {category && (
-                                  <div className="text-xs flex items-center gap-1 mt-1 xs:mt-0 xs:ml-2">
-                                    <span className="bg-slate-200 dark:bg-slate-700/70 px-1.5 py-0.5 rounded-full flex items-center gap-1">
-                                      {getCategoryIconComponent(item.category, 10)}
-                                      <span className="text-slate-700 dark:text-slate-300">{category.name}</span>
-                                    </span>
+                                <div className="flex items-center">
+                                  <div className={`text-lg font-bold mr-2 ${item.amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-300'}`}>
+                                    {item.amount > 0 ? '+' : '-'}
+                                    {formatCurrency(item.amount)}
                                   </div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center">
-                              <div className={`text-lg font-bold mr-2 ${item.amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-300'}`}>
-                                {item.amount > 0 ? '+' : '-'}
-                                {formatCurrency(item.amount)}
-                              </div>
-                              
-                              {/* Action menu for recurring transactions */}
-                              {item.type === 'recurring' && (
-                                <div className="relative">
-                                  <button 
-                                    onClick={() => setShowOptions(showOptions === item.displayId ? null : item.displayId)}
-                                    className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700/70 text-slate-700 dark:text-slate-300"
-                                  >
-                                    <MoreHorizontal size={16} />
-                                  </button>
                                   
-                                  {showOptions === item.displayId && (
-                                    <div className="absolute right-0 top-8 z-10 bg-white dark:bg-slate-700 rounded-lg shadow-lg p-1 min-w-36">
-                                      <button
-                                        className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-600/70 w-full text-left px-3 py-2 rounded"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleEditRecurring(item);
-                                        }}
+                                  {/* Action menu for recurring transactions */}
+                                  {item.type === 'recurring' && (
+                                    <div className="relative">
+                                      <button 
+                                        onClick={() => setShowOptions(showOptions === item.displayId ? null : item.displayId)}
+                                        className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700/70 text-slate-700 dark:text-slate-300"
                                       >
-                                        <Edit size={14} />
-                                        <span>Edit Recurring</span>
+                                        <MoreHorizontal size={16} />
                                       </button>
-                                      <button
-                                        className="flex items-center gap-2 text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-600/70 w-full text-left px-3 py-2 rounded"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeleteRecurring(item);
-                                        }}
-                                      >
-                                        <Trash2 size={14} />
-                                        <span>Delete Recurring</span>
-                                      </button>
+                                      
+                                      {showOptions === item.displayId && (
+                                        <div className="absolute right-0 top-8 z-10 bg-white dark:bg-slate-700 rounded-lg shadow-lg p-1 min-w-36">
+                                          <button
+                                            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-600/70 w-full text-left px-3 py-2 rounded"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleEditRecurring(item);
+                                            }}
+                                          >
+                                            <Edit size={14} />
+                                            <span>Edit Recurring</span>
+                                          </button>
+                                          <button
+                                            className="flex items-center gap-2 text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-600/70 w-full text-left px-3 py-2 rounded"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteRecurring(item);
+                                            }}
+                                          >
+                                            <Trash2 size={14} />
+                                            <span>Delete Recurring</span>
+                                          </button>
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </div>
+                              </div>
+                              
+                              {/* Progress Bar for Days Left */}
+                              <div className="mt-2">
+                                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1">
+                                  <span>{daysLeft} {daysLeft === 1 ? 'day' : 'days'} left</span>
+                                  <span>{item.dueDate.toLocaleDateString('default', { weekday: 'short' })}</span>
+                                </div>
+                                <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full rounded-full ${
+                                      daysLeft <= 3 ? 'bg-red-500 dark:bg-red-500' : 
+                                      daysLeft <= 7 ? 'bg-amber-500 dark:bg-amber-500' : 'bg-blue-500 dark:bg-blue-500'
+                                    }`}
+                                    style={{ width: `${Math.min(100, 100 - ((daysLeft / 30) * 100))}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                              
+                              {/* For recurring bills, show additional info */}
+                              {item.type === 'recurring' && (
+                                <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                  <RepeatIcon size={12} />
+                                  <span>Repeats {item.frequency}</span>
+                                </div>
                               )}
                             </div>
-                          </div>
-                          
-                          {/* Progress Bar for Days Left */}
-                          <div className="mt-2">
-                            <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1">
-                              <span>{daysLeft} {daysLeft === 1 ? 'day' : 'days'} left</span>
-                              <span>{item.dueDate.toLocaleDateString('default', { weekday: 'short' })}</span>
-                            </div>
-                            <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full ${
-                                  daysLeft <= 3 ? 'bg-red-500 dark:bg-red-500' : 
-                                  daysLeft <= 7 ? 'bg-amber-500 dark:bg-amber-500' : 'bg-blue-500 dark:bg-blue-500'
-                                }`}
-                                style={{ width: `${Math.min(100, 100 - ((daysLeft / 30) * 100))}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                          
-                          {/* For recurring bills, show additional info */}
-                          {item.type === 'recurring' && (
-                            <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                              <RepeatIcon size={12} />
-                              <span>Repeats {item.frequency}</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          
+          {/* Recurring Transactions Manager Section */}
+          <RecurringTransactionsManager 
+            recurringTransactions={bills} 
+            onRefresh={onRefresh}
+            currency={currency}
+          />
         </>
       )}
-      
-      {/* Recurring Transactions Manager Section */}
-      <RecurringTransactionsManager 
-        recurringTransactions={bills} 
-        onRefresh={onRefresh}
-        currency={currency}
-      />
 
       {/* Edit Recurring Modal */}
       {editingRecurring && (

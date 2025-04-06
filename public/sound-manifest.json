@@ -1,0 +1,103 @@
+{
+    "ambient": {
+      "rain": {
+        "displayName": "Rain Sounds",
+        "files": [
+          { "id": "rain1", "name": "Rain 1", "file": "rain/rain1.mp3" },
+          { "id": "rain2", "name": "Rain 2", "file": "rain/rain2.mp3" },
+          { "id": "rain3", "name": "Rain 3", "file": "rain/rain3.mp3" },
+          { "id": "rain4", "name": "Rain with Wind", "file": "rain/rainwind1.mp3" },
+          { "id": "rain5", "name": "Rain with Thunder", "file": "rain/rainwiththunder.mp3" },
+          { "id": "rain6", "name": "Light Rain", "file": "rain/lightrain1.mp3" },
+          { "id": "rain7", "name": "Heavy Rain", "file": "rain/heavyrain1.mp3" }
+        ]
+      },
+      "waves": {
+        "displayName": "Ocean Waves",
+        "files": [
+          { "id": "waves1", "name": "Gentle Waves", "file": "waves/softwaves1.mp3" },
+          { "id": "waves2", "name": "Ocean Waves 1", "file": "waves/waves1.mp3" },
+          { "id": "waves3", "name": "Ocean Waves 2", "file": "waves/waves2.mp3" },
+          { "id": "waves4", "name": "Ocean Waves 3", "file": "waves/waves3.mp3" },
+          { "id": "waves5", "name": "Ocean Waves 4", "file": "waves/waves4.mp3" }
+        ]
+      },
+      "white-noise": {
+        "displayName": "White Noise",
+        "files": [
+          { "id": "white-noise1", "name": "White Noise", "file": "white-noise/whitenoise1.mp3" },
+          { "id": "pink-noise", "name": "Pink Noise", "file": "white-noise/pinknoise1.mp3" },
+          { "id": "blue-noise", "name": "Blue Noise", "file": "white-noise/bluenoise1.mp3" }
+        ]
+      },
+      "cafe": {
+        "displayName": "Café Ambience",
+        "files": [
+          { "id": "cafe1", "name": "Café 1", "file": "cafe/cafe1.mp3" },
+          { "id": "cafe2", "name": "Café 2", "file": "cafe/cafe2.mp3" },
+          { "id": "cafe3", "name": "Café 3", "file": "cafe/cafe3.mp3" },
+          { "id": "cafe4", "name": "Café 4", "file": "cafe/cafe4.mp3" },
+          { "id": "cafe5", "name": "Café 5", "file": "cafe/cafe5.mp3" }
+        ]
+      }
+    },
+    "sleep": {
+      "sleep-story": {
+        "displayName": "Sleep Story",
+        "files": [
+          { "id": "sleep-story1", "name": "Sleep Story with Rain", "file": "sleep-story/sleep-story1.mp3" },
+          { "id": "sleep-story2", "name": "Sleep Story with Ocean", "file": "sleep-story/sleep-story2.mp3" }
+        ]
+      },
+      "delta-waves": {
+        "displayName": "Delta Waves",
+        "files": [
+          { "id": "delta1", "name": "136 Hz", "file": "delta-waves/136hz.mp3" },
+          { "id": "delta2", "name": "258 Hz", "file": "delta-waves/258hz.mp3" },
+          { "id": "delta3", "name": "432 Hz", "file": "delta-waves/432hz.mp3" },
+          { "id": "delta4", "name": "963 Hz 1", "file": "delta-waves/963hz.mp3" },
+          { "id": "delta5", "name": "963 Hz 2", "file": "delta-waves/963hz2.mp3" }
+        ]
+      },
+      "brown-noise": {
+        "displayName": "Brown Noise",
+        "files": [
+          { "id": "brown-noise", "name": "Brown Noise", "file": "white-noise/brownnoise1.mp3" }
+        ]
+      },
+      "night-sounds": {
+        "displayName": "Night Sounds",
+        "files": [
+          { "id": "night1", "name": "Night Sounds 1", "file": "night-sounds/night1.mp3" },
+          { "id": "night2", "name": "Night Sounds 2", "file": "night-sounds/night2.mp3" },
+          { "id": "night3", "name": "Night Sounds 3", "file": "night-sounds/night3.mp3" },
+          { "id": "night4", "name": "Night Sounds 4", "file": "night-sounds/night4.mp3" },
+          { "id": "night5", "name": "Night Sounds 5", "file": "night-sounds/night5.mp3" }
+        ]
+      }
+    },
+    "meditation": {
+      "background": {
+        "displayName": "Meditation Music",
+        "files": [
+          { "id": "med1", "name": "Peaceful Meditation", "file": "meditation/meditation1.mp3" },
+          { "id": "med2", "name": "Deep Meditation", "file": "meditation/meditation2.mp3" },
+          { "id": "med3", "name": "Mindful Meditation 1", "file": "meditation/meditation3.mp3" },
+          { "id": "med4", "name": "Mindful Meditation 2", "file": "meditation/meditation4.mp3" },
+          { "id": "med5", "name": "Mindful Meditation 3", "file": "meditation/meditation5.mp3" },
+          { "id": "med6", "name": "Mindful Meditation 4", "file": "meditation/meditation6.mp3" },
+          { "id": "med7", "name": "Mindful Meditation 5", "file": "meditation/meditation7.mp3" },
+          { "id": "med8", "name": "Mindful Meditation 6", "file": "meditation/meditation8.mp3" },
+          { "id": "med9", "name": "Mindful Meditation 7", "file": "meditation/meditation9.mp3" },
+          { "id": "med10", "name": "Mindful Meditation 8", "file": "meditation/meditation10.mp3" }
+        ]
+      },
+      "calm": {
+        "displayName": "Calm Music",
+        "files": [
+          { "id": "calm1", "name": "Calm 1", "file": "meditation/meditation5.mp3" },
+          { "id": "calm2", "name": "Calm 2", "file": "meditation/meditation6.mp3" }
+        ]
+      }
+    }
+  }

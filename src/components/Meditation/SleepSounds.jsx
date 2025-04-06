@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Play, Pause, Volume2, VolumeX, Star, Timer, Moon, BookOpen, Radio, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Play, Pause, Volume2, VolumeX, Star, Timer, Moon, BookOpen, Radio, Clock, ChevronDown, ChevronUp, Music, Check } from 'lucide-react';
 import { getVoiceSettings, speakText } from '../../utils/meditationStorage';
+import soundService from '../../utils/soundService';
 
 const SleepSounds = ({ 
   category, 
@@ -21,11 +22,30 @@ const SleepSounds = ({
   const [elapsedTime, setElapsedTime] = useState(0);
   const [beforeFeeling, setBeforeFeeling] = useState(null);
   const [isStoryPlaying, setIsStoryPlaying] = useState(false);
+  const [selectedSoundIndex, setSelectedSoundIndex] = useState(0);
+  const [showSoundSelector, setShowSoundSelector] = useState(false);
+  const [availableSounds, setAvailableSounds] = useState([]);
+  const [isLoadingSounds, setIsLoadingSounds] = useState(false);
+  const [secondaryAudioActive, setSecondaryAudioActive] = useState(false);
   
   const audioRef = useRef(null);
-  const narratorAudioRef = useRef(null);
+  const secondaryAudioRef = useRef(null);
   const intervalRef = useRef(null);
   const speechSynthesisRef = useRef(null);
+  
+  // Background images for visualization
+  const getBackgroundImage = (exerciseId) => {
+    if (!exerciseId) return '/ambient-backgrounds/night-sky.jpg';
+    
+    const imageMap = {
+      'sleep-story': '/ambient-backgrounds/night-sky.jpg',
+      'delta-waves': '/ambient-backgrounds/deep-sleep.jpg',
+      'brown-noise': '/ambient-backgrounds/dark-clouds.jpg',
+      'night-sounds': '/ambient-backgrounds/forest-night.jpg'
+    };
+    
+    return imageMap[exerciseId] || '/ambient-backgrounds/night-sky.jpg';
+  };
   
   // Set current exercise when component mounts or selectedExercise changes
   useEffect(() => {
@@ -40,38 +60,42 @@ const SleepSounds = ({
     }
   }, [selectedExercise, category]);
   
-  // Get sound file path based on exercise ID
-  const getSoundFile = (exerciseId) => {
-    if (!exerciseId) {
-      console.error('No exercise ID provided to getSoundFile');
-      return '/ambient-sounds/soft-rain.mp3';
-    }
+  // Load available sounds for current exercise
+  useEffect(() => {
+    if (!currentExercise) return;
     
-    console.log('Getting sound file for:', exerciseId);
-    
-    // Map exercise IDs to sound files
-    const soundMap = {
-      'sleep-story': '/ambient-sounds/soft-rain.mp3', // Background for story
-      'delta-waves': '/ambient-sounds/delta-waves.mp3',
-      'brown-noise': '/ambient-sounds/brown-noise.mp3',
-      'night-sounds': '/ambient-sounds/night-sounds.mp3'
+    const loadSounds = async () => {
+      setIsLoadingSounds(true);
+      try {
+        const sounds = await soundService.getSounds('sleep', currentExercise.id);
+        setAvailableSounds(sounds);
+        
+        // If we have sounds and none is selected yet, select the first one
+        if (sounds.length > 0 && selectedSoundIndex === 0) {
+          setSelectedSoundIndex(0);
+        }
+      } catch (error) {
+        console.error('Error loading sounds:', error);
+        setAvailableSounds([]);
+      } finally {
+        setIsLoadingSounds(false);
+      }
     };
     
-    return soundMap[exerciseId] || '/ambient-sounds/soft-rain.mp3';
+    loadSounds();
+  }, [currentExercise]);
+  
+  // Get current sound based on selected index
+  const getCurrentSound = () => {
+    if (!availableSounds.length) return null;
+    return availableSounds[selectedSoundIndex] || availableSounds[0];
   };
   
-  // Background images for visualization
-  const getBackgroundImage = (exerciseId) => {
-    if (!exerciseId) return '/ambient-backgrounds/night-sky.jpg';
-    
-    const imageMap = {
-      'sleep-story': '/ambient-backgrounds/night-sky.jpg',
-      'delta-waves': '/ambient-backgrounds/deep-sleep.jpg',
-      'brown-noise': '/ambient-backgrounds/dark-clouds.jpg',
-      'night-sounds': '/ambient-backgrounds/forest-night.jpg'
-    };
-    
-    return imageMap[exerciseId] || '/ambient-backgrounds/night-sky.jpg';
+  // Get current sound file path
+  const getCurrentSoundFile = () => {
+    const sound = getCurrentSound();
+    if (!sound) return '';
+    return soundService.getFilePath('sleep', sound.file);
   };
   
   // Sleep story content
@@ -118,6 +142,10 @@ const SleepSounds = ({
       if (audioRef.current) {
         audioRef.current.pause();
       }
+      
+      if (secondaryAudioRef.current) {
+        secondaryAudioRef.current.pause();
+      }
     };
   }, []);
   
@@ -125,12 +153,20 @@ const SleepSounds = ({
   useEffect(() => {
     if (!currentExercise) return;
     
-    // Load audio file when exercise changes
-    if (audioRef.current) {
-      const soundFile = getSoundFile(currentExercise.id);
-      console.log('Loading sound file:', soundFile);
-      audioRef.current.src = soundFile;
-      audioRef.current.load();
+    // Load audio file when exercise or selected sound changes
+    if (currentExercise && audioRef.current && secondaryAudioRef.current) {
+      const soundFile = getCurrentSoundFile();
+      if (soundFile) {
+        console.log('Loading sound file:', soundFile);
+        
+        // Load into the currently active audio element
+        const activeAudio = secondaryAudioActive ? secondaryAudioRef.current : audioRef.current;
+        activeAudio.src = soundFile;
+        activeAudio.load();
+        
+        // Ensure looping is enabled
+        activeAudio.loop = true;
+      }
     }
     
     // Initialize timer based on selected duration
@@ -144,21 +180,22 @@ const SleepSounds = ({
         if (dialog) dialog.showModal();
       }, 500);
     }
-  }, [currentExercise, duration, beforeFeeling]);
+  }, [currentExercise, duration, beforeFeeling, secondaryAudioActive]);
   
   // Start the sleep sound
   const startSleepSound = () => {
-    if (!currentExercise) {
-      console.error('Cannot start sound: No exercise selected');
+    if (!currentExercise || !availableSounds.length) {
+      console.error('Cannot start sound: No exercise selected or no sounds available');
       return;
     }
     
     setIsPlaying(true);
     
-    // Play audio
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume;
-      audioRef.current.play().catch(e => console.error("Couldn't play audio:", e));
+    // Play audio using the active audio element
+    const activeAudio = secondaryAudioActive ? secondaryAudioRef.current : audioRef.current;
+    if (activeAudio) {
+      activeAudio.volume = isMuted ? 0 : volume;
+      activeAudio.play().catch(e => console.error("Couldn't play audio:", e));
     }
     
     // If it's a sleep story, start narration
@@ -185,6 +222,10 @@ const SleepSounds = ({
           
           if (audioRef.current) {
             audioRef.current.pause();
+          }
+          
+          if (secondaryAudioRef.current) {
+            secondaryAudioRef.current.pause();
           }
           
           if (speechSynthesisRef.current) {
@@ -230,14 +271,19 @@ const SleepSounds = ({
   
   // Toggle play/pause
   const togglePlayPause = () => {
-    if (!currentExercise) return;
+    if (!currentExercise || !availableSounds.length) return;
     
     if (isPlaying) {
       // Pause
       setIsPlaying(false);
       
+      // Pause both audio elements
       if (audioRef.current) {
         audioRef.current.pause();
+      }
+      
+      if (secondaryAudioRef.current) {
+        secondaryAudioRef.current.pause();
       }
       
       if (speechSynthesisRef.current) {
@@ -259,14 +305,22 @@ const SleepSounds = ({
   
   // Toggle mute
   const toggleMute = () => {
-    setIsMuted(!isMuted);
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
     
+    // Apply to primary audio
     if (audioRef.current) {
-      audioRef.current.volume = !isMuted ? 0 : volume;
+      audioRef.current.volume = newMutedState ? 0 : (secondaryAudioActive ? 0 : volume);
     }
     
+    // Apply to secondary audio
+    if (secondaryAudioRef.current) {
+      secondaryAudioRef.current.volume = newMutedState ? 0 : (secondaryAudioActive ? volume : 0);
+    }
+    
+    // Handle speech synthesis
     if (speechSynthesisRef.current) {
-      if (!isMuted) {
+      if (newMutedState) {
         speechSynthesisRef.current.cancel();
       } else if (isPlaying && currentExercise.id === 'sleep-story') {
         // Restart the story if unmuting
@@ -280,8 +334,15 @@ const SleepSounds = ({
     const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
     
-    if (audioRef.current && !isMuted) {
-      audioRef.current.volume = newVolume;
+    if (!isMuted) {
+      // Apply to active audio element
+      if (audioRef.current) {
+        audioRef.current.volume = secondaryAudioActive ? 0 : newVolume;
+      }
+      
+      if (secondaryAudioRef.current) {
+        secondaryAudioRef.current.volume = secondaryAudioActive ? newVolume : 0;
+      }
     }
   };
   
@@ -290,6 +351,108 @@ const SleepSounds = ({
     setDuration(mins);
     setTimer(mins * 60);
     setShowDurationSelector(false);
+  };
+
+  // Handle sound selection with seamless crossfade
+  const handleSoundSelection = (index) => {
+    // If the new sound is the same as current, do nothing
+    if (index === selectedSoundIndex) {
+      setShowSoundSelector(false);
+      return;
+    }
+    
+    // Get sound file for the newly selected sound
+    const newSoundFile = soundService.getFilePath('sleep', availableSounds[index].file);
+    
+    // If not currently playing, just update source without playing
+    if (!isPlaying) {
+      setSelectedSoundIndex(index);
+      const activeAudio = secondaryAudioActive ? secondaryAudioRef.current : audioRef.current;
+      if (activeAudio) {
+        activeAudio.src = newSoundFile;
+        activeAudio.load();
+      }
+      setShowSoundSelector(false);
+      return;
+    }
+    
+    // If we are playing, prepare for crossfade
+    try {
+      // Determine which audio element is currently active
+      const activeAudio = secondaryAudioActive ? secondaryAudioRef.current : audioRef.current;
+      const inactiveAudio = secondaryAudioActive ? audioRef.current : secondaryAudioRef.current;
+      
+      if (!activeAudio || !inactiveAudio) return;
+      
+      // Set new source on the inactive audio element
+      inactiveAudio.src = newSoundFile;
+      inactiveAudio.load();
+      
+      // Set volume to 0 initially
+      inactiveAudio.volume = 0;
+      
+      // Start playing the new audio
+      inactiveAudio.play().then(() => {
+        // Crossfade between the two audio elements
+        const duration = 1000; // 1 second crossfade
+        const interval = 50; // Update every 50ms
+        const steps = duration / interval;
+        const volumeStep = activeAudio.volume / steps;
+        
+        let currentStep = 0;
+        
+        const fadeInterval = setInterval(() => {
+          currentStep++;
+          
+          // Increase volume of new audio
+          inactiveAudio.volume = Math.min(isMuted ? 0 : volume, (volumeStep * currentStep));
+          
+          // Decrease volume of old audio
+          activeAudio.volume = Math.max(0, activeAudio.volume - volumeStep);
+          
+          // Check if crossfade is complete
+          if (currentStep >= steps) {
+            clearInterval(fadeInterval);
+            
+            // Stop the old audio
+            activeAudio.pause();
+            
+            // Toggle which audio element is now active
+            setSecondaryAudioActive(!secondaryAudioActive);
+            
+            // Update sound index
+            setSelectedSoundIndex(index);
+          }
+        }, interval);
+      }).catch(error => {
+        console.error("Error starting crossfade:", error);
+        
+        // Fallback - direct switch if crossfade fails
+        activeAudio.src = newSoundFile;
+        activeAudio.load();
+        if (isPlaying) {
+          activeAudio.play().catch(e => console.error("Couldn't play audio:", e));
+        }
+        setSelectedSoundIndex(index);
+      });
+      
+      // Close the selector
+      setShowSoundSelector(false);
+    } catch (error) {
+      console.error("Error during sound selection:", error);
+      
+      // Fallback to direct switch
+      setSelectedSoundIndex(index);
+      const activeAudio = secondaryAudioActive ? secondaryAudioRef.current : audioRef.current;
+      if (activeAudio) {
+        activeAudio.src = newSoundFile;
+        activeAudio.load();
+        if (isPlaying) {
+          activeAudio.play().catch(e => console.error("Couldn't play audio:", e));
+        }
+      }
+      setShowSoundSelector(false);
+    }
   };
   
   // Format time as mm:ss
@@ -307,11 +470,16 @@ const SleepSounds = ({
     const dialog = document.getElementById('after-feeling-dialog');
     if (dialog) dialog.close();
     
+    // Get the current sound details
+    const currentSound = getCurrentSound();
+    
     // Create session data
     const sessionData = {
       exerciseId: currentExercise.id,
       category: category.id,
       name: currentExercise.name,
+      soundName: currentSound?.name || "Default",
+      soundId: currentSound?.id || currentExercise.id,
       duration: Math.round(elapsedTime / 60), // Convert seconds to minutes
       timestamp: new Date().toISOString(),
       type: 'meditation',
@@ -338,6 +506,9 @@ const SleepSounds = ({
   
   // Calculate progress percentage
   const progressPercentage = duration > 0 ? ((duration * 60 - timer) / (duration * 60)) * 100 : 0;
+  
+  // Get current sound
+  const currentSound = getCurrentSound();
   
   // Get icon based on exercise type
   const getExerciseIcon = () => {
@@ -373,10 +544,16 @@ const SleepSounds = ({
         style={{ backgroundImage: `url(${getBackgroundImage(currentExercise.id)})` }}
       ></div>
       
-      {/* Audio element */}
+      {/* Primary audio element */}
       <audio 
         ref={audioRef} 
-        src={getSoundFile(currentExercise.id)} 
+        src={getCurrentSoundFile()} 
+        loop 
+      />
+      
+      {/* Secondary audio element for crossfading */}
+      <audio 
+        ref={secondaryAudioRef} 
         loop 
       />
       
@@ -408,6 +585,49 @@ const SleepSounds = ({
       
       {/* Main content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+        {/* Sound selector */}
+        {availableSounds.length > 0 && (
+          <div className="mb-8 text-center">
+            <button
+              onClick={() => setShowSoundSelector(!showSoundSelector)}
+              className="bg-slate-800/70 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700/70 transition-colors"
+            >
+              <Music size={18} />
+              <span>{currentSound?.name || "Select Sound"}</span>
+              {showSoundSelector ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            
+            {showSoundSelector && (
+              <div className="mt-2 bg-slate-800 rounded-lg p-2 shadow-lg w-64 max-w-full absolute left-1/2 transform -translate-x-1/2 z-20">
+                <h3 className="text-white text-sm px-2 py-1">Select Sound</h3>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {availableSounds.map((sound, index) => (
+                    <button
+                      key={sound.id}
+                      onClick={() => handleSoundSelection(index)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm flex justify-between items-center ${
+                        index === selectedSoundIndex 
+                          ? 'bg-indigo-600 text-white' 
+                          : 'text-white hover:bg-slate-700 transition-colors'
+                      }`}
+                    >
+                      <span>{sound.name}</span>
+                      {index === selectedSoundIndex && <Check size={16} />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Loading state for sounds */}
+        {isLoadingSounds && (
+          <div className="mb-8 text-center">
+            <div className="text-slate-300 text-sm">Loading available sounds...</div>
+          </div>
+        )}
+        
         {/* Timer display */}
         <div className="mb-8 text-center">
           <div className="text-4xl xs:text-5xl sm:text-6xl font-light text-white mb-2">
@@ -452,7 +672,11 @@ const SleepSounds = ({
           <div className="flex justify-center">
             <button
               onClick={togglePlayPause}
-              className="p-6 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 shadow-lg"
+              disabled={availableSounds.length === 0}
+              className={`p-6 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white 
+                ${availableSounds.length === 0 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : 'hover:from-indigo-600 hover:to-purple-600 shadow-lg'}`}
             >
               {isPlaying ? <Pause size={32} /> : <Play size={32} />}
             </button>
@@ -470,7 +694,7 @@ const SleepSounds = ({
               </button>
               
               {showVolumeControl && (
-                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg max-w-[calc(100vw-2rem)]">
+                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg max-w-[calc(100vw-2rem)] z-20">
                   <input
                     type="range"
                     min="0"
@@ -501,7 +725,7 @@ const SleepSounds = ({
               </button>
               
               {showDurationSelector && (
-                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg max-w-[calc(100vw-2rem)]">
+                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg max-w-[calc(100vw-2rem)] z-20">
                   <div className="text-center mb-2 text-white text-sm">Duration</div>
                   <div className="space-y-2">
                     {[30, 45, 60, 90, 120, 180].map(mins => (
@@ -555,7 +779,7 @@ const SleepSounds = ({
       {/* Before feeling dialog */}
       <dialog 
         id="before-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl z-50"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How are you feeling now?
@@ -586,7 +810,7 @@ const SleepSounds = ({
       {/* After feeling dialog */}
       <dialog 
         id="after-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl z-50"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How do you feel now?

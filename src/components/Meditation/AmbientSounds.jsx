@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Play, Pause, Volume2, VolumeX, Star, Timer, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Play, Pause, Volume2, VolumeX, Star, Timer, Clock, ChevronDown, ChevronUp, Music, List, Check } from 'lucide-react';
+import soundService from '../../utils/soundService';
 
 const AmbientSounds = ({ 
   category, 
@@ -19,42 +20,15 @@ const AmbientSounds = ({
   const [showDurationSelector, setShowDurationSelector] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [beforeFeeling, setBeforeFeeling] = useState(null);
+  const [selectedSoundIndex, setSelectedSoundIndex] = useState(0);
+  const [showSoundSelector, setShowSoundSelector] = useState(false);
+  const [availableSounds, setAvailableSounds] = useState([]);
+  const [isLoadingSounds, setIsLoadingSounds] = useState(false);
+  const [secondaryAudioActive, setSecondaryAudioActive] = useState(false);
   
   const audioRef = useRef(null);
+  const secondaryAudioRef = useRef(null);
   const intervalRef = useRef(null);
-  
-  // Set current exercise when component mounts or selectedExercise changes
-  useEffect(() => {
-    // If selectedExercise is provided, use it
-    if (selectedExercise) {
-      console.log('Using selected exercise:', selectedExercise.id);
-      setCurrentExercise(selectedExercise);
-    } else if (category && category.exercises && category.exercises.length > 0) {
-      // Otherwise default to first exercise in category
-      console.log('Using first exercise in category:', category.exercises[0].id);
-      setCurrentExercise(category.exercises[0]);
-    }
-  }, [selectedExercise, category]);
-  
-  // Get sound file path based on exercise ID
-  const getSoundFile = (exerciseId) => {
-    if (!exerciseId) {
-      console.error('No exercise ID provided to getSoundFile');
-      return '/ambient-sounds/rain.mp3';
-    }
-    
-    console.log('Getting sound file for:', exerciseId);
-    
-    // Map exercise IDs to sound files
-    const soundMap = {
-      'rain': '/ambient-sounds/rain.mp3',
-      'waves': '/ambient-sounds/ocean-waves.mp3',
-      'white-noise': '/ambient-sounds/white-noise.mp3',
-      'cafe': '/ambient-sounds/cafe-ambience.mp3'
-    };
-    
-    return soundMap[exerciseId] || '/ambient-sounds/rain.mp3';
-  };
   
   // Background images for visualization
   const getBackgroundImage = (exerciseId) => {
@@ -70,14 +44,73 @@ const AmbientSounds = ({
     return imageMap[exerciseId] || '/ambient-backgrounds/rain.jpg';
   };
   
+  // Set current exercise when component mounts or selectedExercise changes
+  useEffect(() => {
+    // If selectedExercise is provided, use it
+    if (selectedExercise) {
+      console.log('Using selected exercise:', selectedExercise.id);
+      setCurrentExercise(selectedExercise);
+    } else if (category && category.exercises && category.exercises.length > 0) {
+      // Otherwise default to first exercise in category
+      console.log('Using first exercise in category:', category.exercises[0].id);
+      setCurrentExercise(category.exercises[0]);
+    }
+  }, [selectedExercise, category]);
+  
+  // Load available sounds for current exercise
+  useEffect(() => {
+    if (!currentExercise) return;
+    
+    const loadSounds = async () => {
+      setIsLoadingSounds(true);
+      try {
+        const sounds = await soundService.getSounds('ambient', currentExercise.id);
+        setAvailableSounds(sounds);
+        
+        // If we have sounds and none is selected yet, select the first one
+        if (sounds.length > 0 && selectedSoundIndex === 0) {
+          setSelectedSoundIndex(0);
+        }
+      } catch (error) {
+        console.error('Error loading sounds:', error);
+        setAvailableSounds([]);
+      } finally {
+        setIsLoadingSounds(false);
+      }
+    };
+    
+    loadSounds();
+  }, [currentExercise]);
+  
+  // Get current sound based on selected index
+  const getCurrentSound = () => {
+    if (!availableSounds.length) return null;
+    return availableSounds[selectedSoundIndex] || availableSounds[0];
+  };
+  
+  // Get current sound file path
+  const getCurrentSoundFile = () => {
+    const sound = getCurrentSound();
+    if (!sound) return '';
+    return soundService.getFilePath('ambient', sound.file);
+  };
+  
   // Set up on mount
   useEffect(() => {
-    // Load audio file when exercise changes
-    if (currentExercise && audioRef.current) {
-      const soundFile = getSoundFile(currentExercise.id);
-      console.log('Loading sound file:', soundFile);
-      audioRef.current.src = soundFile;
-      audioRef.current.load();
+    // Load audio file when exercise or selected sound changes
+    if (currentExercise && audioRef.current && secondaryAudioRef.current) {
+      const soundFile = getCurrentSoundFile();
+      if (soundFile) {
+        console.log('Loading sound file:', soundFile);
+        
+        // Load into the currently active audio element
+        const activeAudio = secondaryAudioActive ? secondaryAudioRef.current : audioRef.current;
+        activeAudio.src = soundFile;
+        activeAudio.load();
+        
+        // Ensure looping is enabled
+        activeAudio.loop = true;
+      }
     }
     
     // Initialize timer based on selected duration
@@ -101,22 +134,27 @@ const AmbientSounds = ({
       if (audioRef.current) {
         audioRef.current.pause();
       }
+      
+      if (secondaryAudioRef.current) {
+        secondaryAudioRef.current.pause();
+      }
     };
-  }, [currentExercise, duration, beforeFeeling]);
+  }, [currentExercise, duration, beforeFeeling, secondaryAudioActive]);
   
   // Start the ambient sound
   const startAmbientSound = () => {
-    if (!currentExercise) {
-      console.error('Cannot start sound: No exercise selected');
+    if (!currentExercise || !availableSounds.length) {
+      console.error('Cannot start sound: No exercise selected or no sounds available');
       return;
     }
     
     setIsPlaying(true);
     
-    // Play audio
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume;
-      audioRef.current.play().catch(e => console.error("Couldn't play audio:", e));
+    // Play audio using the active audio element
+    const activeAudio = secondaryAudioActive ? secondaryAudioRef.current : audioRef.current;
+    if (activeAudio) {
+      activeAudio.volume = isMuted ? 0 : volume;
+      activeAudio.play().catch(e => console.error("Couldn't play audio:", e));
     }
     
     // Reset and start the timer
@@ -139,6 +177,10 @@ const AmbientSounds = ({
             audioRef.current.pause();
           }
           
+          if (secondaryAudioRef.current) {
+            secondaryAudioRef.current.pause();
+          }
+          
           // Show the completion dialog after a moment
           setTimeout(() => {
             const dialog = document.getElementById('after-feeling-dialog');
@@ -156,14 +198,19 @@ const AmbientSounds = ({
   
   // Toggle play/pause
   const togglePlayPause = () => {
-    if (!currentExercise) return;
+    if (!currentExercise || !availableSounds.length) return;
     
     if (isPlaying) {
       // Pause
       setIsPlaying(false);
       
+      // Pause both audio elements
       if (audioRef.current) {
         audioRef.current.pause();
+      }
+      
+      if (secondaryAudioRef.current) {
+        secondaryAudioRef.current.pause();
       }
       
       if (intervalRef.current) {
@@ -177,10 +224,17 @@ const AmbientSounds = ({
   
   // Toggle mute
   const toggleMute = () => {
-    setIsMuted(!isMuted);
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
     
+    // Apply to primary audio
     if (audioRef.current) {
-      audioRef.current.volume = !isMuted ? 0 : volume;
+      audioRef.current.volume = newMutedState ? 0 : (secondaryAudioActive ? 0 : volume);
+    }
+    
+    // Apply to secondary audio
+    if (secondaryAudioRef.current) {
+      secondaryAudioRef.current.volume = newMutedState ? 0 : (secondaryAudioActive ? volume : 0);
     }
   };
   
@@ -189,8 +243,15 @@ const AmbientSounds = ({
     const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
     
-    if (audioRef.current && !isMuted) {
-      audioRef.current.volume = newVolume;
+    if (!isMuted) {
+      // Apply to active audio element
+      if (audioRef.current) {
+        audioRef.current.volume = secondaryAudioActive ? 0 : newVolume;
+      }
+      
+      if (secondaryAudioRef.current) {
+        secondaryAudioRef.current.volume = secondaryAudioActive ? newVolume : 0;
+      }
     }
   };
   
@@ -199,6 +260,108 @@ const AmbientSounds = ({
     setDuration(mins);
     setTimer(mins * 60);
     setShowDurationSelector(false);
+  };
+  
+  // Handle sound selection with seamless crossfade
+  const handleSoundSelection = (index) => {
+    // If the new sound is the same as current, do nothing
+    if (index === selectedSoundIndex) {
+      setShowSoundSelector(false);
+      return;
+    }
+    
+    // Get sound file for the newly selected sound
+    const newSoundFile = soundService.getFilePath('ambient', availableSounds[index].file);
+    
+    // If not currently playing, just update source without playing
+    if (!isPlaying) {
+      setSelectedSoundIndex(index);
+      const activeAudio = secondaryAudioActive ? secondaryAudioRef.current : audioRef.current;
+      if (activeAudio) {
+        activeAudio.src = newSoundFile;
+        activeAudio.load();
+      }
+      setShowSoundSelector(false);
+      return;
+    }
+    
+    // If we are playing, prepare for crossfade
+    try {
+      // Determine which audio element is currently active
+      const activeAudio = secondaryAudioActive ? secondaryAudioRef.current : audioRef.current;
+      const inactiveAudio = secondaryAudioActive ? audioRef.current : secondaryAudioRef.current;
+      
+      if (!activeAudio || !inactiveAudio) return;
+      
+      // Set new source on the inactive audio element
+      inactiveAudio.src = newSoundFile;
+      inactiveAudio.load();
+      
+      // Set volume to 0 initially
+      inactiveAudio.volume = 0;
+      
+      // Start playing the new audio
+      inactiveAudio.play().then(() => {
+        // Crossfade between the two audio elements
+        const duration = 1000; // 1 second crossfade
+        const interval = 50; // Update every 50ms
+        const steps = duration / interval;
+        const volumeStep = activeAudio.volume / steps;
+        
+        let currentStep = 0;
+        
+        const fadeInterval = setInterval(() => {
+          currentStep++;
+          
+          // Increase volume of new audio
+          inactiveAudio.volume = Math.min(isMuted ? 0 : volume, (volumeStep * currentStep));
+          
+          // Decrease volume of old audio
+          activeAudio.volume = Math.max(0, activeAudio.volume - volumeStep);
+          
+          // Check if crossfade is complete
+          if (currentStep >= steps) {
+            clearInterval(fadeInterval);
+            
+            // Stop the old audio
+            activeAudio.pause();
+            
+            // Toggle which audio element is now active
+            setSecondaryAudioActive(!secondaryAudioActive);
+            
+            // Update sound index
+            setSelectedSoundIndex(index);
+          }
+        }, interval);
+      }).catch(error => {
+        console.error("Error starting crossfade:", error);
+        
+        // Fallback - direct switch if crossfade fails
+        activeAudio.src = newSoundFile;
+        activeAudio.load();
+        if (isPlaying) {
+          activeAudio.play().catch(e => console.error("Couldn't play audio:", e));
+        }
+        setSelectedSoundIndex(index);
+      });
+      
+      // Close the selector
+      setShowSoundSelector(false);
+    } catch (error) {
+      console.error("Error during sound selection:", error);
+      
+      // Fallback to direct switch
+      setSelectedSoundIndex(index);
+      const activeAudio = secondaryAudioActive ? secondaryAudioRef.current : audioRef.current;
+      if (activeAudio) {
+        activeAudio.src = newSoundFile;
+        activeAudio.load();
+        if (isPlaying) {
+          activeAudio.play().catch(e => console.error("Couldn't play audio:", e));
+        }
+      }
+      setShowSoundSelector(false);
+    }
   };
   
   // Format time as mm:ss
@@ -216,11 +379,16 @@ const AmbientSounds = ({
     const dialog = document.getElementById('after-feeling-dialog');
     if (dialog) dialog.close();
     
+    // Get the current sound details
+    const currentSound = getCurrentSound();
+    
     // Create session data
     const sessionData = {
       exerciseId: currentExercise.id,
       category: category.id,
       name: currentExercise.name,
+      soundName: currentSound?.name || "Default",
+      soundId: currentSound?.id || currentExercise.id,
       duration: Math.round(elapsedTime / 60), // Convert seconds to minutes
       timestamp: new Date().toISOString(),
       type: 'meditation',
@@ -248,6 +416,9 @@ const AmbientSounds = ({
   // Calculate progress percentage
   const progressPercentage = duration > 0 ? ((duration * 60 - timer) / (duration * 60)) * 100 : 0;
   
+  // Get current sound
+  const currentSound = getCurrentSound();
+  
   // Loading state
   if (!currentExercise) {
     return (
@@ -265,10 +436,16 @@ const AmbientSounds = ({
         style={{ backgroundImage: `url(${getBackgroundImage(currentExercise.id)})` }}
       ></div>
       
-      {/* Audio element */}
+      {/* Primary audio element */}
       <audio 
         ref={audioRef} 
-        src={getSoundFile(currentExercise.id)} 
+        src={getCurrentSoundFile()} 
+        loop 
+      />
+      
+      {/* Secondary audio element for crossfading */}
+      <audio 
+        ref={secondaryAudioRef} 
         loop 
       />
       
@@ -300,6 +477,49 @@ const AmbientSounds = ({
       
       {/* Main content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+        {/* Sound selector */}
+        {availableSounds.length > 0 && (
+          <div className="mb-8 text-center">
+            <button
+              onClick={() => setShowSoundSelector(!showSoundSelector)}
+              className="bg-slate-800/70 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700/70 transition-colors"
+            >
+              <Music size={18} />
+              <span>{currentSound?.name || "Select Sound"}</span>
+              {showSoundSelector ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            
+            {showSoundSelector && (
+              <div className="mt-2 bg-slate-800 rounded-lg p-2 shadow-lg w-64 max-w-full absolute left-1/2 transform -translate-x-1/2 z-20">
+                <h3 className="text-white text-sm px-2 py-1">Select Sound</h3>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {availableSounds.map((sound, index) => (
+                    <button
+                      key={sound.id}
+                      onClick={() => handleSoundSelection(index)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm flex justify-between items-center ${
+                        index === selectedSoundIndex 
+                          ? 'bg-amber-600 text-white' 
+                          : 'text-white hover:bg-slate-700 transition-colors'
+                      }`}
+                    >
+                      <span>{sound.name}</span>
+                      {index === selectedSoundIndex && <Check size={16} />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Loading state for sounds */}
+        {isLoadingSounds && (
+          <div className="mb-8 text-center">
+            <div className="text-slate-300 text-sm">Loading available sounds...</div>
+          </div>
+        )}
+        
         {/* Timer display */}
         <div className="mb-8 text-center">
           <div className="text-4xl xs:text-5xl sm:text-6xl font-light text-white mb-2">
@@ -326,7 +546,11 @@ const AmbientSounds = ({
           <div className="flex justify-center">
             <button
               onClick={togglePlayPause}
-              className="p-6 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-lg"
+              disabled={availableSounds.length === 0}
+              className={`p-6 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white 
+                ${availableSounds.length === 0 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : 'hover:from-amber-600 hover:to-orange-600 shadow-lg'}`}
             >
               {isPlaying ? <Pause size={32} /> : <Play size={32} />}
             </button>
@@ -344,7 +568,7 @@ const AmbientSounds = ({
               </button>
               
               {showVolumeControl && (
-                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg max-w-[calc(100vw-2rem)]">
+                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg max-w-[calc(100vw-2rem)] z-20">
                   <input
                     type="range"
                     min="0"
@@ -375,7 +599,7 @@ const AmbientSounds = ({
               </button>
               
               {showDurationSelector && (
-                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg max-w-[calc(100vw-2rem)]">
+                <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-800 p-3 rounded-lg shadow-lg max-w-[calc(100vw-2rem)] z-20">
                   <div className="text-center mb-2 text-white text-sm">Duration</div>
                   <div className="space-y-2">
                     {[5, 10, 15, 30, 45, 60].map(mins => (
@@ -402,7 +626,7 @@ const AmbientSounds = ({
       {/* Before feeling dialog */}
       <dialog 
         id="before-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl z-50"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How are you feeling now?
@@ -433,7 +657,7 @@ const AmbientSounds = ({
       {/* After feeling dialog */}
       <dialog 
         id="after-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
+        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl z-50"
       >
         <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
           How do you feel now?

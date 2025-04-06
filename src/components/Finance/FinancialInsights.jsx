@@ -1,8 +1,9 @@
+// This update fixes the spending trend bars, removes redundant navigation, and improves custom date range
 import React, { useState, useEffect } from 'react';
 import { 
   BarChart2, Award, AlertTriangle, AlertCircle, PiggyBank, Calendar, 
   TrendingUp, TrendingDown, DollarSign, PieChart, Info, Coffee, Utensils,
-  ArrowRight, ArrowLeft, ChevronLeft, ChevronRight, Settings, Filter, ShoppingBag
+  ArrowRight, Settings, Filter, ShoppingBag
 } from 'lucide-react';
 import CategoryGroupAnalysis from './CategoryGroupAnalysis';
 import { 
@@ -151,16 +152,13 @@ const FinancialInsights = ({
     };
     customRange.end.setHours(23, 59, 59, 999);
     
-    // Filter transactions based on date range
+    // Use the active date range (custom or standard)
+    const activeRange = customDateRange ? customRange : standardDateRange;
+    
+    // Filter transactions based on active date range
     filteredTransactions = filteredTransactions.filter(tx => {
       const txDate = new Date(tx.timestamp);
-      
-      // Use custom range only for transactions chart if enabled
-      if (customDateRange) {
-        return txDate >= customRange.start && txDate <= customRange.end;
-      } else {
-        return txDate >= standardDateRange.start && txDate <= standardDateRange.end;
-      }
+      return txDate >= activeRange.start && txDate <= activeRange.end;
     });
     
     setTransactions(filteredTransactions);
@@ -171,17 +169,8 @@ const FinancialInsights = ({
     // Calculate financial stats based on filtered transactions
     calculateStats(filteredTransactions);
     
-    // Generate spending trend data - this will use the standard range or custom range based on settings
-    generateSpendingTrend(
-      filteredTransactions, 
-      customDateRange && chartSettings.applyCustomToSpendingTrend ? customRange : standardDateRange
-    );
-    
-    // Generate income vs expenses data - this will use the standard range or custom range based on settings
-    generateIncomeVsExpenses(
-      filteredTransactions, 
-      customDateRange && chartSettings.applyCustomToIncomeExpenses ? customRange : standardDateRange
-    );
+    // Generate income vs expenses data
+    generateIncomeVsExpenses(filteredTransactions, activeRange);
     
     // Get financial insights
     const financialInsights = getFinancialInsights();
@@ -197,7 +186,7 @@ const FinancialInsights = ({
     
     // Update parent component's date range if available
     if (setSelectedDateRange) {
-      setSelectedDateRange(customDateRange ? customRange : standardDateRange);
+      setSelectedDateRange(activeRange);
     }
   };
 
@@ -298,407 +287,113 @@ const FinancialInsights = ({
     
     return null;
   };
-
-  // IMPROVED: Generate spending trend data based on timeframe - always showing 7 periods
-  const generateSpendingTrend = (transactions, dateRange) => {
-    // Define period type based on selected time range
-    let periodType = 'month'; // Default
+  
+  // Generate income vs expenses data
+  const generateIncomeVsExpenses = (transactions, dateRange) => {
+    // Define number of periods
+    const periods = 7;
     
-    if (timeRange === 'week') {
+    // Determine period type based on duration
+    const start = new Date(dateRange.start);
+    const end = new Date(dateRange.end);
+    const durationInDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    
+    let periodType;
+    let periodLength;
+    
+    if (durationInDays <= 7) {
+      // For a week or less, show daily data
       periodType = 'day';
-    } else if (timeRange === 'month') {
-      periodType = 'day'; // Changed to show days in the month
-    } else if (timeRange === 'quarter') {
+      periodLength = 1;
+    } else if (durationInDays <= 31) {
+      // For a month or less, show every ~4-5 days
+      periodType = 'day';
+      periodLength = Math.max(1, Math.floor(durationInDays / periods));
+    } else if (durationInDays <= 90) {
+      // For a quarter or less, show weekly data
       periodType = 'week';
-    } else if (timeRange === 'year') {
-      periodType = 'month';
-    }
-    
-    // Always show appropriate number of periods based on the range
-    const periods = (periodType === 'day' && timeRange === 'month') ? Math.min(dateRange.end.getDate(), 31) : 7;
-    
-    // Create array of period objects
-    const periodArray = [];
-    
-    if (customDateRange && chartSettings.applyCustomToSpendingTrend) {
-      const start = dateRange.start;
-      const end = dateRange.end;
-      
-      // Calculate appropriate periods based on the date range duration
-      const durationInDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-      
-      if (durationInDays <= 31) {
-        // For short ranges, use daily periods
-        const dayStep = Math.max(1, Math.floor(durationInDays / periods));
-        
-        for (let i = 0; i < periods; i++) {
-          const day = new Date(end);
-          day.setDate(day.getDate() - ((periods - 1 - i) * dayStep));
-          
-          // Skip days beyond the start date
-          if (day < start) continue;
-          
-          periodArray.push({
-            label: day.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
-            start: new Date(new Date(day).setHours(0, 0, 0, 0)),
-            end: new Date(new Date(day).setHours(23, 59, 59, 999))
-          });
-        }
-      } else if (durationInDays <= 90) {
-        // For medium ranges, use weekly periods
-        const weekStep = Math.max(1, Math.floor(durationInDays / 7 / periods));
-        
-        for (let i = 0; i < periods; i++) {
-          const weekStart = new Date(end);
-          weekStart.setDate(weekStart.getDate() - ((periods - 1 - i) * 7 * weekStep));
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
-          
-          // Skip weeks beyond the start date
-          if (weekStart < start) continue;
-          
-          periodArray.push({
-            label: `${weekStart.toLocaleDateString('default', { month: 'short', day: 'numeric' })}`,
-            start: new Date(weekStart.setHours(0, 0, 0, 0)),
-            end: new Date(Math.min(weekEnd.setHours(23, 59, 59, 999), end.getTime()))
-          });
-        }
-      } else {
-        // For long ranges, use monthly periods
-        const monthStep = Math.max(1, Math.floor(durationInDays / 30 / periods));
-        
-        for (let i = 0; i < periods; i++) {
-          const monthStart = new Date(end);
-          monthStart.setMonth(monthStart.getMonth() - ((periods - 1 - i) * monthStep));
-          monthStart.setDate(1); // First day of month
-          
-          const monthEnd = new Date(monthStart);
-          monthEnd.setMonth(monthStart.getMonth() + 1);
-          monthEnd.setDate(0); // Last day of month
-          
-          // Skip months beyond the start date
-          if (monthStart < start) continue;
-          
-          periodArray.push({
-            label: monthStart.toLocaleDateString('default', { month: 'short', year: 'numeric' }),
-            start: new Date(monthStart.setHours(0, 0, 0, 0)),
-            end: new Date(Math.min(monthEnd.setHours(23, 59, 59, 999), end.getTime()))
-          });
-        }
-      }
+      periodLength = 7;
     } else {
-      // Use standard periods based on current time range
-      const end = dateRange.end;
-      
-      if (periodType === 'day' && timeRange === 'week') {
-        // DAILY VIEW for Week: Start of week to today
-        const startOfWeek = new Date(end);
-        const day = startOfWeek.getDay(); // 0 for Sunday, 1 for Monday, etc.
-        startOfWeek.setDate(startOfWeek.getDate() - day); // Go to beginning of week (Sunday)
-        
-        for (let i = 0; i <= 6; i++) {
-          const day = new Date(startOfWeek);
-          day.setDate(startOfWeek.getDate() + i);
-          
-          // Skip future days
-          if (day > end) break;
-          
-          periodArray.push({
-            label: day.toLocaleDateString('default', { weekday: 'short' }),
-            start: new Date(day.setHours(0, 0, 0, 0)),
-            end: new Date(day.setHours(23, 59, 59, 999))
-          });
-        }
-      } else if (periodType === 'day' && timeRange === 'month') {
-        // DAILY VIEW for Month: Selected days throughout the month
-        const startOfMonth = new Date(end.getFullYear(), end.getMonth(), 1);
-        const daysInMonth = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
-        const dayStep = Math.max(1, Math.floor(daysInMonth / periods));
-        
-        for (let i = 0; i < periods; i++) {
-          // Distribute days evenly through the month
-          const dayOfMonth = Math.min(1 + (i * dayStep), daysInMonth);
-          const day = new Date(end.getFullYear(), end.getMonth(), dayOfMonth);
-          
-          // Skip future days
-          if (day > end) break;
-          
-          periodArray.push({
-            label: day.getDate().toString(), // Just the day number
-            start: new Date(day.setHours(0, 0, 0, 0)),
-            end: new Date(day.setHours(23, 59, 59, 999))
-          });
-        }
-      } else if (periodType === 'week') {
-        // WEEKLY VIEW: Weeks throughout the quarter
-        const startOfQuarter = new Date(end.getFullYear(), Math.floor(end.getMonth() / 3) * 3, 1);
-        
-        for (let i = 0; i < periods; i++) {
-          const weekStart = new Date(startOfQuarter);
-          weekStart.setDate(weekStart.getDate() + (i * 7));
-          
-          // Skip weeks beyond today
-          if (weekStart > end) break;
-          
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
-          
-          periodArray.push({
-            label: `Week ${i+1}`,
-            start: new Date(weekStart.setHours(0, 0, 0, 0)),
-            end: new Date(Math.min(weekEnd.setHours(23, 59, 59, 999), end.getTime()))
-          });
-        }
-      } else if (periodType === 'month') {
-        // MONTHLY VIEW: Months throughout the year
-        const startOfYear = new Date(end.getFullYear(), 0, 1);
-        
-        for (let i = 0; i < 12; i++) {
-          const monthStart = new Date(startOfYear);
-          monthStart.setMonth(i);
-          
-          // Skip months beyond today
-          if (monthStart > end) break;
-          
-          const monthEnd = new Date(monthStart);
-          monthEnd.setMonth(monthStart.getMonth() + 1);
-          monthEnd.setDate(0); // Last day of month
-          
-          periodArray.push({
-            label: monthStart.toLocaleDateString('default', { month: 'short' }),
-            start: new Date(monthStart.setHours(0, 0, 0, 0)),
-            end: new Date(Math.min(monthEnd.setHours(23, 59, 59, 999), end.getTime()))
-          });
-        }
-      }
+      // For a year or more, show monthly data
+      periodType = 'month';
+      periodLength = 30;
     }
     
-    // Sort periods chronologically
-    periodArray.sort((a, b) => a.start - b.start);
+    // Create evenly spaced periods
+    const periodArray = [];
+    for (let i = 0; i < periods; i++) {
+      const periodStart = new Date(start);
+      
+      if (periodType === 'month') {
+        periodStart.setMonth(start.getMonth() + i);
+      } else {
+        // For days and weeks, calculate days to add
+        const daysToAdd = i * periodLength;
+        periodStart.setDate(start.getDate() + daysToAdd);
+      }
+      
+      // Skip periods beyond the end date
+      if (periodStart > end) continue;
+      
+      // Calculate period end
+      const periodEnd = new Date(periodStart);
+      if (periodType === 'month') {
+        periodEnd.setMonth(periodStart.getMonth() + 1);
+        periodEnd.setDate(0); // Last day of month
+      } else {
+        periodEnd.setDate(periodStart.getDate() + periodLength - 1);
+      }
+      
+      // Ensure periodEnd doesn't exceed the overall end date
+      if (periodEnd > end) {
+        periodEnd.setTime(end.getTime());
+      }
+      
+      // Format period label based on type
+      let label;
+      if (periodType === 'day') {
+        // For daily, show the date (Jan 15)
+        label = periodStart.toLocaleDateString('default', { month: 'short', day: 'numeric' });
+      } else if (periodType === 'week') {
+        // For weekly, show the week start date
+        label = `Week ${i+1}`;
+      } else {
+        // For monthly, show the month name
+        label = periodStart.toLocaleDateString('default', { month: 'short' });
+      }
+      
+      periodArray.push({
+        label,
+        start: new Date(periodStart.setHours(0, 0, 0, 0)),
+        end: new Date(periodEnd.setHours(23, 59, 59, 999))
+      });
+    }
     
-    // Calculate spending for each period
-    const trend = periodArray.map(period => {
+    // Calculate income and expenses for each period
+    const data = periodArray.map(period => {
       const periodTransactions = transactions.filter(t => {
         const txDate = new Date(t.timestamp);
-        return txDate >= period.start && txDate <= period.end && t.amount < 0;
+        return txDate >= period.start && txDate <= period.end;
       });
       
-      const spending = periodTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      const income = periodTransactions
+        .filter(t => t.amount > 0)
+        .reduce((sum, t) => sum + t.amount, 0);
       
-      // Add some analysis to each period
-      const topCategory = findTopCategory(periodTransactions);
+      const expenses = periodTransactions
+        .filter(t => t.amount < 0)
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
       
       return {
-        ...period,
-        spending,
-        topCategory
+        label: period.label,
+        income,
+        expenses,
+        net: income - expenses
       };
     });
     
-    setSpendingTrend(trend);
+    setIncomeVsExpenses(data);
   }
-  
-  // Generate income vs expenses data
-const generateIncomeVsExpenses = (transactions, dateRange) => {
-  // Define period type based on selected time range
-  let periodType = 'month'; // Default
-  const periods = 7; // Always show appropriate number of periods
-  
-  if (timeRange === 'week') {
-    periodType = 'day';
-  } else if (timeRange === 'month') {
-    periodType = 'week'; // Show weekly data for the month
-  } else if (timeRange === 'quarter') {
-    periodType = 'month';
-  } else if (timeRange === 'year') {
-    periodType = 'quarter';
-  }
-  
-  // Create array of period objects
-  const periodArray = [];
-  
-  if (customDateRange && chartSettings.applyCustomToIncomeExpenses) {
-    // Logic for custom date range
-    const start = dateRange.start;
-    const end = dateRange.end;
-    
-    // Calculate appropriate periods based on the date range duration
-    const durationInDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-    
-    if (durationInDays <= 14) {
-      // For short ranges, use daily periods
-      const dayStep = Math.max(1, Math.floor(durationInDays / periods));
-      
-      for (let i = 0; i < periods; i++) {
-        const day = new Date(end);
-        day.setDate(day.getDate() - ((periods - 1 - i) * dayStep));
-        
-        // Skip days beyond the start date
-        if (day < start) continue;
-        
-        periodArray.push({
-          label: day.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
-          start: new Date(new Date(day).setHours(0, 0, 0, 0)),
-          end: new Date(new Date(day).setHours(23, 59, 59, 999))
-        });
-      }
-    } else if (durationInDays <= 90) {
-      // For medium ranges, use weekly periods
-      const weekStep = Math.max(1, Math.floor(durationInDays / 7 / periods));
-      
-      for (let i = 0; i < periods; i++) {
-        const weekStart = new Date(end);
-        weekStart.setDate(weekStart.getDate() - ((periods - 1 - i) * 7 * weekStep));
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 6);
-        
-        // Skip weeks beyond the start date
-        if (weekStart < start) continue;
-        
-        periodArray.push({
-          label: `${weekStart.toLocaleDateString('default', { month: 'short', day: 'numeric' })}`,
-          start: new Date(weekStart.setHours(0, 0, 0, 0)),
-          end: new Date(Math.min(weekEnd.setHours(23, 59, 59, 999), end.getTime()))
-        });
-      }
-    } else {
-      // For long ranges, use monthly periods
-      const monthStep = Math.max(1, Math.floor(durationInDays / 30 / periods));
-      
-      for (let i = 0; i < periods; i++) {
-        const monthStart = new Date(end);
-        monthStart.setMonth(monthStart.getMonth() - ((periods - 1 - i) * monthStep));
-        monthStart.setDate(1); // First day of month
-        
-        const monthEnd = new Date(monthStart);
-        monthEnd.setMonth(monthStart.getMonth() + 1);
-        monthEnd.setDate(0); // Last day of month
-        
-        // Skip months beyond the start date
-        if (monthStart < start) continue;
-        
-        periodArray.push({
-          label: monthStart.toLocaleDateString('default', { month: 'short', year: 'numeric' }),
-          start: new Date(monthStart.setHours(0, 0, 0, 0)),
-          end: new Date(Math.min(monthEnd.setHours(23, 59, 59, 999), end.getTime()))
-        });
-      }
-    }
-  } else {
-    // Use standard periods based on selected time range
-    const end = dateRange.end;
-    
-    if (periodType === 'day') {
-      // Daily view for week
-      const startOfWeek = new Date(end);
-      const day = startOfWeek.getDay();
-      startOfWeek.setDate(startOfWeek.getDate() - day); // Beginning of week (Sunday)
-      
-      for (let i = 0; i <= 6; i++) {
-        const day = new Date(startOfWeek);
-        day.setDate(startOfWeek.getDate() + i);
-        
-        if (day > end) break; // Skip future days
-        
-        periodArray.push({
-          label: day.toLocaleDateString('default', { weekday: 'short' }),
-          start: new Date(day.setHours(0, 0, 0, 0)),
-          end: new Date(day.setHours(23, 59, 59, 999))
-        });
-      }
-    } else if (periodType === 'week') {
-      // Weekly view for month
-      const startOfMonth = new Date(end.getFullYear(), end.getMonth(), 1);
-      
-      // Get number of weeks in the month
-      const endOfMonth = new Date(end.getFullYear(), end.getMonth() + 1, 0);
-      const weeksInMonth = Math.ceil((endOfMonth.getDate() - startOfMonth.getDate() + 1) / 7);
-      
-      for (let i = 0; i < weeksInMonth; i++) {
-        const weekStart = new Date(startOfMonth);
-        weekStart.setDate(weekStart.getDate() + (i * 7));
-        
-        if (weekStart > end) break; // Skip future weeks
-        
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 6);
-        
-        const weekLabel = `Week ${i+1}`; 
-        
-        periodArray.push({
-          label: weekLabel,
-          start: new Date(weekStart.setHours(0, 0, 0, 0)),
-          end: new Date(Math.min(weekEnd.setHours(23, 59, 59, 999), end.getTime()))
-        });
-      }
-    } else if (periodType === 'month') {
-      // Monthly view for quarter
-      const startOfQuarter = new Date(end.getFullYear(), Math.floor(end.getMonth() / 3) * 3, 1);
-      
-      for (let i = 0; i < 3; i++) {
-        const monthStart = new Date(startOfQuarter);
-        monthStart.setMonth(startOfQuarter.getMonth() + i);
-        
-        if (monthStart > end) break; // Skip future months
-        
-        const monthEnd = new Date(monthStart);
-        monthEnd.setMonth(monthStart.getMonth() + 1);
-        monthEnd.setDate(0); // Last day of month
-        
-        periodArray.push({
-          label: monthStart.toLocaleDateString('default', { month: 'short' }),
-          start: new Date(monthStart.setHours(0, 0, 0, 0)),
-          end: new Date(Math.min(monthEnd.setHours(23, 59, 59, 999), end.getTime()))
-        });
-      }
-    } else if (periodType === 'quarter') {
-      // Quarterly view for year
-      for (let i = 0; i < 4; i++) {
-        const quarterStart = new Date(end.getFullYear(), i * 3, 1);
-        
-        if (quarterStart > end) break; // Skip future quarters
-        
-        const quarterEnd = new Date(quarterStart);
-        quarterEnd.setMonth(quarterStart.getMonth() + 3);
-        quarterEnd.setDate(0); // Last day of the quarter
-        
-        periodArray.push({
-          label: `Q${i+1}`,
-          start: new Date(quarterStart.setHours(0, 0, 0, 0)),
-          end: new Date(Math.min(quarterEnd.setHours(23, 59, 59, 999), end.getTime()))
-        });
-      }
-    }
-  }
-  
-  // Sort periods chronologically
-  periodArray.sort((a, b) => a.start - b.start);
-  
-  // Calculate income and expenses for each period
-  const data = periodArray.map(period => {
-    const periodTransactions = transactions.filter(t => {
-      const txDate = new Date(t.timestamp);
-      return txDate >= period.start && txDate <= period.end;
-    });
-    
-    const income = periodTransactions
-      .filter(t => t.amount > 0)
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    const expenses = periodTransactions
-      .filter(t => t.amount < 0)
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-    
-    return {
-      label: period.label,
-      income,
-      expenses,
-      net: income - expenses
-    };
-  });
-  
-  setIncomeVsExpenses(data);
-}
 
   // Handle date range change
   const handleDateRangeChange = (period) => {
@@ -716,59 +411,13 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
     }
   };
 
-  // Handle navigation through time periods
-  const handleNavigatePrevious = () => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const timespan = end - start; // In milliseconds
-    
-    // Move the date range back by one full period
-    const newEnd = new Date(start);
-    newEnd.setDate(newEnd.getDate() - 1);
-    const newStart = new Date(newEnd - timespan);
-    
-    setStartDate(formatDateForStorage(newStart));
-    setEndDate(formatDateForStorage(newEnd));
-    
-    // Update parent component's date range
-    if (setSelectedDateRange) {
-      setSelectedDateRange({ start: newStart, end: newEnd });
-    }
-    
-    fetchFinancialData();
-  };
-
-  const handleNavigateNext = () => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const timespan = end - start; // In milliseconds
-    
-    // Move the date range forward by one full period
-    const newStart = new Date(end);
-    newStart.setDate(newStart.getDate() + 1);
-    const newEnd = new Date(newStart.getTime() + timespan);
-    
-    // Don't allow future dates beyond today
-    const today = new Date();
-    if (newEnd > today) {
-      newEnd.setTime(today.getTime());
-    }
-    
-    setStartDate(formatDateForStorage(newStart));
-    setEndDate(formatDateForStorage(newEnd));
-    
-    // Update parent component's date range
-    if (setSelectedDateRange) {
-      setSelectedDateRange({ start: newStart, end: newEnd });
-    }
-    
-    fetchFinancialData();
-  };
-
   // Apply custom date range
   const applyCustomDateRange = () => {
     setCustomDateRange(true);
-    fetchFinancialData();
+    setChartSettings(prev => ({
+      ...prev,
+      showCustomDateSettings: false
+    }));
   };
 
   // Format currency amount
@@ -831,20 +480,6 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
         return <ShoppingBag size={size} />;
       default:
         return <Info size={size} />;
-    }
-  };
-
-  // Get color for spending trend bars
-  const getSpendingTrendBarColor = (index, spending, average) => {
-    // Use colors to indicate spending relative to average
-    if (spending > average * 1.5) {
-      return 'bg-red-500 dark:bg-red-600'; // Much higher than average
-    } else if (spending > average * 1.1) {
-      return 'bg-amber-500 dark:bg-amber-600'; // Higher than average
-    } else if (spending < average * 0.5) {
-      return 'bg-green-500 dark:bg-green-600'; // Much lower than average
-    } else {
-      return 'bg-blue-500 dark:bg-blue-600'; // Around average
     }
   };
 
@@ -1164,26 +799,24 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
 
             {/* Spending Trend Section */}
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-slate-700">
-              {/* The header is now inside the HorizontalSpendingTrend component */}
-              <HorizontalSpendingTrend 
-                data={spendingTrend} 
-                currency={currency}
-                timeRange={timeRange}
-                showAverage={true}
-                compact={isMobile}
-              />
-              
-              {/* Time-based explanation - this is optional as it's also in the component */}
-              <div className="mt-2 text-center">
-                <button 
-                  onClick={() => setActiveView('categoryBreakdown')}
-                  className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-500 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
-                >
-                  <span>View category breakdown</span>
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-            </div>
+  <HorizontalSpendingTrend 
+    transactions={transactions} 
+    currency={currency}
+    timeRange={timeRange}
+    showAverage={true}
+    compact={isMobile}
+  />
+  
+  <div className="mt-2 text-center">
+    <button 
+      onClick={() => setActiveView('categoryBreakdown')}
+      className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-500 dark:hover:text-amber-300 flex items-center gap-1 mx-auto"
+    >
+      <span>View category breakdown</span>
+      <ArrowRight size={16} />
+    </button>
+  </div>
+</div>
             
             {/* ENHANCED: Category Group Analysis */}
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-slate-700">
@@ -1346,7 +979,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
   
   return (
     <div className="space-y-6">
-      {/* Header Section with improved Time Navigation - MOBILE OPTIMIZED */}
+      {/* Header Section with improved Time Selection - MOBILE OPTIMIZED */}
       <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-slate-700">
         <div className="flex flex-col gap-4 mb-4">
           <div className="flex justify-between items-start">
@@ -1428,6 +1061,7 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
                     ? 'bg-blue-600 text-white' 
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
                 }`}
+                title="Date Settings"
               >
                 <Settings size={14} />
               </button>
@@ -1469,34 +1103,19 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
             </button>
           </div>
           
-          {/* Time Navigation Controls - MOBILE OPTIMIZED */}
-          <div className="flex items-center justify-between bg-gray-100 dark:bg-slate-700 rounded-lg p-2">
-            <button 
-              onClick={handleNavigatePrevious}
-              className="p-1 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-slate-600 dark:hover:bg-slate-500 dark:text-slate-300"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            
-            <span className="text-xs text-gray-700 dark:text-slate-300 px-1 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-48">
-              {new Date(startDate).toLocaleDateString()} — {new Date(endDate).toLocaleDateString()}
-            </span>
-            
-            <button 
-              onClick={handleNavigateNext}
-              className="p-1 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-slate-600 dark:hover:bg-slate-500 dark:text-slate-300"
-              disabled={new Date(endDate) >= new Date()}
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
+          {/* Current date range display */}
+          {customDateRange && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-200 dark:border-blue-800/50 text-xs text-center text-blue-800 dark:text-blue-300">
+              Custom Date Range: {new Date(startDate).toLocaleDateString()} — {new Date(endDate).toLocaleDateString()}
+            </div>
+          )}
         </div>
         
         {/* Custom Date Settings Panel - MOBILE OPTIMIZED */}
         {chartSettings.showCustomDateSettings && (
           <div className="mt-4 p-3 bg-gray-100 dark:bg-slate-700 rounded-lg border border-gray-300 dark:border-slate-600">
             <div className="flex justify-between items-center mb-2">
-              <h5 className="text-gray-800 dark:text-white font-medium text-sm">Custom Date Settings</h5>
+              <h5 className="text-gray-800 dark:text-white font-medium text-sm">Custom Date Range</h5>
             </div>
             
             <div className="grid grid-cols-2 gap-2 mb-3">
@@ -1526,54 +1145,9 @@ const generateIncomeVsExpenses = (transactions, dateRange) => {
               </div>
             </div>
             
-            <div className="space-y-1 mb-3">
-              <label className="text-xs text-gray-800 dark:text-white">Apply custom date to:</label>
-              
-              <div className="grid grid-cols-2 gap-1 text-xs">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="applyToSpendingTrend"
-                    checked={chartSettings.applyCustomToSpendingTrend}
-                    onChange={() => setChartSettings(prev => ({
-                      ...prev,
-                      applyCustomToSpendingTrend: !prev.applyCustomToSpendingTrend
-                    }))}
-                    className="mr-1 h-3 w-3"
-                  />
-                  <label htmlFor="applyToSpendingTrend" className="text-gray-700 dark:text-slate-300 text-xs">
-                    Spending Trend Chart
-                  </label>
-                </div>
-                
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="applyToIncomeExpenses"
-                    checked={chartSettings.applyCustomToIncomeExpenses}
-                    onChange={() => setChartSettings(prev => ({
-                      ...prev,
-                      applyCustomToIncomeExpenses: !prev.applyCustomToIncomeExpenses
-                    }))}
-                    className="mr-1 h-3 w-3"
-                  />
-                  <label htmlFor="applyToIncomeExpenses" className="text-gray-700 dark:text-slate-300 text-xs">
-                    Income vs Expenses
-                  </label>
-                </div>
-              </div>
-            </div>
-            
             <div className="flex justify-end">
               <button 
-                onClick={() => {
-                  setCustomDateRange(true);
-                  fetchFinancialData();
-                  setChartSettings(prev => ({
-                    ...prev,
-                    showCustomDateSettings: false
-                  }));
-                }}
+                onClick={applyCustomDateRange}
                 className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs"
               >
                 Apply Range

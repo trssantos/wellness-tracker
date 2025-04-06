@@ -150,9 +150,9 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
             <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
               <Activity size={16} className="text-blue-500 dark:text-blue-400" />
             </div>
-            <div className="min-w-0">
+            <div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Type</div>
-              <div className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
+              <div className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
                 {getWorkoutTypeLabel(workout.type)}
               </div>
             </div>
@@ -162,9 +162,9 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
             <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center flex-shrink-0">
               <Clock size={16} className="text-green-500 dark:text-green-400" />
             </div>
-            <div className="min-w-0">
+            <div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Duration</div>
-              <div className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
+              <div className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
                 {workout.duration} minutes
               </div>
             </div>
@@ -174,9 +174,9 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
             <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center flex-shrink-0">
               <MapPin size={16} className="text-purple-500 dark:text-purple-400" />
             </div>
-            <div className="min-w-0">
+            <div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Location</div>
-              <div className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
+              <div className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
                 {getLocationLabel(workout.location)}
               </div>
             </div>
@@ -186,9 +186,9 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
             <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center flex-shrink-0">
               <Calendar size={16} className="text-amber-500 dark:text-amber-400" />
             </div>
-            <div className="min-w-0">
+            <div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Schedule</div>
-              <div className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
+              <div className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
                 {workout.timeOfDay.charAt(0).toUpperCase() + workout.timeOfDay.slice(1)}
               </div>
             </div>
@@ -227,8 +227,8 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
           })}
         </div>
         
-        <div className="text-sm text-slate-600 dark:text-slate-400 overflow-hidden">
-          <p className="truncate">This workout is scheduled for <span className="font-medium text-slate-700 dark:text-slate-300">{frequencyText}</span> in the <span className="font-medium text-slate-700 dark:text-slate-300">{workout.timeOfDay}</span>.</p>
+        <div className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="line-clamp-2">This workout is scheduled for <span className="font-medium text-slate-700 dark:text-slate-300">{frequencyText}</span> in the <span className="font-medium text-slate-700 dark:text-slate-300">{workout.timeOfDay}</span>.</p>
         </div>
       </div>
 
@@ -272,11 +272,13 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
                 className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg"
               >
                 <div className="flex justify-between items-start">
-                  <div className="min-w-0 flex-1">
+                  <div className="w-[70%] overflow-hidden">
                     <div className="font-medium text-slate-700 dark:text-slate-200 text-sm truncate">{exercise.name}</div>
                   </div>
-                  <div className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full ml-2 flex-shrink-0">
-                    {exercise.sets} × {exercise.reps}
+                  <div className="w-[30%] text-right">
+                    <div className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full inline-block">
+                      {exercise.sets} × {exercise.reps}
+                    </div>
                   </div>
                 </div>
                 
@@ -297,7 +299,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
                 </div>
                 
                 {exercise.notes && (
-                  <div className="w-full mt-1 text-xs italic text-slate-500 dark:text-slate-400 break-words">
+                  <div className="w-full mt-1 text-xs italic text-slate-500 dark:text-slate-400 line-clamp-2">
                     {exercise.notes}
                   </div>
                 )}
@@ -335,19 +337,17 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   );
 
   return (
-    <div className="px-2 sm:px-0 w-full overflow-hidden">
-      <div className="flex items-center gap-2 mb-4 sm:mb-6">
+    <div className="px-2 sm:px-0 w-full">
+      <div className="grid grid-cols-[auto,1fr] items-center gap-2 mb-4 sm:mb-6">
         <button 
           onClick={onBack}
-          className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 flex-shrink-0"
+          className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
         >
           <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
         </button>
-        <div className="min-w-0 flex-1">
-          <h2 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100 truncate">
-            {workout.name}
-          </h2>
-        </div>
+        <h2 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100 truncate pr-2">
+          {workout.name}
+        </h2>
       </div>
 
       {/* Quick Action Buttons */}
@@ -416,8 +416,8 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
               <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100">Delete Workout</h3>
             </div>
             
-            <p className="text-slate-600 dark:text-slate-300 mb-6 break-words">
-              Are you sure you want to delete <span className="font-medium text-slate-800 dark:text-slate-100">{workout.name}</span>? This action cannot be undone.
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
+              Are you sure you want to delete <span className="font-medium text-slate-800 dark:text-slate-100 line-clamp-1">{workout.name}</span>? This action cannot be undone.
             </p>
             
             <div className="flex gap-3 justify-end">

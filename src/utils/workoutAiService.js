@@ -205,6 +205,7 @@ const generateWorkoutPrompt = (params) => {
     Fitness level: ${params.fitnessLevel || 'Intermediate'}
     Limitations/Health concerns: ${params.limitations || 'None specified'}
     Focus areas: ${params.focusAreas ? params.focusAreas.join(', ') : 'Full body'}
+    Workout Objective: ${params.objective || 'General fitness'}
     
     Please generate a complete workout with the following structure:
     - name: A clear, motivating name for this workout
@@ -260,6 +261,7 @@ const generateWorkoutPrompt = (params) => {
     
     Only respond with the JSON object and nothing else. No explanations or additional text.
     
+    ${params.objective ? `IMPORTANT: This workout should be specifically designed for: ${params.objective}` : ''}
     ${params.limitations ? 'IMPORTANT: Please carefully account for the mentioned health limitations/concerns in exercise selection and intensity.' : ''}
     ${params.equipment && params.equipment.length > 0 ? 'IMPORTANT: Only include exercises that can be done with the listed available equipment.' : ''}
     ${params.location === 'home' ? 'IMPORTANT: Ensure all exercises are suitable for a home environment with potentially limited space.' : ''}

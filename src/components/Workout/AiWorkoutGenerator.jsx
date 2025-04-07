@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle, X, Brain, AlertTriangle, Sliders, Dumbbell, 
-         Activity, Heart, Map, Clock, User, Loader, Book, Target } from 'lucide-react';
+         Activity, Heart, Map, Clock, User, Loader, Book, Target, MessageSquare } from 'lucide-react';
 import { generateWorkout } from '../../utils/workoutAiService';
 import { getWorkoutTypes, getWorkoutLocations, getEquipmentOptions, createWorkout } from '../../utils/workoutUtils';
 
@@ -13,7 +13,8 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
     equipment: [],
     fitnessLevel: 'intermediate',
     limitations: '',
-    focusAreas: []
+    focusAreas: [],
+    objective: '' // New field for workout objective/description
   });
   
   // UI state
@@ -314,6 +315,28 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
                 No focus areas selected. We'll create a balanced workout.
               </p>
             )}
+          </div>
+          
+          {/* Workout Objective / Description - NEW SECTION */}
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquare size={18} className="text-slate-700 dark:text-slate-300" />
+              <h3 className="font-medium text-slate-800 dark:text-slate-100">
+                Workout Objective
+              </h3>
+            </div>
+            
+            <textarea
+              name="objective"
+              value={params.objective}
+              onChange={handleInputChange}
+              placeholder="Describe your workout goals or objectives (e.g., 'lose belly fat', 'build muscle for beginners', 'improve endurance')"
+              className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 h-20"
+            />
+            
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              This helps AI understand your specific goals and create a more tailored workout.
+            </p>
           </div>
           
           {/* Health Limitations */}

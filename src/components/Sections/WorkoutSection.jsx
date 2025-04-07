@@ -56,7 +56,6 @@ const WorkoutSection = () => {
 
   // Handle when AI generates a workout
   const handleAIWorkoutGenerated = (workoutData) => {
-    const newWorkout = createWorkout(workoutData);
     loadWorkouts();
     setViewMode('list');
   };

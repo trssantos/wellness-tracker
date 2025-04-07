@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Play, Pause, X, AlertTriangle, Clock, Target, ListChecks, Maximize, 
+  Plus,Play, Pause, X, AlertTriangle, Clock, Target, ListChecks, Maximize, 
   Minimize, CheckSquare, Calendar, BarChart2, History, 
   Award, SaveAll, Sparkles, Moon, Sun, Star, Flag, Lightbulb, ArrowLeft
 } from 'lucide-react';
@@ -360,6 +360,8 @@ const FocusSection = ({ onFullscreenChange }) => {
   // Handle timer tick
   useEffect(() => {
     if (focusActive && !isPaused) {
+      console.log(`Starting timer: Period=${currentPeriodType}, Cycle=${currentCycle}/${totalCycles}, Time=${timeRemaining}s`);
+      
       timerRef.current = setInterval(() => {
         if (timerType === 'countdown') {
           setTimeRemaining(prev => {
@@ -393,6 +395,7 @@ const FocusSection = ({ onFullscreenChange }) => {
         }
       }, 1000);
     } else if (timerRef.current) {
+      console.log(`Clearing timer: Paused=${isPaused}, Active=${focusActive}`);
       clearInterval(timerRef.current);
     }
     
@@ -401,7 +404,7 @@ const FocusSection = ({ onFullscreenChange }) => {
         clearInterval(timerRef.current);
       }
     };
-  }, [focusActive, isPaused, timerType, untilTime]);
+  }, [focusActive, isPaused, timerType, untilTime, timeRemaining, currentPeriodType, currentCycle]);
 
   // Add session update handler
   const handleSessionsUpdate = (updatedSessions) => {
@@ -565,7 +568,7 @@ const FocusSection = ({ onFullscreenChange }) => {
     
     setIsPaused(false);
     setShowPauseModal(false);
-    startTimer();
+    // No need to call startTimer() - the useEffect will handle it
   };
 
   // Function to mark a task as completed mid-session
@@ -638,11 +641,14 @@ const FocusSection = ({ onFullscreenChange }) => {
     
     // Get the technique configuration
     const techniqueConfig = getTechniqueConfig(selectedPreset.id);
+    console.log(`Timer complete: Period=${currentPeriodType}, Cycle=${currentCycle}/${totalCycles}, Technique=${selectedPreset.id}`);
+    console.log('Technique config:', techniqueConfig);
     
     // Check if technique uses cycles
     if (techniqueConfig.hasCycles) {
       if (currentPeriodType === 'focus') {
         // Focus period just ended - transition to break
+        console.log('Transitioning from focus to break period');
         setCurrentPeriodType('break');
         
         // Determine break duration based on cycle
@@ -650,48 +656,75 @@ const FocusSection = ({ onFullscreenChange }) => {
         if (techniqueConfig.longBreakAfter && currentCycle % techniqueConfig.longBreakAfter === 0) {
           // Use long break duration
           nextBreakDuration = techniqueConfig.longBreakDuration || techniqueConfig.breakDuration;
+          console.log(`Using long break duration: ${nextBreakDuration}s`);
         } else {
           // Standard break
           nextBreakDuration = techniqueConfig.breakDuration;
+          console.log(`Using regular break duration: ${nextBreakDuration}s`);
         }
         
         // Set the timer for the break period
         setTimeRemaining(nextBreakDuration);
+        // Ensure timer is paused while showing the modal
+        setIsPaused(true);
         setShowCycleTransitionModal(true);
       } else {
         // Break period just ended
         if (currentCycle >= totalCycles) {
           // All cycles complete - end the session
+          console.log('All cycles complete, ending session');
           setSessionComplete(true);
         } else {
           // More cycles to go - increment cycle counter
-          setCurrentCycle(currentCycle + 1);
+          const nextCycle = currentCycle + 1;
+          console.log(`Break period ended, starting cycle ${nextCycle}`);
+          setCurrentCycle(nextCycle);
           setCurrentPeriodType('focus');
           
-          // Reset focus timer based on technique
-          setTimeRemaining(techniqueConfig.focusDuration);
+          // For Build-up Method, increase focus duration for the next cycle
+          if (techniqueConfig.id === 'buildup') {
+            // Start with 5 minutes (300s), then add 5 minutes per cycle
+            const baseTime = techniqueConfig.focusDuration;
+            const increment = 5 * 60; // 5 minute increment
+            const nextFocusDuration = baseTime + ((nextCycle - 1) * increment);
+            
+            console.log(`Build-up Method: Increasing focus duration to ${nextFocusDuration/60} minutes for cycle ${nextCycle}`);
+            setTimeRemaining(nextFocusDuration);
+          } else {
+            // Reset focus timer based on technique
+            setTimeRemaining(techniqueConfig.focusDuration);
+            console.log(`Setting focus duration: ${techniqueConfig.focusDuration}s`);
+          }
           
+          // Ensure timer is paused while showing the modal
+          setIsPaused(true);
           setShowCycleTransitionModal(true);
         }
       }
     } else {
       // Standard non-cycle technique - simply end the session
+      console.log('Non-cycle technique, ending session');
       setSessionComplete(true);
     }
   };
+  
 
   // Function to handle continuing the next period
   const continueNextPeriod = (addMoreTasks = false) => {
+    console.log(`Continuing to next period: AddTasks=${addMoreTasks}, Period=${currentPeriodType}, Cycle=${currentCycle}`);
     setShowCycleTransitionModal(false);
     
     if (addMoreTasks) {
       // Show task selector modal
       setShowAddTasksModal(true);
+      // Keep timer paused while adding tasks
       setIsPaused(true);
     } else {
-      // Start the next period immediately
+      // Start the next period immediately by just setting isPaused to false
+      // This will trigger the useEffect to start the timer with the updated timeRemaining value
+      console.log('Starting next period timer');
       setIsPaused(false);
-      startTimer();
+      // No need to call startTimer() directly as the useEffect will handle it
     }
   };
 
@@ -748,6 +781,13 @@ const FocusSection = ({ onFullscreenChange }) => {
       } else {
         setTimeRemaining(techniqueConfig.focusDuration);
       }
+
+      // For Build-up Method, always start with base duration
+    if (selectedPreset.id === 'buildup') {
+      // Always start Build-up Method with the base duration (5 minutes)
+      setTimeRemaining(5 * 60);
+      console.log("Starting Build-up Method with 5-minute focus session");
+    }
     } else {
       // Countup starts at 0
       setElapsedTime(0);
@@ -1234,55 +1274,59 @@ const FocusSection = ({ onFullscreenChange }) => {
               
               {/* Time display */}
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <motion.div 
-                  className="text-5xl sm:text-6xl font-bold text-slate-800 dark:text-slate-100 transition-colors"
-                  key={isPaused ? 'paused' : 'running'}
-                  animate={isPaused ? { scale: [1, 1.05, 1] } : {}}
-                  transition={{ duration: 2, repeat: isPaused ? Infinity : 0, ease: "easeInOut" }}
-                >
-                  {timerType === 'countdown' || timerType === 'until' 
-                    ? formatTime(timeRemaining) 
-                    : formatTime(elapsedTime)}
-                </motion.div>
-                
-                <div className="text-sm text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1 transition-colors">
-                  <Clock size={14} />
-                  <span>{isPaused ? 'Paused' : 'In Progress'}</span>
-                </div>
-                
-                {/* Add technique and cycle information */}
-                {techniqueConfig.hasCycles && (
-                  <div className="mt-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full text-xs text-blue-700 dark:text-blue-300 flex items-center gap-1">
-                    <span>
-                      {currentPeriodType === 'focus' ? 'Focus' : 'Break'} - Cycle {currentCycle}/{totalCycles}
-                    </span>
-                  </div>
-                )}
-                
-                {/* Show indicator for break periods */}
-                {currentPeriodType === 'break' && (
-                  <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    {currentCycle < totalCycles ? 'Next: Focus period' : 'Last break!'}
-                  </div>
-                )}
+  <motion.div 
+    className="text-5xl sm:text-6xl font-bold text-slate-800 dark:text-slate-100 transition-colors"
+    key={isPaused ? 'paused' : 'running'}
+    animate={isPaused ? { scale: [1, 1.05, 1] } : {}}
+    transition={{ duration: 2, repeat: isPaused ? Infinity : 0, ease: "easeInOut" }}
+  >
+    {timerType === 'countdown' || timerType === 'until' 
+      ? formatTime(timeRemaining) 
+      : formatTime(elapsedTime)}
+  </motion.div>
+  
+  <div className="text-sm text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1 transition-colors">
+    <Clock size={14} />
+    <span>{isPaused ? 'Paused' : 'In Progress'}</span>
+  </div>
+  
+  {/* Enhanced cycle information display */}
+  {techniqueConfig.hasCycles && (
+    <div className="mt-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full text-xs text-blue-700 dark:text-blue-300 flex items-center gap-1">
+      <span className="font-medium">
+        {currentPeriodType === 'focus' ? 'Focus Period' : 'Break Period'} 
+      </span>
+      <span className="mx-1">•</span>
+      <span>
+        Cycle {currentCycle}/{totalCycles}
+      </span>
+    </div>
+  )}
+  
+  {/* Clearer indicator for break periods */}
+  {currentPeriodType === 'break' && (
+    <div className="mt-1 text-xs text-white bg-blue-500 dark:bg-blue-600 px-2 py-0.5 rounded-full">
+      {currentCycle < totalCycles ? 'Next: Focus Period' : 'Last Break!'}
+    </div>
+  )}
 
-                {interruptionsCount > 0 && (
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">
-                    {interruptionsCount} {interruptionsCount === 1 ? 'interruption' : 'interruptions'} ({formatTime(totalPauseDuration)} paused)
-                  </div>
-                )}
-                
-                {sessionComplete && (
-                  <motion.div 
-                    className="mt-4 px-4 py-2 bg-green-500 text-white rounded-full font-medium"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-                  >
-                    Session Complete!
-                  </motion.div>
-                )}
-              </div>
+  {interruptionsCount > 0 && (
+    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 transition-colors">
+      {interruptionsCount} {interruptionsCount === 1 ? 'interruption' : 'interruptions'} ({formatTime(totalPauseDuration)} paused)
+    </div>
+  )}
+  
+  {sessionComplete && (
+    <motion.div 
+      className="mt-4 px-4 py-2 bg-green-500 text-white rounded-full font-medium"
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+    >
+      Session Complete!
+    </motion.div>
+  )}
+</div>
             </div>
           </div>
           
@@ -1627,68 +1671,98 @@ const FocusSection = ({ onFullscreenChange }) => {
 
         {/* Cycle Transition Modal */}
         {showCycleTransitionModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
-                  {currentPeriodType === 'focus' 
-                    ? <Target size={24} /> 
-                    : <Clock size={24} />
-                  }
-                </div>
-                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
-                  {currentPeriodType === 'focus' 
-                    ? `Focus Time - Cycle ${currentCycle}/${totalCycles}`
-                    : `Break Time - After Cycle ${currentCycle}/${totalCycles}`
-                  }
-                </h3>
-              </div>
-              
-              <div className="mb-4 bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
-                <p className="text-slate-600 dark:text-slate-400">
-                  {currentPeriodType === 'focus' 
-                    ? 'Time to focus! Your break is over.'
-                    : 'Nice work! Time to take a short break.'
-                  }
-                </p>
-              </div>
-              
-              <p className="text-slate-600 dark:text-slate-400 mb-6">
-                {currentPeriodType === 'focus'
-                  ? `Ready to begin your next ${formatTime(timeRemaining)} focus period?`
-                  : `Ready to start your ${formatTime(timeRemaining)} break?`
-                }
-              </p>
-              
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={() => continueNextPeriod(false)}
-                  className="px-4 py-2 rounded-lg bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Play size={20} />
-                  Continue
-                </button>
-                
-                {currentPeriodType === 'focus' && (
-                  <button
-                    onClick={() => continueNextPeriod(true)}
-                    className="px-4 py-2 rounded-lg bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Play size={20} />
-                    Continue & Add Tasks
-                  </button>
-                )}
-                
-                <button
-                  onClick={skipToSessionComplete}
-                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                >
-                  Finish Session Now
-                </button>
-              </div>
-            </div>
-          </div>
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
+      {/* Enhanced header with clear period indication */}
+      <div className={`flex items-center gap-3 mb-4 pb-3 border-b ${
+        currentPeriodType === 'focus' 
+          ? 'border-blue-200 dark:border-blue-800' 
+          : 'border-green-200 dark:border-green-800'
+      }`}>
+        <div className={`p-3 rounded-full ${
+          currentPeriodType === 'focus'
+            ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
+            : 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400'
+        }`}>
+          {currentPeriodType === 'focus' 
+            ? <Target size={24} /> 
+            : <Clock size={24} />
+          }
+        </div>
+        <div>
+          <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+            {currentPeriodType === 'focus' 
+              ? 'Focus Time' 
+              : 'Break Time'
+            }
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Cycle {currentCycle}/{totalCycles}
+          </p>
+        </div>
+      </div>
+      
+      {/* Clear message about the current state */}
+      <div className={`mb-4 p-3 rounded-lg ${
+        currentPeriodType === 'focus'
+          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+          : 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+      }`}>
+        {currentPeriodType === 'focus' 
+          ? <p>Time to focus! Your break is over. Ready to start your focused work session?</p>
+          : <p>Great work! Time for a short break to recharge your mind.</p>
+        }
+      </div>
+      
+      {/* Timer duration indicator */}
+      <div className="mb-6 bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg flex items-center gap-2">
+        <Clock size={18} className="text-slate-500 dark:text-slate-400" />
+        <span className="text-slate-700 dark:text-slate-300 flex-1">
+          {currentPeriodType === 'focus'
+            ? `This focus period is ${formatTime(timeRemaining)} long`
+            : `This break is ${formatTime(timeRemaining)} long`
+          }
+        </span>
+      </div>
+      
+      {/* Enhanced action buttons */}
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={() => continueNextPeriod(false)}
+          className={`px-4 py-2 rounded-lg text-white flex items-center justify-center gap-2 ${
+            currentPeriodType === 'focus'
+              ? 'bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700'
+              : 'bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700'
+          }`}
+          data-testid="continue-next-period"
+        >
+          <Play size={20} />
+          {currentPeriodType === 'focus' 
+            ? 'Start Focusing'
+            : 'Start Break'
+          }
+        </button>
+        
+        {currentPeriodType === 'focus' && (
+          <button
+            onClick={() => continueNextPeriod(true)}
+            className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
+          >
+            <Plus size={20} />
+            Add Tasks & Start Focus
+          </button>
         )}
+        
+        <button
+          onClick={skipToSessionComplete}
+          className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          Finish Session Now
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* Add Tasks Modal */}
         {showAddTasksModal && (
@@ -1807,7 +1881,7 @@ const FocusSection = ({ onFullscreenChange }) => {
                       />
                     </svg>
                     
-                    {/* Time display */}
+                    
                     {/* Time Display */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <motion.div 
@@ -1834,6 +1908,13 @@ const FocusSection = ({ onFullscreenChange }) => {
                           </span>
                         </div>
                       )}
+
+                      {/* For Build-up Method, show the progression */}
+  {techniqueConfig.id === 'buildup' && currentPeriodType === 'focus' && (
+    <div className="mt-1 text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full">
+      {Math.floor(timeRemaining/60)} min focus (Cycle {currentCycle}/{totalCycles})
+    </div>
+  )}
                       
                       {/* Show indicator for break periods */}
                       {currentPeriodType === 'break' && (

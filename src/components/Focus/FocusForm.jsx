@@ -51,54 +51,74 @@ const FocusForm = ({
             Choose Technique
           </label>
           <div className="grid grid-cols-2 gap-2">
-            {FOCUS_PRESETS.map(preset => (
-              <div key={preset.id} className="relative">
-                <button
-                  className={`w-full rounded-lg border text-left transition-all flex flex-col items-center p-2 sm:p-3 ${
-                    selectedPreset.id === preset.id
-                      ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700'
-                  }`}
-                  onClick={() => onPresetSelect(preset)}
-                >
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br ${preset.color} text-white mb-2`}>
-                    {preset.icon}
-                  </div>
-                  <div className="text-center w-full">
-                    <h4 className="font-medium text-slate-900 dark:text-white text-xs sm:text-sm truncate">
-                      {preset.name}
-                    </h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate h-4">
-                      {/* Short keyword description */}
-                      {preset.id === 'pomodoro' ? '25min + 5min break' :
-                       preset.id === 'flowtime' ? 'Natural rhythm' :
-                       preset.id === '5217' ? '52min + 17min' :
-                       preset.id === 'desktime' ? '90min cycles' :
-                       'Custom timer'}
-                    </p>
-                  </div>
-                  
-                  <button 
-                    className="absolute top-1 right-1 p-1 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleTooltip(preset.id);
-                    }}
-                  >
-                    <Info size={14} />
-                  </button>
-                </button>
-                
-                {/* Description tooltip */}
-                {showTooltip === preset.id && (
-                  <div className="absolute z-10 mt-1 w-full sm:w-48 bg-white dark:bg-slate-700 shadow-lg rounded-lg p-2 text-xs border border-slate-200 dark:border-slate-600">
-                    <p className="text-slate-700 dark:text-slate-300">
-                      {preset.description}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
+          {FOCUS_PRESETS.map(preset => (
+  <div key={preset.id} className="relative">
+    <button
+      className={`w-full rounded-lg border text-left transition-all flex flex-col items-center p-2 sm:p-3 ${
+        selectedPreset.id === preset.id
+          ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+          : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700'
+      }`}
+      onClick={() => onPresetSelect(preset)}
+    >
+      <div className={`w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br ${preset.color} text-white mb-2`}>
+        {preset.icon}
+      </div>
+      <div className="text-center w-full">
+        <h4 className="font-medium text-slate-900 dark:text-white text-xs sm:text-sm truncate">
+          {preset.name}
+        </h4>
+        <p className="text-xs text-slate-500 dark:text-slate-400 truncate h-4">
+          {/* Dynamic short descriptions based on technique */}
+          {preset.id === 'pomodoro' ? '25min + 5min break' :
+           preset.id === 'flowtime' ? 'Natural flow tracking' :
+           preset.id === '5217' ? '52min + 17min break' :
+           preset.id === 'ultradian' ? '90min + 20min break' :
+           preset.id === 'adhd_pomodoro' ? '10min focus periods' :
+           preset.id === 'buildup' ? 'Gradually increasing focus' :
+           preset.id === 'two_minute' ? 'Quick 2min intervals' :
+           preset.id === 'hyperfocus' ? 'Track deep focus states' :
+           preset.id === 'custom' ? 'Set your own timer' :
+           preset.hasCycles ? `${Math.floor(preset.duration/60)}min cycles` : 'Custom timer'}
+        </p>
+      </div>
+      
+      <button 
+        className="absolute top-1 right-1 p-1 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleTooltip(preset.id);
+        }}
+      >
+        <Info size={14} />
+      </button>
+    </button>
+    
+    {/* Enhanced tooltip with technique details */}
+    {showTooltip === preset.id && (
+      <div className="absolute z-10 mt-1 w-full sm:w-64 bg-white dark:bg-slate-700 shadow-lg rounded-lg p-3 text-xs border border-slate-200 dark:border-slate-600">
+        <h5 className="font-medium text-slate-800 dark:text-slate-200 mb-1">{preset.name}</h5>
+        <p className="text-slate-700 dark:text-slate-300 mb-1">
+          {preset.description}
+        </p>
+        {preset.hasCycles && (
+          <div className="mt-1 pt-1 border-t border-slate-200 dark:border-slate-600">
+            <p className="text-slate-600 dark:text-slate-400">
+              {preset.id === 'buildup' 
+                ? `Starts with ${Math.floor(preset.duration/60)}min focus, increases by 5min each cycle`
+                : `${Math.floor(preset.duration/60)}min focus + ${Math.floor(preset.restDuration/60)}min break`}
+            </p>
+            {preset.longRestDuration && preset.longBreakAfter && (
+              <p className="text-slate-600 dark:text-slate-400 mt-0.5">
+                Longer ${Math.floor(preset.longRestDuration/60)}min break after every ${preset.longBreakAfter} cycles
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+))}
           </div>
         </div>
         

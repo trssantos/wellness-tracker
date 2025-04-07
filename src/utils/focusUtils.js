@@ -1,5 +1,5 @@
 import { getStorage, setStorage } from './storage';
-import { Clock, Target, Moon, Sun, Clock4, Zap, Brain } from 'lucide-react';
+import { Clock, Target, Moon, Sun, Clock4, Zap, Brain, ArrowUp } from 'lucide-react';
 import { formatDateForStorage } from './dateUtils';
 
 
@@ -41,7 +41,10 @@ export const FOCUS_TECHNIQUES = [
     name: 'Flowtime Method', 
     description: 'Work until your focus naturally wanes, then take a proportionate break (1:5 ratio).',
     timerType: 'countup',
+    focusDuration: 0, // Not applicable for countup
+    breakDuration: 5 * 60, // Default 5 minute break
     hasCycles: false,      // No predefined cycles
+    defaultCycles: 1,      // Not applicable but set default
     color: 'blue',
     colorGradient: 'from-blue-500 to-purple-500 dark:from-blue-600 dark:to-purple-600',
     icon: 'target'
@@ -55,35 +58,82 @@ export const FOCUS_TECHNIQUES = [
     breakDuration: 17 * 60, // 17 minutes
     hasCycles: true,
     defaultCycles: 4,      // Default to 4 cycles
+    longBreakDuration: 17 * 60, // Same as regular break
+    longBreakAfter: 0,     // No special long break
     color: 'green',
     colorGradient: 'from-green-500 to-teal-500 dark:from-green-600 dark:to-teal-600',
-    icon: 'moon'
+    icon: 'zap'
   },
   { 
-    id: 'desktime', 
-    name: '90-Minute Focus', 
-    description: 'Based on natural ultradian rhythms - focus for 90 minutes, then rest for 20.',
+    id: 'ultradian', 
+    name: 'Ultradian Rhythm', 
+    description: 'Work for 90 minutes, then rest for 20 minutes, based on natural body cycles.',
     timerType: 'countdown',
     focusDuration: 90 * 60, // 90 minutes
     breakDuration: 20 * 60, // 20 minutes
     hasCycles: true,
-    defaultCycles: 2,      // Default to 2 90-minute cycles
-    color: 'amber',
-    colorGradient: 'from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600',
-    icon: 'sun'
-  },
-  { 
-    id: 'ultradian',
-    name: 'Ultradian Rhythm', 
-    description: 'Work for 90 minutes, then rest for 20 minutes, based on natural body cycles.',
-    timerType: 'countdown',
-    focusDuration: 90 * 60,
-    breakDuration: 20 * 60,
-    hasCycles: true,
-    defaultCycles: 4,
+    defaultCycles: 4,      // Default to 4 cycles
+    longBreakDuration: 30 * 60, // 30 minutes for final break
+    longBreakAfter: 4,     // Long break after all cycles
     color: 'purple',
     colorGradient: 'from-purple-500 to-indigo-500 dark:from-purple-600 dark:to-indigo-600',
     icon: 'brain'
+  },
+  { 
+    id: 'adhd_pomodoro', 
+    name: 'ADHD-Friendly Pomodoro', 
+    description: 'Shorter focus periods of 10-15 minutes with more frequent breaks, ideal for ADHD.',
+    timerType: 'countdown',
+    focusDuration: 10 * 60, // 10 minutes
+    breakDuration: 5 * 60, // 5 minutes
+    hasCycles: true,
+    defaultCycles: 6,      // More cycles with shorter duration
+    longBreakDuration: 15 * 60,
+    longBreakAfter: 3,     // More frequent long breaks
+    color: 'amber',
+    colorGradient: 'from-amber-400 to-red-400 dark:from-amber-500 dark:to-red-500',
+    icon: 'zap'
+  },
+  { 
+    id: 'buildup', 
+    name: 'Build-up Method', 
+    description: 'Start with just 5 minutes of focus, then gradually increase to build focus muscles.',
+    timerType: 'countdown',
+    focusDuration: 5 * 60, // Start with just 5 minutes
+    breakDuration: 2 * 60, // 2 minute breaks
+    hasCycles: true,
+    defaultCycles: 5,      // 5 cycles with increasing duration
+    longBreakDuration: 5 * 60,
+    longBreakAfter: 5,
+    color: 'green',
+    colorGradient: 'from-green-400 to-emerald-500 dark:from-green-500 dark:to-emerald-600',
+    icon: 'arrowUp'
+  },
+  { 
+    id: 'two_minute', 
+    name: 'Two-Minute Rule', 
+    description: 'For quick tasks under 2 minutes, do them immediately to build momentum.',
+    timerType: 'countdown',
+    focusDuration: 2 * 60, // Just 2 minutes
+    breakDuration: 30, // Just 30 seconds
+    hasCycles: true,
+    defaultCycles: 10,     // Many quick cycles
+    color: 'blue',
+    colorGradient: 'from-blue-400 to-sky-400 dark:from-blue-500 dark:to-sky-500',
+    icon: 'clock'
+  },
+  { 
+    id: 'hyperfocus', 
+    name: 'Hyperfocus Session', 
+    description: 'When in a state of hyperfocus, set a timer to track your highly productive time.',
+    timerType: 'countup',
+    focusDuration: 0, // Not applicable for countup
+    breakDuration: 10 * 60, // 10 minute break after hyperfocus
+    hasCycles: false,
+    defaultCycles: 1,
+    color: 'purple',
+    colorGradient: 'from-purple-500 to-pink-500 dark:from-purple-600 dark:to-pink-600',
+    icon: 'target'
   },
   { 
     id: 'custom', 
@@ -91,7 +141,9 @@ export const FOCUS_TECHNIQUES = [
     description: 'Set your own duration and approach.',
     timerType: 'countdown',
     focusDuration: 30 * 60, // 30 minutes default
+    breakDuration: 5 * 60, // 5 minutes default
     hasCycles: false,      // No cycles by default
+    defaultCycles: 1,      // Just one cycle
     color: 'slate',
     colorGradient: 'from-slate-400 to-slate-500 dark:from-slate-600 dark:to-slate-700',
     icon: 'clock'
@@ -101,7 +153,64 @@ export const FOCUS_TECHNIQUES = [
 
 // Helper function to get technique configuration by ID
 export const getTechniqueConfig = (techniqueId) => {
-  return FOCUS_TECHNIQUES.find(technique => technique.id === techniqueId) || FOCUS_TECHNIQUES[0];
+  const technique = FOCUS_TECHNIQUES.find(technique => technique.id === techniqueId);
+  if (!technique) {
+    console.warn(`Technique with ID "${techniqueId}" not found, using default technique`);
+    return FOCUS_TECHNIQUES[0]; // Return Pomodoro as default
+  }
+  
+  // Ensure all required properties exist
+  if (technique.hasCycles) {
+    // Ensure focus duration is set
+    if (!technique.focusDuration) {
+      console.warn(`Technique "${techniqueId}" missing focusDuration, using default`);
+      technique.focusDuration = 25 * 60; // Default to 25 minutes
+    }
+    
+    // Ensure break duration is set
+    if (!technique.breakDuration) {
+      console.warn(`Technique "${techniqueId}" missing breakDuration, using default`);
+      technique.breakDuration = 5 * 60; // Default to 5 minutes
+    }
+    
+    // Ensure default cycles is set
+    if (!technique.defaultCycles) {
+      console.warn(`Technique "${techniqueId}" missing defaultCycles, using default`);
+      technique.defaultCycles = 4; // Default to 4 cycles
+    }
+  }
+  
+  // Ensure timer type is set
+  if (!technique.timerType) {
+    console.warn(`Technique "${techniqueId}" missing timerType, using countdown`);
+    technique.timerType = 'countdown';
+  }
+  
+  return technique;
+};
+
+// Add a new helper function to get human-readable time info for techniques
+export const getFormattedTechniqueInfo = (techniqueId) => {
+  const technique = getTechniqueConfig(techniqueId);
+  
+  if (!technique.hasCycles) {
+    if (technique.timerType === 'countup') {
+      return 'Counts up from zero until manually stopped';
+    } else {
+      return `${Math.floor(technique.focusDuration / 60)} minute timer`;
+    }
+  }
+  
+  // For techniques with cycles
+  const focusMinutes = Math.floor(technique.focusDuration / 60);
+  const breakMinutes = Math.floor(technique.breakDuration / 60);
+  
+  if (technique.longBreakDuration && technique.longBreakAfter) {
+    const longBreakMinutes = Math.floor(technique.longBreakDuration / 60);
+    return `${focusMinutes} min focus + ${breakMinutes} min breaks (${longBreakMinutes} min after ${technique.longBreakAfter} cycles)`;
+  }
+  
+  return `${focusMinutes} min focus + ${breakMinutes} min breaks for ${technique.defaultCycles} cycles`;
 };
 
 // Helper to get icon component from icon name
@@ -119,8 +228,8 @@ export const getTechniqueIcon = (iconName, size = 24) => {
       return <Brain size={size} />;
     case 'zap':
       return <Zap size={size} />;
-    case 'clock4':
-      return <Clock4 size={size} />;
+    case 'arrowUp':
+      return <ArrowUp size={size} />;
     default:
       return <Clock size={size} />; 
   }

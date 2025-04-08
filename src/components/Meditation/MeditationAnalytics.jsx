@@ -1,10 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart2, PieChart, Calendar, Clock, Award, 
-         ArrowUp, ArrowDown, Activity, Heart, Brain } from 'lucide-react';
+         ArrowUp, ArrowDown, Activity, Heart, Brain, ChevronDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
          PieChart as RPieChart, Pie, Cell, Legend } from 'recharts';
 import { getMeditationStats } from '../../utils/meditationStorage';
 import { formatDateForStorage } from '../../utils/dateUtils';
+
+// TimeframeDropdown component for mobile view
+const TimeframeDropdown = ({ timeframe, setTimeframe }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const options = [
+    { value: 'week', label: 'Week' },
+    { value: 'month', label: 'Month' },
+    { value: 'year', label: 'Year' },
+    { value: 'all', label: 'All' }
+  ];
+  
+  const current = options.find(opt => opt.value === timeframe) || options[0];
+  
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-3 py-1.5 rounded-lg text-sm w-28"
+      >
+        <span>{current.label}</span>
+        <ChevronDown size={16} className={`ml-1 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {isOpen && (
+        <div className="absolute right-0 mt-1 bg-white dark:bg-slate-700 rounded-lg shadow-lg overflow-hidden z-10">
+          {options.map(option => (
+            <button
+              key={option.value}
+              onClick={() => {
+                setTimeframe(option.value);
+                setIsOpen(false);
+              }}
+              className={`block w-full text-left px-4 py-2 text-sm ${
+                option.value === timeframe
+                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const MeditationAnalytics = ({ sessions, categories }) => {
   const [timeframe, setTimeframe] = useState('month'); // 'week', 'month', 'year', 'all'
@@ -291,28 +338,9 @@ const MeditationAnalytics = ({ sessions, categories }) => {
     return `${hours}h ${mins > 0 ? `${mins}m` : ''}`;
   };
   
-  // Render empty state
-  if (!stats) {
-    return (
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-        <div className="py-12 text-center">
-          <div className="bg-slate-100 dark:bg-slate-700 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
-            <Brain size={32} className="text-slate-500 dark:text-slate-400" />
-          </div>
-          <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
-            No meditation data yet
-          </h3>
-          <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-            Complete your first meditation to start seeing your stats. Your progress and insights will appear here.
-          </p>
-        </div>
-      </div>
-    );
-  }
-  
   return (
     <div className="space-y-6">
-      {/* Timeframe selector */}
+      {/* Timeframe selector - Always visible */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -320,7 +348,12 @@ const MeditationAnalytics = ({ sessions, categories }) => {
             Meditation Analytics
           </h3>
           
-          <div className="bg-slate-100 dark:bg-slate-700 rounded-lg flex p-1">
+          {/* Show dropdown on mobile, buttons on larger screens */}
+          <div className="block sm:hidden">
+            <TimeframeDropdown timeframe={timeframe} setTimeframe={setTimeframe} />
+          </div>
+          
+          <div className="hidden sm:flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
             <button
               onClick={() => setTimeframe('week')}
               className={`px-3 py-1 text-sm rounded ${
@@ -365,299 +398,318 @@ const MeditationAnalytics = ({ sessions, categories }) => {
         </div>
       </div>
       
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 transition-colors">
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar size={20} className="text-blue-500 dark:text-blue-400" />
-            <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Sessions</div>
-          </div>
-          <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-            {stats.totalSessions}
-          </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">
-            {timeframe === 'week' ? 'this week' : 
-             timeframe === 'month' ? 'this month' :
-             timeframe === 'year' ? 'this year' : 'total'}
-          </div>
-        </div>
-        
-        <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4 transition-colors">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock size={20} className="text-purple-500 dark:text-purple-400" />
-            <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Total Time</div>
-          </div>
-          <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-            {formatMinutes(stats.totalMinutes)}
-          </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">
-            {stats.avgSessionLength.toFixed(1)} min avg per session
-          </div>
-        </div>
-        
-        <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4 transition-colors">
-          <div className="flex items-center gap-2 mb-2">
-            <Award size={20} className="text-green-500 dark:text-green-400" />
-            <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Streak</div>
-          </div>
-          <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-            {stats.streak}
-          </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">
-            days in a row
-          </div>
-        </div>
-        
-        <div className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-4 transition-colors">
-          <div className="flex items-center gap-2 mb-2">
-            <Heart size={20} className="text-amber-500 dark:text-amber-400" />
-            <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Mood Boost</div>
-          </div>
-          <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">
-            {stats.moodData.improvement > 0 ? '+' : ''}{stats.moodData.improvement.toFixed(1)}
-          </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">
-            average improvement after sessions
-          </div>
-        </div>
-      </div>
-      
-      {/* Charts and detailed stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Daily distribution chart */}
+      {/* Conditional content based on whether stats exist */}
+      {!stats ? (
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-          <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
-            <Calendar size={18} className="text-blue-500 dark:text-blue-400" />
-            Sessions by Day of Week
-          </h3>
-          
-          <div className="h-64 min-h-[200px] w-full overflow-hidden">
-  <ResponsiveContainer width="100%" height="100%">
-    <BarChart data={stats.dailyDistribution} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" strokeOpacity={0.3} />
-                <XAxis dataKey="name" tick={{ fill: '#64748b' }} />
-                <YAxis tick={{ fill: '#64748b' }} />
-                <Tooltip
-                  formatter={(value) => [`${value} sessions`, 'Count']}
-                  contentStyle={{
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #cbd5e1'
-                  }}
-                />
-                <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="py-12 text-center">
+            <div className="bg-slate-100 dark:bg-slate-700 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
+              <Brain size={32} className="text-slate-500 dark:text-slate-400" />
+            </div>
+            <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
+              No meditation data for this period
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+              Try selecting a different time period or complete your first meditation to start seeing your stats.
+            </p>
           </div>
         </div>
-        
-        {/* Time of day distribution */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-          <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
-            <Clock size={18} className="text-purple-500 dark:text-purple-400" />
-            Sessions by Time of Day
-          </h3>
-          
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <RPieChart>
-                <Pie
-                  data={stats.timeOfDayDistribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {stats.timeOfDayDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value) => [`${value} sessions`, 'Count']}
-                  contentStyle={{
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #cbd5e1'
-                  }}
-                />
-                <Legend />
-              </RPieChart>
-            </ResponsiveContainer>
+      ) : (
+        <>
+          {/* Summary cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar size={20} className="text-blue-500 dark:text-blue-400" />
+                <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Sessions</div>
+              </div>
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                {stats.totalSessions}
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                {timeframe === 'week' ? 'this week' : 
+                timeframe === 'month' ? 'this month' :
+                timeframe === 'year' ? 'this year' : 'total'}
+              </div>
+            </div>
+            
+            <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock size={20} className="text-purple-500 dark:text-purple-400" />
+                <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Total Time</div>
+              </div>
+              <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                {formatMinutes(stats.totalMinutes)}
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                {stats.avgSessionLength.toFixed(1)} min avg per session
+              </div>
+            </div>
+            
+            <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <Award size={20} className="text-green-500 dark:text-green-400" />
+                <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Streak</div>
+              </div>
+              <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                {stats.streak}
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                days in a row
+              </div>
+            </div>
+            
+            <div className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-4 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <Heart size={20} className="text-amber-500 dark:text-amber-400" />
+                <div className="text-sm font-medium text-slate-700 dark:text-slate-300">Mood Boost</div>
+              </div>
+              <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                {stats.moodData.improvement > 0 ? '+' : ''}{stats.moodData.improvement.toFixed(1)}
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                average improvement after sessions
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      
-      {/* Top techniques and mood comparison */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Top techniques */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-          <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
-            <Award size={18} className="text-green-500 dark:text-green-400" />
-            Most Used Techniques
-          </h3>
           
-          <div className="space-y-4">
-            {stats.techniques.map((technique, index) => (
-              <div key={index} className="flex items-center">
-                <div 
-                  className="w-2 h-10 rounded-full mr-3" 
-                  style={{ backgroundColor: getCategoryColor(technique.category) }}
-                ></div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-medium text-slate-700 dark:text-slate-300">{technique.name}</span>
-                    <span className="text-sm text-slate-500 dark:text-slate-400">{technique.count} sessions</span>
-                  </div>
-                  <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2">
-                    <div 
-                      className="h-2 rounded-full" 
-                      style={{ 
-                        width: `${(technique.count / stats.totalSessions) * 100}%`,
-                        backgroundColor: getCategoryColor(technique.category)
+          {/* Charts and detailed stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Daily distribution chart */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+              <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                <Calendar size={18} className="text-blue-500 dark:text-blue-400" />
+                Sessions by Day of Week
+              </h3>
+              
+              <div className="h-64 min-h-[200px] w-full overflow-hidden">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.dailyDistribution} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" strokeOpacity={0.3} />
+                    <XAxis dataKey="name" tick={{ fill: '#64748b' }} />
+                    <YAxis tick={{ fill: '#64748b' }} />
+                    <Tooltip
+                      formatter={(value) => [`${value} sessions`, 'Count']}
+                      contentStyle={{
+                        backgroundColor: '#f8fafc',
+                        border: '1px solid #cbd5e1'
                       }}
+                    />
+                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            
+            {/* Time of day distribution */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+              <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                <Clock size={18} className="text-purple-500 dark:text-purple-400" />
+                Sessions by Time of Day
+              </h3>
+              
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RPieChart>
+                    <Pie
+                      data={stats.timeOfDayDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {stats.timeOfDayDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => [`${value} sessions`, 'Count']}
+                      contentStyle={{
+                        backgroundColor: '#f8fafc',
+                        border: '1px solid #cbd5e1'
+                      }}
+                    />
+                    <Legend />
+                  </RPieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+          
+          {/* Top techniques and mood comparison */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Top techniques */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+              <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                <Award size={18} className="text-green-500 dark:text-green-400" />
+                Most Used Techniques
+              </h3>
+              
+              <div className="space-y-4">
+                {stats.techniques.map((technique, index) => (
+                  <div key={index} className="flex items-center">
+                    <div 
+                      className="w-2 h-10 rounded-full mr-3" 
+                      style={{ backgroundColor: getCategoryColor(technique.category) }}
                     ></div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{technique.name}</span>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">{technique.count} sessions</span>
+                      </div>
+                      <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2">
+                        <div 
+                          className="h-2 rounded-full" 
+                          style={{ 
+                            width: `${(technique.count / stats.totalSessions) * 100}%`,
+                            backgroundColor: getCategoryColor(technique.category)
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Mood improvement */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+              <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                <Heart size={18} className="text-amber-500 dark:text-amber-400" />
+                Mood Improvement
+              </h3>
+              
+              {stats.moodData.sessions > 0 ? (
+                <div className="space-y-6">
+                  <div className="flex justify-center mb-6">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-full">
+                        <ArrowUp className="text-green-500" size={24} />
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {((stats.moodData.improvement / stats.moodData.averageBefore) * 100).toFixed(1)}%
+                        </div>
+                        <div className="text-sm text-slate-500 dark:text-slate-400">
+                          Average Improvement
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="text-center">
+                      <div className="text-sm text-slate-500 dark:text-slate-400 mb-2">Before Meditation</div>
+                      <div className="flex justify-center mb-2">
+                        <span className="text-3xl">
+                          {stats.moodData.averageBefore <= 1.5 ? '😔' : 
+                          stats.moodData.averageBefore <= 2.5 ? '😕' : 
+                          stats.moodData.averageBefore <= 3.5 ? '😐' : 
+                          stats.moodData.averageBefore <= 4.5 ? '🙂' : 
+                          '😊'}
+                        </span>
+                      </div>
+                      <div className="text-lg font-medium text-slate-700 dark:text-slate-300">
+                        {stats.moodData.averageBefore.toFixed(1)}/5
+                      </div>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="text-sm text-slate-500 dark:text-slate-400 mb-2">After Meditation</div>
+                      <div className="flex justify-center mb-2">
+                        <span className="text-3xl">
+                          {stats.moodData.averageAfter <= 1.5 ? '😔' : 
+                          stats.moodData.averageAfter <= 2.5 ? '😕' : 
+                          stats.moodData.averageAfter <= 3.5 ? '😐' : 
+                          stats.moodData.averageAfter <= 4.5 ? '🙂' : 
+                          '😊'}
+                        </span>
+                      </div>
+                      <div className="text-lg font-medium text-slate-700 dark:text-slate-300">
+                        {stats.moodData.averageAfter.toFixed(1)}/5
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center text-sm text-slate-500 dark:text-slate-400">
+                    Based on {stats.moodData.sessions} tracked sessions
                   </div>
                 </div>
-              </div>
-            ))}
+              ) : (
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                  Complete more sessions with mood tracking to see your improvement data.
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-        
-        {/* Mood improvement */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-          <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
-            <Heart size={18} className="text-amber-500 dark:text-amber-400" />
-            Mood Improvement
-          </h3>
           
-          {stats.moodData.sessions > 0 ? (
-            <div className="space-y-6">
-              <div className="flex justify-center mb-6">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-full">
-                    <ArrowUp className="text-green-500" size={24} />
+          {/* Insight cards */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 transition-colors">
+            <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+              <Brain size={18} className="text-indigo-500 dark:text-indigo-400" />
+              Meditation Insights
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Insight on best time of day */}
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
+                <div className="flex items-start gap-3">
+                  <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg text-blue-600 dark:text-blue-400">
+                    <Clock size={18} />
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                      {((stats.moodData.improvement / stats.moodData.averageBefore) * 100).toFixed(1)}%
-                    </div>
-                    <div className="text-sm text-slate-500 dark:text-slate-400">
-                      Average Improvement
-                    </div>
+                  <div>
+                    <h4 className="font-medium text-slate-700 dark:text-slate-300 text-sm mb-1">
+                      Best Time of Day
+                    </h4>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      {stats.timeOfDayDistribution.length > 0 ? (
+                        <>
+                          {(() => {
+                            const bestTime = [...stats.timeOfDayDistribution].sort((a, b) => b.value - a.value)[0];
+                            return `You meditate most often in the ${bestTime.name.toLowerCase()}. ${
+                              bestTime.name === 'Morning' ? 'Morning sessions help start your day with clarity.' :
+                              bestTime.name === 'Afternoon' ? 'Afternoon sessions provide a helpful midday reset.' :
+                              bestTime.name === 'Evening' ? 'Evening sessions help transition to a restful state.' :
+                              'Night sessions may help with sleep and relaxation.'
+                            }`;
+                          })()}
+                        </>
+                      ) : (
+                        'Complete more sessions to discover your optimal meditation time.'
+                      )}
+                    </p>
                   </div>
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-8">
-                <div className="text-center">
-                  <div className="text-sm text-slate-500 dark:text-slate-400 mb-2">Before Meditation</div>
-                  <div className="flex justify-center mb-2">
-                    <span className="text-3xl">
-                      {stats.moodData.averageBefore <= 1.5 ? '😔' : 
-                       stats.moodData.averageBefore <= 2.5 ? '😕' : 
-                       stats.moodData.averageBefore <= 3.5 ? '😐' : 
-                       stats.moodData.averageBefore <= 4.5 ? '🙂' : 
-                       '😊'}
-                    </span>
+              {/* Insight on technique effectiveness */}
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg text-green-600 dark:text-green-400">
+                    <Award size={18} />
                   </div>
-                  <div className="text-lg font-medium text-slate-700 dark:text-slate-300">
-                    {stats.moodData.averageBefore.toFixed(1)}/5
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-sm text-slate-500 dark:text-slate-400 mb-2">After Meditation</div>
-                  <div className="flex justify-center mb-2">
-                    <span className="text-3xl">
-                      {stats.moodData.averageAfter <= 1.5 ? '😔' : 
-                       stats.moodData.averageAfter <= 2.5 ? '😕' : 
-                       stats.moodData.averageAfter <= 3.5 ? '😐' : 
-                       stats.moodData.averageAfter <= 4.5 ? '🙂' : 
-                       '😊'}
-                    </span>
-                  </div>
-                  <div className="text-lg font-medium text-slate-700 dark:text-slate-300">
-                    {stats.moodData.averageAfter.toFixed(1)}/5
+                  <div>
+                    <h4 className="font-medium text-slate-700 dark:text-slate-300 text-sm mb-1">
+                      Most Effective Technique
+                    </h4>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      {stats.techniques.length > 0 ? (
+                        `Your most used technique is ${stats.techniques[0].name}. Consider trying ${
+                          stats.techniques.length > 1 ? stats.techniques[1].name : 'other techniques'
+                        } to diversify your practice.`
+                      ) : (
+                        'Try different meditation techniques to see which ones work best for you.'
+                      )}
+                    </p>
                   </div>
                 </div>
               </div>
-              
-              <div className="text-center text-sm text-slate-500 dark:text-slate-400">
-                Based on {stats.moodData.sessions} tracked sessions
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-              Complete more sessions with mood tracking to see your improvement data.
-            </div>
-          )}
-        </div>
-      </div>
-      
-      {/* Insight cards */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 transition-colors">
-        <h3 className="text-md font-medium text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
-          <Brain size={18} className="text-indigo-500 dark:text-indigo-400" />
-          Meditation Insights
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Insight on best time of day */}
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
-            <div className="flex items-start gap-3">
-              <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg text-blue-600 dark:text-blue-400">
-                <Clock size={18} />
-              </div>
-              <div>
-                <h4 className="font-medium text-slate-700 dark:text-slate-300 text-sm mb-1">
-                  Best Time of Day
-                </h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {stats.timeOfDayDistribution.length > 0 ? (
-                    <>
-                      {(() => {
-                        const bestTime = [...stats.timeOfDayDistribution].sort((a, b) => b.value - a.value)[0];
-                        return `You meditate most often in the ${bestTime.name.toLowerCase()}. ${
-                          bestTime.name === 'Morning' ? 'Morning sessions help start your day with clarity.' :
-                          bestTime.name === 'Afternoon' ? 'Afternoon sessions provide a helpful midday reset.' :
-                          bestTime.name === 'Evening' ? 'Evening sessions help transition to a restful state.' :
-                          'Night sessions may help with sleep and relaxation.'
-                        }`;
-                      })()}
-                    </>
-                  ) : (
-                    'Complete more sessions to discover your optimal meditation time.'
-                  )}
-                </p>
-              </div>
             </div>
           </div>
-          
-          {/* Insight on technique effectiveness */}
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
-            <div className="flex items-start gap-3">
-              <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg text-green-600 dark:text-green-400">
-                <Award size={18} />
-              </div>
-              <div>
-                <h4 className="font-medium text-slate-700 dark:text-slate-300 text-sm mb-1">
-                  Most Effective Technique
-                </h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {stats.techniques.length > 0 ? (
-                    `Your most used technique is ${stats.techniques[0].name}. Consider trying ${
-                      stats.techniques.length > 1 ? stats.techniques[1].name : 'other techniques'
-                    } to diversify your practice.`
-                  ) : (
-                    'Try different meditation techniques to see which ones work best for you.'
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

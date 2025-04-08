@@ -11,6 +11,7 @@ import HabitTaskIntegration from './HabitTaskIntegration';
 import { getHabitsForDate, trackHabitCompletion, getHabitTaskNames } from '../utils/habitTrackerUtils';
 import { handleDataChange } from '../utils/dayCoachUtils';
 import { registerTaskCompletion } from '../utils/taskRegistry';
+import QuickAddCategory from './DayChecklist/QuickAddCategory';
 
 // Default categories from separate file
 import { DEFAULT_CATEGORIES } from '../utils/defaultTasks';
@@ -46,6 +47,10 @@ export const DayChecklist = ({ date, storageVersion, onClose }) => {
   const [dayContextVisible, setDayContextVisible] = useState(false);
   const [habitsVisible, setHabitsVisible] = useState(false);
   const [tasksVisible, setTasksVisible] = useState(true); // Expanded by default
+
+  // 1. Add new state variables for category creation
+const [addingCategory, setAddingCategory] = useState(false);
+const [newCategoryName, setNewCategoryName] = useState('');
 
   // Refs for maintaining scroll position
   const taskListRef = useRef(null);
@@ -285,22 +290,147 @@ const loadTasksFromStorage = (savedData) => {
   setActiveCategory(0);
 };
 
-  const validateCategories = (categoriesData) => {
-    return categoriesData
-      .filter(category => 
-        category && 
-        typeof category.title === 'string' && 
-        Array.isArray(category.items)
-      )
-      .map(category => ({
-        title: category.title,
-        items: category.items
-          .filter(item => item !== null && item !== undefined)
-          .map(item => item.toString().trim())
-          .filter(item => item.length > 0)
-      }))
-      .filter(category => category.items.length > 0);
-  };
+const validateCategories = (categoriesData) => {
+  return categoriesData
+    .filter(category => 
+      category && 
+      typeof category.title === 'string' && 
+      Array.isArray(category.items)
+    )
+    .map(category => ({
+      title: category.title,
+      items: category.items
+        .filter(item => item !== null && item !== undefined)
+        .map(item => item.toString().trim())
+        .filter(item => item.length > 0)
+    }));
+    // Removed the filter for empty items arrays to allow empty categories
+};
+
+// 3. Add a new function to handle adding a category
+const handleAddCategory = () => {
+  if (!newCategoryName.trim()) return;
+  
+  // Create a copy of the current categories
+  const newCategories = JSON.parse(JSON.stringify(categories));
+  
+  // Add the new category with an empty items array
+  newCategories.push({
+    title: newCategoryName.trim(),
+    items: []
+  });
+  
+  // Update storage
+  const storage = getStorage();
+  const dayData = storage[date] || {};
+  
+  if (taskListType === 'custom') {
+    storage[date] = {
+      ...dayData,
+      customTasks: newCategories
+    };
+  } else if (taskListType === 'ai') {
+    storage[date] = {
+      ...dayData,
+      aiTasks: newCategories
+    };
+  } else {
+    // For default, convert to custom when edited
+    storage[date] = {
+      ...dayData,
+      customTasks: newCategories
+    };
+    setTaskListType('custom');
+  }
+  
+  setStorage(storage);
+  
+  // Update local state
+  setCategories(newCategories);
+  setAddingCategory(false);
+  setNewCategoryName('');
+  
+  // Set active category to the new one
+  setActiveCategory(newCategories.length - 1);
+};
+
+// Handle editing a task with category-aware IDs
+const handleEditTask = (oldTaskText, newTaskText, categoryTitle) => {
+  // Safety check - don't allow editing protected tasks
+  if (isProtectedTask(oldTaskText, categoryTitle)) return;
+  
+  if (oldTaskText === newTaskText) return; // No changes
+  
+  // Create a copy of the current categories
+  const newCategories = JSON.parse(JSON.stringify(categories));
+  
+  // Find the category
+  const categoryIndex = newCategories.findIndex(cat => cat.title === categoryTitle);
+  if (categoryIndex === -1) return; // Category not found
+  
+  // Find the task in the category
+  const taskIndex = newCategories[categoryIndex].items.indexOf(oldTaskText);
+  if (taskIndex === -1) return; // Task not found
+  
+  // Update the task text
+  newCategories[categoryIndex].items[taskIndex] = newTaskText;
+  
+  // Update checked state by keeping the same checked status but with new key
+  const newChecked = { ...checked };
+  const oldTaskId = `${categoryTitle}|${oldTaskText}`;
+  const newTaskId = `${categoryTitle}|${newTaskText}`;
+  
+  // Transfer checked state from old to new task
+  newChecked[newTaskId] = newChecked[oldTaskId] || false;
+  delete newChecked[oldTaskId];
+  
+  // Update storage
+  const storage = getStorage();
+  const dayData = storage[date] || {};
+  
+  if (taskListType === 'custom') {
+    storage[date] = {
+      ...dayData,
+      customTasks: newCategories,
+      checked: newChecked
+    };
+  } else if (taskListType === 'ai') {
+    storage[date] = {
+      ...dayData,
+      aiTasks: newCategories,
+      checked: newChecked
+    };
+  } else {
+    // For default, convert to custom when edited
+    storage[date] = {
+      ...dayData,
+      customTasks: newCategories,
+      checked: newChecked
+    };
+    setTaskListType('custom');
+  }
+  
+  // If this task had a reminder, update the reminder key
+  if (dayData.taskReminders && dayData.taskReminders[oldTaskText]) {
+    // Create a copy of the reminder for the new task name
+    storage[date].taskReminders = storage[date].taskReminders || {};
+    storage[date].taskReminders[newTaskText] = storage[date].taskReminders[oldTaskText];
+    delete storage[date].taskReminders[oldTaskText];
+    
+    // Update local state for reminders
+    const newTaskReminders = { ...taskReminders };
+    newTaskReminders[newTaskText] = newTaskReminders[oldTaskText];
+    delete newTaskReminders[oldTaskText];
+    setTaskReminders(newTaskReminders);
+  }
+  
+  setStorage(storage);
+  
+  // Update local state
+  setCategories(newCategories);
+  setChecked(newChecked);
+};
+
 
   const handleContextUpdate = (newContext) => {
     setDayContext(newContext);
@@ -432,6 +562,22 @@ const handleQuickAddTask = (categoryIndex) => {
   }
 };
 
+// Helper function to check if a task is a protected task (habit or deferred)
+const isProtectedTask = (taskText, categoryTitle) => {
+  // Habit tasks are identified by starting with "[" and containing "]"
+  const isHabitTask = taskText.startsWith('[') && taskText.includes(']');
+  
+  // Deferred tasks are in a category named "Deferred" or other similar names
+  const isDeferredCategory = 
+    categoryTitle === 'Deferred' || 
+    categoryTitle === 'Imported' || 
+    categoryTitle === 'From Previous Days' ||
+    categoryTitle.toLowerCase().includes('defer') ||
+    categoryTitle.toLowerCase().includes('import');
+  
+  return isHabitTask || isDeferredCategory;
+};
+
  // Task deletion function with category-aware IDs
 const handleDeleteTask = (taskText) => {
   // Create a copy of the current categories
@@ -529,11 +675,6 @@ const handleDeleteTask = (taskText) => {
     for (const category of editedCategories) {
       if (!category.title.trim()) {
         setEditingError("Category titles cannot be empty");
-        return;
-      }
-
-      if (category.items.length === 0) {
-        setEditingError("Each category must have at least one task");
         return;
       }
 
@@ -792,10 +933,24 @@ const handleDeleteTask = (taskText) => {
                 // Normal viewing mode
                 <>
                   <TaskCategoryTabs
-                    categories={categories}
-                    activeCategory={activeCategory}
-                    setActiveCategory={setActiveCategory}
-                  />
+  categories={categories}
+  activeCategory={activeCategory}
+  setActiveCategory={setActiveCategory}
+  onAddCategory={() => setAddingCategory(true)}
+/>
+
+{addingCategory && (
+  <QuickAddCategory
+    newCategoryName={newCategoryName}
+    setNewCategoryName={setNewCategoryName}
+    onAdd={handleAddCategory}
+    onCancel={() => {
+      setAddingCategory(false);
+      setNewCategoryName('');
+    }}
+    existingCategories={categories}
+  />
+)}
 
                   <TaskList
                     categories={categories}
@@ -810,6 +965,7 @@ const handleDeleteTask = (taskText) => {
                     setQuickAddText={setQuickAddText}
                     handleQuickAddTask={handleQuickAddTask}
                     handleDeleteTask={handleDeleteTask}
+                    handleEditTask={handleEditTask}
                   />
                 </>
               )}

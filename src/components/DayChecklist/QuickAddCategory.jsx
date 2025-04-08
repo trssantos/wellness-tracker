@@ -1,61 +1,48 @@
-// components/DayChecklist/QuickAddTask.jsx
+// components/DayChecklist/QuickAddCategory.jsx
 import React, { useState } from 'react';
 import { Plus, X, AlertCircle } from 'lucide-react';
-import TaskSuggestions from '../TaskSuggestions';
-import { registerTask } from '../../utils/taskRegistry';
 
-const QuickAddTask = ({ quickAddText, setQuickAddText, onAdd, onCancel, existingTasks = [] }) => {
+const QuickAddCategory = ({ newCategoryName, setNewCategoryName, onAdd, onCancel, existingCategories = [] }) => {
   const [error, setError] = useState('');
   
   const handleInputChange = (e) => {
-    setQuickAddText(e.target.value);
+    setNewCategoryName(e.target.value);
     setError(''); // Clear error when input changes
   };
   
-  const handleSelectSuggestion = (suggestedTask) => {
-    setQuickAddText(suggestedTask);
-    setError(''); // Clear error when selecting a suggestion
-  };
-  
   const handleAdd = () => {
-    if (!quickAddText.trim()) {
-      setError('Task cannot be empty');
+    if (!newCategoryName.trim()) {
+      setError('Category name cannot be empty');
       return;
     }
     
-    // Check if task already exists in this category
-    if (existingTasks.includes(quickAddText.trim())) {
-      setError('This task already exists in this category');
+    // Check if category already exists
+    if (existingCategories.some(cat => cat.title.toLowerCase() === newCategoryName.trim().toLowerCase())) {
+      setError('This category already exists');
       return;
     }
     
-    registerTask(quickAddText.trim()); // Register the task
     onAdd();
   };
   
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 mb-4">
       <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-        <div className="flex-1 relative">
+        <div className="flex-1">
           <input
             type="text"
-            value={quickAddText}
+            value={newCategoryName}
             onChange={handleInputChange}
-            placeholder="Type new task and press Enter"
+            placeholder="Enter new category name"
             className={`w-full p-2 border ${error ? 'border-red-300 dark:border-red-700' : 'border-slate-200 dark:border-slate-600'} rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm`}
             autoFocus
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.isDefaultPrevented()) {
+              if (e.key === 'Enter') {
                 handleAdd();
               } else if (e.key === 'Escape') {
                 onCancel();
               }
             }}
-          />
-          <TaskSuggestions 
-            inputText={quickAddText} 
-            onSelectTask={handleSelectSuggestion}
-            excludeTasks={existingTasks}
           />
         </div>
         <button
@@ -82,4 +69,4 @@ const QuickAddTask = ({ quickAddText, setQuickAddText, onAdd, onCancel, existing
   );
 };
 
-export default QuickAddTask;
+export default QuickAddCategory;

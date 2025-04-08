@@ -2,6 +2,7 @@ import React from 'react';
 import { CheckSquare, PenTool, Dumbbell, BarChart } from 'lucide-react';
 import { MOODS } from '../MoodSelector';
 import { formatDateForStorage } from '../../utils/dateUtils';
+import { getStorage } from '../../utils/storage';
 
 export const MonthlyHighlights = ({ currentMonth, storageData }) => {
   const getMonthData = () => {
@@ -16,14 +17,31 @@ export const MonthlyHighlights = ({ currentMonth, storageData }) => {
     let totalWorkouts = 0; // Total number of workouts
     let daysWithData = new Set(); // Track unique days with any data
     
+    // Get meditation data to check for journal entries
+    const storage = getStorage();
+    const meditationData = storage.meditationData || {};
+    const journalEntries = meditationData.journalEntries || [];
+    
+    // Create a Set of dates with journal entries for quick lookup
+    const datesWithJournalEntries = new Set();
+    journalEntries.forEach(entry => {
+      const entryDate = entry.date || entry.timestamp?.split('T')[0];
+      if (entryDate) {
+        datesWithJournalEntries.add(entryDate);
+      }
+    });
+    
     // Process each day in the current month
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const dateStr = formatDateForStorage(d);
       const dayData = storageData[dateStr];
       
-      if (dayData) {
+      // Check if this date has a journal entry
+      const hasJournalEntry = datesWithJournalEntries.has(dateStr);
+      
+      if (dayData || hasJournalEntry) {
         // Track progress
-        if (dayData.checked) {
+        if (dayData?.checked) {
           const completed = Object.values(dayData.checked).filter(Boolean).length;
           const total = Object.values(dayData.checked).length;
           if (total > 0) {
@@ -34,13 +52,13 @@ export const MonthlyHighlights = ({ currentMonth, storageData }) => {
         }
         
         // Track mood
-        if (dayData.mood) {
+        if (dayData?.mood) {
           moodCounts[dayData.mood]++;
           daysWithData.add(dateStr);
         }
   
-        // Track notes
-        if (dayData.notes) {
+        // Track notes - count the day if it has either day notes or journal entries
+        if (dayData?.notes || hasJournalEntry) {
           notesDays++;
           daysWithData.add(dateStr);
         }
@@ -49,14 +67,14 @@ export const MonthlyHighlights = ({ currentMonth, storageData }) => {
         let dayHasWorkout = false;
         
         // Check for single workout
-        if (dayData.workout) {
+        if (dayData?.workout) {
           totalWorkouts++; // Count each workout
           dayHasWorkout = true;
           daysWithData.add(dateStr);
         }
   
         // Check for workouts array
-        if (dayData.workouts && Array.isArray(dayData.workouts)) {
+        if (dayData?.workouts && Array.isArray(dayData.workouts)) {
           totalWorkouts += dayData.workouts.length; // Count all workouts in the array
           dayHasWorkout = true;
           daysWithData.add(dateStr);
@@ -87,7 +105,7 @@ export const MonthlyHighlights = ({ currentMonth, storageData }) => {
       notesDays, 
       progressDays,
       workoutDays, 
-      totalWorkouts // Add this new metric
+      totalWorkouts
     };
   };
 

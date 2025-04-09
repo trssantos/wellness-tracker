@@ -188,7 +188,7 @@ const SleepTracker = ({ date, onClose }) => {
               </div>
             </div>
             <div className="mt-2 text-center text-sm font-medium">
-              <span className="text-indigo-600 dark:text-indigo-400">{formatDuration(duration)}</span> of sleep
+              <span className="text-indigo-600 dark:text-indigo-400">{formatDuration(duration)} of sleep</span> 
             </div>
           </div>
 

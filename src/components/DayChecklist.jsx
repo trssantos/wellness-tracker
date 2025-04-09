@@ -16,7 +16,7 @@ import QuickAddCategory from './DayChecklist/QuickAddCategory';
 // Default categories from separate file
 import { DEFAULT_CATEGORIES } from '../utils/defaultTasks';
 
-export const DayChecklist = ({ date, storageVersion, onClose }) => {
+export const DayChecklist = ({ date, storageVersion, taskParams, onClose }) => {
   const [activeCategory, setActiveCategory] = useState(0);
   const [checked, setChecked] = useState({});
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
@@ -78,6 +78,28 @@ const openImportTasksModal = () => {
   // Only update activeCategory when categories change due to initial load, not during edits
   useEffect(() => {
     if (categories === DEFAULT_CATEGORIES) {
+      setActiveCategory(0);
+    }
+  }, []);
+
+  // Handle the initial active category based on taskParams
+  useEffect(() => {
+    if (taskParams?.category && categories.length > 0) {
+      // Find the index of the category matching the taskParams.category
+      const categoryIndex = categories.findIndex(cat => 
+        cat.title.trim() === taskParams.category.trim()
+      );
+      
+      // If found, set the active category
+      if (categoryIndex !== -1) {
+        setActiveCategory(categoryIndex);
+      }
+    }
+  }, [taskParams, categories]);
+
+   // Only update activeCategory automatically when categories change and we don't have a target category
+   useEffect(() => {
+    if (categories === DEFAULT_CATEGORIES && !taskParams?.category) {
       setActiveCategory(0);
     }
   }, []);

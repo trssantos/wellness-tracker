@@ -48,7 +48,7 @@ import GoalsPlaceholder from './components/BucketList/GoalsPlaceholder';
 import BucketList from './components/BucketList/BucketList';
 import MeditationSection  from './components/Meditation/MeditationSection';
 import { formatDateForStorage } from './utils/dateUtils';
-
+import TaskSearchModal from './components/TaskSearchModal';
 
 const App = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -65,6 +65,8 @@ const App = () => {
   const [pendingTasksDate, setPendingTasksDate] = useState(null);
 const [pendingTasksForDate, setPendingTasksForDate] = useState(null);
 const [sleepDate, setSleepDate] = useState(null);
+const [taskParams, setTaskParams] = useState(null);
+const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
 // Track if Focus section has an active session
 const hasFocusSession = useRef(false);
@@ -151,6 +153,20 @@ const preventNavigationAway = useRef(false);
       });
     }
   }, []);
+
+ 
+  
+  const handleOpenSearch = () => {
+    setIsSearchModalOpen(true);
+    
+    // Use setTimeout to ensure state is updated before opening the modal
+    setTimeout(() => {
+      const searchModal = document.getElementById('task-search-modal');
+      if (searchModal) {
+        searchModal.showModal();
+      }
+    }, 50);
+  };
 
   // 1. Add a new function to check for pending tasks from multiple days
   const checkForPendingTasksMultiDay = (currentDate, daysToCheck = 7) => {
@@ -372,13 +388,23 @@ const hasPendingTasksOnDate = (dateToCheck, targetDate) => {
     setStorageVersion(prev => prev + 1); // Increment version to force re-render
   };
 
-  const handleDaySelect = (dateStr) => {
+  const handleDaySelect = (dateStr, params = {}) => {
     setSelectedDay(dateStr);
-
-    // Inject habit tasks into the daily task list
-  injectHabitTasks(dateStr);
-
-    document.getElementById('day-action-modal').showModal();
+    setTaskParams(params); // Store the category/task info
+  
+    // If openTaskList flag is set, bypass day action modal and open checklist directly
+    if (params?.openTaskList) {
+      // Skip day action modal and go directly to checklist
+      setTimeout(() => {
+        const checklistModal = document.getElementById('checklist-modal');
+        if (checklistModal) {
+          checklistModal.showModal();
+        }
+      }, 50);
+    } else {
+      // Use the standard flow
+      document.getElementById('day-action-modal').showModal();
+    }
   };
 
   const handleDayAction = (action) => {
@@ -711,6 +737,7 @@ const handlePendingTasksAction = (action, tasks = []) => {
         <FloatingMenu 
           onDaySelect={handleDaySelect}
           onVoiceInput={handleVoiceInput}
+          onSearch={handleOpenSearch}
         />
         )}
         
@@ -773,14 +800,16 @@ const handlePendingTasksAction = (action, tasks = []) => {
         />
         
         <DayChecklist 
-          date={selectedDay}
-          storageVersion={storageVersion} // Pass this to force updates
-          onClose={() => {
-            document.getElementById('checklist-modal').close();
-            setSelectedDay(null);
-            handleStorageUpdate();
-          }}
-        />
+  date={selectedDay}
+  storageVersion={storageVersion}
+  taskParams={taskParams} // Pass the task parameters
+  onClose={() => {
+    document.getElementById('checklist-modal').close();
+    setSelectedDay(null);
+    setTaskParams(null); // Reset task params when closing
+    handleStorageUpdate();
+  }}
+/>
 
         <DayNotes 
           date={selectedDay}
@@ -831,6 +860,19 @@ const handlePendingTasksAction = (action, tasks = []) => {
           handleStorageUpdate();
         }}
       />
+
+{isSearchModalOpen && (
+  <TaskSearchModal
+    onClose={() => {
+      setIsSearchModalOpen(false);
+      const modal = document.getElementById('task-search-modal');
+      if (modal) {
+        modal.close();
+      }
+    }}
+    onSelectDay={handleDaySelect}
+  />
+)}
 
         <VoiceTaskInput 
           date={voiceInputDate}

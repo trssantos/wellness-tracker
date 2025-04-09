@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Mic, X, Calendar, MessageCircle, Send, Sparkles } from 'lucide-react';
+import { Plus, Mic, X, Calendar, MessageCircle, Send, Sparkles, Search } from 'lucide-react';
 import { askSolaris } from '../utils/dayCoachUtils';
 import { formatDateForStorage } from '../utils/dateUtils';
 
@@ -247,7 +247,7 @@ const AskSolarisDialog = ({ isOpen, onClose }) => {
 };
 
 // Enhanced FloatingMenu component with Ask Solaris integration
-export const FloatingMenu = ({ onDaySelect, onVoiceInput }) => {
+export const FloatingMenu = ({ onDaySelect, onVoiceInput, onSearch }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [askSolarisOpen, setAskSolarisOpen] = useState(false);
 
@@ -274,11 +274,25 @@ export const FloatingMenu = ({ onDaySelect, onVoiceInput }) => {
     setIsExpanded(false);
   };
 
+  const handleSearch = () => {
+    onSearch();
+    setIsExpanded(false);
+  };
+
   return (
     <>
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
         {isExpanded && (
           <>
+            {/* Search Option - NEW */}
+            <button
+              onClick={handleSearch}
+              className="p-4 rounded-full shadow-lg text-white bg-cyan-500 dark:bg-cyan-600 hover:bg-cyan-600 dark:hover:bg-cyan-700 transition-colors"
+              aria-label="Search tasks"
+            >
+              <Search size={24} />
+            </button>
+            
             {/* Ask Solaris Option */}
             <button
               onClick={handleAskSolaris}

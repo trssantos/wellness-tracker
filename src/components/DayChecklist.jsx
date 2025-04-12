@@ -478,7 +478,7 @@ const handleEditTask = (oldTaskText, newTaskText, categoryTitle) => {
     setStorage(storage);
   };
 
-  // Update how we track checked state with a category identifier
+// Update how we track checked state with a category identifier
 const handleCheck = (item, categoryTitle) => {
   // Create a unique identifier that includes both category and task text
   const taskId = `${categoryTitle}|${item}`;
@@ -489,9 +489,9 @@ const handleCheck = (item, categoryTitle) => {
   };
   setChecked(newChecked);
   
-  // If the task was just completed, register the completion
+  // If the task was just completed, register the completion with category
   if (newChecked[taskId] === true) {
-    registerTaskCompletion(item);
+    registerTaskCompletion(item, categoryTitle);
   }
 
   const storage = getStorage();

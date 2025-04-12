@@ -765,7 +765,7 @@ const processStorageData = (data, month) => {
       {/* Charts Grid Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Task Completion Chart */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
           <SectionHeader 
             title="Task Completion Trend" 
             icon={<Activity className="text-blue-500 dark:text-blue-400" size={20} />}
@@ -789,7 +789,7 @@ const processStorageData = (data, month) => {
 </div>
         
         {/* Mood Trend Chart */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
           <SectionHeader 
             title="Morning Mood Trend" 
             icon={<LineChart className="text-purple-500 dark:text-purple-400" size={20} />}

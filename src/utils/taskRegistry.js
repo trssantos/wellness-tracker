@@ -206,35 +206,66 @@ export const migrateTasksToRegistry = () => {
 };
 
 // Register completion of a task
-export const registerTaskCompletion = (taskText) => {
-    if (!taskText || taskText.trim() === '') return null;
+// Register completion of a task - with improved category support
+export const registerTaskCompletion = (taskText, categoryTitle = '') => {
+  // Handle both formats: simple task text and category-aware format
+  let actualTaskText = taskText;
+  
+  // If the taskText contains a category separator, extract the actual task text
+  if (taskText.includes('|')) {
+    const parts = taskText.split('|');
+    if (parts.length > 1) {
+      actualTaskText = parts[1];
+      // If no category was provided but we can extract it from the task text
+      if (!categoryTitle) {
+        categoryTitle = parts[0];
+      }
+    }
+  }
+  
+  if (!actualTaskText || actualTaskText.trim() === '') return null;
+  
+  let storage = getStorage();
+  
+  if (!storage.taskRegistry) {
+    initTaskRegistry();
+    storage = getStorage(); // Refresh storage reference
+  }
+  
+  const normalizedText = actualTaskText.trim();
+  
+  if (!storage.taskRegistry.tasks[normalizedText]) {
+    // If task doesn't exist yet, register it first
+    registerTask(normalizedText, categoryTitle);
+    // Important: Get a fresh copy of storage after registering the task
+    storage = getStorage();
+  }
+  
+  // Now safely update the completion count
+  if (storage.taskRegistry && storage.taskRegistry.tasks && storage.taskRegistry.tasks[normalizedText]) {
+    // Add null check and default to 0 if completedCount doesn't exist
+    storage.taskRegistry.tasks[normalizedText].completedCount = 
+      (storage.taskRegistry.tasks[normalizedText].completedCount || 0) + 1;
     
-    let storage = getStorage();
-    
-    if (!storage.taskRegistry) {
-      initTaskRegistry();
-      storage = getStorage(); // Refresh storage reference
+    // Also increment regular count if it hasn't been done yet
+    if (!storage.taskRegistry.tasks[normalizedText].count) {
+      storage.taskRegistry.tasks[normalizedText].count = 1;
     }
     
-    const normalizedText = taskText.trim();
-    
-    if (!storage.taskRegistry.tasks[normalizedText]) {
-      // If task doesn't exist yet, register it first
-      registerTask(normalizedText);
-      // Important: Get a fresh copy of storage after registering the task
-      storage = getStorage();
+    // Add category if provided and not already in the list
+    if (categoryTitle && 
+        storage.taskRegistry.tasks[normalizedText].categories && 
+        !storage.taskRegistry.tasks[normalizedText].categories.includes(categoryTitle)) {
+      storage.taskRegistry.tasks[normalizedText].categories.push(categoryTitle);
     }
     
-    // Now safely update the completion count
-    if (storage.taskRegistry && storage.taskRegistry.tasks && storage.taskRegistry.tasks[normalizedText]) {
-      // Add null check and default to 0 if completedCount doesn't exist
-      storage.taskRegistry.tasks[normalizedText].completedCount = 
-        (storage.taskRegistry.tasks[normalizedText].completedCount || 0) + 1;
-      
-      setStorage(storage);
-      return storage.taskRegistry.tasks[normalizedText];
-    } else {
-      console.error('Failed to update completion count for task:', normalizedText);
-      return null;
-    }
-  };
+    // Update last used timestamp
+    storage.taskRegistry.tasks[normalizedText].lastUsed = new Date().toISOString();
+    
+    setStorage(storage);
+    return storage.taskRegistry.tasks[normalizedText];
+  } else {
+    console.error('Failed to update completion count for task:', normalizedText);
+    return null;
+  }
+};

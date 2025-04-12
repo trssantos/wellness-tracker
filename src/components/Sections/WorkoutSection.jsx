@@ -5,13 +5,17 @@ import WorkoutDetails from '../Workout/WorkoutDetails';
 import WorkoutForm from '../Workout/WorkoutForm';
 import WorkoutAnalytics from '../Workout/WorkoutAnalytics';
 import AiWorkoutGenerator from '../Workout/AiWorkoutGenerator';
-import WorkoutHistory from '../Workout/WorkoutHistory'; // Import the new component
+import WorkoutHistory from '../Workout/WorkoutHistory';
+import WorkoutTracker from '../WorkoutTracker';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
 const WorkoutSection = () => {
   // Main view state
   const [workouts, setWorkouts] = useState([]);
   const [activeWorkout, setActiveWorkout] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'detail', 'create', 'edit', 'ai', 'analytics', 'history'
+  const [showWorkoutTracker, setShowWorkoutTracker] = useState(false);
+  const [workoutToEdit, setWorkoutToEdit] = useState(null);
   
   // Initialize and load workouts
   useEffect(() => {
@@ -67,8 +71,17 @@ const WorkoutSection = () => {
   
   // Handle editing a workout from history
   const handleEditWorkoutFromHistory = (workout) => {
-    setActiveWorkout(workout);
-    setViewMode('edit');
+    // Open a workout tracker with the specific workout to edit
+    setWorkoutToEdit(workout);
+    setShowWorkoutTracker(true);
+    
+    // Use setTimeout to ensure the modal element exists before trying to open it
+    setTimeout(() => {
+      const modal = document.getElementById('workout-modal');
+      if (modal) {
+        modal.showModal();
+      }
+    }, 50);
   };
 
   // Handle saving a new workout
@@ -154,7 +167,7 @@ const WorkoutSection = () => {
             onCreateWorkout={handleCreateWorkout}
             onCreateWithAI={handleCreateWithAI}
             onViewAnalytics={handleViewAnalytics}
-            onViewHistory={handleViewHistory} // Add new history button handler
+            onViewHistory={handleViewHistory}
           />
         );
     }
@@ -163,6 +176,27 @@ const WorkoutSection = () => {
   return (
     <div className="space-y-6">
       {renderCurrentView()}
+      
+      {/* Workout Tracker Modal for editing workouts from history */}
+      {showWorkoutTracker && (
+        <WorkoutTracker
+          date={workoutToEdit?.date || formatDateForStorage(new Date())}
+          workoutToEdit={workoutToEdit}
+          onClose={() => {
+            setShowWorkoutTracker(false);
+            setWorkoutToEdit(null);
+            
+            // Close the modal
+            const modal = document.getElementById('workout-modal');
+            if (modal) {
+              modal.close();
+            }
+            
+            // Refresh data
+            loadWorkouts();
+          }}
+        />
+      )}
     </div>
   );
 };

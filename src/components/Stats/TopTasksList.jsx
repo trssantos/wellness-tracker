@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getStorage } from '../../utils/storage';
-import { CheckSquare, Activity, BookOpen, BarChart2 } from 'lucide-react';
+import { CheckSquare, Activity, BookOpen, BarChart2, Award } from 'lucide-react';
 
 const TopTasksList = () => {
   const [taskStats, setTaskStats] = useState({
@@ -70,6 +70,14 @@ const TopTasksList = () => {
     }
   };
 
+  // Get medal styling for top 3
+  const getMedalStyle = (index) => {
+    if (index === 0) return { bg: 'bg-yellow-100 dark:bg-yellow-900/40', border: 'border-yellow-300 dark:border-yellow-700', text: 'text-yellow-700 dark:text-yellow-300', icon: <Award size={14} className="text-yellow-500" /> };
+    if (index === 1) return { bg: 'bg-slate-100 dark:bg-slate-700/60', border: 'border-slate-300 dark:border-slate-600', text: 'text-slate-700 dark:text-slate-300', icon: <Award size={14} className="text-slate-400" /> };
+    if (index === 2) return { bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-200 dark:border-amber-800', text: 'text-amber-700 dark:text-amber-300', icon: <Award size={14} className="text-amber-600" /> };
+    return { bg: 'bg-slate-50 dark:bg-slate-700/50', border: 'border-slate-200 dark:border-slate-700', text: '', icon: null };
+  };
+
   if (loading) {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
@@ -86,21 +94,23 @@ const TopTasksList = () => {
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 transition-colors flex items-center gap-2">
+      <div className="mb-4">
+        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 transition-colors flex items-center gap-2 mb-2">
           <CheckSquare className="text-blue-500 dark:text-blue-400" size={20} />
           Most Completed Tasks
         </h3>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <Activity className="text-blue-500 dark:text-blue-400" size={16} />
-            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+        
+        {/* Stats below title for better mobile layout */}
+        <div className="flex flex-wrap gap-2 mt-1">
+          <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs">
+            <Activity className="text-blue-500 dark:text-blue-400" size={12} />
+            <span className="font-medium text-blue-700 dark:text-blue-300">
               {taskStats.totalCompletions} completions
             </span>
           </div>
-          <div className="flex items-center gap-1 px-3 py-1 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <BookOpen className="text-green-500 dark:text-green-400" size={16} />
-            <span className="text-sm font-medium text-green-700 dark:text-green-300">
+          <div className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/20 rounded-lg text-xs">
+            <BookOpen className="text-green-500 dark:text-green-400" size={12} />
+            <span className="font-medium text-green-700 dark:text-green-300">
               {taskStats.totalTasks} unique tasks
             </span>
           </div>
@@ -116,34 +126,48 @@ const TopTasksList = () => {
       ) : (
         <>
           <div className="space-y-3 mb-4">
-            {taskStats.topTasks.slice(0, displayLimit).map((task, index) => (
-              <div 
-                key={index} 
-                className="flex items-center p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700"
-              >
-                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold mr-3">
-                  {index + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-slate-800 dark:text-slate-200 font-medium mb-1 truncate">
-                    {task.name}
-                  </p>
-                  <div className="flex flex-wrap gap-1">
-                    {task.categories && task.categories.slice(0, 3).map((category, catIndex) => (
-                      <React.Fragment key={catIndex}>
-                        {getCategoryBadge(category)}
-                      </React.Fragment>
-                    ))}
-                    {task.categories && task.categories.length > 3 && (
-                      <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full">
-                        +{task.categories.length - 3} more
-                      </span>
-                    )}
+            {taskStats.topTasks.slice(0, displayLimit).map((task, index) => {
+              const medalStyle = getMedalStyle(index);
+              
+              return (
+                <div 
+                  key={index} 
+                  className={`flex items-center p-3 rounded-lg ${medalStyle.bg} border ${medalStyle.border}`}
+                >
+                  {/* Use different styling for top 3 */}
+                  {index < 3 ? (
+                    <div className={`w-8 h-8 rounded-full bg-white dark:bg-slate-800 border ${medalStyle.border} 
+                                    flex items-center justify-center font-bold mr-3 ${medalStyle.text}`}>
+                      {medalStyle.icon}
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 
+                                    flex items-center justify-center font-bold mr-3">
+                      {index + 1}
+                    </div>
+                  )}
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="text-slate-800 dark:text-slate-200 font-medium mb-1 truncate">
+                      {task.name}
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {task.categories && task.categories.slice(0, 3).map((category, catIndex) => (
+                        <React.Fragment key={catIndex}>
+                          {getCategoryBadge(category)}
+                        </React.Fragment>
+                      ))}
+                      {task.categories && task.categories.length > 3 && (
+                        <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full">
+                          +{task.categories.length - 3} more
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-1 ml-3">
-                  <div className="text-right">
-                    <div className="text-blue-600 dark:text-blue-400 font-bold">
+                  
+                  {/* Move completions count to right side */}
+                  <div className="text-right ml-2">
+                    <div className={`${index < 3 ? medalStyle.text : 'text-blue-600 dark:text-blue-400'} font-bold`}>
                       {task.count}
                     </div>
                     <div className="text-xs text-slate-500 dark:text-slate-400">
@@ -151,8 +175,8 @@ const TopTasksList = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           
           {taskStats.topTasks.length > displayLimit ? (

@@ -102,19 +102,21 @@ export const getTaskStats = () => {
   const tasks = storage.taskRegistry.tasks;
   const taskEntries = Object.entries(tasks);
   
-  // Most frequently used tasks
+  // Most frequently COMPLETED tasks (sorted by completedCount)
   const topTasks = taskEntries
+    .filter(([_, data]) => (data.completedCount || 0) > 0) // Only include tasks with completions
     .map(([name, data]) => ({
       name,
-      count: data.count,
-      categories: data.categories || []
+      count: data.completedCount || 0, // Use completedCount for display
+      categories: data.categories || [],
+      total: data.count || 0 // Keep total count for reference
     }))
-    .sort((a, b) => b.count - a.count)
+    .sort((a, b) => b.count - a.count) // Sort by completion count descending
     .slice(0, 20);
   
-  // Total stats
+  // Total completions should use completedCount, not count
   const totalTasks = taskEntries.length;
-  const totalCompletions = taskEntries.reduce((sum, [_, data]) => sum + data.count, 0);
+  const totalCompletions = taskEntries.reduce((sum, [_, data]) => sum + (data.completedCount || 0), 0);
   
   return {
     totalTasks,
@@ -206,7 +208,6 @@ export const migrateTasksToRegistry = () => {
 };
 
 // Register completion of a task
-// Register completion of a task - with improved category support
 export const registerTaskCompletion = (taskText, categoryTitle = '') => {
   // Handle both formats: simple task text and category-aware format
   let actualTaskText = taskText;
@@ -220,6 +221,15 @@ export const registerTaskCompletion = (taskText, categoryTitle = '') => {
       if (!categoryTitle) {
         categoryTitle = parts[0];
       }
+    }
+  }
+  
+  // Special handling for habit tasks - extract the habit name
+  let habitName = null;
+  if (actualTaskText.startsWith('[') && actualTaskText.includes(']')) {
+    const match = actualTaskText.match(/\[(.*?)\]/);
+    if (match && match[1]) {
+      habitName = match[1];
     }
   }
   
@@ -243,9 +253,13 @@ export const registerTaskCompletion = (taskText, categoryTitle = '') => {
   
   // Now safely update the completion count
   if (storage.taskRegistry && storage.taskRegistry.tasks && storage.taskRegistry.tasks[normalizedText]) {
-    // Add null check and default to 0 if completedCount doesn't exist
-    storage.taskRegistry.tasks[normalizedText].completedCount = 
-      (storage.taskRegistry.tasks[normalizedText].completedCount || 0) + 1;
+    // Initialize completedCount if it doesn't exist
+    if (!storage.taskRegistry.tasks[normalizedText].completedCount) {
+      storage.taskRegistry.tasks[normalizedText].completedCount = 0;
+    }
+    
+    // Increment the completed count
+    storage.taskRegistry.tasks[normalizedText].completedCount += 1;
     
     // Also increment regular count if it hasn't been done yet
     if (!storage.taskRegistry.tasks[normalizedText].count) {
@@ -259,6 +273,12 @@ export const registerTaskCompletion = (taskText, categoryTitle = '') => {
       storage.taskRegistry.tasks[normalizedText].categories.push(categoryTitle);
     }
     
+    // Add habit tag if this is a habit task
+    if (habitName && !storage.taskRegistry.tasks[normalizedText].isHabit) {
+      storage.taskRegistry.tasks[normalizedText].isHabit = true;
+      storage.taskRegistry.tasks[normalizedText].habitName = habitName;
+    }
+    
     // Update last used timestamp
     storage.taskRegistry.tasks[normalizedText].lastUsed = new Date().toISOString();
     
@@ -268,4 +288,41 @@ export const registerTaskCompletion = (taskText, categoryTitle = '') => {
     console.error('Failed to update completion count for task:', normalizedText);
     return null;
   }
+};
+
+export const registerTaskUncompletion = (taskText, categoryTitle = '') => {
+  // Similar logic to registerTaskCompletion
+  let actualTaskText = taskText;
+  
+  if (taskText.includes('|')) {
+    const parts = taskText.split('|');
+    if (parts.length > 1) {
+      actualTaskText = parts[1];
+      if (!categoryTitle) {
+        categoryTitle = parts[0];
+      }
+    }
+  }
+  
+  if (!actualTaskText || actualTaskText.trim() === '') return null;
+  
+  const storage = getStorage();
+  
+  if (!storage.taskRegistry || !storage.taskRegistry.tasks) {
+    return null;
+  }
+  
+  const normalizedText = actualTaskText.trim();
+  
+  if (storage.taskRegistry.tasks[normalizedText]) {
+    // Decrement completedCount, but don't go below 0
+    const currentCount = storage.taskRegistry.tasks[normalizedText].completedCount || 0;
+    if (currentCount > 0) {
+      storage.taskRegistry.tasks[normalizedText].completedCount = currentCount - 1;
+      setStorage(storage);
+      return storage.taskRegistry.tasks[normalizedText];
+    }
+  }
+  
+  return null;
 };

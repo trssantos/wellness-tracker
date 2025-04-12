@@ -4,6 +4,7 @@ import { getStorage, setStorage } from '../utils/storage';
 import { BackupRestoreDemo } from './BackupRestoreDemo';
 import { AI_PROVIDERS } from '../utils/ai-service';
 import { formatDateForStorage } from '../utils/dateUtils';
+import { rebuildTaskStats } from '../utils/migrateTaskStats';
 
 export const Settings = ({ onClose }) => {
   const [backupStatus, setBackupStatus] = useState(null);
@@ -172,6 +173,59 @@ export const Settings = ({ onClose }) => {
       setAISettingsStatus({ success: false, message: 'Failed to save settings: ' + error.message });
     }
   };
+
+  const RebuildTaskStats = () => {
+    const [isRebuilding, setIsRebuilding] = useState(false);
+    const [result, setResult] = useState(null);
+  
+    const handleRebuild = async () => {
+      if (window.confirm('This will rebuild your task completion statistics. Continue?')) {
+        setIsRebuilding(true);
+        try {
+          // Wrap in setTimeout to allow UI to update
+          setTimeout(() => {
+            const rebuiltStats = rebuildTaskStats();
+            setResult(rebuiltStats);
+            setIsRebuilding(false);
+          }, 100);
+        } catch (error) {
+          console.error('Error rebuilding task stats:', error);
+          setIsRebuilding(false);
+          setResult({ error: error.message });
+        }
+      }
+    };
+  
+    return (
+      <div className="setting-group">
+        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-2">Task Statistics</h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+          Rebuild task completion statistics if numbers appear incorrect or inconsistent.
+        </p>
+        
+        <button
+          onClick={handleRebuild}
+          disabled={isRebuilding}
+          className="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors disabled:opacity-50"
+        >
+          {isRebuilding ? 'Rebuilding...' : 'Rebuild Task Statistics'}
+        </button>
+        
+        {result && (
+          <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            {result.error ? (
+              <p className="text-red-600 dark:text-red-400">Error: {result.error}</p>
+            ) : (
+              <p className="text-green-600 dark:text-green-400">
+                Success! Found {result.completionsFound} completions across {result.daysProcessed} days.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+  
 
   return (
     <dialog 
@@ -472,6 +526,8 @@ export const Settings = ({ onClose }) => {
             )}
           </div>
         </div>
+
+        <RebuildTaskStats />
         
         {/* Help section with interactive demo */}
         <div className="mt-6 bg-slate-50 dark:bg-slate-800/60 rounded-lg p-4 transition-colors">

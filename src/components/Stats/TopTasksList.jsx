@@ -1,127 +1,176 @@
-// components/Stats/TopTasksList.jsx
 import React, { useState, useEffect } from 'react';
-import { getTaskStats } from '../../utils/taskRegistry';
-import { CheckCircle, Award, TrendingUp, Tag, BarChart2 } from 'lucide-react';
+import { getStorage } from '../../utils/storage';
+import { CheckSquare, Activity, BookOpen, BarChart2 } from 'lucide-react';
 
 const TopTasksList = () => {
-  const [stats, setStats] = useState({ topTasks: [], totalTasks: 0, totalCompletions: 0 });
-  const [viewLimit, setViewLimit] = useState(10);
-  
+  const [taskStats, setTaskStats] = useState({
+    totalTasks: 0,
+    totalCompletions: 0,
+    topTasks: []
+  });
+  const [loading, setLoading] = useState(true);
+  const [displayLimit, setDisplayLimit] = useState(10);
+
   useEffect(() => {
-    const taskStats = getTaskStats();
-    setStats(taskStats);
+    loadTaskStats();
   }, []);
-  
-  const handleShowMore = () => {
-    setViewLimit(prev => prev + 10);
+
+  const loadTaskStats = () => {
+    setLoading(true);
+    const storage = getStorage();
+    
+    if (!storage.taskRegistry || !storage.taskRegistry.tasks) {
+      setTaskStats({ totalTasks: 0, totalCompletions: 0, topTasks: [] });
+      setLoading(false);
+      return;
+    }
+    
+    const tasks = storage.taskRegistry.tasks;
+    const taskEntries = Object.entries(tasks);
+    
+    // Most frequently COMPLETED tasks (using completedCount)
+    const topTasks = taskEntries
+      .filter(([_, data]) => (data.completedCount || 0) > 0) // Only include tasks with completions
+      .map(([name, data]) => ({
+        name,
+        count: data.completedCount || 0, // Use completedCount instead of count
+        categories: data.categories || [],
+        total: data.count || 0 // Total times task appeared
+      }))
+      .sort((a, b) => b.count - a.count) // Sort by completion count
+      .slice(0, 20); // Get top 20
+    
+    // Total stats
+    const totalTasks = taskEntries.length;
+    const totalCompletions = taskEntries.reduce((sum, [_, data]) => sum + (data.completedCount || 0), 0);
+    
+    setTaskStats({
+      totalTasks,
+      totalCompletions,
+      topTasks
+    });
+    setLoading(false);
   };
-  
-  const getTaskRank = (index) => {
-    if (index === 0) return "🥇";
-    if (index === 1) return "🥈";
-    if (index === 2) return "🥉";
-    return `#${index + 1}`;
+
+  const getCategoryBadge = (category) => {
+    // Return colorful badges for different category types
+    switch(category.toLowerCase()) {
+      case 'morning essentials':
+        return <span className="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 rounded-full">Morning</span>;
+      case 'work focus':
+        return <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 rounded-full">Work</span>;
+      case 'self care':
+        return <span className="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 rounded-full">Self-Care</span>;
+      case 'evening routine':
+        return <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 rounded-full">Evening</span>;
+      case 'creative time':
+        return <span className="text-xs px-2 py-0.5 bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-300 rounded-full">Creative</span>;
+      default:
+        return <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300 rounded-full">{category}</span>;
+    }
   };
-  
-  if (stats.topTasks.length === 0) {
+
+  if (loading) {
     return (
-      <div className="h-full flex items-center justify-center p-6">
-        <div className="text-center">
-          <BarChart2 size={40} className="mx-auto mb-4 text-slate-400" />
-          <p className="text-slate-500 dark:text-slate-400">
-            No task data available yet. Start creating tasks to track stats.
-          </p>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 transition-colors flex items-center gap-2">
+          <CheckSquare className="text-blue-500 dark:text-blue-400" size={20} />
+          Most Completed Tasks
+        </h3>
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
       </div>
     );
   }
-  
+
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg p-4 sm:p-6 transition-colors">
-      <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-        <Award className="text-blue-500 dark:text-blue-400" size={20} />
-        Most Completed Tasks
-      </h3>
-      
-      <div className="flex flex-wrap gap-2 mb-4">
-        <div className="bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg text-sm text-blue-700 dark:text-blue-300">
-          <span className="font-medium">{stats.totalTasks}</span> unique tasks
-        </div>
-        <div className="bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-lg text-sm text-green-700 dark:text-green-300">
-          <span className="font-medium">{stats.totalCompletions}</span> total completions
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 transition-colors flex items-center gap-2">
+          <CheckSquare className="text-blue-500 dark:text-blue-400" size={20} />
+          Most Completed Tasks
+        </h3>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <Activity className="text-blue-500 dark:text-blue-400" size={16} />
+            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+              {taskStats.totalCompletions} completions
+            </span>
+          </div>
+          <div className="flex items-center gap-1 px-3 py-1 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <BookOpen className="text-green-500 dark:text-green-400" size={16} />
+            <span className="text-sm font-medium text-green-700 dark:text-green-300">
+              {taskStats.totalTasks} unique tasks
+            </span>
+          </div>
         </div>
       </div>
-      
-      <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-        {stats.topTasks.slice(0, viewLimit).map((task, index) => {
-          // Determine badge color based on completion count
-          let badgeClass = "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400";
-          if (task.count >= 25) {
-            badgeClass = "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300";
-          } else if (task.count >= 15) {
-            badgeClass = "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300";
-          } else if (task.count >= 5) {
-            badgeClass = "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300";
-          }
+
+      {taskStats.topTasks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-8 text-center">
+          <BarChart2 size={48} className="text-slate-300 dark:text-slate-600 mb-3" />
+          <p className="text-slate-500 dark:text-slate-400 mb-2">No completed tasks found yet.</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500">Start completing tasks to see your most frequent tasks here.</p>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-3 mb-4">
+            {taskStats.topTasks.slice(0, displayLimit).map((task, index) => (
+              <div 
+                key={index} 
+                className="flex items-center p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700"
+              >
+                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold mr-3">
+                  {index + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-slate-800 dark:text-slate-200 font-medium mb-1 truncate">
+                    {task.name}
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {task.categories && task.categories.slice(0, 3).map((category, catIndex) => (
+                      <React.Fragment key={catIndex}>
+                        {getCategoryBadge(category)}
+                      </React.Fragment>
+                    ))}
+                    {task.categories && task.categories.length > 3 && (
+                      <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full">
+                        +{task.categories.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 ml-3">
+                  <div className="text-right">
+                    <div className="text-blue-600 dark:text-blue-400 font-bold">
+                      {task.count}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      completions
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
           
-          return (
-            <div 
-              key={task.name}
-              className={`flex items-start p-3 rounded-lg ${
-                index < 3 
-                  ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' 
-                  : 'bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700'
-              }`}
+          {taskStats.topTasks.length > displayLimit ? (
+            <button 
+              className="w-full py-2 px-4 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              onClick={() => setDisplayLimit(prev => prev + 10)}
             >
-              <div className="flex-shrink-0 font-bold text-center mr-3 w-6">
-                {getTaskRank(index)}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-slate-800 dark:text-slate-200 mb-1">
-                  {task.name}
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs ${badgeClass}`}>
-                    <CheckCircle size={12} className="mr-1" />
-                    Completed {task.count} time{task.count !== 1 ? 's' : ''}
-                  </span>
-                  
-                  {/* Show categories if available */}
-                  {task.categories && task.categories.length > 0 && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
-                      <Tag size={12} className="mr-1" />
-                      {task.categories.length > 3 
-                        ? `${task.categories.slice(0, 2).join(', ')} +${task.categories.length - 2}` 
-                        : task.categories.join(', ')}
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {/* Visual indicator for top tasks */}
-              {index < 3 && (
-                <div className="ml-2">
-                  <TrendingUp size={16} className={
-                    index === 0 ? "text-amber-500" : 
-                    index === 1 ? "text-blue-500" : "text-green-500"
-                  } />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      
-      {stats.topTasks.length > viewLimit && (
-        <div className="text-center mt-4">
-          <button 
-            onClick={handleShowMore}
-            className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-          >
-            Show More
-          </button>
-        </div>
+              Show More
+            </button>
+          ) : taskStats.topTasks.length > 10 ? (
+            <button 
+              className="w-full py-2 px-4 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              onClick={() => setDisplayLimit(10)}
+            >
+              Show Less
+            </button>
+          ) : null}
+        </>
       )}
     </div>
   );

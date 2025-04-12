@@ -10,7 +10,7 @@ import { TaskReminder } from './TaskReminder';
 import HabitTaskIntegration from './HabitTaskIntegration';
 import { getHabitsForDate, trackHabitCompletion, getHabitTaskNames } from '../utils/habitTrackerUtils';
 import { handleDataChange } from '../utils/dayCoachUtils';
-import { registerTaskCompletion } from '../utils/taskRegistry';
+import { registerTaskCompletion, registerTaskUncompletion } from '../utils/taskRegistry';
 import QuickAddCategory from './DayChecklist/QuickAddCategory';
 
 // Default categories from separate file
@@ -483,17 +483,26 @@ const handleCheck = (item, categoryTitle) => {
   // Create a unique identifier that includes both category and task text
   const taskId = `${categoryTitle}|${item}`;
   
+  // Get the current checked state before updating
+  const wasChecked = checked[taskId] === true;
+  
+  // Update the checked state
   const newChecked = {
     ...checked,
-    [taskId]: !checked[taskId]
+    [taskId]: !wasChecked
   };
   setChecked(newChecked);
   
-  // If the task was just completed, register the completion with category
-  if (newChecked[taskId] === true) {
+  // Register the completion or uncompletion with the task registry
+  if (!wasChecked) {
+    // Task is being checked (completed)
     registerTaskCompletion(item, categoryTitle);
+  } else {
+    // Task is being unchecked (uncompleted)
+    registerTaskUncompletion(item, categoryTitle);
   }
 
+  // Update storage
   const storage = getStorage();
   const currentData = storage[date] || {};
   storage[date] = {

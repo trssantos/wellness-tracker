@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {AlertTriangle, Sun, Moon,X, ArrowLeft, Plus, Trash2, Save, Clock, Calendar, 
          MapPin, Dumbbell, Activity, Check, ChevronDown, 
          ChevronUp, RotateCcw, Heart, Route, Target,
-         Users, Award, Zap, Droplet, Ruler, Gauge, Repeat } from 'lucide-react';
+         Users, Award, Zap, Droplet, Ruler, Gauge, Repeat, Edit } from 'lucide-react';
 import { createWorkout, updateWorkout, getWorkoutTypes, getWorkoutLocations, getEquipmentOptions } from '../../utils/workoutUtils';
 
 const WorkoutForm = ({ workout, onSave, onCancel }) => {
@@ -40,6 +40,10 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
     restTime: 60,
     notes: ''
   });
+  
+  // New state variables for exercise editing
+  const [editingExerciseIndex, setEditingExerciseIndex] = useState(null);
+  const [isEditingExercise, setIsEditingExercise] = useState(false);
   
   // UI state
   const [showAllEquipment, setShowAllEquipment] = useState(false);
@@ -533,18 +537,41 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
     }));
   };
   
-  // Add the current exercise to the workout
-  const addExercise = () => {
+  // Handle editing an existing exercise
+  const handleEditExercise = (index) => {
+    // Load the exercise data into the current exercise form
+    setCurrentExercise({...formData.exercises[index]});
+    setEditingExerciseIndex(index);
+    setIsEditingExercise(true);
+    
+    // Scroll to the exercise form
+    document.getElementById('exercise-form').scrollIntoView({ behavior: 'smooth' });
+  };
+  
+  // Add or update exercise
+  const addOrUpdateExercise = () => {
     if (!currentExercise.name.trim()) {
       return;
     }
     
-    setFormData(prev => ({
-      ...prev,
-      exercises: [...prev.exercises, { ...currentExercise }]
-    }));
+    setFormData(prev => {
+      const updatedExercises = [...prev.exercises];
+      
+      if (isEditingExercise && editingExerciseIndex !== null) {
+        // Update existing exercise
+        updatedExercises[editingExerciseIndex] = { ...currentExercise };
+      } else {
+        // Add new exercise
+        updatedExercises.push({ ...currentExercise });
+      }
+      
+      return {
+        ...prev,
+        exercises: updatedExercises
+      };
+    });
     
-    // Reset the current exercise form
+    // Reset the form and editing state
     setCurrentExercise({
       name: '',
       sets: 3,
@@ -553,6 +580,22 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
       restTime: 60,
       notes: ''
     });
+    setIsEditingExercise(false);
+    setEditingExerciseIndex(null);
+  };
+  
+  // Cancel editing an exercise
+  const cancelExerciseEdit = () => {
+    setCurrentExercise({
+      name: '',
+      sets: 3,
+      reps: 10,
+      weight: '',
+      restTime: 60,
+      notes: ''
+    });
+    setIsEditingExercise(false);
+    setEditingExerciseIndex(null);
   };
   
   // Remove an exercise
@@ -565,6 +608,23 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
         exercises: updatedExercises
       };
     });
+    
+    // If deleting the exercise that's currently being edited, reset the edit state
+    if (editingExerciseIndex === index) {
+      setIsEditingExercise(false);
+      setEditingExerciseIndex(null);
+      setCurrentExercise({
+        name: '',
+        sets: 3,
+        reps: 10,
+        weight: '',
+        restTime: 60,
+        notes: ''
+      });
+    } else if (editingExerciseIndex !== null && editingExerciseIndex > index) {
+      // If deleting an exercise before the one being edited, update the index
+      setEditingExerciseIndex(editingExerciseIndex - 1);
+    }
   };
   
   // Validate the form before submission
@@ -1032,8 +1092,10 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
   {activeInfoSection === 'exercises' && (
     <div className="p-4">
       {/* Exercise Form */}
-      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4 border border-slate-200 dark:border-slate-700">
-        <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-3">Add Exercise</h4>
+      <div id="exercise-form" className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4 border border-slate-200 dark:border-slate-700">
+        <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-3">
+          {isEditingExercise ? 'Edit Exercise' : 'Add Exercise'}
+        </h4>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
@@ -1135,19 +1197,40 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
           />
         </div>
         
-        <button
-          type="button"
-          onClick={addExercise}
-          disabled={!currentExercise.name.trim()}
-          className={`w-full py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
-            !currentExercise.name.trim()
-              ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
-              : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
-          }`}
-        >
-          <Plus size={16} />
-          Add Exercise
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={addOrUpdateExercise}
+            disabled={!currentExercise.name.trim()}
+            className={`flex-1 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+              !currentExercise.name.trim()
+                ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
+                : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
+            }`}
+          >
+            {isEditingExercise ? (
+              <>
+                <Edit size={16} />
+                Update Exercise
+              </>
+            ) : (
+              <>
+                <Plus size={16} />
+                Add Exercise
+              </>
+            )}
+          </button>
+          
+          {isEditingExercise && (
+            <button
+              type="button"
+              onClick={cancelExerciseEdit}
+              className="py-2 px-4 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
       
       {/* Exercise List */}
@@ -1157,50 +1240,63 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
       
       {formData.exercises.length > 0 ? (
         <div className="space-y-2">
-         
-         {formData.exercises.map((exercise, index) => (
-  <div
-    key={index}
-    className="flex items-start p-3 bg-slate-800 border border-slate-700 rounded-lg"
-  >
-    {/* Number badge */}
-    <div className="w-8 h-8 mr-3 bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-      <span className="text-blue-300 font-medium">{index + 1}</span>
-    </div>
-    
-    {/* Content - with explicit width constraint */}
-    <div className="w-[75%]"> 
-      {/* Exercise name with text wrapping */}
-      <div className="font-medium text-slate-200 text-sm break-words">
-        {exercise.name}
-      </div>
-      
-      {/* Exercise details */}
-      <div className="text-xs text-slate-400 mt-1 break-words">
-        {exercise.sets}×{exercise.reps}
-        {exercise.weight ? ` • ${exercise.weight}` : ''}
-      </div>
-      
-      {/* Notes - with text wrapping, limited to 3 lines */}
-      {exercise.notes && (
-        <div className="text-xs italic text-slate-400 mt-1 break-words line-clamp-3">
-          {exercise.notes}
-        </div>
-      )}
-    </div>
-    
-    {/* Delete button */}
-    <div className="w-[10%] flex justify-end">
-      <button
-        type="button"
-        onClick={() => removeExercise(index)}
-        className="p-2 text-red-400 hover:bg-red-900/20 rounded-full flex-shrink-0"
-      >
-        <Trash2 size={16} />
-      </button>
-    </div>
-  </div>
-))}
+          {formData.exercises.map((exercise, index) => (
+            <div
+              key={index}
+              className={`flex items-start p-3 rounded-lg border transition-colors
+                ${editingExerciseIndex === index
+                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                  : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700'
+                }`}
+            >
+              {/* Number badge */}
+              <div className="w-8 h-8 mr-3 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-blue-700 dark:text-blue-300 font-medium">{index + 1}</span>
+              </div>
+              
+              {/* Content */}
+              <div className="flex-1 min-w-0"> 
+                {/* Exercise name with text wrapping */}
+                <div className="font-medium text-slate-700 dark:text-slate-200 text-sm break-words">
+                  {exercise.name}
+                </div>
+                
+                {/* Exercise details */}
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 break-words">
+                  {exercise.sets}×{exercise.reps}
+                  {exercise.weight ? ` • ${exercise.weight}` : ''}
+                  {exercise.restTime ? ` • ${exercise.restTime}s rest` : ''}
+                </div>
+                
+                {/* Notes - with text wrapping, limited to 3 lines */}
+                {exercise.notes && (
+                  <div className="text-xs italic text-slate-500 dark:text-slate-400 mt-1 break-words line-clamp-3">
+                    {exercise.notes}
+                  </div>
+                )}
+              </div>
+              
+              {/* Action buttons */}
+              <div className="flex gap-1 ml-2">
+                <button
+                  type="button"
+                  onClick={() => handleEditExercise(index)}
+                  className="p-2 text-blue-500 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-full flex-shrink-0"
+                  title="Edit exercise"
+                >
+                  <Edit size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeExercise(index)}
+                  className="p-2 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-full flex-shrink-0"
+                  title="Delete exercise"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="text-center py-8 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">

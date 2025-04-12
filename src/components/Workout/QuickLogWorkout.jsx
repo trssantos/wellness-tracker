@@ -175,7 +175,9 @@ const QuickLogWorkout = ({ workout, date, onComplete, onClose, isDialog = true }
       intensity,
       calories: calories || null,
       notes,
-      exercises: validExercises
+      exercises: validExercises,
+      // Preserve original timestamp when editing
+      completedAt: editingWorkout?.completedAt || editingWorkout?.timestamp
     };
     
     // Log the workout with the existing ID if editing

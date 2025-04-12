@@ -15,6 +15,7 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [completedWorkoutId, setCompletedWorkoutId] = useState(null);
+  const [originalTimestamp, setOriginalTimestamp] = useState(null); // New state for original timestamp
 
   // Load workout details or existing log on mount
   useEffect(() => {
@@ -38,6 +39,9 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
           setCalories(existingWorkout.calories || '');
           setNotes(existingWorkout.notes || '');
           setCompletedWorkoutId(existingWorkout.id);
+          
+          // Store the original timestamp for editing
+          setOriginalTimestamp(existingWorkout.completedAt || existingWorkout.timestamp);
           
           // If this is a template-based workout, also load the template
           if (existingWorkout.workoutId) {
@@ -204,7 +208,9 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
           weight: ex.actualWeight,
           completed: ex.completed
         })),
-        notes
+        notes,
+        // Preserve the original timestamp when editing
+        completedAt: isEditing ? originalTimestamp : null
       };
       
       // Log workout, passing the existing ID if editing

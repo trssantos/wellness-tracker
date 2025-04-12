@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart2, ArrowLeft, Edit3, Trash2, Play, Clock, Calendar, 
          MapPin, DollarSign, Dumbbell, Activity, AlertTriangle } from 'lucide-react';
-import { getWorkoutTypes, getWorkoutLocations, getAllCompletedWorkouts } from '../../utils/workoutUtils';
+import { getWorkoutTypes, getWorkoutLocations, getEquipmentOptions, getWorkoutById, getAllCompletedWorkouts } from '../../utils/workoutUtils';
 import WorkoutPlayerModal from './WorkoutPlayerModal';
 import WorkoutCalendar from './WorkoutCalendar';
 import { formatDateForStorage } from '../../utils/dateUtils';
@@ -12,16 +12,41 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   const [currentDate, setCurrentDate] = useState(formatDateForStorage(new Date()));
   const [completedWorkouts, setCompletedWorkouts] = useState([]);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' or 'calendar'
+  const [workoutData, setWorkoutData] = useState(null); // Store our workout data
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // To trigger refreshes
+
+  // Initialize with the workout prop and load completions
+  useEffect(() => {
+    if (workout) {
+      setWorkoutData(workout);
+      loadCompletedWorkouts(workout.id);
+    }
+  }, [workout, refreshTrigger]); // Add refreshTrigger as a dependency
 
   // Load completed instances of this workout
-  useEffect(() => {
-    if (workout && workout.id) {
+  const loadCompletedWorkouts = (workoutId) => {
+    if (workoutId) {
       const allWorkouts = getAllCompletedWorkouts();
       // Filter for this specific workout template
-      const filtered = allWorkouts.filter(w => w.workoutId === workout.id);
+      const filtered = allWorkouts.filter(w => w.workoutId === workoutId);
       setCompletedWorkouts(filtered);
     }
-  }, [workout]);
+  };
+
+  // Refresh data when returning from edit
+  const refreshWorkoutData = () => {
+    if (workoutData?.id) {
+      // Get fresh data for this workout
+      const refreshedWorkout = getWorkoutById(workoutData.id);
+      if (refreshedWorkout) {
+        setWorkoutData(refreshedWorkout);
+      }
+      // Also reload completions
+      loadCompletedWorkouts(workoutData.id);
+    }
+    // Increment refresh trigger to force a re-render
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   // Helper function to get workout type label
   const getWorkoutTypeLabel = (type) => {
@@ -58,7 +83,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   };
 
   // Format the frequency days
-  const frequencyText = workout.frequency.map(day => getDayName(day)).join(', ');
+  const frequencyText = workoutData?.frequency?.map(day => getDayName(day)).join(', ') || '';
 
   // Start workout - simply show the modal
   const startWorkout = () => {
@@ -68,8 +93,8 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   // Handle workout completion
   const handleWorkoutComplete = (completedWorkout) => {
     setShowPlayer(false);
-    // You might want to refresh the list of completed workouts here
-    // or show a success message
+    // Refresh data after completing a workout
+    refreshWorkoutData();
   };
 
   // Handle date click on calendar
@@ -80,12 +105,24 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
     }
   };
 
+  // Handle edit with a refresh
+  const handleEdit = () => {
+    // Call the parent's edit handler
+    onEdit();
+    
+    // Set a timer to refresh data when coming back from edit view
+    // This ensures we get the latest data after editing
+    setTimeout(() => {
+      refreshWorkoutData();
+    }, 500);
+  };
+
   // Render calendar content
   const renderCalendarTab = () => (
     <div className="space-y-4">
       <WorkoutCalendar 
         workoutData={completedWorkouts}
-        workoutId={workout.id}
+        workoutId={workoutData?.id}
         onDateClick={handleCalendarDateClick}
       />
       
@@ -153,7 +190,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
             <div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Type</div>
               <div className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
-                {getWorkoutTypeLabel(workout.type)}
+                {getWorkoutTypeLabel(workoutData?.type)}
               </div>
             </div>
           </div>
@@ -165,7 +202,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
             <div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Duration</div>
               <div className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
-                {workout.duration} minutes
+                {workoutData?.duration} minutes
               </div>
             </div>
           </div>
@@ -177,7 +214,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
             <div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Location</div>
               <div className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
-                {getLocationLabel(workout.location)}
+                {getLocationLabel(workoutData?.location)}
               </div>
             </div>
           </div>
@@ -189,15 +226,15 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
             <div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Schedule</div>
               <div className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
-                {workout.timeOfDay.charAt(0).toUpperCase() + workout.timeOfDay.slice(1)}
+                {workoutData?.timeOfDay?.charAt(0).toUpperCase() + workoutData?.timeOfDay?.slice(1) || 'Any time'}
               </div>
             </div>
           </div>
         </div>
         
-        {workout.notes && (
+        {workoutData?.notes && (
           <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg text-sm text-slate-600 dark:text-slate-300 break-words">
-            {workout.notes}
+            {workoutData.notes}
           </div>
         )}
       </div>
@@ -211,7 +248,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
         
         <div className="flex flex-wrap gap-2 mb-4">
           {['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map(day => {
-            const isActive = workout.frequency.includes(day);
+            const isActive = workoutData?.frequency?.includes(day);
             return (
               <div
                 key={day}
@@ -228,12 +265,12 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
         </div>
         
         <div className="text-sm text-slate-600 dark:text-slate-400">
-          <p className="line-clamp-2">This workout is scheduled for <span className="font-medium text-slate-700 dark:text-slate-300">{frequencyText}</span> in the <span className="font-medium text-slate-700 dark:text-slate-300">{workout.timeOfDay}</span>.</p>
+          <p className="line-clamp-2">This workout is scheduled for <span className="font-medium text-slate-700 dark:text-slate-300">{frequencyText}</span> in the <span className="font-medium text-slate-700 dark:text-slate-300">{workoutData?.timeOfDay || 'any time'}</span>.</p>
         </div>
       </div>
 
       {/* Equipment */}
-      {workout.equipment && workout.equipment.length > 0 && (
+      {workoutData?.equipment && workoutData.equipment.length > 0 && (
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-6">
           <h3 className="font-medium text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
             <Dumbbell size={16} className="text-slate-500 dark:text-slate-400" />
@@ -241,7 +278,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
           </h3>
           
           <div className="flex flex-wrap gap-2">
-            {workout.equipment.map((item, index) => (
+            {workoutData.equipment.map((item, index) => (
               <span 
                 key={index}
                 className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-xs"
@@ -260,13 +297,13 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
           Exercises
         </h3>
         
-        {workout.exercises.length === 0 ? (
+        {!workoutData?.exercises || workoutData.exercises.length === 0 ? (
           <div className="text-sm text-slate-500 dark:text-slate-400 text-center p-4">
             No exercises added to this workout yet.
           </div>
         ) : (
           <div className="space-y-3">
-            {workout.exercises.map((exercise, index) => (
+            {workoutData.exercises.map((exercise, index) => (
               <div 
                 key={index}
                 className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg"
@@ -336,6 +373,8 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
     </>
   );
 
+  if (!workoutData) return null;
+
   return (
     <div className="px-2 sm:px-0 w-full">
       <div className="grid grid-cols-[auto,1fr] items-center gap-2 mb-4 sm:mb-6">
@@ -346,7 +385,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
           <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
         </button>
         <h2 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100 truncate pr-2">
-          {workout.name}
+          {workoutData.name}
         </h2>
       </div>
 
@@ -391,7 +430,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
       {/* Edit / Delete Buttons */}
       <div className="flex justify-between pt-4 border-t border-slate-200 dark:border-slate-700 mt-6">
         <button 
-          onClick={onEdit}
+          onClick={handleEdit}
           className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
         >
           <Edit3 size={16} />
@@ -417,7 +456,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
             </div>
             
             <p className="text-slate-600 dark:text-slate-300 mb-6">
-              Are you sure you want to delete <span className="font-medium text-slate-800 dark:text-slate-100 line-clamp-1">{workout.name}</span>? This action cannot be undone.
+              Are you sure you want to delete <span className="font-medium text-slate-800 dark:text-slate-100 line-clamp-1">{workoutData.name}</span>? This action cannot be undone.
             </p>
             
             <div className="flex gap-3 justify-end">
@@ -441,7 +480,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
       {/* Workout Player Modal */}
       {showPlayer && (
         <WorkoutPlayerModal
-          workoutId={workout.id}
+          workoutId={workoutData.id}
           date={currentDate}
           onComplete={handleWorkoutComplete}
           onClose={() => setShowPlayer(false)}

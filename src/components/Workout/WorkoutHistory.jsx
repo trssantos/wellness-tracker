@@ -31,7 +31,7 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
       if (!storageString) {
         console.warn("No workout data found in localStorage");
         setWorkouts([]);
-        return;
+        return [];
       }
       
       const storageData = JSON.parse(storageString);
@@ -104,9 +104,22 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
       
       console.log('[WorkoutHistory] Loaded workouts:', allWorkouts.length);
       setWorkouts(allWorkouts);
+      
+      // If we have a selected workout, refresh it with the latest data
+      if (selectedWorkout) {
+        console.log('[WorkoutHistory] Refreshing selected workout details:', selectedWorkout.id);
+        const updatedSelectedWorkout = allWorkouts.find(w => w.id === selectedWorkout.id);
+        if (updatedSelectedWorkout) {
+          console.log('[WorkoutHistory] Found updated workout:', updatedSelectedWorkout);
+          setSelectedWorkout(updatedSelectedWorkout);
+        }
+      }
+      
+      return allWorkouts;
     } catch (error) {
       console.error("Error loading workouts:", error);
       setWorkouts([]);
+      return [];
     }
   };
   
@@ -260,7 +273,7 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
     }
   };
   
-  // Handle workout editing completion
+  // Handle workout editing completion - COMPLETELY REVISED
   const handleWorkoutComplete = (completedWorkout) => {
     // Close all modals
     setShowWorkoutEditor(false);
@@ -268,8 +281,28 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
     
     console.log('[WorkoutHistory] Workout completed/updated:', completedWorkout);
     
-    // Refresh workout list
-    loadWorkouts();
+    // Load fresh data first
+    const freshWorkouts = loadWorkouts();
+    
+    // If we have a completed workout, find it in the freshly loaded data
+    if (completedWorkout && completedWorkout.id) {
+      // Find the workout in the freshly loaded data
+      const updatedWorkout = freshWorkouts.find(w => w.id === completedWorkout.id);
+      
+      if (updatedWorkout) {
+        console.log('[WorkoutHistory] Found updated workout in fresh data:', updatedWorkout);
+        setSelectedWorkout(updatedWorkout); // Use the up-to-date data from storage
+      } else {
+        console.log('[WorkoutHistory] Updated workout not found in fresh data, using returned workout');
+        setSelectedWorkout(completedWorkout); // Use the returned workout as fallback
+      }
+    } else {
+      // If no completed workout was returned, just use the newest one
+      if (freshWorkouts.length > 0) {
+        console.log('[WorkoutHistory] No specific workout returned, using most recent');
+        setSelectedWorkout(freshWorkouts[0]);
+      }
+    }
     
     // Notify parent component that data has changed
     if (onDataChange) {

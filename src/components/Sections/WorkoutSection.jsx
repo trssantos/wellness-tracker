@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getWorkouts, createWorkout, deleteWorkout } from '../../utils/workoutUtils';
+import { getWorkouts, createWorkout, deleteWorkout, getWorkoutById } from '../../utils/workoutUtils';
 import WorkoutList from '../Workout/WorkoutList';
 import WorkoutDetails from '../Workout/WorkoutDetails';
 import WorkoutForm from '../Workout/WorkoutForm';
@@ -103,7 +103,9 @@ const WorkoutSection = () => {
   // Handle updating an existing workout
   const handleWorkoutUpdated = (updatedWorkout) => {
     refreshWorkouts();
-    setActiveWorkout(updatedWorkout);
+    // Fetch the latest data for the workout from storage
+    const refreshedWorkout = getWorkoutById(updatedWorkout.id);
+    setActiveWorkout(refreshedWorkout);
     setViewMode('detail');
   };
 
@@ -145,7 +147,11 @@ const WorkoutSection = () => {
           <WorkoutForm 
             workout={activeWorkout}
             onSave={handleWorkoutUpdated}
-            onCancel={() => setViewMode('detail')}
+            onCancel={() => {
+              // When canceling edit, refresh to ensure we have the latest data
+              refreshWorkouts();
+              setViewMode('detail');
+            }}
           />
         );
       case 'ai':

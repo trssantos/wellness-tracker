@@ -7,7 +7,7 @@ import { formatDateForStorage } from '../../utils/dateUtils';
 import QuickLogWorkout from './QuickLogWorkout';
 import WorkoutLogger from './WorkoutLogger';
 
-const WorkoutHistory = ({ onBack, onEditWorkout }) => {
+const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChange }) => {
   const [workouts, setWorkouts] = useState([]);
   const [selectedWorkout, setSelectedWorkout] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -15,14 +15,16 @@ const WorkoutHistory = ({ onBack, onEditWorkout }) => {
   const [showWorkoutEditor, setShowWorkoutEditor] = useState(false);
   const [showWorkoutLogger, setShowWorkoutLogger] = useState(false);
   
-  // Load workouts on mount
+  // Load workouts on mount and when refreshTrigger changes
   useEffect(() => {
+    console.log('[WorkoutHistory] Loading workouts, refreshTrigger:', refreshTrigger);
     loadWorkouts();
-  }, []);
+  }, [refreshTrigger]);
   
   // Load workouts from all storage locations
   const loadWorkouts = () => {
     try {
+      console.log('[WorkoutHistory] Loading workouts from storage');
       // Get data from localStorage
       const storageString = localStorage.getItem('wellnessTracker');
       
@@ -100,6 +102,7 @@ const WorkoutHistory = ({ onBack, onEditWorkout }) => {
         return dateB - dateA;
       });
       
+      console.log('[WorkoutHistory] Loaded workouts:', allWorkouts.length);
       setWorkouts(allWorkouts);
     } catch (error) {
       console.error("Error loading workouts:", error);
@@ -141,6 +144,8 @@ const WorkoutHistory = ({ onBack, onEditWorkout }) => {
   // Confirm deletion
   const confirmDeleteWorkout = () => {
     if (!workoutToDelete) return;
+    
+    console.log('[WorkoutHistory] Deleting workout:', workoutToDelete);
     
     // Get storage
     const storage = getStorage();
@@ -202,6 +207,12 @@ const WorkoutHistory = ({ onBack, onEditWorkout }) => {
       if (selectedWorkout && selectedWorkout.id === workoutToDelete) {
         setSelectedWorkout(null);
       }
+      
+      // Notify parent component that data has changed
+      if (onDataChange) {
+        console.log('[WorkoutHistory] Notifying parent of data change');
+        onDataChange();
+      }
     }
     
     // Reset delete state
@@ -211,6 +222,15 @@ const WorkoutHistory = ({ onBack, onEditWorkout }) => {
   
   // Handle editing a workout
   const handleEditWorkout = (workout) => {
+    // Use the parent's edit handler if provided
+    if (onEditWorkout) {
+      console.log('[WorkoutHistory] Using parent edit handler for workout:', workout);
+      onEditWorkout(workout);
+      return;
+    }
+    
+    // Otherwise handle editing internally
+    console.log('[WorkoutHistory] Editing workout internally:', workout);
     // Store the workout being edited
     setSelectedWorkout(workout);
     
@@ -246,8 +266,16 @@ const WorkoutHistory = ({ onBack, onEditWorkout }) => {
     setShowWorkoutEditor(false);
     setShowWorkoutLogger(false);
     
+    console.log('[WorkoutHistory] Workout completed/updated:', completedWorkout);
+    
     // Refresh workout list
     loadWorkouts();
+    
+    // Notify parent component that data has changed
+    if (onDataChange) {
+      console.log('[WorkoutHistory] Notifying parent of data change');
+      onDataChange();
+    }
   };
   
   // Get workout type color based on type

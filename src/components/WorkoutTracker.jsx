@@ -40,7 +40,9 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
   
   // Load workouts for the selected day
   const loadWorkoutsForDay = () => {
+    console.log('[WorkoutTracker] Loading workouts for day:', date);
     const workouts = getWorkoutsForDate(date);
+    console.log('[WorkoutTracker] Loaded workouts:', workouts.length);
     setWorkoutsForDay(workouts);
   };
 
@@ -69,14 +71,23 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
 
   // Handler for completing a workout using a template
   const handleWorkoutCompleted = (completedWorkout) => {
+    console.log('[WorkoutTracker] Workout completed/updated:', completedWorkout);
     setShowWorkoutLogger(false);
     setShowQuickLogWorkout(false);
+    setEditingWorkout(null); // Reset editing state
+    
+    // Always load fresh data
     loadWorkoutsForDay();
-    onClose();
+    
+    // Signal to parent that data has been updated
+    if (onClose) {
+      onClose({ dataUpdated: true });
+    }
   };
 
   // Handler for editing an existing workout
   const handleEditWorkout = (workout) => {
+    console.log('[WorkoutTracker] Editing workout:', workout);
     if (workout.workoutId) {
       // It's a template-based workout, use the WorkoutLogger
       setSelectedWorkoutId(workout.workoutId);
@@ -106,6 +117,11 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
     if (window.confirm('Are you sure you want to delete this workout?')) {
       deleteCompletedWorkout(date, workoutId);
       loadWorkoutsForDay();
+      
+      // Signal to parent that data has been updated
+      if (onClose) {
+        onClose({ dataUpdated: true });
+      }
     }
   };
 
@@ -360,10 +376,8 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
               date={date}
               existingWorkoutId={editingWorkout?.id}
               onComplete={(workout) => {
-                setShowWorkoutLogger(false);
-                loadWorkoutsForDay();
-                setShowWorkoutList(true);
-                setWorkoutMode('list');
+                console.log('[WorkoutTracker] Logger completed workout:', workout);
+                handleWorkoutCompleted(workout);
               }}
               onCancel={() => {
                 setShowWorkoutLogger(false);
@@ -378,10 +392,8 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
               workout={editingWorkout}
               date={date}
               onComplete={(workout) => {
-                setShowQuickLogWorkout(false);
-                loadWorkoutsForDay();
-                setShowWorkoutList(true);
-                setWorkoutMode('list');
+                console.log('[WorkoutTracker] QuickLog completed workout:', workout);
+                handleWorkoutCompleted(workout);
               }}
               onClose={() => {
                 setShowQuickLogWorkout(false);

@@ -16,15 +16,25 @@ const WorkoutSection = () => {
   const [viewMode, setViewMode] = useState('list'); // 'list', 'detail', 'create', 'edit', 'ai', 'analytics', 'history'
   const [showWorkoutTracker, setShowWorkoutTracker] = useState(false);
   const [workoutToEdit, setWorkoutToEdit] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // Add this to trigger refreshes
   
   // Initialize and load workouts
   useEffect(() => {
+    console.log('[WorkoutSection] Loading workouts, refreshTrigger:', refreshTrigger);
     loadWorkouts();
-  }, []);
+  }, [refreshTrigger]); // Add refreshTrigger as a dependency
 
   const loadWorkouts = () => {
+    console.log('[WorkoutSection] Getting workouts from storage');
     const workoutData = getWorkouts();
+    console.log('[WorkoutSection] Retrieved workouts:', workoutData.length);
     setWorkouts(workoutData);
+  };
+
+  // Helper function to trigger refresh
+  const refreshWorkouts = () => {
+    console.log('[WorkoutSection] Triggering refresh');
+    setRefreshTrigger(prev => prev + 1);
   };
 
   // Handle viewing analytics dashboard
@@ -60,7 +70,7 @@ const WorkoutSection = () => {
 
   // Handle when AI generates a workout
   const handleAIWorkoutGenerated = (workoutData) => {
-    loadWorkouts();
+    refreshWorkouts();
     setViewMode('list');
   };
 
@@ -86,13 +96,13 @@ const WorkoutSection = () => {
 
   // Handle saving a new workout
   const handleWorkoutSaved = (newWorkout) => {
-    loadWorkouts();
+    refreshWorkouts();
     setViewMode('list');
   };
 
   // Handle updating an existing workout
   const handleWorkoutUpdated = (updatedWorkout) => {
-    loadWorkouts();
+    refreshWorkouts();
     setActiveWorkout(updatedWorkout);
     setViewMode('detail');
   };
@@ -106,7 +116,7 @@ const WorkoutSection = () => {
   // Handle deleting a workout
   const handleWorkoutDeleted = () => {
     deleteWorkout(activeWorkout.id);
-    loadWorkouts();
+    refreshWorkouts();
     setActiveWorkout(null);
     setViewMode('list');
   };
@@ -156,6 +166,8 @@ const WorkoutSection = () => {
           <WorkoutHistory 
             onBack={handleBackToList}
             onEditWorkout={handleEditWorkoutFromHistory}
+            refreshTrigger={refreshTrigger} // Pass this down to History component
+            onDataChange={refreshWorkouts} // Add this callback for history component
           />
         );
       case 'list':
@@ -182,7 +194,7 @@ const WorkoutSection = () => {
         <WorkoutTracker
           date={workoutToEdit?.date || formatDateForStorage(new Date())}
           workoutToEdit={workoutToEdit}
-          onClose={() => {
+          onClose={(params) => {
             setShowWorkoutTracker(false);
             setWorkoutToEdit(null);
             
@@ -192,8 +204,11 @@ const WorkoutSection = () => {
               modal.close();
             }
             
-            // Refresh data
-            loadWorkouts();
+            // Check if data was updated and refresh if needed
+            if (params?.dataUpdated) {
+              console.log('[WorkoutSection] Data was updated, refreshing...');
+              refreshWorkouts();
+            }
           }}
         />
       )}

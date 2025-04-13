@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Minus, X, Save, Dumbbell, Clock, Flame, Plus, Trash2 } from 'lucide-react';
-import { getStorage, setStorage } from '../../utils/storage';
+import { getStorage, setStorage,getWeightUnit } from '../../utils/storage';
 import { logWorkout } from '../../utils/workoutUtils';
 
 // Available workout types with icons and colors - updated for dark mode
@@ -88,6 +88,11 @@ const QuickLogWorkout = ({ workout, date, onComplete, onClose, isDialog = true }
   const [editingWorkout, setEditingWorkout] = useState(null);
   const [showAllTypes, setShowAllTypes] = useState(false);
   const [customType, setCustomType] = useState('');
+  const [weightUnit, setWeightUnit] = useState('lbs');
+
+  useEffect(() => {
+    setWeightUnit(getWeightUnit());
+  }, []);
 
   // Load workout data if editing
   useEffect(() => {
@@ -420,7 +425,7 @@ const QuickLogWorkout = ({ workout, date, onComplete, onClose, isDialog = true }
                   placeholder="Weight"
                   value={exercise.weight}
                   onChange={(e) => handleExerciseChange(index, 'weight', e.target.value)}
-                />
+                /> 
                 <button
                   onClick={() => handleRemoveExercise(index)}
                   className="col-span-1 p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"

@@ -5,6 +5,7 @@ import { getWorkoutTypes, getWorkoutLocations, getEquipmentOptions, getWorkoutBy
 import WorkoutPlayerModal from './WorkoutPlayerModal';
 import WorkoutCalendar from './WorkoutCalendar';
 import { formatDateForStorage } from '../../utils/dateUtils';
+import { getWeightUnit } from '../../utils/storage';
 
 const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -14,6 +15,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' or 'calendar'
   const [workoutData, setWorkoutData] = useState(null); // Store our workout data
   const [refreshTrigger, setRefreshTrigger] = useState(0); // To trigger refreshes
+  const [weightUnit, setWeightUnit] = useState('lbs');
 
   // Initialize with the workout prop and load completions
   useEffect(() => {
@@ -22,6 +24,11 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
       loadCompletedWorkouts(workout.id);
     }
   }, [workout, refreshTrigger]); // Add refreshTrigger as a dependency
+
+  useEffect(() => {
+    setWeightUnit(getWeightUnit());
+  }, []);
+  
 
   // Load completed instances of this workout
   const loadCompletedWorkouts = (workoutId) => {
@@ -323,7 +330,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
                   {exercise.weight && (
                     <div className="flex items-center gap-1">
                       <DollarSign size={12} />
-                      <span>{exercise.weight} lbs</span>
+                      <span>{exercise.weight} {weightUnit}</span>
                     </div>
                   )}
                   

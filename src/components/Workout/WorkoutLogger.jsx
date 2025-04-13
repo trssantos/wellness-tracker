@@ -3,7 +3,7 @@ import { ArrowLeft, CheckCircle, Clock, Calendar,
          Save, Plus, Minus, Info, AlertTriangle,
          Flame, Award, Trash2, RotateCcw, Dumbbell } from 'lucide-react';
 import { getWorkoutById, logWorkout, getCompletedWorkoutById } from '../../utils/workoutUtils';
-import { getStorage } from '../../utils/storage';
+import { getStorage, getWeightUnit } from '../../utils/storage';
 
 const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCancel }) => {
   const [workout, setWorkout] = useState(null);
@@ -16,6 +16,8 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
   const [isEditing, setIsEditing] = useState(false);
   const [completedWorkoutId, setCompletedWorkoutId] = useState(null);
   const [originalTimestamp, setOriginalTimestamp] = useState(null); // New state for original timestamp
+  const [weightUnit, setWeightUnit] = useState('lbs');
+
 
   // Load workout details or existing log on mount
   useEffect(() => {
@@ -83,6 +85,10 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
       setLoading(false);
     }
   }, [workoutId, date, existingWorkoutId]);
+
+  useEffect(() => {
+    setWeightUnit(getWeightUnit());
+  }, []);
   
   // Helper function to load a workout template
   const loadWorkoutTemplate = (id) => {
@@ -486,7 +492,7 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
                           ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
                           : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
                       }`}
-                      placeholder="lbs"
+                      placeholder={weightUnit}
                     />
                   </div>
                 </div>

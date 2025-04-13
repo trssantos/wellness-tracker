@@ -151,3 +151,29 @@ if (!storage.peopleBlacklist.includes(name)) {
   setStorage(storage);
 }
 };
+
+// Get user's preferred weight unit
+export const getWeightUnit = () => {
+  const storage = getStorage();
+  return storage.settings?.weightUnit || 'lbs'; // Default to lbs
+};
+
+// Optional: Function to convert between units
+export const convertWeight = (weight, fromUnit, toUnit) => {
+  if (!weight || fromUnit === toUnit) return weight;
+  
+  // Convert string to number if needed
+  const numWeight = typeof weight === 'string' ? parseFloat(weight) : weight;
+  
+  if (isNaN(numWeight)) return weight; // Return original if not a number
+  
+  if (fromUnit === 'lbs' && toUnit === 'kg') {
+    // Convert lbs to kg (1 lb ≈ 0.453592 kg)
+    return (numWeight * 0.453592).toFixed(1);
+  } else if (fromUnit === 'kg' && toUnit === 'lbs') {
+    // Convert kg to lbs (1 kg ≈ 2.20462 lbs)
+    return (numWeight * 2.20462).toFixed(1);
+  }
+  
+  return weight; // Return original if units are invalid
+};

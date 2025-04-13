@@ -4,6 +4,7 @@ import {AlertTriangle, Sun, Moon,X, ArrowLeft, Plus, Trash2, Save, Clock, Calend
          ChevronUp, RotateCcw, Heart, Route, Target,
          Users, Award, Zap, Droplet, Ruler, Gauge, Repeat, Edit } from 'lucide-react';
 import { createWorkout, updateWorkout, getWorkoutTypes, getWorkoutLocations, getEquipmentOptions } from '../../utils/workoutUtils';
+import { getWeightUnit } from '../../utils/storage';
 
 const WorkoutForm = ({ workout, onSave, onCancel }) => {
   // Form state
@@ -48,9 +49,12 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
   // UI state
   const [showAllEquipment, setShowAllEquipment] = useState(false);
   const [activeInfoSection, setActiveInfoSection] = useState('basic');
+
+  const [weightUnit, setWeightUnit] = useState('lbs');
   
   // Initialize form with existing workout data if editing
   useEffect(() => {
+    setWeightUnit(getWeightUnit());
     if (workout) {
       setFormData({
         name: workout.name || '',
@@ -1160,9 +1164,9 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
                 className="w-full p-2 pr-12 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
                 placeholder="Weight"
               />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 dark:text-slate-400 text-sm">
-                lbs
-              </div>
+               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 dark:text-slate-400 text-sm">
+    {weightUnit}
+  </div>
             </div>
           </div>
           
@@ -1264,7 +1268,7 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
                 {/* Exercise details */}
                 <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 break-words">
                   {exercise.sets}×{exercise.reps}
-                  {exercise.weight ? ` • ${exercise.weight}` : ''}
+                  {exercise.weight ? ` • ${exercise.weight} ${weightUnit}` : ''}
                   {exercise.restTime ? ` • ${exercise.restTime}s rest` : ''}
                 </div>
                 

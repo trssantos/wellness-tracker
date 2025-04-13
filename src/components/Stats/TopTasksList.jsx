@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getStorage } from '../../utils/storage';
 import { CheckSquare, Activity, BookOpen, BarChart2, Award } from 'lucide-react';
+import { formatDateForStorage } from '../../utils/dateUtils';
 
-const TopTasksList = () => {
+const TopTasksList = ({ currentMonth = new Date() }) => {
   const [taskStats, setTaskStats] = useState({
     totalTasks: 0,
     totalCompletions: 0,
@@ -12,40 +13,101 @@ const TopTasksList = () => {
   const [displayLimit, setDisplayLimit] = useState(10);
 
   useEffect(() => {
-    loadTaskStats();
-  }, []);
+    loadTaskStats(currentMonth);
+  }, [currentMonth]);
 
-  const loadTaskStats = () => {
+  const loadTaskStats = (month) => {
     setLoading(true);
     const storage = getStorage();
     
-    if (!storage.taskRegistry || !storage.taskRegistry.tasks) {
-      setTaskStats({ totalTasks: 0, totalCompletions: 0, topTasks: [] });
-      setLoading(false);
-      return;
+    // Get start and end dates for the selected month
+    const start = new Date(month.getFullYear(), month.getMonth(), 1);
+    const end = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    
+    // Create date strings for each day in the month
+    const datesInMonth = [];
+    for (let day = new Date(start); day <= end; day.setDate(day.getDate() + 1)) {
+      datesInMonth.push(formatDateForStorage(day));
     }
     
-    const tasks = storage.taskRegistry.tasks;
-    const taskEntries = Object.entries(tasks);
+    // Store completed tasks and their counts for this month
+    const completedTasksMap = {};
+    const taskCategories = {};
+    let totalCompletions = 0;
     
-    // Most frequently COMPLETED tasks (using completedCount)
-    const topTasks = taskEntries
-      .filter(([_, data]) => (data.completedCount || 0) > 0) // Only include tasks with completions
-      .map(([name, data]) => ({
+    // Process each day in the selected month
+    datesInMonth.forEach(dateStr => {
+      const dayData = storage[dateStr];
+      if (!dayData || !dayData.checked) return;
+      
+      // Get the task categories for this day
+      const categories = dayData.customTasks || dayData.aiTasks || dayData.defaultTasks;
+      if (!categories || !Array.isArray(categories)) return;
+      
+      // Map categories to tasks for this day
+      const categoryMap = {};
+      categories.forEach(category => {
+        if (category && category.items && Array.isArray(category.items)) {
+          category.items.forEach(task => {
+            if (task && task.trim()) {
+              categoryMap[task] = category.title;
+              
+              // Store task category associations for later
+              if (!taskCategories[task]) {
+                taskCategories[task] = new Set();
+              }
+              taskCategories[task].add(category.title);
+            }
+          });
+        }
+      });
+      
+      // Process each checked task for this day
+      Object.entries(dayData.checked).forEach(([taskKey, isChecked]) => {
+        if (!isChecked) return; // Skip unchecked tasks
+        
+        let taskText = taskKey;
+        
+        // Handle category-based task IDs (format: "category|task")
+        if (taskKey.includes('|')) {
+          const [category, task] = taskKey.split('|');
+          taskText = task;
+          
+          // Add the category to our set
+          if (!taskCategories[taskText]) {
+            taskCategories[taskText] = new Set();
+          }
+          taskCategories[taskText].add(category);
+        } 
+        // For old format, use the category from our map if available
+        else if (categoryMap[taskKey]) {
+          if (!taskCategories[taskText]) {
+            taskCategories[taskText] = new Set();
+          }
+          taskCategories[taskText].add(categoryMap[taskKey]);
+        }
+        
+        // Count the completion
+        if (!completedTasksMap[taskText]) {
+          completedTasksMap[taskText] = 0;
+        }
+        completedTasksMap[taskText]++;
+        totalCompletions++;
+      });
+    });
+    
+    // Convert to array and sort by completion count
+    const topTasks = Object.entries(completedTasksMap)
+      .map(([name, count]) => ({
         name,
-        count: data.completedCount || 0, // Use completedCount instead of count
-        categories: data.categories || [],
-        total: data.count || 0 // Total times task appeared
+        count,
+        categories: taskCategories[name] ? Array.from(taskCategories[name]) : []
       }))
-      .sort((a, b) => b.count - a.count) // Sort by completion count
-      .slice(0, 20); // Get top 20
-    
-    // Total stats
-    const totalTasks = taskEntries.length;
-    const totalCompletions = taskEntries.reduce((sum, [_, data]) => sum + (data.completedCount || 0), 0);
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20); // Limit to top 20
     
     setTaskStats({
-      totalTasks,
+      totalTasks: Object.keys(completedTasksMap).length,
       totalCompletions,
       topTasks
     });
@@ -120,8 +182,8 @@ const TopTasksList = () => {
       {taskStats.topTasks.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 text-center">
           <BarChart2 size={48} className="text-slate-300 dark:text-slate-600 mb-3" />
-          <p className="text-slate-500 dark:text-slate-400 mb-2">No completed tasks found yet.</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500">Start completing tasks to see your most frequent tasks here.</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-2">No completed tasks found for this month.</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500">Complete tasks this month to see them here.</p>
         </div>
       ) : (
         <>

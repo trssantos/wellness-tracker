@@ -785,7 +785,7 @@ const processStorageData = (data, month) => {
 
         {/* Top Tasks Chart */}
         <div className="lg:col-span-2">
-  <TopTasksList />
+        <TopTasksList currentMonth={currentMonth} />
 </div>
         
         {/* Mood Trend Chart */}

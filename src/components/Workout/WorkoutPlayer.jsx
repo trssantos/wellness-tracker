@@ -1461,52 +1461,6 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   );
 };
 
-// Add styling for the notification
-const style = document.createElement('style');
-style.innerHTML = `
-  .wp-target-reached-notification {
-    position: fixed;
-    top: 10%;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(34, 197, 94, 0.9);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-weight: bold;
-    animation: fadeInOut 3s ease-in-out;
-    z-index: 9999;
-    width: auto;
-    text-align: center;
-    max-width: 90%;
-  }
-  
-  /* Also fix the other notification elements */
-  .wp-exercise-completion-effect,
-  .wp-set-completion-effect,
-  .wp-workout-completion-effect {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 9999;
-    width: 100%;
-    max-width: 90%;
-    text-align: center;
-  }
-  
-  .wp-completion-text {
-    width: 100%;
-    text-align: center;
-  }
-  
-  @keyframes fadeInOut {
-    0% { opacity: 0; transform: translate(-50%, -20px); }
-    15% { opacity: 1; transform: translate(-50%, 0); }
-    85% { opacity: 1; transform: translate(-50%, 0); }
-    100% { opacity: 0; transform: translate(-50%, -20px); }
-  }
-`;
-document.head.appendChild(style);
+
 
 export default WorkoutPlayer;

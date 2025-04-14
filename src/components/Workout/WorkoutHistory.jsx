@@ -139,6 +139,51 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
       minute: '2-digit'
     });
   };
+
+  const formatExerciseTime = (seconds) => {
+    // Handle non-numeric or undefined input
+    if (seconds === undefined || seconds === null) return "0s";
+    
+    // Ensure we're working with a number
+    const totalSeconds = typeof seconds === 'string' ? parseInt(seconds) : seconds;
+    
+    if (isNaN(totalSeconds)) {
+      // If it's a valid date string, use the original date formatting
+      if (typeof seconds === 'string' && 
+          (seconds.includes('T') || seconds.includes('Z') || 
+           seconds.includes('-') || seconds.includes(':'))) {
+        try {
+          const date = new Date(seconds);
+          if (!isNaN(date.getTime())) {
+            return date.toLocaleTimeString('default', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+          }
+        } catch (e) {
+          console.error("Error parsing date:", e);
+        }
+      }
+      return String(seconds); // Return as is if we can't parse it
+    }
+    
+    // Calculate hours, minutes, seconds
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const remainingSeconds = totalSeconds % 60;
+    
+    // Format based on duration length
+    if (hours > 0) {
+      // Long format: "2h 15m"
+      return `${hours}h ${minutes > 0 ? `${minutes}m` : ''}`;
+    } else if (minutes > 0) {
+      // Medium format: "5m 30s"
+      return `${minutes}m ${remainingSeconds > 0 ? `${remainingSeconds}s` : ''}`;
+    } else {
+      // Short format: "45s"
+      return `${remainingSeconds}s`;
+    }
+  };
   
   // Format date for display
   const formatDate = (dateString) => {
@@ -527,7 +572,7 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
             // Display actual time spent when available
             <span>
               {exercise.timeSpent ? 
-                `${formatTime(exercise.timeSpent)} (actual)` :
+                `${formatExerciseTime(exercise.timeSpent)} (actual)` :
                 `${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}`}
               {(exercise.actualDistance || exercise.distance) ? 
                 ` (${exercise.actualDistance || exercise.distance} distance)` : ''}

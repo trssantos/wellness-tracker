@@ -33,7 +33,14 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const [showAchievement, setShowAchievement] = useState(false);
   const [currentAchievement, setCurrentAchievement] = useState(null);
   const [exerciseTimerSaved, setExerciseTimerSaved] = useState(0);
+  const [targetAlertPlayed, setTargetAlertPlayed] = useState(false);
 
+  // Interruption tracking
+  const [lastPauseTime, setLastPauseTime] = useState(null);
+  const [totalPauseDuration, setTotalPauseDuration] = useState(0);
+  const [interruptionsCount, setInterruptionsCount] = useState(0);
+  const [showPauseModal, setShowPauseModal] = useState(false);
+  const [savedWorkoutState, setSavedWorkoutState] = useState(null);
   
   // Set tracking
   const [currentSetNumber, setCurrentSetNumber] = useState(1);
@@ -50,12 +57,12 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   
   // Sound effects
   const startSound = useRef(new Audio('https://freesound.org/data/previews/476/476177_7724198-lq.mp3'));
-  const completeSound = useRef(new Audio('https://freesound.org/data/previews/131/131660_2398403-lq.mp3'));
+  const completeSound = useRef(new Audio('https://freesound.org/data/previews/131/131660_2398403-lq.mp31'));
   const waterBreakSound = useRef(new Audio('https://freesound.org/data/previews/341/341695_5858296-lq.mp3'));
   const clickSound = useRef(new Audio('https://freesound.org/data/previews/573/573588_13006337-lq.mp3'));
   const setCompleteSound = useRef(new Audio('https://freesound.org/data/previews/413/413749_4284968-lq.mp3'));
-  const exerciseCompleteSound = useRef(new Audio('https://freesound.org/data/previews/270/270402_5123851-lq.mp3_dont_exist_on_purpose'));
-  const motivationSound = useRef(new Audio('https://freesound.org/data/previews/448/448268_7343324-lq.mp3'));
+  const exerciseCompleteSound = useRef(new Audio('https://freesound.org/data/previews/270/270402_5123851-lq.mp31'));
+  const motivationSound = useRef(new Audio('https://freesound.org/data/previews/448/448268_7343324-lq.mp31'));
   
   // Exercise-specific state
   const [currentExercise, setCurrentExercise] = useState(null);
@@ -68,6 +75,7 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const [exerciseDurationUnit, setExerciseDurationUnit] = useState('min');
   const [exerciseDistance, setExerciseDistance] = useState('');
   const [exerciseIntensity, setExerciseIntensity] = useState('medium');
+  const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
 
   // Load workout on mount
   useEffect(() => {
@@ -163,6 +171,9 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
     // Add touch event listeners
     document.addEventListener('touchstart', handleTouchStart, { passive: true });
     document.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    // Check for saved state on mount
+    loadSavedWorkoutState();
     
     // Clean up timers and event listeners on unmount
     return () => {
@@ -197,10 +208,150 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
         // Reset set tracking for new exercise
         setCurrentSetNumber(1);
         setSetsCompleted(0);
+        
+        // Reset target alert played state
+        setTargetAlertPlayed(false);
       }
     }
   }, [currentExerciseIndex, workout]);
 
+  // Add this function to save workout state to localStorage
+  const saveWorkoutState = () => {
+    if (!workout) return;
+    
+    console.log("Saving workout state due to interruption");
+    const workoutState = {
+      workoutId: workout.id,
+      date,
+      currentExerciseIndex,
+      currentState,
+      isPlaying,
+      timeElapsed,
+      totalTimeElapsed,
+      completedExercises,
+      currentSetNumber,
+      setsCompleted,
+      exerciseDuration,
+      exerciseDurationUnit,
+      exerciseDistance,
+      exerciseIntensity,
+      currentWeight,
+      currentReps,
+      currentSets,
+      waterBreaks,
+      nextWaterBreak,
+      lastPauseTime: new Date().toISOString(),
+      totalPauseDuration,
+      interruptionsCount,
+      targetAlertPlayed,
+      savedAt: new Date().toISOString()
+    };
+    
+    // Save to localStorage
+    localStorage.setItem('workout-player-state', JSON.stringify(workoutState));
+  };
+
+  // Add function to load saved state
+  const loadSavedWorkoutState = () => {
+    const savedStateStr = localStorage.getItem('workout-player-state');
+    if (!savedStateStr) return null;
+    
+    try {
+      const savedState = JSON.parse(savedStateStr);
+      
+      // Only restore if it's for the same workout and date
+      if (savedState.workoutId !== workout?.id || savedState.date !== date) {
+        return null;
+      }
+      
+      console.log("Restoring saved workout state:", savedState);
+      
+      // Restore the workout state
+      setSavedWorkoutState(savedState);
+      setShowPauseModal(true);
+      
+      return savedState;
+    } catch (error) {
+      console.error("Error loading saved workout state:", error);
+      return null;
+    }
+  };
+
+  // Function to apply saved state
+  const applyRestoredState = (savedState) => {
+    // Set all the state values from the saved state
+    setCurrentExerciseIndex(savedState.currentExerciseIndex);
+    setCurrentState(savedState.currentState);
+    setIsPlaying(false); // Always start paused
+    setTimeElapsed(savedState.timeElapsed);
+    setTotalTimeElapsed(savedState.totalTimeElapsed);
+    
+    // Restore exercise-specific state
+    if (savedState.currentState === 'exercise') {
+      setExerciseDuration(savedState.exerciseDuration);
+      setExerciseDurationUnit(savedState.exerciseDurationUnit);
+      setExerciseDistance(savedState.exerciseDistance);
+      setExerciseIntensity(savedState.exerciseIntensity);
+      setCurrentWeight(savedState.currentWeight);
+      setCurrentReps(savedState.currentReps);
+      setCurrentSets(savedState.currentSets);
+      setTargetAlertPlayed(savedState.targetAlertPlayed || false);
+    }
+    
+    // Restore progress
+    setCompletedExercises(savedState.completedExercises);
+    setCurrentSetNumber(savedState.currentSetNumber);
+    setSetsCompleted(savedState.setsCompleted);
+    
+    // Restore water break tracking
+    setWaterBreaks(savedState.waterBreaks);
+    setNextWaterBreak(savedState.nextWaterBreak);
+    
+    // Restore interruption tracking
+    setLastPauseTime(new Date(savedState.lastPauseTime));
+    setTotalPauseDuration(savedState.totalPauseDuration);
+    setInterruptionsCount(savedState.interruptionsCount);
+  };
+
+  // Add visibilitychange event handler
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // App is losing focus/visibility
+        if (isPlaying && currentState === 'exercise') {
+          console.log('App lost focus - pausing workout timer');
+          
+          // Pause the timer
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+          }
+          
+          // Update state
+          setIsPlaying(false);
+          setLastPauseTime(new Date());
+          setInterruptionsCount(prev => prev + 1);
+          
+          // Save the current state
+          saveWorkoutState();
+        }
+      } else {
+        // App regained focus - only show modal if we were previously playing
+        if (localStorage.getItem('workout-player-state') && !showPauseModal) {
+          const savedState = loadSavedWorkoutState();
+          if (savedState) {
+            setShowPauseModal(true);
+          }
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isPlaying, currentState, workout]);
+  
   // Call this function in useEffect to check achievements periodically
   useEffect(() => {
     // Check for achievements every minute or when exercise changes
@@ -254,6 +405,51 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       sound.current.currentTime = 0;
       sound.current.play().catch(err => console.log('Audio error:', err));
     }
+  };
+
+  // Calculate pause duration helper function
+  const calculatePauseDuration = () => {
+    if (!lastPauseTime) return 0;
+    return Math.floor((new Date() - lastPauseTime) / 1000);
+  };
+
+  // Resume workout function with option to count elapsed time
+  const resumeWorkout = (countElapsedTime = false) => {
+    // Apply saved state if available
+    if (savedWorkoutState) {
+      applyRestoredState(savedWorkoutState);
+      setSavedWorkoutState(null);
+    }
+    
+    // Calculate pause duration
+    const pauseDuration = calculatePauseDuration();
+    
+    if (countElapsedTime) {
+      // If counting elapsed time (user was still exercising),
+      // add the pause duration to the elapsed time
+      setTimeElapsed(prev => prev + pauseDuration);
+      setTotalTimeElapsed(prev => prev + pauseDuration);
+      
+      // Don't count this as an interruption
+      if (interruptionsCount > 0) {
+        setInterruptionsCount(prev => prev - 1);
+      }
+    } else {
+      // Standard behavior - count as interruption
+      setTotalPauseDuration(prev => prev + pauseDuration);
+    }
+    
+    // Resume timer
+    setIsPlaying(true);
+    setShowPauseModal(false);
+    
+    // Use setTimeout to ensure state updates are processed
+    setTimeout(() => {
+      startTimer();
+    }, 10);
+    
+    // Clear the saved state
+    localStorage.removeItem('workout-player-state');
   };
 
   // Create a function to check for and grant achievements
@@ -347,12 +543,17 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
           const targetDurationInSeconds = exerciseDurationUnit === 'min' ? 
             exerciseDuration * 60 : exerciseDuration;
           
-          // If we've reached or exceeded the target, auto-complete the exercise
-          if (newTime >= targetDurationInSeconds) {
-            // Use setTimeout to avoid state update conflicts
-            setTimeout(() => {
-              completeSet();
-            }, 10);
+          // Play alert sound when target is reached (only once)
+          if (newTime >= targetDurationInSeconds && !targetAlertPlayed) {
+            // Play sound alert
+            playSound(exerciseCompleteSound);
+            triggerHapticFeedback('medium');
+            setTargetAlertPlayed(true);
+            
+            // Show a visual indicator that target is reached
+            showTargetReachedIndicator();
+            
+            // Don't auto-complete - let user continue or stop manually
           }
         }
         
@@ -366,6 +567,27 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
         triggerWaterBreak();
       }
     }, 1000);
+  };
+
+  // Add this function to create a visual indicator when target is reached
+  const showTargetReachedIndicator = () => {
+    // Create a notification element
+    const notification = document.createElement('div');
+    notification.className = 'wp-target-reached-notification';
+    notification.textContent = 'Target duration reached!';
+    
+    // Add to the DOM
+    const container = playerRef.current;
+    if (container) {
+      container.appendChild(notification);
+      
+      // Remove after animation completes
+      setTimeout(() => {
+        if (container.contains(notification)) {
+          container.removeChild(notification);
+        }
+      }, 3000);
+    }
   };
 
   // Handle duration-based exercise changes
@@ -608,7 +830,7 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       const exercise = updated[currentExerciseIndex];
       
       if (exercise.isDurationBased) {
-        // For duration-based exercises
+        // For duration-based exercises - ALWAYS use actual timeElapsed
         updated[currentExerciseIndex] = {
           ...exercise,
           completed: true,
@@ -616,7 +838,7 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
           actualDurationUnit: exerciseDurationUnit || exercise.durationUnit || 'min',
           actualDistance: exerciseDistance || exercise.distance || '',
           actualIntensity: exerciseIntensity || exercise.intensity || 'medium',
-          timeSpent: timeElapsed
+          timeSpent: timeElapsed // This is the key - actual time spent is recorded
         };
       } else {
         // For traditional strength exercises
@@ -782,6 +1004,9 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
     
     setIsPlaying(false);
     setCurrentState('summary');
+    
+    // Clear any saved workout state
+    localStorage.removeItem('workout-player-state');
     
     // Play completion sound
     playSound(completeSound);
@@ -1130,8 +1355,158 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
           <span>Next break: {nextWaterBreak}min</span>
         </div>
       )}
+
+      {/* Cancel Confirmation Modal */}
+{showCancelConfirmModal && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">
+          <X size={24} />
+        </div>
+        <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+          End Workout?
+        </h3>
+      </div>
+      
+      <p className="text-slate-600 dark:text-slate-400 mb-6">
+        Are you sure you want to end this workout? This session will not be saved.
+      </p>
+      
+      <div className="flex flex-col sm:flex-row gap-3 justify-end">
+        <button
+          onClick={() => setShowCancelConfirmModal(false)}
+          className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors order-1 sm:order-none"
+        >
+          Continue Workout
+        </button>
+        
+        <button
+          onClick={() => {
+            onClose();
+            localStorage.removeItem('workout-player-state');
+          }}
+          className="px-4 py-2 rounded-lg bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+        >
+          <X size={20} />
+          End Workout
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+      {/* Pause Modal for interruptions */}
+      {showPauseModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+                <Pause size={24} />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+                Workout Paused
+              </h3>
+            </div>
+            
+            {lastPauseTime && (
+              <div className="mb-4 bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                <p className="text-slate-600 dark:text-slate-400">
+                  <span className="font-medium">Pause duration:</span> {formatTime(calculatePauseDuration())}
+                </p>
+              </div>
+            )}
+            
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              Your workout was paused. This could be due to screen lock or navigating away. How would you like to continue?
+            </p>
+            
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => resumeWorkout(true)}
+                className="px-4 py-2 rounded-lg bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <Play size={20} />
+                Continue with Elapsed Time
+              </button>
+              
+              <div className="text-xs text-slate-500 dark:text-slate-400 mb-2 italic">
+                Use this option if you were still exercising while away from the app.
+              </div>
+              
+              <button
+                onClick={() => resumeWorkout(false)}
+                className="px-4 py-2 rounded-lg bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <Play size={20} />
+                Continue from Pause
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowPauseModal(false);
+                  setShowCancelConfirmModal(true);
+                  // Clear saved state
+                  localStorage.removeItem('workout-player-state');
+                }}
+                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                End Workout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+// Add styling for the notification
+const style = document.createElement('style');
+style.innerHTML = `
+  .wp-target-reached-notification {
+    position: fixed;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(34, 197, 94, 0.9);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    animation: fadeInOut 3s ease-in-out;
+    z-index: 9999;
+    width: auto;
+    text-align: center;
+    max-width: 90%;
+  }
+  
+  /* Also fix the other notification elements */
+  .wp-exercise-completion-effect,
+  .wp-set-completion-effect,
+  .wp-workout-completion-effect {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    width: 100%;
+    max-width: 90%;
+    text-align: center;
+  }
+  
+  .wp-completion-text {
+    width: 100%;
+    text-align: center;
+  }
+  
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: translate(-50%, -20px); }
+    15% { opacity: 1; transform: translate(-50%, 0); }
+    85% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, -20px); }
+  }
+`;
+document.head.appendChild(style);
 
 export default WorkoutPlayer;

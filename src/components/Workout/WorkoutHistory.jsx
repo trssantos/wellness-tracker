@@ -512,64 +512,54 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
               Exercises ({workout.exercises.length})
             </h4>
             <div className="space-y-2">
-              {workout.exercises.map((exercise, index) => (
-                <div 
-                  key={index}
-                  className="p-3 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="font-medium text-slate-700 dark:text-slate-300 transition-colors">
-                        {exercise.name}
-                      </p>
-                      <div className="mt-1 text-sm text-slate-500 dark:text-slate-400 transition-colors">
-                        {exercise.isDurationBased ? (
-                          // Display duration-based exercise details - show duration in parentheses
-                          <span>
-                            {exercise.actualDuration || exercise.duration || 0} {exercise.actualDurationUnit || exercise.durationUnit || 'min'}
-                            {(exercise.actualDistance || exercise.distance) ? 
-                              ` (${exercise.actualDistance || exercise.distance} distance)` : ''}
-                          </span>
-                        ) : (
-                          // Display traditional strength exercise details - prioritize actual values
-                          <span>
-                            {exercise.actualSets || exercise.sets || 0} sets × {exercise.actualReps || exercise.reps || 0} reps
-                            {(exercise.actualWeight || exercise.weight) ? 
-                              ` (${exercise.actualWeight || exercise.weight} ${weightUnit})` : ''}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {/* Completion status */}
-                    {exercise.completed !== undefined && (
-                      <div>
-                        {exercise.completed ? (
-                          <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-2 py-1 rounded-full">
-                            Completed
-                          </span>
-                        ) : (
-                          <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs px-2 py-1 rounded-full">
-                            Skipped
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Show intensity for duration exercises */}
-                  {exercise.isDurationBased && (exercise.actualIntensity || exercise.intensity) && (
-                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      Intensity: {formatIntensity(exercise.actualIntensity || exercise.intensity)}
-                    </div>
-                  )}
-                  
-                  {exercise.notes && (
-                    <div className="w-full mt-1 text-xs italic text-slate-500 dark:text-slate-400 line-clamp-2">
-                      {exercise.notes}
-                    </div>
-                  )}
-                </div>
-              ))}
+            {workout.exercises.map((exercise, index) => (
+  <div 
+    key={index}
+    className="p-3 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors"
+  >
+    <div className="flex items-start justify-between">
+      <div className="flex-1">
+        <p className="font-medium text-slate-700 dark:text-slate-300 transition-colors">
+          {exercise.name}
+        </p>
+        <div className="mt-1 text-sm text-slate-500 dark:text-slate-400 transition-colors">
+          {exercise.isDurationBased ? (
+            // Display actual time spent when available
+            <span>
+              {exercise.timeSpent ? 
+                `${formatTime(exercise.timeSpent)} (actual)` :
+                `${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}`}
+              {(exercise.actualDistance || exercise.distance) ? 
+                ` (${exercise.actualDistance || exercise.distance} distance)` : ''}
+            </span>
+          ) : (
+            // Display traditional strength exercise details
+            <span>
+              {exercise.actualSets || exercise.sets || 0} sets × {exercise.actualReps || exercise.reps || 0} reps
+              {(exercise.actualWeight || exercise.weight) ? 
+                ` (${exercise.actualWeight || exercise.weight} ${weightUnit})` : ''}
+            </span>
+          )}
+        </div>
+      </div>
+      {/* Completion status */}
+      {exercise.completed !== undefined && (
+        <div>
+          {exercise.completed ? (
+            <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-2 py-1 rounded-full">
+              Completed
+            </span>
+          ) : (
+            <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs px-2 py-1 rounded-full">
+              Skipped
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+))}
+
             </div>
           </div>
         )}

@@ -233,18 +233,20 @@ const WorkoutSummary = ({
                 {exercise.name}
               </div>
               <div className="exercise-details">
-                {exercise.completed && (
-                  <span>
-                    {exercise.isDurationBased ? (
-                      // Show duration for duration-based exercises
-                      `${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}`
-                    ) : (
-                      // Show sets/reps for traditional exercises
-                      `${exercise.actualSets || 0}×${exercise.actualReps || 0}${exercise.actualWeight ? ` @ ${exercise.actualWeight}` : ''}`
-                    )}
-                  </span>
-                )}
-              </div>
+  {exercise.completed && (
+    <span>
+      {exercise.isDurationBased ? (
+        // Show actual time spent for duration-based exercises when available
+        exercise.timeSpent ? 
+          `${formatTime(exercise.timeSpent)} actual time ${exercise.actualDistance ? ` (${exercise.actualDistance})` : ''}` :
+          `${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}`
+      ) : (
+        // Show sets/reps for traditional exercises
+        `${exercise.actualSets || 0}×${exercise.actualReps || 0}${exercise.actualWeight ? ` @ ${exercise.actualWeight}` : ''}`
+      )}
+    </span>
+  )}
+</div>
             </div>
           ))}
         </div>

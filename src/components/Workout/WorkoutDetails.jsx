@@ -69,6 +69,43 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
     return foundLocation ? foundLocation.label : 'Other';
   };
 
+  const formatTime = (seconds) => {
+    if (!seconds) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatExerciseTime = (timeValue) => {
+    // If it's a number (seconds), format as duration
+    if (typeof timeValue === 'number') {
+      const mins = Math.floor(timeValue / 60);
+      const secs = timeValue % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    // If it's a string that contains a timestamp or date
+    if (typeof timeValue === 'string' && 
+        (timeValue.includes(':') || timeValue.includes('T') || 
+         timeValue.includes('AM') || timeValue.includes('PM'))) {
+      try {
+        // Try to extract just the minutes and seconds
+        const date = new Date(timeValue);
+        // If it's a valid date
+        if (!isNaN(date.getTime())) {
+          const mins = date.getHours() * 60 + date.getMinutes();
+          const secs = date.getSeconds();
+          return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+      } catch (e) {
+        console.error("Error parsing time:", e);
+      }
+    }
+    
+    // Return the original value as a fallback
+    return timeValue;
+  };
+
   // Helper function to get day name from abbreviation
   const getDayName = (day) => {
     const days = {
@@ -348,18 +385,20 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
                     <div className="font-medium text-slate-700 dark:text-slate-200 text-sm truncate">{exercise.name}</div>
                   </div>
                   <div className="w-[30%] text-right">
-                    {exercise.isDurationBased ? (
-                      <div className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full inline-block">
-                        {exercise.duration || 0} {exercise.durationUnit || 'min'}
-                        {exercise.distance ? ` (${exercise.distance})` : ''}
-                      </div>
-                    ) : (
-                      <div className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full inline-block">
-                        {exercise.sets} × {exercise.reps}
-                        {exercise.weight ? ` (${exercise.weight} ${weightUnit})` : ''}
-                      </div>
-                    )}
-                  </div>
+          {exercise.isDurationBased ? (
+            <div className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full inline-block">
+              {exercise.timeSpent ? 
+                `${formatTime(exercise.timeSpent)} actual` : 
+                `${exercise.duration || 0} ${exercise.durationUnit || 'min'}`}
+              {exercise.distance ? ` (${exercise.distance})` : ''}
+            </div>
+          ) : (
+            <div className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full inline-block">
+              {exercise.sets} × {exercise.reps}
+              {exercise.weight ? ` (${exercise.weight} ${weightUnit})` : ''}
+            </div>
+          )}
+        </div>
                 </div>
                 
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-500 dark:text-slate-400">

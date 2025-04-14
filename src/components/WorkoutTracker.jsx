@@ -302,20 +302,22 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
                       Exercises ({workout.exercises.length})
                     </h5>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {workout.exercises.slice(0, 4).map((exercise, i) => (
-                        <div key={i} className="text-xs text-slate-600 dark:text-slate-400">
-                          • {exercise.name} {
-                            exercise.isDurationBased ? 
-                              /* Duration based exercises */
-                              `(${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}${(exercise.actualDistance || exercise.distance) ? ` - ${exercise.actualDistance || exercise.distance}` : ''})`
-                              :
-                              /* Traditional strength exercises */
-                              ((exercise.actualSets || exercise.sets) && (exercise.actualReps || exercise.reps)) ? 
-                                `(${exercise.actualSets || exercise.sets} × ${exercise.actualReps || exercise.reps}${(exercise.actualWeight || exercise.weight) ? ` @ ${exercise.actualWeight || exercise.weight} ${weightUnit}` : ''})` 
-                                : ''
-                          }
-                        </div>
-                      ))}
+                    {workout.exercises.slice(0, 4).map((exercise, i) => (
+  <div key={i} className="text-xs text-slate-600 dark:text-slate-400">
+    • {exercise.name} {
+      exercise.isDurationBased ? 
+        /* Duration based exercises - Show actual time spent */
+        `(${exercise.timeSpent ? 
+          formatTime(exercise.timeSpent) + ' actual' :
+          `${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}`}${(exercise.actualDistance || exercise.distance) ? ` - ${exercise.actualDistance || exercise.distance}` : ''})`
+        :
+        /* Traditional strength exercises */
+        ((exercise.actualSets || exercise.sets) && (exercise.actualReps || exercise.reps)) ? 
+          `(${exercise.actualSets || exercise.sets} × ${exercise.actualReps || exercise.reps}${(exercise.actualWeight || exercise.weight) ? ` @ ${exercise.actualWeight || exercise.weight} ${weightUnit}` : ''})` 
+          : ''
+    }
+  </div>
+))}
                       {workout.exercises.length > 4 && (
                         <div className="text-xs text-blue-600 dark:text-blue-400">
                           +{workout.exercises.length - 4} more exercises

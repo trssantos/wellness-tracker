@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Calendar, CheckSquare, ArrowLeft, 
          Trash2, Dumbbell, Flame, Edit, AlertTriangle } from 'lucide-react';
-import { getStorage, setStorage,getWeightUnit } from '../../utils/storage';
+import { getStorage, setStorage, getWeightUnit } from '../../utils/storage';
 import { getWorkoutTypesWithColors } from '../../utils/workoutUtils';
 import { formatDateForStorage } from '../../utils/dateUtils';
 import QuickLogWorkout from './QuickLogWorkout';
@@ -24,9 +24,9 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
   }, [refreshTrigger]);
 
   // Add this useEffect hook to fetch the weight unit setting
-useEffect(() => {
-  setWeightUnit(getWeightUnit());
-}, []);
+  useEffect(() => {
+    setWeightUnit(getWeightUnit());
+  }, []);
   
   // Load workouts from all storage locations
   const loadWorkouts = () => {
@@ -240,22 +240,33 @@ useEffect(() => {
     setShowDeleteConfirm(false);
   };
 
-  // Add this helper function to format intensity consistently - 
-// Converting from both string format (medium, high) and numeric format (1-5)
-const formatIntensity = (intensity) => {
-  // Handle numeric format
-  if (!isNaN(parseInt(intensity))) {
-    const level = parseInt(intensity);
-    switch(level) {
-      case 1: return "light (1/5)";
-      case 2: return "moderate (2/5)";
-      case 3: return "challenging (3/5)";
-      case 4: return "intense (4/5)";
-      case 5: return "maximum (5/5)";
-      default: return `${intensity}/5`;
+  // Format intensity consistently
+  const formatIntensity = (intensity) => {
+    // Handle numeric format
+    if (!isNaN(parseInt(intensity))) {
+      const level = parseInt(intensity);
+      switch(level) {
+        case 1: return "light (1/5)";
+        case 2: return "moderate (2/5)";
+        case 3: return "challenging (3/5)";
+        case 4: return "intense (4/5)";
+        case 5: return "maximum (5/5)";
+        default: return `${intensity}/5`;
+      }
     }
-  }
-};
+    
+    // Handle string format
+    if (typeof intensity === 'string') {
+      switch(intensity.toLowerCase()) {
+        case 'light': return "light (1/5)";
+        case 'medium': return "moderate (3/5)";
+        case 'high': return "intense (4/5)";
+        default: return intensity;
+      }
+    }
+    
+    return intensity;
+  };
   
   // Handle editing a workout
   const handleEditWorkout = (workout) => {
@@ -457,7 +468,7 @@ const formatIntensity = (intensity) => {
                 <div className="text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors">Intensity</div>
               </div>
               <div className="text-xl font-bold text-blue-700 dark:text-blue-300 transition-colors">
-                {workout.intensity}/5
+                {formatIntensity(workout.intensity)}
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400 transition-colors">
                 Perceived effort level
@@ -494,51 +505,74 @@ const formatIntensity = (intensity) => {
           </div>
         </div>
         
-        {/* Exercises */}
-{workout.exercises && workout.exercises.length > 0 && (
-  <div className="mb-6 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 transition-colors">
-    <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 transition-colors">
-      Exercises ({workout.exercises.length})
-    </h4>
-    <div className="space-y-2">
-      {workout.exercises.map((exercise, index) => (
-        <div 
-          key={index}
-          className="p-3 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors"
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <p className="font-medium text-slate-700 dark:text-slate-300 transition-colors">
-                {exercise.name}
-              </p>
-              <div className="mt-1 text-sm text-slate-500 dark:text-slate-400 transition-colors">
-                {exercise.isDurationBased ? (
-                  // Display duration-based exercise details
-                  <span>
-                    {exercise.duration || exercise.actualDuration || 0} {exercise.durationUnit || exercise.actualDurationUnit || 'min'}
-                    {exercise.distance || exercise.actualDistance ? ` • ${exercise.distance || exercise.actualDistance} distance` : ''}
-                  </span>
-                ) : (
-                  // Display traditional strength exercise details
-                  <span>
-                    {exercise.sets || exercise.actualSets} sets × {exercise.reps || exercise.actualReps} reps
-                    {exercise.weight || exercise.actualWeight ? ` • ${exercise.weight || exercise.actualWeight} ${weightUnit}` : ''}
-                  </span>
-                )}
-              </div>
+        {/* Exercises - UPDATED to show actual values */}
+        {workout.exercises && workout.exercises.length > 0 && (
+          <div className="mb-6 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 transition-colors">
+            <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 transition-colors">
+              Exercises ({workout.exercises.length})
+            </h4>
+            <div className="space-y-2">
+              {workout.exercises.map((exercise, index) => (
+                <div 
+                  key={index}
+                  className="p-3 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-slate-700 dark:text-slate-300 transition-colors">
+                        {exercise.name}
+                      </p>
+                      <div className="mt-1 text-sm text-slate-500 dark:text-slate-400 transition-colors">
+                        {exercise.isDurationBased ? (
+                          // Display duration-based exercise details - show duration in parentheses
+                          <span>
+                            {exercise.actualDuration || exercise.duration || 0} {exercise.actualDurationUnit || exercise.durationUnit || 'min'}
+                            {(exercise.actualDistance || exercise.distance) ? 
+                              ` (${exercise.actualDistance || exercise.distance} distance)` : ''}
+                          </span>
+                        ) : (
+                          // Display traditional strength exercise details - prioritize actual values
+                          <span>
+                            {exercise.actualSets || exercise.sets || 0} sets × {exercise.actualReps || exercise.reps || 0} reps
+                            {(exercise.actualWeight || exercise.weight) ? 
+                              ` (${exercise.actualWeight || exercise.weight} ${weightUnit})` : ''}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* Completion status */}
+                    {exercise.completed !== undefined && (
+                      <div>
+                        {exercise.completed ? (
+                          <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-2 py-1 rounded-full">
+                            Completed
+                          </span>
+                        ) : (
+                          <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs px-2 py-1 rounded-full">
+                            Skipped
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Show intensity for duration exercises */}
+                  {exercise.isDurationBased && (exercise.actualIntensity || exercise.intensity) && (
+                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      Intensity: {formatIntensity(exercise.actualIntensity || exercise.intensity)}
+                    </div>
+                  )}
+                  
+                  {exercise.notes && (
+                    <div className="w-full mt-1 text-xs italic text-slate-500 dark:text-slate-400 line-clamp-2">
+                      {exercise.notes}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
-          
-          {exercise.notes && (
-            <div className="w-full mt-1 text-xs italic text-slate-500 dark:text-slate-400 line-clamp-2">
-              {exercise.notes}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+        )}
         
         {/* Notes */}
         {workout.notes && (

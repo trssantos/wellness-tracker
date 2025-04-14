@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import WorkoutPlayer from './WorkoutPlayer';
+import { ThemeContext } from '../../context/ThemeContext';
 
 const WorkoutPlayerModal = ({ workoutId, date, onComplete, onClose }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const { theme } = useContext(ThemeContext);
   
   // Implementation without using dialog element
   useEffect(() => {
@@ -62,7 +64,7 @@ const WorkoutPlayerModal = ({ workoutId, date, onComplete, onClose }) => {
         {/* Exit Confirmation Dialog */}
         {showConfirmation && (
           <div className="exit-confirmation-overlay">
-            <div className="exit-confirmation-dialog">
+            <div className={`exit-confirmation-dialog ${theme === 'vintage' ? 'theme-vintage' : ''} ${theme === 'modern' && document.documentElement.classList.contains('dark') ? 'theme-dark' : ''}`}>
               <h2>End Workout?</h2>
               <p>Are you sure you want to end your workout? Your progress will not be saved.</p>
               <div className="exit-confirmation-buttons">
@@ -127,26 +129,27 @@ style.innerHTML = `
     z-index: 10000;
   }
   
+  /* Light mode styling (default) */
   .exit-confirmation-dialog {
-    background: #F5EAD5;
-    border: 2px solid #C9B690;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
     border-radius: 8px;
     padding: 20px;
     width: 90%;
     max-width: 350px;
     text-align: center;
-    font-family: 'VT323', monospace;
+    font-family: inherit;
   }
   
   .exit-confirmation-dialog h2 {
     margin-top: 0;
     font-size: 1.8rem;
-    color: #5C4E33;
+    color: #1e293b;
     margin-bottom: 10px;
   }
   
   .exit-confirmation-dialog p {
-    color: #8A7B59;
+    color: #334155;
     margin-bottom: 20px;
   }
   
@@ -159,21 +162,105 @@ style.innerHTML = `
   .exit-confirmation-buttons button {
     padding: 10px 15px;
     border-radius: 4px;
-    font-family: 'VT323', monospace;
+    font-family: inherit;
     font-size: 1rem;
     border: none;
     cursor: pointer;
   }
   
   .cancel-button {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .confirm-button {
+    background: #ef4444;
+    color: white;
+  }
+
+  /* Dark theme styling */
+  .exit-confirmation-dialog.theme-dark {
+    background: #1e293b;
+    border: 2px solid #334155;
+    color: #f1f5f9;
+  }
+  
+  .exit-confirmation-dialog.theme-dark h2 {
+    color: #f1f5f9;
+  }
+  
+  .exit-confirmation-dialog.theme-dark p {
+    color: #cbd5e1;
+  }
+  
+  .exit-confirmation-dialog.theme-dark .cancel-button {
+    background: #334155;
+    color: #f1f5f9;
+    border: 1px solid #475569;
+  }
+  
+  .exit-confirmation-dialog.theme-dark .confirm-button {
+    background: #dc2626;
+    color: white;
+  }
+  
+  /* Vintage theme styling */
+  .exit-confirmation-dialog.theme-vintage {
+    background: #F5EAD5;
+    border: 2px solid #C9B690;
+    border-radius: 8px;
+    font-family: 'VT323', monospace;
+  }
+  
+  .exit-confirmation-dialog.theme-vintage h2 {
+    color: #5C4E33;
+  }
+  
+  .exit-confirmation-dialog.theme-vintage p {
+    color: #8A7B59;
+  }
+  
+  .exit-confirmation-dialog.theme-vintage .cancel-button {
     background: #E5D8B9;
     color: #8A7B59;
     border: 1px solid #C9B690;
   }
   
-  .confirm-button {
+  .exit-confirmation-dialog.theme-vintage .confirm-button {
     background: #C13628;
     color: white;
+  }
+  
+  /* Dark vintage theme styling */
+  html.dark .exit-confirmation-dialog.theme-vintage,
+  .exit-confirmation-dialog.theme-vintage.theme-dark {
+    background: #2A2520;
+    border: 2px solid #4A4540;
+    color: #F5EAD5;
+  }
+  
+  html.dark .exit-confirmation-dialog.theme-vintage h2,
+  .exit-confirmation-dialog.theme-vintage.theme-dark h2 {
+    color: #F5EAD5;
+  }
+  
+  html.dark .exit-confirmation-dialog.theme-vintage p,
+  .exit-confirmation-dialog.theme-vintage.theme-dark p {
+    color: #C9B690;
+  }
+  
+  html.dark .exit-confirmation-dialog.theme-vintage .cancel-button,
+  .exit-confirmation-dialog.theme-vintage.theme-dark .cancel-button {
+    background: #3A3530;
+    color: #C9B690;
+    border: 1px solid #4A4540;
+  }
+  
+  html.dark .exit-confirmation-dialog.theme-vintage .confirm-button,
+  .exit-confirmation-dialog.theme-vintage.theme-dark .confirm-button {
+    background: #C13628;
+    color: #F5EAD5;
   }
   
   @media (min-width: 768px) {

@@ -1,7 +1,8 @@
 // src/components/WorkoutTracker.jsx
 import React, { useState, useEffect } from 'react';
-import { Minus, X, Save, Dumbbell, Clock, Flame, BarChart, Plus, Trash2, Edit, Calendar, List } from 'lucide-react';
-import { getStorage, setStorage, getWorkoutsForDate, logWorkout, deleteCompletedWorkout } from '../utils/workoutUtils';
+import { Minus, X, Save, Dumbbell, Clock, Flame, BarChart, Plus, Trash2, Edit, Calendar, List, Route } from 'lucide-react';
+import { getStorage, setStorage, getWeightUnit } from '../utils/storage';
+import { getWorkoutsForDate, logWorkout, deleteCompletedWorkout } from '../utils/workoutUtils';
 import WorkoutSelector from './Workout/WorkoutSelector';
 import WorkoutLogger from './Workout/WorkoutLogger';
 import QuickLogWorkout from './Workout/QuickLogWorkout';
@@ -21,6 +22,7 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
   const [selectedWorkoutId, setSelectedWorkoutId] = useState(null);
   const [workoutMode, setWorkoutMode] = useState('list'); // 'list', 'manual', 'template', 'edit'
   const [editingWorkout, setEditingWorkout] = useState(null);
+  const [weightUnit, setWeightUnit] = useState('lbs');
   
   // Load existing workouts for the day
   useEffect(() => {
@@ -36,6 +38,9 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
         setWorkoutMode('list');
       }
     }
+
+    // Load weight unit preference
+    setWeightUnit(getWeightUnit());
   }, [date, workoutToEdit]);
   
   // Load workouts for the selected day
@@ -146,14 +151,40 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
     });
   };
 
+  // Format intensity consistently
+  const formatIntensity = (intensity) => {
+    // Handle numeric format
+    if (!isNaN(parseInt(intensity))) {
+      const level = parseInt(intensity);
+      switch(level) {
+        case 1: return "light (1/5)";
+        case 2: return "moderate (2/5)";
+        case 3: return "challenging (3/5)";
+        case 4: return "intense (4/5)";
+        case 5: return "maximum (5/5)";
+        default: return `${intensity}/5`;
+      }
+    }
+    
+    // Handle string format
+    if (typeof intensity === 'string') {
+      switch(intensity.toLowerCase()) {
+        case 'light': return "light (1/5)";
+        case 'medium': return "moderate (3/5)";
+        case 'high': return "intense (4/5)";
+        default: return intensity;
+      }
+    }
+    
+    return intensity;
+  };
+
   // Render list of workouts
   const renderWorkoutList = () => {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100">
-            Workouts for {getFormattedDate()}
-          </h3>
+          
           <div className="flex gap-2">
             <button
               onClick={handleNewManualWorkout}
@@ -235,7 +266,7 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
                   {workout.types && workout.types.map((type, i) => (
                     <span 
                       key={i}
-                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${getWorkoutTypeColor(type)}`}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${getWorkoutTypeColor(type)}`}
                     >
                       <span className="mr-1">{getWorkoutTypeIcon(type)}</span>
                       {getWorkoutTypeName(type)}
@@ -264,7 +295,7 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
                   )}
                 </div>
                 
-                {/* Exercise summary */}
+                {/* Exercise summary - UPDATED to use actual values */}
                 {workout.exercises && workout.exercises.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
                     <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -273,7 +304,16 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {workout.exercises.slice(0, 4).map((exercise, i) => (
                         <div key={i} className="text-xs text-slate-600 dark:text-slate-400">
-                          • {exercise.name} {exercise.sets && exercise.reps ? `(${exercise.sets} × ${exercise.reps})` : ''}
+                          • {exercise.name} {
+                            exercise.isDurationBased ? 
+                              /* Duration based exercises */
+                              `(${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}${(exercise.actualDistance || exercise.distance) ? ` - ${exercise.actualDistance || exercise.distance}` : ''})`
+                              :
+                              /* Traditional strength exercises */
+                              ((exercise.actualSets || exercise.sets) && (exercise.actualReps || exercise.reps)) ? 
+                                `(${exercise.actualSets || exercise.sets} × ${exercise.actualReps || exercise.reps}${(exercise.actualWeight || exercise.weight) ? ` @ ${exercise.actualWeight || exercise.weight} ${weightUnit}` : ''})` 
+                                : ''
+                          }
                         </div>
                       ))}
                       {workout.exercises.length > 4 && (
@@ -285,7 +325,7 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
                   </div>
                 )}
                 
-                {/* Notes summary (truncated) */}
+                {/* Notes */}
                 {workout.notes && (
                   <div className="mt-3 text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
                     {workout.notes}

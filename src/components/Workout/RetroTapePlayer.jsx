@@ -29,6 +29,10 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
   const playlistRef = useRef(null);
   const youtubePlayerRef = useRef(null);
   const playerContainerRef = useRef(null);
+  const youtubePlayerElementRef = useRef(null); // New ref for the player element
+  
+  // Track component mount state
+  const isMounted = useRef(true);
   
   // Sound effect refs
   const insertSound = useRef(new Audio('/audio/tape.wav'));
@@ -55,9 +59,15 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
     window.onYouTubeIframeAPIReady = () => {
       console.log("YouTube API ready");
     };
+    
+    // Set mounted flag
+    isMounted.current = true;
 
     return () => {
+      // Cleanup YouTube player on unmount
+      cleanupYouTubePlayer();
       window.onYouTubeIframeAPIReady = null;
+      isMounted.current = false;
     };
   }, []);
 
@@ -83,9 +93,80 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
     };
   }, [showPlaylistModal]);
 
+  // Cleanup function for the YouTube player
+  const cleanupYouTubePlayer = () => {
+    if (youtubePlayerRef.current) {
+      try {
+        youtubePlayerRef.current.destroy();
+      } catch (e) {
+        console.error("Error destroying YouTube player:", e);
+      }
+      youtubePlayerRef.current = null;
+    }
+  };
+
+  // Initialize YouTube player function
+  const initializeYouTubePlayer = (videoId) => {
+    if (!videoId || !window.YT || !window.YT.Player || !isMounted.current) {
+      return;
+    }
+    
+    // Clean up existing player first
+    cleanupYouTubePlayer();
+    
+    try {
+      // Use an explicit div element instead of id-based lookup
+      // This avoids the DOM manipulation conflict
+      youtubePlayerRef.current = new window.YT.Player(youtubePlayerElementRef.current, {
+        height: '0',
+        width: '0',
+        videoId: videoId,
+        playerVars: {
+          autoplay: isPlaying ? 1 : 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          rel: 0
+        },
+        events: {
+          onReady: (event) => {
+            if (!isMounted.current) return;
+            
+            if (isMuted) {
+              event.target.mute();
+            } else {
+              event.target.unMute();
+            }
+            if (isPlaying) {
+              event.target.playVideo();
+            }
+          },
+          onStateChange: (event) => {
+            if (!isMounted.current) return;
+            
+            if (event.data === window.YT.PlayerState.ENDED) {
+              handleNextTrack();
+            }
+          },
+          onError: (event) => {
+            if (!isMounted.current) return;
+            
+            console.error("YouTube player error:", event.data);
+            setPlayerError(`Error playing video (${event.data})`);
+          }
+        }
+      });
+    } catch (e) {
+      console.error("Error initializing YouTube player:", e);
+      setPlayerError("Error initializing player");
+    }
+  };
+
   // Initialize or update YouTube player when track changes
   useEffect(() => {
-    if (!isInserted || playlist.length === 0) return;
+    if (!isInserted || playlist.length === 0) {
+      return;
+    }
     
     if (currentTrack >= playlist.length) {
       setCurrentTrack(0);
@@ -97,60 +178,35 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
     
     setYoutubeId(id);
     
-    // Only initialize YouTube player if we have an ID and the API is loaded
-    if (id && window.YT && window.YT.Player) {
-      if (youtubePlayerRef.current) {
-        youtubePlayerRef.current.destroy();
-      }
-      
-      youtubePlayerRef.current = new window.YT.Player('youtube-player', {
-        height: '0',
-        width: '0',
-        videoId: id,
-        playerVars: {
-          autoplay: isPlaying ? 1 : 0,
-          controls: 0,
-          disablekb: 1,
-          fs: 0,
-          rel: 0
-        },
-        events: {
-          onReady: (event) => {
-            if (isMuted) {
-              event.target.mute();
-            } else {
-              event.target.unMute();
-            }
-            if (isPlaying) {
-              event.target.playVideo();
-            }
-          },
-          onStateChange: (event) => {
-            if (event.data === window.YT.PlayerState.ENDED) {
-              handleNextTrack();
-            }
-          },
-          onError: (event) => {
-            console.error("YouTube player error:", event.data);
-            setPlayerError(`Error playing video (${event.data})`);
-          }
+    // Only initialize if we're fully inserted (not during animation)
+    if (isInserted && !isInserting && !isEjecting) {
+      // Use a small delay to ensure DOM is stable
+      const timer = setTimeout(() => {
+        if (isMounted.current) {
+          initializeYouTubePlayer(id);
         }
-      });
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
-  }, [currentTrack, isInserted]);
+  }, [currentTrack, isInserted, isInserting, isEjecting, playlist, isMuted]);
 
   // Update player state when play/pause or mute changes
   useEffect(() => {
     if (!isInserted || !youtubePlayerRef.current) return;
     
-    if (youtubePlayerRef.current.getPlayerState) {
-      const playerState = youtubePlayerRef.current.getPlayerState();
-      
-      if (isPlaying && playerState !== 1) {
-        youtubePlayerRef.current.playVideo();
-      } else if (!isPlaying && playerState === 1) {
-        youtubePlayerRef.current.pauseVideo();
+    try {
+      if (youtubePlayerRef.current.getPlayerState) {
+        const playerState = youtubePlayerRef.current.getPlayerState();
+        
+        if (isPlaying && playerState !== 1) {
+          youtubePlayerRef.current.playVideo();
+        } else if (!isPlaying && playerState === 1) {
+          youtubePlayerRef.current.pauseVideo();
+        }
       }
+    } catch (e) {
+      console.error("Error controlling YouTube player:", e);
     }
   }, [isPlaying, isInserted]);
 
@@ -158,12 +214,16 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
   useEffect(() => {
     if (!youtubePlayerRef.current) return;
     
-    if (youtubePlayerRef.current.mute && youtubePlayerRef.current.unMute) {
-      if (isMuted) {
-        youtubePlayerRef.current.mute();
-      } else {
-        youtubePlayerRef.current.unMute();
+    try {
+      if (youtubePlayerRef.current.mute && youtubePlayerRef.current.unMute) {
+        if (isMuted) {
+          youtubePlayerRef.current.mute();
+        } else {
+          youtubePlayerRef.current.unMute();
+        }
       }
+    } catch (e) {
+      console.error("Error setting mute state:", e);
     }
   }, [isMuted]);
 
@@ -177,6 +237,11 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
     if (!isEjecting) return;
     
     const timer = setTimeout(() => {
+      if (!isMounted.current) return;
+      
+      // Clean up YouTube player before changing state
+      cleanupYouTubePlayer();
+      
       setIsEjecting(false);
       setIsInserted(false);
       
@@ -187,13 +252,15 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, [isEjecting]);
+  }, [isEjecting, playerError]);
 
   // Handle insertion animation completion
   useEffect(() => {
     if (!isInserting) return;
     
     const timer = setTimeout(() => {
+      if (!isMounted.current) return;
+      
       setIsInserting(false);
       setIsInserted(true);
       setShowPlaylistModal(false);
@@ -207,7 +274,7 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, [isInserting]);
+  }, [isInserting, playerError]);
 
   // Extract YouTube ID from URL
   const extractYouTubeId = (url) => {
@@ -251,6 +318,11 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
       return;
     }
     
+    if (isEjecting || isInserting) {
+      // Don't allow new actions during animations
+      return;
+    }
+    
     // Show playlist modal
     setShowPlaylistModal(true);
     setSelectedMixtapeIndex(null);
@@ -264,7 +336,7 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
 
   // Insert the selected tape
   const insertSelectedTape = () => {
-    if (selectedMixtapeIndex === null) return;
+    if (selectedMixtapeIndex === null || isEjecting || isInserting) return;
     
     setCurrentTrack(selectedMixtapeIndex);
     setIsInserting(true);
@@ -274,12 +346,18 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
 
   // Eject the current tape
   const ejectTape = () => {
+    if (isEjecting || isInserting) return;
+    
     // Stop playback
     setIsPlaying(false);
     
     // Stop YouTube player
     if (youtubePlayerRef.current && youtubePlayerRef.current.stopVideo) {
-      youtubePlayerRef.current.stopVideo();
+      try {
+        youtubePlayerRef.current.stopVideo();
+      } catch (e) {
+        console.error("Error stopping video:", e);
+      }
     }
     
     // Start ejection animation
@@ -295,7 +373,7 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
 
   // Go to previous track with proper animation sequence
   const handlePrevTrack = () => {
-    if (!isInserted || playlist.length <= 1) return;
+    if (!isInserted || playlist.length <= 1 || isEjecting || isInserting) return;
     
     playSound(clickSound);
     
@@ -308,7 +386,7 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
 
   // Go to next track with proper animation sequence
   const handleNextTrack = () => {
-    if (!isInserted || playlist.length <= 1) return;
+    if (!isInserted || playlist.length <= 1 || isEjecting || isInserting) return;
     
     playSound(clickSound);
     
@@ -324,26 +402,33 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
     // Stop playback
     setIsPlaying(false);
     
-    // Stop YouTube player if it exists
-    if (youtubePlayerRef.current && youtubePlayerRef.current.stopVideo) {
-      youtubePlayerRef.current.stopVideo();
-    }
+    // Clean up the YouTube player first
+    cleanupYouTubePlayer();
     
     // Start ejection animation
     setIsEjecting(true);
     playSound(ejectSound);
     
     // After ejection is complete, change track and start insertion
-    setTimeout(() => {
+    const trackChangeTimer = setTimeout(() => {
+      if (!isMounted.current) return;
+      
       setCurrentTrack(newIndex);
       setIsInserted(false);
       
       // Small delay before starting insertion
-      setTimeout(() => {
+      const insertionTimer = setTimeout(() => {
+        if (!isMounted.current) return;
+        
         setIsInserting(true);
         playSound(insertSound);
       }, 300);
     }, 1000);
+    
+    // Return cleanup function to handle component unmount during animation
+    return () => {
+      clearTimeout(trackChangeTimer);
+    };
   };
 
   // Open the modal to add a new mixtape
@@ -494,7 +579,7 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
         <div className="tape-player-controls">
           <button 
             onClick={handlePrevTrack}
-            disabled={!isInserted || playlist.length <= 1}
+            disabled={!isInserted || playlist.length <= 1 || isEjecting || isInserting}
             className="tape-control-button tape-prev-button"
           >
             <SkipBack size={18} />
@@ -510,7 +595,7 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
           
           <button 
             onClick={handleNextTrack}
-            disabled={!isInserted || playlist.length <= 1}
+            disabled={!isInserted || playlist.length <= 1 || isEjecting || isInserting}
             className="tape-control-button tape-next-button"
           >
             <SkipForward size={18} />
@@ -637,8 +722,8 @@ const RetroTapePlayer = ({ isMuted, theme = 'modern' }) => {
         </div>
       )}
       
-      {/* Hidden YouTube player div */}
-      <div id="youtube-player" style={{ display: 'none' }}></div>
+      {/* Create a dedicated ref for the YouTube player */}
+      <div ref={youtubePlayerElementRef} style={{ display: 'none' }}></div>
     </div>
   );
 };

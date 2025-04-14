@@ -436,6 +436,7 @@
   font-weight: bold;
 }
 
+/* Fixed input text color - important to ensure dark text in light mode */
 .tape-form-input {
   padding: 8px 10px;
   border: 1px solid var(--wp-border-color);
@@ -443,7 +444,15 @@
   background: white;
   font-family: var(--wp-font-family);
   font-size: 16px;
-  color: var(--wp-text-color-dark);
+  color: #000000; /* Black text for light mode */
+}
+
+/* Dark mode input styling */
+.theme-modern.dark .tape-form-input,
+html.dark .tape-form-input {
+  background: #374151; /* Dark mode background */
+  color: #ffffff; /* White text for dark mode */
+  border-color: #4b5563;
 }
 
 .tape-modal-footer {
@@ -616,85 +625,76 @@
   cursor: not-allowed;
 }
 
-/* Theme-specific styles */
-.theme-vintage .tape-cassette-container {
-  background: #F5EAD5;
-  border: 1px solid #C9B690;
+/* Light Mode Theme - Modern */
+:root {
+  --wp-card-background: #ffffff;
+  --wp-secondary-color: #f1f5f9;
+  --wp-border-color: #e2e8f0;
+  --wp-card-border: #e2e8f0;
+  --wp-text-color: #334155;
+  --wp-text-color-dark: #1e293b;
+  --wp-text-color-light: #64748b;
+  --wp-button-color: #3b82f6;
+  --wp-button-hover: #2563eb;
+  --wp-button-text: #ffffff;
+  --wp-primary-color: #3b82f6;
+  --wp-accent-color: #8b5cf6;
+  --wp-danger-color: #ef4444;
+  --wp-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --wp-shadow-color: rgba(0, 0, 0, 0.05);
+  --wp-transition-speed: 0.2s;
 }
 
-.theme-vintage .tape-radio-tuner {
-  background: #E5D8B9;
-  border: 2px solid #C9B690;
+/* Dark Mode Theme - Modern */
+html.dark .theme-modern, 
+.theme-modern.dark {
+  --wp-card-background: #1e293b;
+  --wp-secondary-color: #0f172a;
+  --wp-border-color: #334155;
+  --wp-card-border: #334155;
+  --wp-text-color: #cbd5e1;
+  --wp-text-color-dark: #f1f5f9;
+  --wp-text-color-light: #94a3b8;
+  --wp-button-color: #3b82f6;
+  --wp-button-hover: #2563eb;
+  --wp-button-text: #ffffff;
+  --wp-primary-color: #3b82f6;
+  --wp-accent-color: #8b5cf6;
+  --wp-danger-color: #ef4444;
+  --wp-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --wp-shadow-color: rgba(0, 0, 0, 0.2);
 }
 
-.theme-vintage .tape-tuner-line {
-  background: #C9B690;
+/* Theme-specific styles for vintage theme - light mode */
+.theme-vintage {
+  --wp-card-background: #F5EAD5;
+  --wp-secondary-color: #E5D8B9;
+  --wp-border-color: #C9B690;
+  --wp-card-border: #C9B690;
+  --wp-text-color: #8A7B59;
+  --wp-text-color-dark: #5C4E33;
+  --wp-text-color-light: #A89878;
+  --wp-button-color: #C9B690;
+  --wp-button-hover: #8A7B59;
+  --wp-button-text: #5C4E33;
+  --wp-primary-color: #C9B690;
+  --wp-accent-color: #C13628;
+  --wp-danger-color: #C13628;
 }
 
-.theme-vintage .tape-frequency-scale {
-  color: #8A7B59;
-}
-
-.theme-vintage .tape-tuner-indicator {
-  background: #C13628;
-}
-
-.theme-vintage .tape-cassette-window {
-  background: #E5D8B9;
-  border: 2px solid #C9B690;
-}
-
-.theme-vintage .tape-eject-button {
-  background: #C9B690;
-  color: #5C4E33;
-  border: none;
-}
-
-.theme-vintage .tape-eject-button:hover {
-  background: #8A7B59;
-  color: #F5EAD5;
-}
-
-.theme-vintage .tape-track-display {
-  background: #E5D8B9;
-  border: 1px solid #C9B690;
-}
-
-.theme-vintage .tape-track-label {
-  color: #5C4E33;
-}
-
-.theme-vintage .tape-blink {
-  color: #C13628;
-}
-
-.theme-vintage .tape-control-button {
-  background: #E5D8B9;
-  border: 1px solid #C9B690;
-  color: #8A7B59;
-}
-
-.theme-vintage .tape-play-button {
-  background: #C9B690;
-  color: #5C4E33;
-}
-
-.theme-vintage .tape-play-button.tape-active {
-  background: #8A7B59;
-  color: #F5EAD5;
-}
-
-.theme-vintage .tape-player-error {
-  background: #FFE6E6;
-  border: 1px solid #C13628;
-  color: #C13628;
-}
-
-.theme-vintage .tape-mobile-note {
-  color: #8A7B59;
-}
-
-.theme-vintage .tape-track-info {
-  color: #8A7B59;
-  font-family: 'VT323', monospace;
+/* Dark vintage theme */
+.theme-vintage.dark {
+  --wp-card-background: #2A2520;
+  --wp-secondary-color: #3A3530;
+  --wp-border-color: #4A4540;
+  --wp-card-border: #4A4540;
+  --wp-text-color: #C9B690;
+  --wp-text-color-dark: #F5EAD5;
+  --wp-text-color-light: #8A7B59;
+  --wp-button-color: #8A7B59;
+  --wp-button-hover: #C9B690;
+  --wp-button-text: #F5EAD5;
+  --wp-primary-color: #8A7B59;
+  --wp-accent-color: #C13628;
+  --wp-danger-color: #C13628;
 }

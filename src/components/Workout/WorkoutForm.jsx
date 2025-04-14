@@ -39,7 +39,12 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
     reps: 10,
     weight: '',
     restTime: 60,
-    notes: ''
+    notes: '',
+    // Add these new fields:
+    isDurationBased: false,
+    duration: 0,
+    durationUnit: 'min', // 'min' or 'sec'
+    distance: ''
   });
   
   // New state variables for exercise editing
@@ -51,6 +56,7 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
   const [activeInfoSection, setActiveInfoSection] = useState('basic');
 
   const [weightUnit, setWeightUnit] = useState('lbs');
+  
   
   // Initialize form with existing workout data if editing
   useEffect(() => {
@@ -81,6 +87,8 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
       });
     }
   }, [workout]);
+
+  
   
   // Get form fields based on workout type
   const getTypeSpecificFields = () => {
@@ -558,15 +566,42 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
       return;
     }
     
+    // Create a processed exercise object based on its type
+    let processedExercise;
+    
+    if (currentExercise.isDurationBased) {
+      // For duration-based exercise
+      processedExercise = {
+        name: currentExercise.name,
+        isDurationBased: true,
+        duration: parseInt(currentExercise.duration) || 0,
+        durationUnit: currentExercise.durationUnit || 'min',
+        distance: currentExercise.distance || '',
+        restTime: parseInt(currentExercise.restTime) || 60,
+        notes: currentExercise.notes || ''
+      };
+    } else {
+      // For traditional strength exercise
+      processedExercise = {
+        name: currentExercise.name,
+        isDurationBased: false,
+        sets: parseInt(currentExercise.sets) || 3,
+        reps: parseInt(currentExercise.reps) || 10,
+        weight: currentExercise.weight || '',
+        restTime: parseInt(currentExercise.restTime) || 60,
+        notes: currentExercise.notes || ''
+      };
+    }
+    
     setFormData(prev => {
       const updatedExercises = [...prev.exercises];
       
       if (isEditingExercise && editingExerciseIndex !== null) {
         // Update existing exercise
-        updatedExercises[editingExerciseIndex] = { ...currentExercise };
+        updatedExercises[editingExerciseIndex] = processedExercise;
       } else {
         // Add new exercise
-        updatedExercises.push({ ...currentExercise });
+        updatedExercises.push(processedExercise);
       }
       
       return {
@@ -582,7 +617,11 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
       reps: 10,
       weight: '',
       restTime: 60,
-      notes: ''
+      notes: '',
+      isDurationBased: false,
+      duration: 0,
+      durationUnit: 'min',
+      distance: ''
     });
     setIsEditingExercise(false);
     setEditingExerciseIndex(null);
@@ -650,6 +689,93 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  // Add this helper function at the top of your component or outside
+  const getDefaultExercisesForType = (type, workoutDuration = 30) => {
+    // If the workout duration is very short (< 5 minutes), use seconds as default unit for some types
+    const useSeconds = workoutDuration < 5 && ['hiit', 'strength', 'bodyweight'].includes(type);
+    const defaultDuration = useSeconds ? workoutDuration * 60 : workoutDuration;
+    const defaultUnit = useSeconds ? 'sec' : 'min';
+  
+    switch(type) {
+      case 'running':
+        return [{
+          name: 'Running Session',
+          isDurationBased: true,
+          duration: workoutDuration, // Use workout duration
+          durationUnit: 'min', // Always use minutes for running
+          distance: '', // user will fill in
+          intensity: 'medium',
+          notes: 'Track your time and distance'
+        }];
+      case 'walking':
+        return [{
+          name: 'Walking Session',
+          isDurationBased: true,
+          duration: workoutDuration,
+          durationUnit: 'min', // Always use minutes for walking
+          distance: '',
+          intensity: 'light',
+          notes: 'Track your steps and distance'
+        }];
+      case 'swimming':
+        return [{
+          name: 'Swimming Session',
+          isDurationBased: true,
+          duration: workoutDuration,
+          durationUnit: 'min',
+          distance: '',
+          laps: '',
+          intensity: 'medium',
+          notes: 'Record distance and laps'
+        }];
+      case 'cycling':
+        return [{
+          name: 'Cycling Session',
+          isDurationBased: true,
+          duration: workoutDuration,
+          durationUnit: 'min',
+          distance: '',
+          intensity: 'medium',
+          notes: 'Track your cycling distance and time'
+        }];
+      case 'yoga':
+      case 'pilates':
+      case 'flexibility':
+        return [{
+          name: `${type.charAt(0).toUpperCase() + type.slice(1)} Practice`,
+          isDurationBased: true,
+          duration: workoutDuration,
+          durationUnit: 'min',
+          intensity: 'medium',
+          notes: 'Focus on form and breathing'
+        }];
+      case 'sports':
+      case 'martial_arts':
+      case 'boxing':
+        return [{
+          name: `${type.charAt(0).toUpperCase() + type.slice(1)} Session`,
+          isDurationBased: true,
+          duration: workoutDuration,
+          durationUnit: 'min',
+          intensity: 'high',
+          notes: 'Track your session time and intensity'
+        }];
+      case 'hiit':
+        return [{
+          name: 'HIIT Workout',
+          isDurationBased: true,
+          duration: defaultDuration, // Use seconds for HIIT when duration is short
+          durationUnit: defaultUnit,
+          intensity: 'high',
+          notes: 'High intensity interval training'
+        }];
+      default:
+        return [];
+    }
+  };
+  
+
   
   // Handle form submission
   const handleSubmit = () => {
@@ -658,13 +784,30 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
     }
     
     try {
+      // Clone form data to work with
+      const dataToSave = { ...formData };
+      
+      // Only add default exercises if the exercises array is empty AND this is a workout type that needs default exercises
+      if (dataToSave.exercises.length === 0) {
+        const needsDefaultExercises = ['running', 'walking', 'swimming', 'cycling', 'yoga', 'pilates',
+                                       'flexibility', 'sports', 'martial_arts', 'boxing', 'hiit'].includes(dataToSave.type);
+        
+        if (needsDefaultExercises) {
+          const defaultExercises = getDefaultExercisesForType(dataToSave.type, dataToSave.duration);
+          if (defaultExercises.length > 0) {
+            dataToSave.exercises = defaultExercises;
+          }
+        }
+      }
+      
+      // Save with the potentially updated exercises
       if (workout) {
         // Update existing workout
-        const updatedWorkout = updateWorkout(workout.id, formData);
+        const updatedWorkout = updateWorkout(workout.id, dataToSave);
         onSave(updatedWorkout);
       } else {
         // Create new workout
-        const newWorkout = createWorkout(formData);
+        const newWorkout = createWorkout(dataToSave);
         onSave(newWorkout);
       }
     } catch (error) {
@@ -1096,146 +1239,223 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
   {activeInfoSection === 'exercises' && (
     <div className="p-4">
       {/* Exercise Form */}
-      <div id="exercise-form" className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4 border border-slate-200 dark:border-slate-700">
-        <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-3">
-          {isEditingExercise ? 'Edit Exercise' : 'Add Exercise'}
-        </h4>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <div>
-            <label htmlFor="exercise-name" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-              Exercise Name*
-            </label>
-            <input
-              type="text"
-              id="exercise-name"
-              name="name"
-              value={currentExercise.name}
-              onChange={handleExerciseChange}
-              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
-              placeholder="e.g., Barbell Squat"
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label htmlFor="exercise-sets" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                Sets
-              </label>
-              <input
-                type="number"
-                id="exercise-sets"
-                name="sets"
-                value={currentExercise.sets}
-                onChange={handleExerciseChange}
-                min="1"
-                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
-              />
-            </div>
-            <div>
-              <label htmlFor="exercise-reps" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                Reps
-              </label>
-              <input
-                type="number"
-                id="exercise-reps"
-                name="reps"
-                value={currentExercise.reps}
-                onChange={handleExerciseChange}
-                min="1"
-                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
-              />
-            </div>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <div>
-            <label htmlFor="exercise-weight" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-              Weight (optional)
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                id="exercise-weight"
-                name="weight"
-                value={currentExercise.weight}
-                onChange={handleExerciseChange}
-                className="w-full p-2 pr-12 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
-                placeholder="Weight"
-              />
-               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 dark:text-slate-400 text-sm">
-    {weightUnit}
+<div id="exercise-form" className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4 border border-slate-200 dark:border-slate-700">
+  <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-3">
+    {isEditingExercise ? 'Edit Exercise' : 'Add Exercise'}
+  </h4>
+  
+  {/* Exercise Type Toggle */}
+  <div className="mb-4">
+    <label className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2 block">
+      Exercise Type
+    </label>
+    <div className="flex items-center">
+      <label className="inline-flex items-center mr-4">
+        <input
+          type="radio"
+          checked={!currentExercise.isDurationBased}
+          onChange={() => setCurrentExercise(prev => ({...prev, isDurationBased: false}))}
+          className="h-4 w-4 text-blue-600 dark:text-blue-500"
+        />
+        <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">Reps & Sets</span>
+      </label>
+      <label className="inline-flex items-center">
+        <input
+          type="radio"
+          checked={currentExercise.isDurationBased}
+          onChange={() => setCurrentExercise(prev => ({...prev, isDurationBased: true}))}
+          className="h-4 w-4 text-blue-600 dark:text-blue-500"
+        />
+        <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">Duration Based</span>
+      </label>
+    </div>
   </div>
-            </div>
-          </div>
-          
-          <div>
-            <label htmlFor="exercise-rest" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-              Rest Time (seconds)
-            </label>
+  
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+    <div>
+      <label htmlFor="exercise-name" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+        Exercise Name*
+      </label>
+      <input
+        type="text"
+        id="exercise-name"
+        name="name"
+        value={currentExercise.name}
+        onChange={handleExerciseChange}
+        className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+        placeholder={currentExercise.isDurationBased ? "e.g., Plank, Wall-sit" : "e.g., Barbell Squat"}
+      />
+    </div>
+    
+    {currentExercise.isDurationBased ? (
+      // Duration-based exercise fields
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label htmlFor="exercise-duration" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+            Duration
+          </label>
+          <div className="flex">
             <input
               type="number"
-              id="exercise-rest"
-              name="restTime"
-              value={currentExercise.restTime}
+              id="exercise-duration"
+              name="duration"
+              value={currentExercise.duration}
               onChange={handleExerciseChange}
-              min="0"
-              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+              min="1"
+              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-l-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
             />
+            <select
+              name="durationUnit"
+              value={currentExercise.durationUnit}
+              onChange={handleExerciseChange}
+              className="p-2 border border-slate-300 dark:border-slate-600 border-l-0 rounded-r-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+            >
+              <option value="sec">sec</option>
+              <option value="min">min</option>
+            </select>
           </div>
         </div>
-        
-        <div className="mb-3">
-          <label htmlFor="exercise-notes" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-            Notes (optional)
+        <div>
+          <label htmlFor="exercise-distance" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+            Distance (opt)
           </label>
           <input
             type="text"
-            id="exercise-notes"
-            name="notes"
-            value={currentExercise.notes}
+            id="exercise-distance"
+            name="distance"
+            value={currentExercise.distance}
             onChange={handleExerciseChange}
             className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
-            placeholder="e.g., Focus on form, slow tempo"
+            placeholder="e.g., 100m"
           />
         </div>
-        
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={addOrUpdateExercise}
-            disabled={!currentExercise.name.trim()}
-            className={`flex-1 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
-              !currentExercise.name.trim()
-                ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
-                : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
-            }`}
-          >
-            {isEditingExercise ? (
-              <>
-                <Edit size={16} />
-                Update Exercise
-              </>
-            ) : (
-              <>
-                <Plus size={16} />
-                Add Exercise
-              </>
-            )}
-          </button>
-          
-          {isEditingExercise && (
-            <button
-              type="button"
-              onClick={cancelExerciseEdit}
-              className="py-2 px-4 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-            >
-              Cancel
-            </button>
-          )}
+      </div>
+    ) : (
+      // Traditional strength exercise fields
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label htmlFor="exercise-sets" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+            Sets
+          </label>
+          <input
+            type="number"
+            id="exercise-sets"
+            name="sets"
+            value={currentExercise.sets}
+            onChange={handleExerciseChange}
+            min="1"
+            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+          />
+        </div>
+        <div>
+          <label htmlFor="exercise-reps" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+            Reps
+          </label>
+          <input
+            type="number"
+            id="exercise-reps"
+            name="reps"
+            value={currentExercise.reps}
+            onChange={handleExerciseChange}
+            min="1"
+            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+          />
         </div>
       </div>
+    )}
+  </div>
+  
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+    {/* Show weight only for strength exercises */}
+    {!currentExercise.isDurationBased && (
+      <div>
+        <label htmlFor="exercise-weight" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+          Weight (optional)
+        </label>
+        <div className="relative">
+          <input
+            type="text"
+            id="exercise-weight"
+            name="weight"
+            value={currentExercise.weight}
+            onChange={handleExerciseChange}
+            className="w-full p-2 pr-12 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+            placeholder="Weight"
+          />
+           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 dark:text-slate-400 text-sm">
+              {weightUnit}
+          </div>
+        </div>
+      </div>
+    )}
+  
+    <div>
+      <label htmlFor="exercise-rest" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+        Rest Time (seconds)
+      </label>
+      <input
+        type="number"
+        id="exercise-rest"
+        name="restTime"
+        value={currentExercise.restTime}
+        onChange={handleExerciseChange}
+        min="0"
+        className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+      />
+    </div>
+  </div>
+  
+  <div className="mb-3">
+    <label htmlFor="exercise-notes" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+      Notes (optional)
+    </label>
+    <input
+      type="text"
+      id="exercise-notes"
+      name="notes"
+      value={currentExercise.notes}
+      onChange={handleExerciseChange}
+      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+      placeholder="e.g., Focus on form, slow tempo"
+    />
+  </div>
+  
+  <div className="flex gap-2">
+    <button
+      type="button"
+      onClick={addOrUpdateExercise}
+      disabled={!currentExercise.name.trim()}
+      className={`flex-1 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+        !currentExercise.name.trim()
+          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
+          : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
+      }`}
+    >
+      {isEditingExercise ? (
+        <>
+          <Edit size={16} />
+          Update Exercise
+        </>
+      ) : (
+        <>
+          <Plus size={16} />
+          Add Exercise
+        </>
+      )}
+    </button>
+    
+    {isEditingExercise && (
+      <button
+        type="button"
+        onClick={cancelExerciseEdit}
+        className="py-2 px-4 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+      >
+        Cancel
+      </button>
+    )}
+  </div>
+</div>
+
       
       {/* Exercise List */}
       <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-3">
@@ -1265,12 +1485,25 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
                   {exercise.name}
                 </div>
                 
-                {/* Exercise details */}
-                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 break-words">
-                  {exercise.sets}×{exercise.reps}
-                  {exercise.weight ? ` • ${exercise.weight} ${weightUnit}` : ''}
-                  {exercise.restTime ? ` • ${exercise.restTime}s rest` : ''}
-                </div>
+                {/* Exercise details - Updated to handle both exercise types */}
+<div className="text-xs text-slate-500 dark:text-slate-400 mt-1 break-words">
+  {exercise.isDurationBased ? (
+    // Duration-based exercise details
+    <>
+      {exercise.duration} {exercise.durationUnit || 'min'}
+      {exercise.distance ? ` • ${exercise.distance} distance` : ''}
+      {exercise.intensity ? ` • ${exercise.intensity} intensity` : ''}
+      {exercise.restTime ? ` • ${exercise.restTime}s rest` : ''}
+    </>
+  ) : (
+    // Traditional strength exercise details
+    <>
+      {exercise.sets}×{exercise.reps}
+      {exercise.weight ? ` • ${exercise.weight} ${weightUnit}` : ''}
+      {exercise.restTime ? ` • ${exercise.restTime}s rest` : ''}
+    </>
+  )}
+</div>
                 
                 {/* Notes - with text wrapping, limited to 3 lines */}
                 {exercise.notes && (

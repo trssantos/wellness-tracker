@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart2, ArrowLeft, Edit3, Trash2, Play, Clock, Calendar, 
+import { Route,BarChart2, ArrowLeft, Edit3, Trash2, Play, Clock, Calendar, 
          MapPin, DollarSign, Dumbbell, Activity, AlertTriangle } from 'lucide-react';
 import { getWorkoutTypes, getWorkoutLocations, getEquipmentOptions, getWorkoutById, getAllCompletedWorkouts } from '../../utils/workoutUtils';
 import WorkoutPlayerModal from './WorkoutPlayerModal';
@@ -299,59 +299,87 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
 
       {/* Exercises */}
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-6">
-        <h3 className="font-medium text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-          <Activity size={16} className="text-slate-500 dark:text-slate-400" />
-          Exercises
-        </h3>
-        
-        {!workoutData?.exercises || workoutData.exercises.length === 0 ? (
-          <div className="text-sm text-slate-500 dark:text-slate-400 text-center p-4">
-            No exercises added to this workout yet.
+  <h3 className="font-medium text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+    <Activity size={16} className="text-slate-500 dark:text-slate-400" />
+    Exercises
+  </h3>
+  
+  {!workoutData?.exercises || workoutData.exercises.length === 0 ? (
+    <div className="text-sm text-slate-500 dark:text-slate-400 text-center p-4">
+      No exercises added to this workout yet.
+    </div>
+  ) : (
+    <div className="space-y-3">
+      {workoutData.exercises.map((exercise, index) => (
+        <div 
+          key={index}
+          className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg"
+        >
+          <div className="flex justify-between items-start">
+            <div className="w-[70%] overflow-hidden">
+              <div className="font-medium text-slate-700 dark:text-slate-200 text-sm truncate">{exercise.name}</div>
+            </div>
+            <div className="w-[30%] text-right">
+              {exercise.isDurationBased ? (
+                <div className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full inline-block">
+                  {exercise.duration || 0} {exercise.durationUnit || 'min'}
+                </div>
+              ) : (
+                <div className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full inline-block">
+                  {exercise.sets} × {exercise.reps}
+                </div>
+              )}
+            </div>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {workoutData.exercises.map((exercise, index) => (
-              <div 
-                key={index}
-                className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="w-[70%] overflow-hidden">
-                    <div className="font-medium text-slate-700 dark:text-slate-200 text-sm truncate">{exercise.name}</div>
-                  </div>
-                  <div className="w-[30%] text-right">
-                    <div className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full inline-block">
-                      {exercise.sets} × {exercise.reps}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-500 dark:text-slate-400">
-                  {exercise.weight && (
-                    <div className="flex items-center gap-1">
-                      <DollarSign size={12} />
-                      <span>{exercise.weight} {weightUnit}</span>
-                    </div>
-                  )}
-                  
-                  {exercise.restTime && (
-                    <div className="flex items-center gap-1">
-                      <Clock size={12} />
-                      <span>{exercise.restTime}s rest</span>
-                    </div>
-                  )}
-                </div>
-                
-                {exercise.notes && (
-                  <div className="w-full mt-1 text-xs italic text-slate-500 dark:text-slate-400 line-clamp-2">
-                    {exercise.notes}
+          
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-500 dark:text-slate-400">
+            {exercise.isDurationBased ? (
+              // Show distance and intensity for duration-based exercises
+              <>
+                {exercise.distance && (
+                  <div className="flex items-center gap-1">
+                    <Route size={12} />
+                    <span>{exercise.distance}</span>
                   </div>
                 )}
-              </div>
-            ))}
+                
+                {exercise.intensity && (
+                  <div className="flex items-center gap-1">
+                    <Activity size={12} />
+                    <span>Intensity: {exercise.intensity}</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              // Show weight and rest time for traditional exercises
+              <>
+                {exercise.weight && (
+                  <div className="flex items-center gap-1">
+                    <DollarSign size={12} />
+                    <span>{exercise.weight} {weightUnit}</span>
+                  </div>
+                )}
+                
+                {exercise.restTime && (
+                  <div className="flex items-center gap-1">
+                    <Clock size={12} />
+                    <span>{exercise.restTime}s rest</span>
+                  </div>
+                )}
+              </>
+            )}
           </div>
-        )}
-      </div>
+          
+          {exercise.notes && (
+            <div className="w-full mt-1 text-xs italic text-slate-500 dark:text-slate-400 line-clamp-2">
+              {exercise.notes}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
       {/* Completion Stats */}
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-6">

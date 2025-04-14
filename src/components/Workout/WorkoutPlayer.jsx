@@ -32,6 +32,8 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const [achievements, setAchievements] = useState([]);
   const [showAchievement, setShowAchievement] = useState(false);
   const [currentAchievement, setCurrentAchievement] = useState(null);
+  const [exerciseTimerSaved, setExerciseTimerSaved] = useState(0);
+
   
   // Set tracking
   const [currentSetNumber, setCurrentSetNumber] = useState(1);
@@ -52,7 +54,7 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const waterBreakSound = useRef(new Audio('https://freesound.org/data/previews/341/341695_5858296-lq.mp3'));
   const clickSound = useRef(new Audio('https://freesound.org/data/previews/573/573588_13006337-lq.mp3'));
   const setCompleteSound = useRef(new Audio('https://freesound.org/data/previews/413/413749_4284968-lq.mp3'));
-  const exerciseCompleteSound = useRef(new Audio('https://freesound.org/data/previews/270/270402_5123851-lq.mp3'));
+  const exerciseCompleteSound = useRef(new Audio('https://freesound.org/data/previews/270/270402_5123851-lq.mp3_dont_exist_on_purpose'));
   const motivationSound = useRef(new Audio('https://freesound.org/data/previews/448/448268_7343324-lq.mp3'));
   
   // Exercise-specific state
@@ -60,6 +62,12 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const [currentSets, setCurrentSets] = useState(3);
   const [currentReps, setCurrentReps] = useState(10);
   const [currentWeight, setCurrentWeight] = useState('');
+  
+  // Add support for duration-based exercises
+  const [exerciseDuration, setExerciseDuration] = useState(0);
+  const [exerciseDurationUnit, setExerciseDurationUnit] = useState('min');
+  const [exerciseDistance, setExerciseDistance] = useState('');
+  const [exerciseIntensity, setExerciseIntensity] = useState('medium');
 
   // Load workout on mount
   useEffect(() => {
@@ -70,14 +78,20 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       if (workoutData) {
         setWorkout(workoutData);
         
-        // Initialize completed exercises array
+        // Initialize completed exercises array - now handles duration-based exercises
         setCompletedExercises(
           workoutData.exercises.map(exercise => ({
             ...exercise,
             completed: false,
-            actualSets: 0,
-            actualReps: 0,
+            // Traditional exercise properties
+            actualSets: exercise.sets,
+            actualReps: exercise.reps,
             actualWeight: exercise.weight || '',
+            // Duration-based exercise properties
+            actualDuration: exercise.duration || 0,
+            actualDurationUnit: exercise.durationUnit || 'min',
+            actualDistance: exercise.distance || '',
+            actualIntensity: exercise.intensity || 'medium',
             timeSpent: 0
           }))
         );
@@ -97,9 +111,19 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
         if (workoutData.exercises && workoutData.exercises.length > 0) {
           setCurrentExercise(workoutData.exercises[0]);
           const firstExercise = workoutData.exercises[0];
-          setCurrentSets(firstExercise.sets || 3);
-          setCurrentReps(firstExercise.reps || 10);
-          setCurrentWeight(firstExercise.weight || '');
+          
+          if (firstExercise.isDurationBased) {
+            // Initialize duration-based exercise
+            setExerciseDuration(firstExercise.duration || 0);
+            setExerciseDurationUnit(firstExercise.durationUnit || 'min');
+            setExerciseDistance(firstExercise.distance || '');
+            setExerciseIntensity(firstExercise.intensity || 'medium');
+          } else {
+            // Initialize traditional strength exercise
+            setCurrentSets(firstExercise.sets || 3);
+            setCurrentReps(firstExercise.reps || 10);
+            setCurrentWeight(firstExercise.weight || '');
+          }
         }
       }
     }
@@ -157,9 +181,18 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
         console.log("Setting current exercise to:", workout.exercises[currentExerciseIndex]);
         setCurrentExercise(workout.exercises[currentExerciseIndex]);
         const exercise = workout.exercises[currentExerciseIndex];
-        setCurrentSets(parseInt(exercise.sets) || 3);
-        setCurrentReps(parseInt(exercise.reps) || 10);
-        setCurrentWeight(exercise.weight || '');
+        
+        // Handle both traditional and duration-based exercises
+        if (exercise.isDurationBased) {
+          setExerciseDuration(exercise.duration || 0);
+          setExerciseDurationUnit(exercise.durationUnit || 'min');
+          setExerciseDistance(exercise.distance || '');
+          setExerciseIntensity(exercise.intensity || 'medium');
+        } else {
+          setCurrentSets(parseInt(exercise.sets) || 3);
+          setCurrentReps(parseInt(exercise.reps) || 10);
+          setCurrentWeight(exercise.weight || '');
+        }
         
         // Reset set tracking for new exercise
         setCurrentSetNumber(1);
@@ -302,7 +335,30 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
     }
     
     timerRef.current = setInterval(() => {
-      setTimeElapsed(prev => prev + 1);
+      setTimeElapsed(prev => {
+        const newTime = prev + 1;
+        
+        // For duration-based exercises, check if target duration is reached
+        if (currentState === 'exercise' && 
+            currentExercise?.isDurationBased && 
+            exerciseDuration > 0) {
+          
+          // Calculate target duration in seconds
+          const targetDurationInSeconds = exerciseDurationUnit === 'min' ? 
+            exerciseDuration * 60 : exerciseDuration;
+          
+          // If we've reached or exceeded the target, auto-complete the exercise
+          if (newTime >= targetDurationInSeconds) {
+            // Use setTimeout to avoid state update conflicts
+            setTimeout(() => {
+              completeSet();
+            }, 10);
+          }
+        }
+        
+        return newTime;
+      });
+      
       setTotalTimeElapsed(prev => prev + 1);
       
       // Check for water break
@@ -312,24 +368,87 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
     }, 1000);
   };
 
-  // Complete current set
+  // Handle duration-based exercise changes
+  const handleExerciseDurationChange = (duration) => {
+    setExerciseDuration(duration);
+    
+    setCompletedExercises(prev => {
+      const updated = [...prev];
+      updated[currentExerciseIndex] = {
+        ...updated[currentExerciseIndex],
+        actualDuration: duration
+      };
+      return updated;
+    });
+  };
+
+  // Add this handler for duration unit changes
+  const handleExerciseDurationUnitChange = (unit) => {
+    setExerciseDurationUnit(unit);
+    
+    setCompletedExercises(prev => {
+      const updated = [...prev];
+      updated[currentExerciseIndex] = {
+        ...updated[currentExerciseIndex],
+        actualDurationUnit: unit
+      };
+      return updated;
+    });
+  };
+
+  // Add this handler for distance changes in ExerciseView
+  const handleExerciseDistanceChange = (distance) => {
+    setExerciseDistance(distance);
+    
+    setCompletedExercises(prev => {
+      const updated = [...prev];
+      updated[currentExerciseIndex] = {
+        ...updated[currentExerciseIndex],
+        actualDistance: distance
+      };
+      return updated;
+    });
+  };
+
+  // Add this handler for intensity changes
+  const handleExerciseIntensityChange = (intensity) => {
+    setExerciseIntensity(intensity);
+    
+    setCompletedExercises(prev => {
+      const updated = [...prev];
+      updated[currentExerciseIndex] = {
+        ...updated[currentExerciseIndex],
+        actualIntensity: intensity
+      };
+      return updated;
+    });
+  };
+
+  // Complete current set or duration-based exercise
   const completeSet = () => {
-    // Play the set complete sound instead of click sound
+    // Play the set complete sound
     playSound(setCompleteSound);
     triggerHapticFeedback('light');
     
     // Show set completion effect
     showSetCompletionEffect();
     
-    // Check if we've completed all sets
-    if (currentSetNumber >= currentSets) {
-      // All sets complete, mark exercise as done
+    // Check if this is a duration-based exercise
+    if (currentExercise.isDurationBased) {
+      // For duration-based exercises, one completion is enough
       completeExercise();
     } else {
-      // Move to next set
-      setCurrentSetNumber(prev => prev + 1);
-      setSetsCompleted(prev => prev + 1);
-      setTimeElapsed(0); // Reset timer for new set
+      // Traditional sets/reps exercise
+      // Check if we've completed all sets
+      if (currentSetNumber >= currentSets) {
+        // All sets complete, mark exercise as done
+        completeExercise();
+      } else {
+        // Move to next set
+        setCurrentSetNumber(prev => prev + 1);
+        setSetsCompleted(prev => prev + 1);
+        setTimeElapsed(0); // Reset timer for new set
+      }
     }
 
     // Check for achievements after completing sets
@@ -350,7 +469,8 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
     // Create main text
     const completionText = document.createElement('div');
     completionText.className = 'wp-completion-text';
-    completionText.textContent = 'SET COMPLETE!';
+    completionText.textContent = currentExercise.isDurationBased ? 
+      'EXERCISE COMPLETE!' : 'SET COMPLETE!';
     
     // Create energy burst element
     const energyBurst = document.createElement('div');
@@ -485,14 +605,31 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const markCurrentExerciseCompleted = () => {
     setCompletedExercises(prev => {
       const updated = [...prev];
-      updated[currentExerciseIndex] = {
-        ...updated[currentExerciseIndex],
-        completed: true,
-        actualSets: setsCompleted + 1, // +1 for current set
-        actualReps: currentReps,
-        actualWeight: currentWeight,
-        timeSpent: timeElapsed
-      };
+      const exercise = updated[currentExerciseIndex];
+      
+      if (exercise.isDurationBased) {
+        // For duration-based exercises
+        updated[currentExerciseIndex] = {
+          ...exercise,
+          completed: true,
+          actualDuration: exerciseDuration || exercise.duration || 0,
+          actualDurationUnit: exerciseDurationUnit || exercise.durationUnit || 'min',
+          actualDistance: exerciseDistance || exercise.distance || '',
+          actualIntensity: exerciseIntensity || exercise.intensity || 'medium',
+          timeSpent: timeElapsed
+        };
+      } else {
+        // For traditional strength exercises
+        updated[currentExerciseIndex] = {
+          ...exercise,
+          completed: true,
+          actualSets: setsCompleted + 1, // +1 for current set
+          actualReps: currentReps,
+          actualWeight: currentWeight,
+          timeSpent: timeElapsed
+        };
+      }
+      
       return updated;
     });
   };
@@ -590,6 +727,9 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const triggerWaterBreak = () => {
     console.log("Triggering water break");
     
+    // Save current exercise timer state to restore later
+    setExerciseTimerSaved(timeElapsed);
+    
     // Save current state to resume later
     const previousState = currentState;
     
@@ -615,6 +755,10 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
     if (currentExerciseIndex < workout.exercises.length) {
       setCurrentState('exercise');
       setIsPlaying(true);
+      
+      // Restore the previous exercise timer
+      setTimeElapsed(exerciseTimerSaved);
+      
       startTimer();
     } else {
       endWorkout();
@@ -695,7 +839,7 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   };
 
   // Save workout results
-  const saveWorkoutResults = () => {
+  const saveWorkoutResults = (enhancedData = {}) => {
     const duration = Math.ceil(totalTimeElapsed / 60);
     
     // Create workout log data
@@ -705,7 +849,14 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       type: workout.type,
       duration,
       exercises: completedExercises,
-      notes,
+      notes: enhancedData.notes || notes,
+      // Include the enhanced metrics
+      calories: enhancedData.calories || null,
+      distance: enhancedData.distance || null,
+      distanceUnit: enhancedData.distanceUnit || 'km',
+      incline: enhancedData.incline || null,
+      intensity: enhancedData.intensity || 'medium',
+      waterBreaksTaken: enhancedData.waterBreaksTaken || 0
     };
     
     // Log the workout
@@ -789,7 +940,8 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
             <div className="wp-progress-container">
               <div className="wp-progress-text">
                 Exercise {currentExerciseIndex + 1} of {workout.exercises.length}
-                {currentState === 'exercise' && ` • Set ${currentSetNumber} of ${currentSets}`}
+                {currentState === 'exercise' && !currentExercise?.isDurationBased && ` • Set ${currentSetNumber} of ${currentSets}`}
+                {currentState === 'exercise' && currentExercise?.isDurationBased && ' • Duration-based'}
               </div>
               <div className="wp-progress-bar">
                 <div 
@@ -832,13 +984,21 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
                 sets={currentSets}
                 reps={currentReps}
                 weight={currentWeight}
+                duration={currentExercise.actualDuration || currentExercise.duration}
+                durationUnit={currentExercise.actualDurationUnit || currentExercise.durationUnit || 'min'}
+                distance={currentExercise.actualDistance || currentExercise.distance}
                 currentSet={currentSetNumber}
                 totalSets={currentSets}
                 timeElapsed={timeElapsed}
                 onSetsChange={setCurrentSets}
                 onRepsChange={setCurrentReps}
                 onWeightChange={setCurrentWeight}
+                onDurationChange={handleExerciseDurationChange}
+                onDurationUnitChange={handleExerciseDurationUnitChange}
+                onDistanceChange={handleExerciseDistanceChange}
+                onIntensityChange={handleExerciseIntensityChange}
                 theme={theme}
+                workoutType={workout.type}
               />
               
               {/* Set completion button */}
@@ -846,7 +1006,9 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
                 onClick={completeSet}
                 className="wp-complete-set-button"
               >
-                Complete Set {currentSetNumber}
+                {currentExercise.isDurationBased 
+                  ? `Complete ${currentExercise.name}` 
+                  : `Complete Set ${currentSetNumber}`}
               </button>
             </div>
           )}

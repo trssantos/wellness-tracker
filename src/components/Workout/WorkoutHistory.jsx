@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Calendar, CheckSquare, ArrowLeft, 
          Trash2, Dumbbell, Flame, Edit, AlertTriangle } from 'lucide-react';
-import { getStorage, setStorage } from '../../utils/storage';
+import { getStorage, setStorage,getWeightUnit } from '../../utils/storage';
 import { getWorkoutTypesWithColors } from '../../utils/workoutUtils';
 import { formatDateForStorage } from '../../utils/dateUtils';
 import QuickLogWorkout from './QuickLogWorkout';
@@ -14,12 +14,19 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
   const [showWorkoutEditor, setShowWorkoutEditor] = useState(false);
   const [showWorkoutLogger, setShowWorkoutLogger] = useState(false);
+  const [weightUnit, setWeightUnit] = useState('lbs');
+
   
   // Load workouts on mount and when refreshTrigger changes
   useEffect(() => {
     console.log('[WorkoutHistory] Loading workouts, refreshTrigger:', refreshTrigger);
     loadWorkouts();
   }, [refreshTrigger]);
+
+  // Add this useEffect hook to fetch the weight unit setting
+useEffect(() => {
+  setWeightUnit(getWeightUnit());
+}, []);
   
   // Load workouts from all storage locations
   const loadWorkouts = () => {
@@ -232,6 +239,23 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
     setWorkoutToDelete(null);
     setShowDeleteConfirm(false);
   };
+
+  // Add this helper function to format intensity consistently - 
+// Converting from both string format (medium, high) and numeric format (1-5)
+const formatIntensity = (intensity) => {
+  // Handle numeric format
+  if (!isNaN(parseInt(intensity))) {
+    const level = parseInt(intensity);
+    switch(level) {
+      case 1: return "light (1/5)";
+      case 2: return "moderate (2/5)";
+      case 3: return "challenging (3/5)";
+      case 4: return "intense (4/5)";
+      case 5: return "maximum (5/5)";
+      default: return `${intensity}/5`;
+    }
+  }
+};
   
   // Handle editing a workout
   const handleEditWorkout = (workout) => {
@@ -471,37 +495,50 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
         </div>
         
         {/* Exercises */}
-        {workout.exercises && workout.exercises.length > 0 && (
-          <div className="mb-6 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 transition-colors">
-            <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 transition-colors">
-              Exercises ({workout.exercises.length})
-            </h4>
-            <div className="space-y-2">
-              {workout.exercises.map((exercise, index) => (
-                <div 
-                  key={index}
-                  className="p-3 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="font-medium text-slate-700 dark:text-slate-300 transition-colors">
-                        {exercise.name}
-                      </p>
-                      <div className="mt-1 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 transition-colors">
-                        {exercise.sets && exercise.reps && (
-                          <span>{exercise.sets} sets × {exercise.reps} reps</span>
-                        )}
-                        {exercise.weight && (
-                          <span>• {exercise.weight} weight</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+{workout.exercises && workout.exercises.length > 0 && (
+  <div className="mb-6 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 transition-colors">
+    <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 transition-colors">
+      Exercises ({workout.exercises.length})
+    </h4>
+    <div className="space-y-2">
+      {workout.exercises.map((exercise, index) => (
+        <div 
+          key={index}
+          className="p-3 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="font-medium text-slate-700 dark:text-slate-300 transition-colors">
+                {exercise.name}
+              </p>
+              <div className="mt-1 text-sm text-slate-500 dark:text-slate-400 transition-colors">
+                {exercise.isDurationBased ? (
+                  // Display duration-based exercise details
+                  <span>
+                    {exercise.duration || exercise.actualDuration || 0} {exercise.durationUnit || exercise.actualDurationUnit || 'min'}
+                    {exercise.distance || exercise.actualDistance ? ` • ${exercise.distance || exercise.actualDistance} distance` : ''}
+                  </span>
+                ) : (
+                  // Display traditional strength exercise details
+                  <span>
+                    {exercise.sets || exercise.actualSets} sets × {exercise.reps || exercise.actualReps} reps
+                    {exercise.weight || exercise.actualWeight ? ` • ${exercise.weight || exercise.actualWeight} ${weightUnit}` : ''}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        )}
+          
+          {exercise.notes && (
+            <div className="w-full mt-1 text-xs italic text-slate-500 dark:text-slate-400 line-clamp-2">
+              {exercise.notes}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
         
         {/* Notes */}
         {workout.notes && (

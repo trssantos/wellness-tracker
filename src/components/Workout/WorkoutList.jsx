@@ -132,8 +132,16 @@ const WorkoutList = ({ workouts, onSelectWorkout, onCreateWorkout, onCreateWithA
                 </div>
                 
                 <div className="text-xs text-blue-600 dark:text-blue-400">
-                  {workout.exercises.length} exercises
-                </div>
+  {workout.exercises.length} {workout.exercises.length === 1 ? 'exercise' : 'exercises'}{' '}
+  {/* Display exercise types summary for mixed workouts */}
+  {workout.exercises.some(ex => ex.isDurationBased) && workout.exercises.some(ex => !ex.isDurationBased) && 
+    '(mixed)'
+  }
+  {/* Display timed for purely duration-based workouts */}
+  {workout.exercises.length > 0 && workout.exercises.every(ex => ex.isDurationBased) && 
+    '(timed)'
+  }
+</div>
               </div>
             </div>
           ))}

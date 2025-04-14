@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle, Clock, Calendar, 
          Save, Plus, Minus, Info, AlertTriangle,
-         Flame, Award, Trash2, RotateCcw, Dumbbell } from 'lucide-react';
+         Flame, Award, Trash2, RotateCcw, Dumbbell, Route } from 'lucide-react';
 import { getWorkoutById, logWorkout, getCompletedWorkoutById } from '../../utils/workoutUtils';
 import { getStorage, getWeightUnit } from '../../utils/storage';
 
@@ -15,9 +15,8 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [completedWorkoutId, setCompletedWorkoutId] = useState(null);
-  const [originalTimestamp, setOriginalTimestamp] = useState(null); // New state for original timestamp
+  const [originalTimestamp, setOriginalTimestamp] = useState(null);
   const [weightUnit, setWeightUnit] = useState('lbs');
-
 
   // Load workout details or existing log on mount
   useEffect(() => {
@@ -62,7 +61,13 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
                 completed: ex.completed !== undefined ? ex.completed : true,
                 actualSets: ex.actualSets || ex.sets,
                 actualReps: ex.actualReps || ex.reps,
-                actualWeight: ex.actualWeight || ex.weight || ''
+                actualWeight: ex.actualWeight || ex.weight || '',
+                // Add support for duration-based exercises
+                isDurationBased: ex.isDurationBased || false,
+                actualDuration: ex.actualDuration || ex.duration || 0,
+                actualDurationUnit: ex.durationUnit || 'min',
+                actualDistance: ex.actualDistance || ex.distance || '',
+                actualIntensity: ex.actualIntensity || ex.intensity || 'medium'
               }))
             );
           }
@@ -109,7 +114,13 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
           completed: false,
           actualSets: exercise.sets,
           actualReps: exercise.reps,
-          actualWeight: exercise.weight || ''
+          actualWeight: exercise.weight || '',
+          // Add support for duration-based exercises
+          isDurationBased: exercise.isDurationBased || false,
+          actualDuration: exercise.duration || 0,
+          actualDurationUnit: exercise.durationUnit || 'min',
+          actualDistance: exercise.distance || '',
+          actualIntensity: exercise.intensity || 'medium'
         }))
       );
       
@@ -140,10 +151,7 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
   const handleExerciseValueChange = (index, field, value) => {
     setCompletedExercises(prev => {
       const updated = [...prev];
-      updated[index] = {
-        ...updated[index],
-        [field]: value
-      };
+      updated[index][field] = value;
       return updated;
     });
   };
@@ -186,7 +194,12 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
           completed: false,
           actualSets: exercise.sets,
           actualReps: exercise.reps,
-          actualWeight: exercise.weight || ''
+          actualWeight: exercise.weight || '',
+          isDurationBased: exercise.isDurationBased || false,
+          actualDuration: exercise.duration || 0,
+          actualDurationUnit: exercise.durationUnit || 'min',
+          actualDistance: exercise.distance || '',
+          actualIntensity: exercise.intensity || 'medium'
         }))
       );
     } else {
@@ -200,6 +213,31 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
   // Save completed workout
   const handleSaveWorkout = () => {
     try {
+      // Map exercises based on their type (duration-based or traditional)
+      const mappedExercises = completedExercises.map(ex => {
+        if (ex.isDurationBased) {
+          return {
+            name: ex.name,
+            isDurationBased: true,
+            duration: ex.actualDuration || ex.duration || 0,
+            durationUnit: ex.actualDurationUnit || ex.durationUnit || 'min',
+            distance: ex.actualDistance || ex.distance || '',
+            intensity: ex.actualIntensity || ex.intensity || 'medium',
+            notes: ex.notes || '',
+            completed: ex.completed
+          };
+        } else {
+          return {
+            name: ex.name,
+            sets: ex.actualSets,
+            reps: ex.actualReps,
+            weight: ex.actualWeight,
+            notes: ex.notes || '',
+            completed: ex.completed
+          };
+        }
+      });
+
       // Create logged workout data
       const workoutData = {
         workoutId: workout?.id || null,
@@ -207,13 +245,7 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
         type: workout?.type || "strength",
         duration: parseInt(duration) || 45,
         calories: calories ? parseInt(calories) : null,
-        exercises: completedExercises.map(ex => ({
-          name: ex.name,
-          sets: ex.actualSets,
-          reps: ex.actualReps,
-          weight: ex.actualWeight,
-          completed: ex.completed
-        })),
+        exercises: mappedExercises,
         notes,
         // Preserve the original timestamp when editing
         completedAt: isEditing ? originalTimestamp : null
@@ -434,7 +466,13 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
                     }`}>
                       {exercise.completed && <CheckCircle size={14} className="text-white" />}
                     </div>
-                    <span className="text-base">{exercise.name}</span>
+                    <span className="flex items-center gap-1">
+                      {exercise.isDurationBased ? 
+                        <Route size={16} className="text-slate-500 dark:text-slate-400" /> : 
+                        <Dumbbell size={16} className="text-slate-500 dark:text-slate-400" />
+                      }
+                      <span className="text-base">{exercise.name}</span>
+                    </span>
                   </div>
                   
                   {/* Exercise completion status badge */}
@@ -445,57 +483,137 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
                   )}
                 </div>
                 
-                <div className="grid grid-cols-3 gap-3 mt-3">
-                  <div>
-                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                      Sets
-                    </label>
-                    <input
-                      type="number"
-                      value={exercise.actualSets}
-                      onChange={(e) => handleExerciseValueChange(index, 'actualSets', parseInt(e.target.value) || 0)}
-                      className={`w-full p-2 border rounded-lg text-sm transition-colors ${
-                        exercise.completed 
-                          ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
-                          : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
-                      }`}
-                      min="0"
-                    />
+                {exercise.isDurationBased ? (
+                  // Duration-based exercise inputs
+                  <div className="grid grid-cols-3 gap-3 mt-3">
+                    <div>
+                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                        Duration
+                      </label>
+                      <div className="flex">
+                        <input
+                          type="number"
+                          value={exercise.actualDuration || 0}
+                          onChange={(e) => handleExerciseValueChange(index, 'actualDuration', parseInt(e.target.value) || 0)}
+                          className={`w-2/3 p-2 border-r-0 rounded-l-lg text-sm transition-colors ${
+                            exercise.completed 
+                              ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+                              : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+                          }`}
+                          min="0"
+                        />
+                        <select
+                          value={exercise.actualDurationUnit || 'min'}
+                          onChange={(e) => handleExerciseValueChange(index, 'actualDurationUnit', e.target.value)}
+                          className={`w-1/3 p-2 border-l-0 rounded-r-lg text-sm transition-colors ${
+                            exercise.completed 
+                              ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+                              : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+                          }`}
+                        >
+                          <option value="sec">sec</option>
+                          <option value="min">min</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                        Distance
+                      </label>
+                      <input
+                        type="text"
+                        value={exercise.actualDistance || ''}
+                        onChange={(e) => handleExerciseValueChange(index, 'actualDistance', e.target.value)}
+                        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+                          exercise.completed 
+                            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+                            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+                        }`}
+                        placeholder="km/mi"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                        Intensity
+                      </label>
+                      <select
+                        value={exercise.actualIntensity || 'medium'}
+                        onChange={(e) => handleExerciseValueChange(index, 'actualIntensity', e.target.value)}
+                        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+                          exercise.completed 
+                            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+                            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+                        }`}
+                      >
+                        <option value="light">Light</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                    </div>
                   </div>
-                  
-                  <div>
-                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                      Reps
-                    </label>
-                    <input
-                      type="text"
-                      value={exercise.actualReps}
-                      onChange={(e) => handleExerciseValueChange(index, 'actualReps', e.target.value)}
-                      className={`w-full p-2 border rounded-lg text-sm transition-colors ${
-                        exercise.completed 
-                          ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
-                          : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
-                      }`}
-                    />
+                ) : (
+                  // Traditional strength exercise inputs
+                  <div className="grid grid-cols-3 gap-3 mt-3">
+                    <div>
+                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                        Sets
+                      </label>
+                      <input
+                        type="number"
+                        value={exercise.actualSets}
+                        onChange={(e) => handleExerciseValueChange(index, 'actualSets', parseInt(e.target.value) || 0)}
+                        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+                          exercise.completed 
+                            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+                            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+                        }`}
+                        min="0"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                        Reps
+                      </label>
+                      <input
+                        type="text"
+                        value={exercise.actualReps}
+                        onChange={(e) => handleExerciseValueChange(index, 'actualReps', e.target.value)}
+                        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+                          exercise.completed 
+                            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+                            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+                        }`}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                        Weight
+                      </label>
+                      <input
+                        type="text"
+                        value={exercise.actualWeight}
+                        onChange={(e) => handleExerciseValueChange(index, 'actualWeight', e.target.value)}
+                        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+                          exercise.completed 
+                            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+                            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+                        }`}
+                        placeholder={weightUnit}
+                      />
+                    </div>
                   </div>
-                  
-                  <div>
-                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                      Weight
-                    </label>
-                    <input
-                      type="text"
-                      value={exercise.actualWeight}
-                      onChange={(e) => handleExerciseValueChange(index, 'actualWeight', e.target.value)}
-                      className={`w-full p-2 border rounded-lg text-sm transition-colors ${
-                        exercise.completed 
-                          ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
-                          : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
-                      }`}
-                      placeholder={weightUnit}
-                    />
+                )}
+
+                {/* Exercise notes - same for both types */}
+                {exercise.notes && (
+                  <div className="mt-3 p-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg text-sm text-slate-600 dark:text-slate-400">
+                    <p>{exercise.notes}</p>
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>

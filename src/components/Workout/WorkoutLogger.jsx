@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, CheckCircle, Clock, Calendar, 
+import { Activity,ArrowLeft, CheckCircle, Clock, Calendar, 
          Save, Plus, Minus, Info, AlertTriangle,
          Flame, Award, Trash2, RotateCcw, Dumbbell, Route } from 'lucide-react';
 import { getWorkoutById, logWorkout, getCompletedWorkoutById } from '../../utils/workoutUtils';
@@ -17,6 +17,7 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
   const [completedWorkoutId, setCompletedWorkoutId] = useState(null);
   const [originalTimestamp, setOriginalTimestamp] = useState(null);
   const [weightUnit, setWeightUnit] = useState('lbs');
+  const [intensity, setIntensity] = useState('3');
 
   // Load workout details or existing log on mount
   useEffect(() => {
@@ -40,6 +41,7 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
           setCalories(existingWorkout.calories || '');
           setNotes(existingWorkout.notes || '');
           setCompletedWorkoutId(existingWorkout.id);
+          setIntensity(existingWorkout.intensity || '3');
           
           // Store the original timestamp for editing
           setOriginalTimestamp(existingWorkout.completedAt || existingWorkout.timestamp);
@@ -219,10 +221,14 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
           return {
             name: ex.name,
             isDurationBased: true,
+            // Add these missing fields to fix the bug
+            sets: ex.actualSets || ex.sets || 1,
             duration: ex.actualDuration || ex.duration || 0,
             durationUnit: ex.actualDurationUnit || ex.durationUnit || 'min',
             distance: ex.actualDistance || ex.distance || '',
             intensity: ex.actualIntensity || ex.intensity || 'medium',
+            timeSpent: ex.timeSpent || 0,
+            setTimes: ex.setTimes || [],
             notes: ex.notes || '',
             completed: ex.completed
           };
@@ -245,6 +251,8 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
         type: workout?.type || "strength",
         duration: parseInt(duration) || 45,
         calories: calories ? parseInt(calories) : null,
+        // Add intensity to the saved data:
+        intensity: intensity,
         exercises: mappedExercises,
         notes,
         // Preserve the original timestamp when editing
@@ -431,6 +439,45 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
           </div>
         </div>
       </div>
+
+      {/* Intensity Selector */}
+<div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-6 border border-slate-200 dark:border-slate-700">
+  <h3 className="font-medium text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
+    <Activity size={18} className="text-purple-500 dark:text-purple-400" />
+    Workout Intensity
+  </h3>
+  
+  <div className="flex flex-col">
+    <div className="flex justify-between mb-1 text-xs text-slate-500 dark:text-slate-400">
+      <span>Light</span>
+      <span>Medium</span>
+      <span>Maximum</span>
+    </div>
+    <div className="grid grid-cols-5 gap-1 mb-1">
+      {[1, 2, 3, 4, 5].map((level) => (
+        <button
+          key={level}
+          type="button"
+          onClick={() => setIntensity(level.toString())}
+          className={`py-2 rounded ${
+            parseInt(intensity) === level 
+              ? 'bg-purple-500 dark:bg-purple-600 text-white' 
+              : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+          }`}
+        >
+          {level}
+        </button>
+      ))}
+    </div>
+    <div className="text-xs text-center text-slate-500 dark:text-slate-400">
+      {parseInt(intensity) === 1 && "Light (1/5)"}
+      {parseInt(intensity) === 2 && "Moderate (2/5)"}
+      {parseInt(intensity) === 3 && "Challenging (3/5)"}
+      {parseInt(intensity) === 4 && "Intense (4/5)"}
+      {parseInt(intensity) === 5 && "Maximum (5/5)"}
+    </div>
+  </div>
+</div>
 
       {/* Completed Exercises */}
       <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-6 border border-slate-200 dark:border-slate-700">

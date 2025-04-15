@@ -691,8 +691,7 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
     // Create main text
     const completionText = document.createElement('div');
     completionText.className = 'wp-completion-text';
-    completionText.textContent = currentExercise.isDurationBased ? 
-      'EXERCISE COMPLETE!' : 'SET COMPLETE!';
+    completionText.textContent = 'SET COMPLETE!';
     
     // Create energy burst element
     const energyBurst = document.createElement('div');

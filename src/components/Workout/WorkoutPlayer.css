@@ -385,21 +385,21 @@ html.dark .wp-view-tab:hover:not(.wp-active) {
 
 /* Achievement popup */
 .wp-achievement-popup {
-  position: fixed;
+  position: absolute;
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: var(--wp-bg-primary);
-  border: 1px solid var(--wp-border-color);
-  border-radius: var(--wp-border-radius);
-  box-shadow: var(--wp-shadow);
-  padding: 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  z-index: 100;
-  animation: slide-in 0.5s forwards, fade-out 0.5s forwards 2.5s;
-  max-width: 90%;
+  padding: 15px;
+  background: var(--wp-card-background);
+  border: 2px solid var(--wp-primary-color);
+  border-radius: var(--wp-border-radius);
+  box-shadow: var(--wp-shadow);
+  z-index: 1000;
+  animation: wp-achievementSlideIn 0.5s ease-out forwards, 
+             wp-achievementSlideOut 0.5s 2.5s ease-in forwards;
+  max-width: 80%;
 }
 
 @keyframes slide-in {
@@ -413,7 +413,9 @@ html.dark .wp-view-tab:hover:not(.wp-active) {
 }
 
 .wp-achievement-icon {
-  font-size: 2rem;
+  font-size: 2.5rem;
+  margin-right: 15px;
+  animation: wp-achievementPulse 0.5s infinite alternate;
 }
 
 .wp-achievement-content {
@@ -421,40 +423,99 @@ html.dark .wp-view-tab:hover:not(.wp-active) {
 }
 
 .wp-achievement-title {
-  color: var(--wp-success-color);
-  font-weight: bold;
-  font-size: 0.8rem;
+  font-family: var(--wp-font-family);
+  color: var(--wp-text-color);
+  font-size: 0.9rem;
+  margin-bottom: 3px;
 }
 
 .wp-achievement-name {
+  font-family: var(--wp-font-family);
+  color: var(--wp-text-color-dark);
+  font-size: 1.2rem;
   font-weight: bold;
-  font-size: 1rem;
-  margin: 2px 0;
+  margin-bottom: 3px;
 }
 
 .wp-achievement-description {
-  color: var(--wp-text-secondary);
-  font-size: 0.8rem;
+  font-family: var(--wp-font-family);
+  color: var(--wp-text-color);
+  font-size: 0.9rem;
 }
 
-/* Set completion effect */
-.wp-set-completion-effect {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeInOut 1.5s forwards;
+.wp-workout-completion-effect .wp-effect-content {
+  padding: 40px;
+  border-width: 3px;
+}
+
+@keyframes wp-fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes wp-popIn {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+
+@keyframes wp-trophyBounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-15px); }
 }
 
 .wp-effect-content {
   text-align: center;
+  padding: 20px;
+  background: var(--wp-card-background);
+  border: 2px solid var(--wp-primary-color);
+  border-radius: var(--wp-border-radius);
+  transform: scale(0);
+  animation: wp-popIn 0.3s 0.1s forwards cubic-bezier(0.2, 0.8, 0.2, 1.2);
+  box-shadow: var(--wp-shadow);
 }
+
+/* Animations */
+@keyframes wp-achievementPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+
+@keyframes wp-achievementSlideIn {
+  0% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+  100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+@keyframes wp-achievementSlideOut {
+  0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+}
+
+
+/* Completion Effects */
+.wp-set-completion-effect,
+.wp-exercise-completion-effect,
+.wp-workout-completion-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 100;
+  animation: wp-fadeInOut 1.5s ease-in-out forwards;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.wp-workout-completion-effect {
+  z-index: 200;
+  animation-duration: 3s;
+}
+
 
 .wp-completion-text {
   color: white;
@@ -516,20 +577,7 @@ html.dark .wp-view-tab:hover:not(.wp-active) {
   }
 }
 
-/* Workout completion effect */
-.wp-workout-completion-effect {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeInOut 3s forwards;
-}
+
 
 .wp-trophy-icon {
   font-size: 3rem;

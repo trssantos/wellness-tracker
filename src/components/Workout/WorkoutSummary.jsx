@@ -263,37 +263,40 @@ const WorkoutSummary = ({
       <div className="exercise-summary">
         <h4>Exercise Summary</h4>
         <div className="exercises-list">
-          {completedExercises.map((exercise, index) => (
-            <div 
-              key={index} 
-              className={`exercise-item ${exercise.completed ? 'completed' : 'incomplete'}`}
-            >
-              <div className="exercise-status">
-                {exercise.completed ? 
-                  <Check size={16} className="status-icon completed" /> : 
-                  <X size={16} className="status-icon incomplete" />
-                }
-              </div>
-              <div className="exercise-name">
-                {exercise.name}
-              </div>
-              <div className="exercise-details">
-  {exercise.completed && (
-    <span>
-      {exercise.isDurationBased ? (
-        // Show actual time spent for duration-based exercises when available
-        exercise.timeSpent ? 
-          `${formatExerciseTime(exercise.timeSpent)} actual time ${exercise.actualDistance ? ` (${exercise.actualDistance})` : ''}` :
-          `${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}`
-      ) : (
-        // Show sets/reps for traditional exercises
-        `${exercise.actualSets || 0}×${exercise.actualReps || 0}${exercise.actualWeight ? ` @ ${exercise.actualWeight}` : ''}`
+        {completedExercises.map((exercise, index) => (
+  <div 
+    key={index} 
+    className={`exercise-item ${exercise.completed ? 'completed' : 'incomplete'}`}
+  >
+    <div className="exercise-status">
+      {exercise.completed ? 
+        <Check size={16} className="status-icon completed" /> : 
+        <X size={16} className="status-icon incomplete" />
+      }
+    </div>
+    <div className="exercise-name">
+      {exercise.name}
+    </div>
+    <div className="exercise-details">
+      {exercise.completed && (
+        <span>
+          {exercise.isDurationBased ? (
+            // For duration-based exercises with sets
+            exercise.actualSets && exercise.actualSets > 1 ? 
+              // Multi-set duration exercise
+              `${exercise.actualSets}×${exercise.actualDuration || 0} ${exercise.actualDurationUnit || 'min'} (${formatExerciseTime(exercise.timeSpent)} total)${exercise.actualDistance ? ` - ${exercise.actualDistance}` : ''}` 
+              : 
+              // Single-set duration exercise
+              `${exercise.actualDuration || 0} ${exercise.actualDurationUnit || 'min'}${exercise.timeSpent && exercise.timeSpent !== (exercise.actualDuration * 60) ? ` (${formatExerciseTime(exercise.timeSpent)} actual)` : ''}${exercise.actualDistance ? ` - ${exercise.actualDistance}` : ''}`
+          ) : (
+            // Show sets/reps for traditional exercises
+            `${exercise.actualSets || 0}×${exercise.actualReps || 0}${exercise.actualWeight ? ` @ ${exercise.actualWeight}` : ''}`
+          )}
+        </span>
       )}
-    </span>
-  )}
-</div>
-            </div>
-          ))}
+    </div>
+  </div>
+))}
         </div>
       </div>
       

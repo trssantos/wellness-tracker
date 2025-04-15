@@ -86,7 +86,7 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       if (workoutData) {
         setWorkout(workoutData);
         
-        // Initialize completed exercises array - now handles duration-based exercises
+        // Initialize completed exercises array - now handles duration-based exercises with sets
         setCompletedExercises(
           workoutData.exercises.map(exercise => ({
             ...exercise,
@@ -96,10 +96,13 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
             actualReps: exercise.reps,
             actualWeight: exercise.weight || '',
             // Duration-based exercise properties
-            actualDuration: exercise.duration || 0,
+            actualDuration: exercise.duration, // Don't modify the duration
             actualDurationUnit: exercise.durationUnit || 'min',
             actualDistance: exercise.distance || '',
             actualIntensity: exercise.intensity || 'medium',
+            // Track time spent per set for duration-based exercises
+            setTimes: Array(exercise.sets || 1).fill(0),
+            // Track total time for the exercise
             timeSpent: 0
           }))
         );
@@ -122,7 +125,7 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
           
           if (firstExercise.isDurationBased) {
             // Initialize duration-based exercise
-            setExerciseDuration(firstExercise.duration || 0);
+            setExerciseDuration(firstExercise.duration); // Use exact value
             setExerciseDurationUnit(firstExercise.durationUnit || 'min');
             setExerciseDistance(firstExercise.distance || '');
             setExerciseIntensity(firstExercise.intensity || 'medium');
@@ -195,7 +198,7 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
         
         // Handle both traditional and duration-based exercises
         if (exercise.isDurationBased) {
-          setExerciseDuration(exercise.duration || 0);
+          setExerciseDuration(exercise.duration); // Use exact value
           setExerciseDurationUnit(exercise.durationUnit || 'min');
           setExerciseDistance(exercise.distance || '');
           setExerciseIntensity(exercise.intensity || 'medium');
@@ -655,13 +658,36 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
     // Show set completion effect
     showSetCompletionEffect();
     
-    // Check if this is a duration-based exercise
+    // Update set times for duration-based exercises
     if (currentExercise.isDurationBased) {
-      // For duration-based exercises, one completion is enough
-      completeExercise();
+      setCompletedExercises(prev => {
+        const updated = [...prev];
+        const exercise = updated[currentExerciseIndex];
+        let updatedSetTimes = [...(exercise.setTimes || Array(exercise.sets || 1).fill(0))];
+        
+        // Update the current set's time
+        updatedSetTimes[currentSetNumber - 1] = timeElapsed;
+        
+        updated[currentExerciseIndex] = {
+          ...exercise,
+          setTimes: updatedSetTimes
+        };
+        
+        return updated;
+      });
+      
+      // For duration-based exercises, check if we've completed all sets
+      if (currentSetNumber >= currentSets) {
+        // All sets complete, mark exercise as done
+        completeExercise();
+      } else {
+        // Move to next set
+        setCurrentSetNumber(prev => prev + 1);
+        setSetsCompleted(prev => prev + 1);
+        setTimeElapsed(0); // Reset timer for new set
+      }
     } else {
-      // Traditional sets/reps exercise
-      // Check if we've completed all sets
+      // Traditional sets/reps exercise handling
       if (currentSetNumber >= currentSets) {
         // All sets complete, mark exercise as done
         completeExercise();
@@ -829,15 +855,26 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       const exercise = updated[currentExerciseIndex];
       
       if (exercise.isDurationBased) {
-        // For duration-based exercises - ALWAYS use actual timeElapsed
+        // For duration-based exercises with sets
+        let updatedSetTimes = [...(exercise.setTimes || Array(exercise.sets || 1).fill(0))];
+        
+        // Update the current set's time
+        updatedSetTimes[currentSetNumber - 1] = timeElapsed;
+        
+        // Calculate total time spent
+        const totalTimeSpent = updatedSetTimes.reduce((sum, time) => sum + time, 0);
+        
         updated[currentExerciseIndex] = {
           ...exercise,
           completed: true,
-          actualDuration: exerciseDuration || exercise.duration || 0,
-          actualDurationUnit: exerciseDurationUnit || exercise.durationUnit || 'min',
-          actualDistance: exerciseDistance || exercise.distance || '',
-          actualIntensity: exerciseIntensity || exercise.intensity || 'medium',
-          timeSpent: timeElapsed // This is the key - actual time spent is recorded
+          actualSets: currentSets, // We now track sets for duration-based exercises
+          // Preserve exact duration values (don't subtract 1)
+          actualDuration: exerciseDuration,
+          actualDurationUnit: exerciseDurationUnit,
+          actualDistance: exerciseDistance,
+          actualIntensity: exerciseIntensity,
+          setTimes: updatedSetTimes,
+          timeSpent: totalTimeSpent // The total time is the sum of all set times
         };
       } else {
         // For traditional strength exercises
@@ -1066,13 +1103,35 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const saveWorkoutResults = (enhancedData = {}) => {
     const duration = Math.ceil(totalTimeElapsed / 60);
     
+    // Process exercises to include all time data
+    const processedExercises = completedExercises.map(exercise => {
+      // Base exercise data
+      const exerciseData = {
+        ...exercise,
+        notes: exercise.notes || '',
+        completed: exercise.completed || false
+      };
+      
+      // Ensure time spent data is preserved exactly as is
+      if (exercise.isDurationBased) {
+        exerciseData.timeSpent = exercise.timeSpent;
+        exerciseData.setTimes = exercise.setTimes;
+        
+        // Don't modify duration values
+        exerciseData.actualDuration = exercise.actualDuration;
+        exerciseData.actualDurationUnit = exercise.actualDurationUnit;
+      }
+      
+      return exerciseData;
+    });
+    
     // Create workout log data
     const workoutData = {
       workoutId: workout.id,
       name: workout.name,
       type: workout.type,
       duration,
-      exercises: completedExercises,
+      exercises: processedExercises,
       notes: enhancedData.notes || notes,
       // Include the enhanced metrics
       calories: enhancedData.calories || null,
@@ -1138,7 +1197,7 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       {/* Header with title and controls */}
       <div className={`wp-player-header ${showControls ? 'wp-visible' : 'wp-hidden'}`}>
         <button 
-          onClick={onClose}
+          onClick={() => setShowCancelConfirmModal(true)}
           className="wp-player-button"
         >
           <X size={20} />
@@ -1165,7 +1224,8 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
               <div className="wp-progress-text">
                 Exercise {currentExerciseIndex + 1} of {workout.exercises.length}
                 {currentState === 'exercise' && !currentExercise?.isDurationBased && ` • Set ${currentSetNumber} of ${currentSets}`}
-                {currentState === 'exercise' && currentExercise?.isDurationBased && ' • Duration-based'}
+                {currentState === 'exercise' && currentExercise?.isDurationBased && currentSets > 1 && ` • Set ${currentSetNumber} of ${currentSets}`}
+                {currentState === 'exercise' && currentExercise?.isDurationBased && currentSets === 1 && ' • Duration-based'}
               </div>
               <div className="wp-progress-bar">
                 <div 
@@ -1208,9 +1268,9 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
                 sets={currentSets}
                 reps={currentReps}
                 weight={currentWeight}
-                duration={currentExercise.actualDuration || currentExercise.duration}
-                durationUnit={currentExercise.actualDurationUnit || currentExercise.durationUnit || 'min'}
-                distance={currentExercise.actualDistance || currentExercise.distance}
+                duration={exerciseDuration}
+                durationUnit={exerciseDurationUnit}
+                distance={exerciseDistance}
                 currentSet={currentSetNumber}
                 totalSets={currentSets}
                 timeElapsed={timeElapsed}
@@ -1230,8 +1290,8 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
                 onClick={completeSet}
                 className="wp-complete-set-button"
               >
-                {currentExercise.isDurationBased 
-                  ? `Complete ${currentExercise.name}` 
+                {currentExercise.isDurationBased ? 
+                  (currentSets > 1 ? `Complete Set ${currentSetNumber}` : `Complete ${currentExercise.name}`) 
                   : `Complete Set ${currentSetNumber}`}
               </button>
             </div>
@@ -1356,44 +1416,44 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       )}
 
       {/* Cancel Confirmation Modal */}
-{showCancelConfirmModal && (
-  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">
-          <X size={24} />
+      {showCancelConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">
+                <X size={24} />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+                End Workout?
+              </h3>
+            </div>
+            
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              Are you sure you want to end this workout? This session will not be saved.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-3 justify-end">
+              <button
+                onClick={() => setShowCancelConfirmModal(false)}
+                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors order-1 sm:order-none"
+              >
+                Continue Workout
+              </button>
+              
+              <button
+                onClick={() => {
+                  onClose();
+                  localStorage.removeItem('workout-player-state');
+                }}
+                className="px-4 py-2 rounded-lg bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <X size={20} />
+                End Workout
+              </button>
+            </div>
+          </div>
         </div>
-        <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
-          End Workout?
-        </h3>
-      </div>
-      
-      <p className="text-slate-600 dark:text-slate-400 mb-6">
-        Are you sure you want to end this workout? This session will not be saved.
-      </p>
-      
-      <div className="flex flex-col sm:flex-row gap-3 justify-end">
-        <button
-          onClick={() => setShowCancelConfirmModal(false)}
-          className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors order-1 sm:order-none"
-        >
-          Continue Workout
-        </button>
-        
-        <button
-          onClick={() => {
-            onClose();
-            localStorage.removeItem('workout-player-state');
-          }}
-          className="px-4 py-2 rounded-lg bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-        >
-          <X size={20} />
-          End Workout
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
       {/* Pause Modal for interruptions */}
       {showPauseModal && (
@@ -1459,7 +1519,5 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
     </div>
   );
 };
-
-
 
 export default WorkoutPlayer;

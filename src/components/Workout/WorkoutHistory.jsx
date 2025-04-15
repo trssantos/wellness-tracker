@@ -569,20 +569,26 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
         </p>
         <div className="mt-1 text-sm text-slate-500 dark:text-slate-400 transition-colors">
           {exercise.isDurationBased ? (
-            // Display actual time spent when available
-            <span>
-              {exercise.timeSpent ? 
-                `${formatExerciseTime(exercise.timeSpent)} (actual)` :
-                `${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}`}
-              {(exercise.actualDistance || exercise.distance) ? 
-                ` (${exercise.actualDistance || exercise.distance} distance)` : ''}
-            </span>
+            // For duration-based exercises with sets
+            exercise.sets && exercise.sets > 1 ? 
+              // Multi-set duration exercise
+              <span>
+                {exercise.sets}×{exercise.duration || 0} {exercise.durationUnit || 'min'}
+                {exercise.timeSpent ? ` (${formatExerciseTime(exercise.timeSpent)} total)` : ''}
+                {exercise.distance ? ` - ${exercise.distance}` : ''}
+              </span> 
+              : 
+              // Single-set duration exercise
+              <span>
+                {exercise.duration || 0} {exercise.durationUnit || 'min'}
+                {exercise.timeSpent ? ` (${formatExerciseTime(exercise.timeSpent)} actual)` : ''}
+                {exercise.distance ? ` - ${exercise.distance}` : ''}
+              </span>
           ) : (
             // Display traditional strength exercise details
             <span>
-              {exercise.actualSets || exercise.sets || 0} sets × {exercise.actualReps || exercise.reps || 0} reps
-              {(exercise.actualWeight || exercise.weight) ? 
-                ` (${exercise.actualWeight || exercise.weight} ${weightUnit})` : ''}
+              {exercise.sets || 0} sets × {exercise.reps || 0} reps
+              {exercise.weight ? ` (${exercise.weight} ${weightUnit})` : ''}
             </span>
           )}
         </div>

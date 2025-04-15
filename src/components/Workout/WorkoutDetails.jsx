@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Route, BarChart2, ArrowLeft, Edit3, Trash2, Play, Clock, Calendar, 
+import { Repeat,Route, BarChart2, ArrowLeft, Edit3, Trash2, Play, Clock, Calendar, 
          MapPin, DollarSign, Dumbbell, Activity, AlertTriangle } from 'lucide-react';
 import { getWorkoutTypes, getWorkoutLocations, getEquipmentOptions, getWorkoutById, getAllCompletedWorkouts } from '../../utils/workoutUtils';
 import WorkoutPlayerModal from './WorkoutPlayerModal';
@@ -414,76 +414,92 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
         ) : (
           <div className="space-y-3">
             {workoutData.exercises.map((exercise, index) => (
-              <div 
-                key={index}
-                className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="w-[70%] overflow-hidden">
-                    <div className="font-medium text-slate-700 dark:text-slate-200 text-sm truncate">{exercise.name}</div>
-                  </div>
-                  <div className="w-[30%] text-right">
-          {exercise.isDurationBased ? (
+  <div 
+    key={index}
+    className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg"
+  >
+    <div className="flex justify-between items-start">
+      <div className="w-[70%] overflow-hidden">
+        <div className="font-medium text-slate-700 dark:text-slate-200 text-sm truncate">{exercise.name}</div>
+      </div>
+      <div className="w-[30%] text-right">
+        {exercise.isDurationBased ? (
+          // For duration-based exercises with sets
+          exercise.sets && exercise.sets > 1 ? 
+            // Multi-set duration exercise
             <div className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full inline-block">
-              {exercise.timeSpent ? 
-                `${formatTime(exercise.timeSpent)} actual` : 
-                `${exercise.duration || 0} ${exercise.durationUnit || 'min'}`}
+              {exercise.sets}×{exercise.duration || 0} {exercise.durationUnit || 'min'}
+              {exercise.distance ? ` (${exercise.distance})` : ''}
+            </div> 
+            : 
+            // Single-set duration exercise
+            <div className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full inline-block">
+              {exercise.duration || 0} {exercise.durationUnit || 'min'}
               {exercise.distance ? ` (${exercise.distance})` : ''}
             </div>
-          ) : (
-            <div className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full inline-block">
-              {exercise.sets} × {exercise.reps}
-              {exercise.weight ? ` (${exercise.weight} ${weightUnit})` : ''}
+        ) : (
+          // Traditional strength exercise
+          <div className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full inline-block">
+            {exercise.sets} × {exercise.reps}
+            {exercise.weight ? ` (${exercise.weight} ${weightUnit})` : ''}
+          </div>
+        )}
+      </div>
+    </div>
+    
+    {/* Additional details shown below the exercise name */}
+    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-500 dark:text-slate-400">
+      {exercise.isDurationBased ? (
+        // Duration-based exercise details
+        <>
+          {exercise.sets && exercise.sets > 1 && (
+            <div className="flex items-center gap-1">
+              <Repeat size={12} />
+              <span>{exercise.sets} sets</span>
             </div>
           )}
-        </div>
-                </div>
-                
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-500 dark:text-slate-400">
-                  {exercise.isDurationBased ? (
-                    // Show distance and intensity for duration-based exercises
-                    <>
-                      {exercise.distance && (
-                        <div className="flex items-center gap-1">
-                          <Route size={12} />
-                          <span>{exercise.distance}</span>
-                        </div>
-                      )}
-                      
-                      {exercise.intensity && (
-                        <div className="flex items-center gap-1">
-                          <Activity size={12} />
-                          <span>Intensity: {formatIntensity(exercise.intensity)}</span>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    // Show weight and rest time for traditional exercises
-                    <>
-                      {exercise.weight && (
-                        <div className="flex items-center gap-1">
-                          <Dumbbell size={12} />
-                          <span>{exercise.weight} {weightUnit}</span>
-                        </div>
-                      )}
-                      
-                      {exercise.restTime && (
-                        <div className="flex items-center gap-1">
-                          <Clock size={12} />
-                          <span>{exercise.restTime}s rest</span>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-                
-                {exercise.notes && (
-                  <div className="w-full mt-1 text-xs italic text-slate-500 dark:text-slate-400 line-clamp-2">
-                    {exercise.notes}
-                  </div>
-                )}
-              </div>
-            ))}
+          
+          {exercise.distance && (
+            <div className="flex items-center gap-1">
+              <Route size={12} />
+              <span>{exercise.distance}</span>
+            </div>
+          )}
+          
+          {exercise.intensity && (
+            <div className="flex items-center gap-1">
+              <Activity size={12} />
+              <span>Intensity: {formatIntensity(exercise.intensity)}</span>
+            </div>
+          )}
+        </>
+      ) : (
+        // Traditional strength exercise details
+        <>
+          {exercise.weight && (
+            <div className="flex items-center gap-1">
+              <Dumbbell size={12} />
+              <span>{exercise.weight} {weightUnit}</span>
+            </div>
+          )}
+          
+          {exercise.restTime && (
+            <div className="flex items-center gap-1">
+              <Clock size={12} />
+              <span>{exercise.restTime}s rest</span>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+    
+    {exercise.notes && (
+      <div className="w-full mt-1 text-xs italic text-slate-500 dark:text-slate-400 line-clamp-2">
+        {exercise.notes}
+      </div>
+    )}
+  </div>
+))}
           </div>
         )}
       </div>

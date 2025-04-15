@@ -342,35 +342,38 @@ export const WorkoutTracker = ({ date, onClose, workoutToEdit = null }) => {
                 
                 {/* Exercise summary - UPDATED to use actual values */}
                 {workout.exercises && workout.exercises.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
-                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Exercises ({workout.exercises.length})
-                    </h5>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {workout.exercises.slice(0, 4).map((exercise, i) => (
-  <div key={i} className="text-xs text-slate-600 dark:text-slate-400">
-    • {exercise.name} {
-      exercise.isDurationBased ? 
-        /* Duration based exercises - Show actual time spent */
-        `(${exercise.timeSpent ? 
-          formatExerciseTime(exercise.timeSpent) + ' actual' :
-          `${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}`}${(exercise.actualDistance || exercise.distance) ? ` - ${exercise.actualDistance || exercise.distance}` : ''})`
-        :
-        /* Traditional strength exercises */
-        ((exercise.actualSets || exercise.sets) && (exercise.actualReps || exercise.reps)) ? 
-          `(${exercise.actualSets || exercise.sets} × ${exercise.actualReps || exercise.reps}${(exercise.actualWeight || exercise.weight) ? ` @ ${exercise.actualWeight || exercise.weight} ${weightUnit}` : ''})` 
-          : ''
-    }
+  <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+      Exercises ({workout.exercises.length})
+    </h5>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {workout.exercises.slice(0, 4).map((exercise, i) => (
+        <div key={i} className="text-xs text-slate-600 dark:text-slate-400">
+          • {exercise.name} {
+            exercise.isDurationBased ? 
+              /* Duration based exercises */
+              exercise.sets && exercise.sets > 1 ? 
+                /* Multi-set duration exercise */
+                `(${exercise.sets}×${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}${exercise.timeSpent ? ` - ${formatExerciseTime(exercise.timeSpent)} total` : ''}${(exercise.actualDistance || exercise.distance) ? ` - ${exercise.actualDistance || exercise.distance}` : ''})`
+                :
+                /* Single-set duration exercise */
+                `(${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}${exercise.timeSpent ? ` - ${formatExerciseTime(exercise.timeSpent)} actual` : ''}${(exercise.actualDistance || exercise.distance) ? ` - ${exercise.actualDistance || exercise.distance}` : ''})`
+              :
+              /* Traditional strength exercises */
+              ((exercise.actualSets || exercise.sets) && (exercise.actualReps || exercise.reps)) ? 
+                `(${exercise.actualSets || exercise.sets} × ${exercise.actualReps || exercise.reps}${(exercise.actualWeight || exercise.weight) ? ` @ ${exercise.actualWeight || exercise.weight} ${weightUnit}` : ''})` 
+                : ''
+          }
+        </div>
+      ))}
+      {workout.exercises.length > 4 && (
+        <div className="text-xs text-blue-600 dark:text-blue-400">
+          +{workout.exercises.length - 4} more exercises
+        </div>
+      )}
+    </div>
   </div>
-))}
-                      {workout.exercises.length > 4 && (
-                        <div className="text-xs text-blue-600 dark:text-blue-400">
-                          +{workout.exercises.length - 4} more exercises
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+)}
                 
                 {/* Notes */}
                 {workout.notes && (

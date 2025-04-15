@@ -445,178 +445,196 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
           </div>
         ) : (
           <div className="space-y-4">
-            {completedExercises.map((exercise, index) => (
-              <div 
-                key={index}
-                className={`p-4 rounded-lg border transition-all transform ${
-                  exercise.completed 
-                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900'
-                    : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div 
-                    className="font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2 cursor-pointer"
-                    onClick={() => handleExerciseToggle(index)}
-                  >
-                    <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${
-                      exercise.completed 
-                        ? 'bg-green-500 border-green-500' 
-                        : 'border-slate-300 dark:border-slate-600'
-                    }`}>
-                      {exercise.completed && <CheckCircle size={14} className="text-white" />}
-                    </div>
-                    <span className="flex items-center gap-1">
-                      {exercise.isDurationBased ? 
-                        <Route size={16} className="text-slate-500 dark:text-slate-400" /> : 
-                        <Dumbbell size={16} className="text-slate-500 dark:text-slate-400" />
-                      }
-                      <span className="text-base">{exercise.name}</span>
-                    </span>
-                  </div>
-                  
-                  {/* Exercise completion status badge */}
-                  {exercise.completed && (
-                    <span className="bg-green-500 dark:bg-green-600 text-white text-xs px-2 py-1 rounded-full">
-                      Completed
-                    </span>
-                  )}
-                </div>
-                
-                {exercise.isDurationBased ? (
-                  // Duration-based exercise inputs
-                  <div className="grid grid-cols-3 gap-3 mt-3">
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                        Duration
-                      </label>
-                      <div className="flex">
-                        <input
-                          type="number"
-                          value={exercise.actualDuration || 0}
-                          onChange={(e) => handleExerciseValueChange(index, 'actualDuration', parseInt(e.target.value) || 0)}
-                          className={`w-2/3 p-2 border-r-0 rounded-l-lg text-sm transition-colors ${
-                            exercise.completed 
-                              ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
-                              : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
-                          }`}
-                          min="0"
-                        />
-                        <select
-                          value={exercise.actualDurationUnit || 'min'}
-                          onChange={(e) => handleExerciseValueChange(index, 'actualDurationUnit', e.target.value)}
-                          className={`w-1/3 p-2 border-l-0 rounded-r-lg text-sm transition-colors ${
-                            exercise.completed 
-                              ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
-                              : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
-                          }`}
-                        >
-                          <option value="sec">sec</option>
-                          <option value="min">min</option>
-                        </select>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                        Distance
-                      </label>
-                      <input
-                        type="text"
-                        value={exercise.actualDistance || ''}
-                        onChange={(e) => handleExerciseValueChange(index, 'actualDistance', e.target.value)}
-                        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
-                          exercise.completed 
-                            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
-                            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
-                        }`}
-                        placeholder="km/mi"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                        Intensity
-                      </label>
-                      <select
-                        value={exercise.actualIntensity || 'medium'}
-                        onChange={(e) => handleExerciseValueChange(index, 'actualIntensity', e.target.value)}
-                        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
-                          exercise.completed 
-                            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
-                            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
-                        }`}
-                      >
-                        <option value="light">Light</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                      </select>
-                    </div>
-                  </div>
-                ) : (
-                  // Traditional strength exercise inputs
-                  <div className="grid grid-cols-3 gap-3 mt-3">
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                        Sets
-                      </label>
-                      <input
-                        type="number"
-                        value={exercise.actualSets}
-                        onChange={(e) => handleExerciseValueChange(index, 'actualSets', parseInt(e.target.value) || 0)}
-                        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
-                          exercise.completed 
-                            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
-                            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
-                        }`}
-                        min="0"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                        Reps
-                      </label>
-                      <input
-                        type="text"
-                        value={exercise.actualReps}
-                        onChange={(e) => handleExerciseValueChange(index, 'actualReps', e.target.value)}
-                        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
-                          exercise.completed 
-                            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
-                            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
-                        }`}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                        Weight
-                      </label>
-                      <input
-                        type="text"
-                        value={exercise.actualWeight}
-                        onChange={(e) => handleExerciseValueChange(index, 'actualWeight', e.target.value)}
-                        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
-                          exercise.completed 
-                            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
-                            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
-                        }`}
-                        placeholder={weightUnit}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Exercise notes - same for both types */}
-                {exercise.notes && (
-                  <div className="mt-3 p-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg text-sm text-slate-600 dark:text-slate-400">
-                    <p>{exercise.notes}</p>
-                  </div>
-                )}
-              </div>
-            ))}
+  {completedExercises.map((exercise, index) => (
+    <div 
+      key={index}
+      className={`p-4 rounded-lg border transition-all transform ${
+        exercise.completed 
+          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900'
+          : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+      }`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div 
+          className="font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2 cursor-pointer"
+          onClick={() => handleExerciseToggle(index)}
+        >
+          <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${
+            exercise.completed 
+              ? 'bg-green-500 border-green-500' 
+              : 'border-slate-300 dark:border-slate-600'
+          }`}>
+            {exercise.completed && <CheckCircle size={14} className="text-white" />}
           </div>
+          <span className="flex items-center gap-1">
+            {exercise.isDurationBased ? 
+              <Route size={16} className="text-slate-500 dark:text-slate-400" /> : 
+              <Dumbbell size={16} className="text-slate-500 dark:text-slate-400" />
+            }
+            <span className="text-base">{exercise.name}</span>
+          </span>
+        </div>
+        
+        {/* Exercise completion status badge */}
+        {exercise.completed && (
+          <span className="bg-green-500 dark:bg-green-600 text-white text-xs px-2 py-1 rounded-full">
+            Completed
+          </span>
+        )}
+      </div>
+      
+      {exercise.isDurationBased ? (
+  // Duration-based exercise inputs
+  <div className="grid grid-cols-3 gap-3 mt-3">
+    {/* Add Sets control for duration-based exercises */}
+    <div>
+      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+        Sets
+      </label>
+      <input
+        type="number"
+        value={exercise.actualSets || 1}
+        onChange={(e) => handleExerciseValueChange(index, 'actualSets', parseInt(e.target.value) || 1)}
+        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+          exercise.completed 
+            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+        }`}
+        min="1"
+      />
+    </div>
+    
+    <div>
+      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+        Duration (Target)
+      </label>
+      <div className="flex">
+        <input
+          type="number"
+          value={exercise.actualDuration || 0}
+          onChange={(e) => handleExerciseValueChange(index, 'actualDuration', parseInt(e.target.value) || 0)}
+          className={`w-2/3 p-2 border-r-0 rounded-l-lg text-sm transition-colors ${
+            exercise.completed 
+              ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+              : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+          }`}
+          min="0"
+        />
+        <select
+          value={exercise.actualDurationUnit || 'min'}
+          onChange={(e) => handleExerciseValueChange(index, 'actualDurationUnit', e.target.value)}
+          className={`w-1/3 p-2 border-l-0 rounded-r-lg text-sm transition-colors ${
+            exercise.completed 
+              ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+              : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+          }`}
+        >
+          <option value="sec">sec</option>
+          <option value="min">min</option>
+        </select>
+      </div>
+    </div>
+    
+    <div>
+      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+        Time Spent
+      </label>
+      <input
+        type="number"
+        value={exercise.timeSpent || 0}
+        onChange={(e) => handleExerciseValueChange(index, 'timeSpent', parseInt(e.target.value) || 0)}
+        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+          exercise.completed 
+            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+        }`}
+        min="0"
+        placeholder="Seconds"
+      />
+      <div className="text-xs text-center mt-1 text-slate-500 dark:text-slate-400">seconds</div>
+    </div>
+    
+    <div>
+      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+        Distance
+      </label>
+      <input
+        type="text"
+        value={exercise.actualDistance || ''}
+        onChange={(e) => handleExerciseValueChange(index, 'actualDistance', e.target.value)}
+        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+          exercise.completed 
+            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+        }`}
+        placeholder="km/mi"
+      />
+    </div>
+  </div>
+) : (
+        // Traditional strength exercise inputs (unchanged)
+        <div className="grid grid-cols-3 gap-3 mt-3">
+          <div>
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+              Sets
+            </label>
+            <input
+              type="number"
+              value={exercise.actualSets}
+              onChange={(e) => handleExerciseValueChange(index, 'actualSets', parseInt(e.target.value) || 0)}
+              className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+                exercise.completed 
+                  ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+                  : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+              }`}
+              min="0"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+              Reps
+            </label>
+            <input
+              type="text"
+              value={exercise.actualReps}
+              onChange={(e) => handleExerciseValueChange(index, 'actualReps', e.target.value)}
+              className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+                exercise.completed 
+                  ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+                  : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+              }`}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+              Weight
+            </label>
+            <input
+              type="text"
+              value={exercise.actualWeight}
+              onChange={(e) => handleExerciseValueChange(index, 'actualWeight', e.target.value)}
+              className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+                exercise.completed 
+                  ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+                  : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+              }`}
+              placeholder={weightUnit}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Exercise notes - same for both types */}
+      {exercise.notes && (
+        <div className="mt-3 p-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg text-sm text-slate-600 dark:text-slate-400">
+          <p>{exercise.notes}</p>
+        </div>
+      )}
+    </div>
+  ))}
+</div>
         )}
       </div>
 

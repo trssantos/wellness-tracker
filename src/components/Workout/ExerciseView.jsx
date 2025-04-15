@@ -80,44 +80,66 @@ const ExerciseView = ({
         </div>
       </div>
       
-      {/* Set indicator - only show for non-duration based exercises */}
-      {!isDurationBased && (
-        <div className="set-indicator">
-          <div className="set-label">Set {currentSet} of {totalSets}</div>
-          <div className="set-progress">
-            {Array.from({ length: totalSets }).map((_, i) => (
-              <div 
-                key={i} 
-                className={`set-circle ${i < currentSet - 1 ? 'completed' : i === currentSet - 1 ? 'current' : ''}`}
-              ></div>
-            ))}
-          </div>
+      {/* Set indicator - show for ALL exercises now, including duration-based */}
+      <div className="set-indicator">
+        <div className="set-label">
+          {isDurationBased 
+            ? `Set ${currentSet} of ${totalSets} • Target: ${formatDurationDisplay()}`
+            : `Set ${currentSet} of ${totalSets}`
+          }
+          {isDurationBased && durationInSeconds > 0 && timeElapsed > 0 && (
+            <span className="text-xs ml-2">
+              ({Math.round((timeElapsed / durationInSeconds) * 100)}%)
+            </span>
+          )}
         </div>
-      )}
-
-      {/* Duration indicator - for duration-based exercises */}
-      {isDurationBased && (
-        <div className="set-indicator">
-          <div className="set-label">
-            Target: {formatDurationDisplay()}
-            {durationInSeconds > 0 && timeElapsed > 0 && (
-              <span className="text-xs ml-2">
-                ({Math.round((timeElapsed / durationInSeconds) * 100)}%)
-              </span>
-            )}
-          </div>
+        <div className="set-progress">
+          {Array.from({ length: totalSets }).map((_, i) => (
+            <div 
+              key={i} 
+              className={`set-circle ${i < currentSet - 1 ? 'completed' : i === currentSet - 1 ? 'current' : ''}`}
+            ></div>
+          ))}
+        </div>
+        
+        {/* Duration progress bar - only for duration-based exercises */}
+        {isDurationBased && (
           <div className="duration-progress">
             <div className="duration-progress-bar" 
               style={{ width: `${durationInSeconds > 0 ? Math.min(100, (timeElapsed / durationInSeconds) * 100) : 0}%` }}>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
       
       {/* Exercise configuration - different UI based on workout type */}
       <div className="exercise-controls">
+        {/* Sets control - now shown for ALL exercise types */}
+        <div className="control-group">
+          <div className="control-label">
+            <Repeat size={16} />
+            <span>Sets</span>
+          </div>
+          <div className="control-inputs">
+            <button 
+              onClick={() => adjustValue('sets', -1)}
+              className="adjust-btn"
+              disabled={sets <= 1}
+            >
+              <Minus size={14} />
+            </button>
+            <div className="value-display">{sets}</div>
+            <button 
+              onClick={() => adjustValue('sets', 1)}
+              className="adjust-btn"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+        </div>
+            
         {isDurationBased ? (
-          // Duration-based controls
+          // Duration-based exercise inputs
           <>
             <div className="control-group">
               <div className="control-label">
@@ -160,51 +182,10 @@ const ExerciseView = ({
                 />
               </div>
             </div>
-            
-            <div className="control-group">
-              <div className="control-label">
-                <Dumbbell size={16} />
-                <span>Intensity</span>
-              </div>
-              <div className="weight-input">
-                <select 
-                  className="text-input"
-                  value={exercise.intensity || 'medium'}
-                  onChange={(e) => exercise.onIntensityChange && exercise.onIntensityChange(e.target.value)}
-                >
-                  <option value="light">Light</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-            </div>
           </>
         ) : (
           // Traditional strength controls
-          <>
-            <div className="control-group">
-              <div className="control-label">
-                <Repeat size={16} />
-                <span>Sets</span>
-              </div>
-              <div className="control-inputs">
-                <button 
-                  onClick={() => adjustValue('sets', -1)}
-                  className="adjust-btn"
-                  disabled={sets <= 1}
-                >
-                  <Minus size={14} />
-                </button>
-                <div className="value-display">{sets}</div>
-                <button 
-                  onClick={() => adjustValue('sets', 1)}
-                  className="adjust-btn"
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-            </div>
-            
+          <>  
             <div className="control-group">
               <div className="control-label">
                 <List size={16} />

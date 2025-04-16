@@ -67,14 +67,33 @@ export const generateWorkout = async (params) => {
             frequency: Array.isArray(parsedWorkout.frequency) ? parsedWorkout.frequency : ['mon', 'wed', 'fri'],
             timeOfDay: parsedWorkout.timeOfDay || 'anytime',
             exercises: Array.isArray(parsedWorkout.exercises) ? 
-              parsedWorkout.exercises.map(exercise => ({
-                name: exercise.name || '',
-                sets: typeof exercise.sets === 'string' ? parseInt(exercise.sets) || 3 : exercise.sets || 3,
-                reps: exercise.reps || '10', // Keep as string to allow "10 (each side)"
-                weight: exercise.weight || '',
-                restTime: typeof exercise.restTime === 'string' ? parseInt(exercise.restTime) || 60 : exercise.restTime || 60,
-                notes: exercise.notes || ''
-              })) : [],
+              parsedWorkout.exercises.map(exercise => {
+                if (exercise.isDurationBased) {
+                  // Process duration-based exercise
+                  return {
+                    name: exercise.name || '',
+                    isDurationBased: true,
+                    sets: typeof exercise.sets === 'string' ? parseInt(exercise.sets) || 1 : exercise.sets || 1,
+                    duration: exercise.duration || 0,
+                    durationUnit: exercise.durationUnit || 'min',
+                    distance: exercise.distance || '',
+                    intensity: exercise.intensity || 'medium',
+                    restTime: typeof exercise.restTime === 'string' ? parseInt(exercise.restTime) || 60 : exercise.restTime || 60,
+                    notes: exercise.notes || ''
+                  };
+                } else {
+                  // Process traditional strength exercise
+                  return {
+                    name: exercise.name || '',
+                    isDurationBased: false,
+                    sets: typeof exercise.sets === 'string' ? parseInt(exercise.sets) || 3 : exercise.sets || 3,
+                    reps: exercise.reps || '10', // Keep as string to allow "10 (each side)"
+                    weight: exercise.weight || '',
+                    restTime: typeof exercise.restTime === 'string' ? parseInt(exercise.restTime) || 60 : exercise.restTime || 60,
+                    notes: exercise.notes || ''
+                  };
+                }
+              }) : [],
             notes: parsedWorkout.notes || '',
             limitations: params.limitations || ''
           };
@@ -144,21 +163,50 @@ const extractWorkoutWithRegex = (jsonText, defaultParams) => {
         .replace(/\)([,}])/g, ')"}')
         .replace(/,\s*}/g, '}');
         
-      // See if we can extract the important fields
-      const nameMatch = block.match(/"name"\s*:\s*"([^"]+)"/);
-      const setsMatch = block.match(/"sets"\s*:\s*(\d+)/);
-      const repsMatch = block.match(/"reps"\s*:\s*(?:"([^"]+)"|(\d+)[^,}]*)/);
-      const notesMatch = block.match(/"notes"\s*:\s*"([^"]+)"/);
+      // Check for isDurationBased flag
+      const isDurationBased = block.includes('"isDurationBased":true') || 
+                             block.includes('"isDurationBased": true');
       
-      if (nameMatch) {
-        exercises.push({
-          name: nameMatch[1],
-          sets: setsMatch ? parseInt(setsMatch[1]) : 3,
-          reps: repsMatch ? (repsMatch[1] || repsMatch[2]) : '10',
-          weight: '',
-          restTime: 60,
-          notes: notesMatch ? notesMatch[1] : ''
-        });
+      if (isDurationBased) {
+        // Extract duration-based exercise properties
+        const nameMatch = block.match(/"name"\s*:\s*"([^"]+)"/);
+        const durationMatch = block.match(/"duration"\s*:\s*(\d+)/);
+        const setsMatch = block.match(/"sets"\s*:\s*(\d+)/);
+        const distanceMatch = block.match(/"distance"\s*:\s*"([^"]+)"/);
+        const notesMatch = block.match(/"notes"\s*:\s*"([^"]+)"/);
+        const durationUnitMatch = block.match(/"durationUnit"\s*:\s*"([^"]+)"/);
+        
+        if (nameMatch) {
+          exercises.push({
+            name: nameMatch[1],
+            isDurationBased: true,
+            sets: setsMatch ? parseInt(setsMatch[1]) : 1,
+            duration: durationMatch ? parseInt(durationMatch[1]) : 5,
+            durationUnit: durationUnitMatch ? durationUnitMatch[1] : 'min',
+            distance: distanceMatch ? distanceMatch[1] : '',
+            intensity: 'medium',
+            restTime: 60,
+            notes: notesMatch ? notesMatch[1] : ''
+          });
+        }
+      } else {
+        // Extract traditional strength exercise properties
+        const nameMatch = block.match(/"name"\s*:\s*"([^"]+)"/);
+        const setsMatch = block.match(/"sets"\s*:\s*(\d+)/);
+        const repsMatch = block.match(/"reps"\s*:\s*(?:"([^"]+)"|(\d+)[^,}]*)/);
+        const notesMatch = block.match(/"notes"\s*:\s*"([^"]+)"/);
+        
+        if (nameMatch) {
+          exercises.push({
+            name: nameMatch[1],
+            isDurationBased: false,
+            sets: setsMatch ? parseInt(setsMatch[1]) : 3,
+            reps: repsMatch ? (repsMatch[1] || repsMatch[2]) : '10',
+            weight: '',
+            restTime: 60,
+            notes: notesMatch ? notesMatch[1] : ''
+          });
+        }
       }
     } catch (e) {
       // Skip this exercise if parsing fails
@@ -177,6 +225,7 @@ const extractWorkoutWithRegex = (jsonText, defaultParams) => {
     exercises: exercises.length > 0 ? exercises : [
       {
         name: 'Example Exercise',
+        isDurationBased: false,
         sets: 3,
         reps: '10',
         weight: '',
@@ -215,18 +264,43 @@ const generateWorkoutPrompt = (params) => {
     - equipment: Array of required equipment items
     - frequency: Recommended weekly frequency as array of days (e.g., ["mon", "wed", "fri"])
     - timeOfDay: Recommended time of day (morning, afternoon, evening, anytime)
-    - exercises: Array of exercise objects, each with:
-      - name: Exercise name
-      - sets: Number of sets (as a number)
-      - reps: Number of reps (as a string, especially if it includes notes like "10 each side")
-      - weight: Weight recommendation (if applicable)
-      - restTime: Rest time in seconds (as a number)
-      - notes: Form tips or variations
+    - exercises: Array of exercise objects
+
+    IMPORTANT: You can only recommend two types of exercises according to these templates, you can recommend all exercises of one type if applicable (ex. In swimming only recommed swim type exercises or postures and distances):
+    
+    1. Traditional strength exercises - use this format for strength-based exercises with repetitions:
+       {
+         "name": "Exercise name",
+         "isDurationBased": false,
+         "sets": number of sets (as a number),
+         "reps": number of reps (as a string, especially if it includes notes like "10 each side"),
+         "weight": weight recommendation (if applicable),
+         "restTime": rest time in seconds (as a number),
+         "notes": form tips or variations
+       }
+       
+    2. Duration-based exercises - use this format for cardio, planks, or timed exercises:
+       {
+         "name": "Exercise name",
+         "isDurationBased": true,
+         "sets": number of sets/intervals (as a number),
+         "duration": time for each set (as a number),
+         "durationUnit": unit for duration ("min" or "sec"),
+         "distance": target distance if applicable (as a string),
+         "restTime": rest time in seconds (as a number),
+         "notes": form tips or variations
+       }
+    
     - notes: General notes or tips for the workout
     
     VERY IMPORTANT FOR FORMATTING: 
+    - Always include "isDurationBased" property for every exercise
     - Always put the "reps" value in quotes if it includes additional text like "10 (each side)" or "10 each leg"
-    - Make sure "sets" and "restTime" are always numeric values without additional text
+    - Make sure "sets", "duration" and "restTime" are always numeric values without additional text
+    - Use "isDurationBased: true" for cardio exercises, planks, wall sits, and other timed exercises
+    - Use "isDurationBased: false" for traditional strength exercises with repetitions
+    - For running, cycling, swimming, sports and similar cardio activities, include distance if appropriate
+    - On outdoor cardio or sports don't mix like running and cycling in the same workout since it is not practical
     
     Format the response as a JSON object.
     Example:
@@ -241,6 +315,7 @@ const generateWorkoutPrompt = (params) => {
       "exercises": [
         {
           "name": "Goblet Squats",
+          "isDurationBased": false,
           "sets": 3,
           "reps": "12",
           "weight": "moderate kettlebell",
@@ -249,11 +324,31 @@ const generateWorkoutPrompt = (params) => {
         },
         {
           "name": "Alternating Lunges",
+          "isDurationBased": false,
           "sets": 3,
           "reps": "10 (each side)",
           "weight": "bodyweight",
           "restTime": 45,
           "notes": "Step forward and maintain balance"
+        },
+        {
+          "name": "Plank Hold",
+          "isDurationBased": true,
+          "sets": 3,
+          "duration": 45,
+          "durationUnit": "sec",
+          "restTime": 30,
+          "notes": "Keep core tight and maintain straight line from head to heels"
+        },
+        {
+          "name": "Treadmill Run",
+          "isDurationBased": true,
+          "sets": 1,
+          "duration": 10,
+          "durationUnit": "min",
+          "distance": "1 mile",
+          "intensity": "medium",
+          "notes": "Maintain steady pace throughout"
         }
       ],
       "notes": "Warm up with 5 minutes of light cardio before starting."
@@ -276,20 +371,37 @@ const generateWorkoutPrompt = (params) => {
  */
 export const generateExerciseSuggestions = async (workoutType, equipment = []) => {
   const prompt = `
-    Suggest 8-10 exercises appropriate for a ${workoutType} workout${equipment.length > 0 ? ` using the following equipment: ${equipment.join(', ')}` : ''}.
+    Suggest exercises appropriate for a ${workoutType} workout${equipment.length > 0 ? ` using the following equipment: ${equipment.join(', ')}` : ''}.
     
     For each exercise, provide:
+    
+    IMPORTANT: You can suggest BOTH traditional strength exercises AND duration-based exercises as appropriate.
+    
+    For traditional strength exercises:
     - name: Exercise name
+    - isDurationBased: false
     - sets: Recommended sets (usually 3-5)
-    - reps: Recommended reps or duration 
+    - reps: Recommended reps
+    - restTime: Rest time in seconds
+    - notes: Brief form tips
+    
+    For duration-based exercises:
+    - name: Exercise name
+    - isDurationBased: true
+    - sets: Number of sets/intervals
+    - duration: Duration for each set
+    - durationUnit: Unit of measurement ("min" or "sec")
+    - distance: Target distance (if applicable)
+    - intensity: Intensity level ("light", "medium", "high")
     - restTime: Rest time in seconds
     - notes: Brief form tips
     
     Format the response as a JSON array of exercise objects.
-    Example:
+    Example with mixed exercise types:
     [
       {
         "name": "Barbell Squats",
+        "isDurationBased": false,
         "sets": 4,
         "reps": "10",
         "restTime": 90,
@@ -297,10 +409,30 @@ export const generateExerciseSuggestions = async (workoutType, equipment = []) =
       },
       {
         "name": "Alternating Lunges",
+        "isDurationBased": false,
         "sets": 3,
         "reps": "10 (each side)",
         "restTime": 60,
         "notes": "Step forward and maintain balance"
+      },
+      {
+        "name": "Plank",
+        "isDurationBased": true,
+        "sets": 3,
+        "duration": 45,
+        "durationUnit": "sec",
+        "restTime": 30,
+        "notes": "Keep body straight and core engaged"
+      },
+      {
+        "name": "Treadmill Intervals",
+        "isDurationBased": true,
+        "sets": 5,
+        "duration": 1,
+        "durationUnit": "min",
+        "intensity": "high",
+        "restTime": 60,
+        "notes": "Sprint for 1 minute, then rest for 1 minute"
       }
     ]
     

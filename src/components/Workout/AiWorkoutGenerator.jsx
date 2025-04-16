@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle, X, Brain, AlertTriangle, Sliders, Dumbbell, 
-         Activity, Heart, Map, Clock, User, Loader, Book, Target, MessageSquare } from 'lucide-react';
+         Activity, Heart, Map, Clock, User, Loader, Book, Target, MessageSquare, Route } from 'lucide-react';
 import { generateWorkout } from '../../utils/workoutAiService';
 import { getWorkoutTypes, getWorkoutLocations, getEquipmentOptions, createWorkout } from '../../utils/workoutUtils';
+import { getWeightUnit } from '../../utils/storage';
 
 const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
   // Form state for workout parameters
@@ -14,7 +15,8 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
     fitnessLevel: 'intermediate',
     limitations: '',
     focusAreas: [],
-    objective: '' // New field for workout objective/description
+    objective: '', // Workout objective/description
+    allowDurationExercises: true // New field to tell AI it can mix exercise types
   });
   
   // UI state
@@ -22,6 +24,7 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
   const [generatedWorkout, setGeneratedWorkout] = useState(null);
   const [error, setError] = useState(null);
   const [showAllEquipment, setShowAllEquipment] = useState(false);
+  const [weightUnit, setWeightUnit] = useState('lbs');
   
   // Handle input changes
   const handleInputChange = (e) => {
@@ -64,6 +67,10 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
     setIsGenerating(true);
     
     try {
+      // Get weight unit before generating workout
+      const unit = getWeightUnit();
+      setWeightUnit(unit);
+      
       const workout = await generateWorkout(params);
       setGeneratedWorkout(workout);
     } catch (error) {
@@ -317,7 +324,7 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
             )}
           </div>
           
-          {/* Workout Objective / Description - NEW SECTION */}
+          {/* Workout Objective / Description */}
           <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <MessageSquare size={18} className="text-slate-700 dark:text-slate-300" />
@@ -463,25 +470,74 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
                       className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg"
                     >
                       <div className="flex items-center justify-between">
-                        <div className="font-medium text-slate-700 dark:text-slate-200">
-                          {index + 1}. {exercise.name}
+                        <div className="font-medium text-slate-700 dark:text-slate-200 flex items-center gap-1">
+                          {exercise.isDurationBased ? 
+                            <Route size={16} className="text-green-500 dark:text-green-400" /> : 
+                            <Dumbbell size={16} className="text-blue-500 dark:text-blue-400" />
+                          }
+                          <span>{index + 1}. {exercise.name}</span>
                         </div>
-                        <div className="text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">
-                          {exercise.sets} × {exercise.reps}
+                        <div className="text-sm">
+                          {exercise.isDurationBased ? (
+                            // Display for duration-based exercise
+                            <div className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full inline-block">
+                              {exercise.sets && exercise.sets > 1 ? 
+                                `${exercise.sets}×${exercise.duration || 0} ${exercise.durationUnit || 'min'}` : 
+                                `${exercise.duration || 0} ${exercise.durationUnit || 'min'}`}
+                              {exercise.distance ? ` (${exercise.distance})` : ''}
+                            </div>
+                          ) : (
+                            // Display for traditional strength exercise
+                            <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full inline-block">
+                              {exercise.sets} × {exercise.reps}
+                              {exercise.weight ? ` (${exercise.weight} ${weightUnit})` : ''}
+                            </div>
+                          )}
                         </div>
                       </div>
                       
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-500 dark:text-slate-400">
-                        {exercise.weight && (
-                          <div className="flex items-center gap-1">
-                            <span>Weight: {exercise.weight}</span>
-                          </div>
-                        )}
-                        
-                        {exercise.restTime && (
-                          <div className="flex items-center gap-1">
-                            <span>Rest: {exercise.restTime}s</span>
-                          </div>
+                        {exercise.isDurationBased ? (
+                          // Duration-based exercise details
+                          <>
+                            {exercise.sets && exercise.sets > 1 && (
+                              <div className="flex items-center gap-1">
+                                <Clock size={12} />
+                                <span>{exercise.sets} sets</span>
+                              </div>
+                            )}
+                            
+                            {exercise.distance && (
+                              <div className="flex items-center gap-1">
+                                <Route size={12} />
+                                <span>Distance: {exercise.distance}</span>
+                              </div>
+                            )}
+                            
+                            {exercise.intensity && (
+                              <div className="flex items-center gap-1">
+                                <Activity size={12} />
+                                <span>Intensity: {exercise.intensity}</span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          // Traditional strength exercise details
+                          <>
+                            {exercise.weight && (
+                              <div className="flex items-center gap-1">
+                                <Dumbbell size={12} />
+                                <span>{exercise.weight} {weightUnit}</span>
+                              </div>
+                            )}
+                            
+                            {exercise.restTime && (
+                              <div className="flex items-center gap-1">
+                                <Clock size={12} />
+                                <span>{exercise.restTime}s rest</span>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                       

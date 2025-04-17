@@ -97,6 +97,12 @@ const DayCoach = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (viewMode !== 'chat') {
+      window.scrollTo(0, 0); // Instant scroll
+    }
+  }, [viewMode]);
+
   // Scheduled data maintenance effect
 useEffect(() => {
   // Function to perform maintenance if needed

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Calendar, RefreshCw, Book, TrendingUp, AlertTriangle,
   Smile, Brain, Zap, Dumbbell, Clock, FileText, Loader, 
-  BarChart2, ChevronDown, Info, Sparkles, MoreHorizontal
+  BarChart2, ChevronDown, Info, Sparkles, MoreHorizontal,
+  Coins, Droplets, Apple, Heart
 } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
 import { generateContent } from '../../utils/ai-service';
@@ -27,9 +28,9 @@ const DayCoachAnalysis = () => {
   const overflowRef = useRef(null);
   const generationCompleted = useRef(false);
   
-  // Define primary and overflow tabs
+  // Define primary and overflow tabs with new modules
   const primaryTabs = ['overview', 'mood', 'focus'];
-  const overflowTabs = ['habits', 'workouts', 'journaling'];
+  const overflowTabs = ['habits', 'workouts', 'journaling', 'finance', 'mindfulness', 'nutrition'];
   
   // Force re-render if generation completed flag is set
   useEffect(() => {
@@ -154,7 +155,10 @@ const DayCoachAnalysis = () => {
           checkCategoryDataAvailability(storage, dates, 'focus') ||
           checkCategoryDataAvailability(storage, dates, 'habits') ||
           checkCategoryDataAvailability(storage, dates, 'workouts') ||
-          checkCategoryDataAvailability(storage, dates, 'journaling')
+          checkCategoryDataAvailability(storage, dates, 'journaling') ||
+          checkCategoryDataAvailability(storage, dates, 'finance') ||
+          checkCategoryDataAvailability(storage, dates, 'mindfulness') ||
+          checkCategoryDataAvailability(storage, dates, 'nutrition')
         );
       
       case 'mood':
@@ -236,6 +240,43 @@ const DayCoachAnalysis = () => {
         }
         
         return false;
+        
+      case 'finance':
+        // Check if there are finance transactions in the timeframe
+        if (!storage.finance || !storage.finance.transactions || storage.finance.transactions.length === 0) {
+          return false;
+        }
+        
+        const financeStartDate = new Date(dates[0]);
+        const financeEndDate = new Date(dates[dates.length - 1]);
+        financeEndDate.setHours(23, 59, 59, 999); // End of the day
+        
+        return storage.finance.transactions.some(transaction => {
+          const transactionDate = new Date(transaction.date || transaction.timestamp);
+          return transactionDate >= financeStartDate && transactionDate <= financeEndDate;
+        });
+      
+      case 'mindfulness':
+        // Check if there are meditation sessions in the timeframe
+        if (!storage.meditationData || !storage.meditationData.sessions || storage.meditationData.sessions.length === 0) {
+          return false;
+        }
+        
+        const meditationStartDate = new Date(dates[0]);
+        const meditationEndDate = new Date(dates[dates.length - 1]);
+        meditationEndDate.setHours(23, 59, 59, 999); // End of the day
+        
+        return storage.meditationData.sessions.some(session => {
+          const sessionDate = new Date(session.date || session.timestamp);
+          return sessionDate >= meditationStartDate && sessionDate <= meditationEndDate;
+        });
+      
+      case 'nutrition':
+        // Check if there are nutrition entries in the timeframe
+        return dates.some(date => {
+          return storage.nutrition && storage.nutrition[date] && storage.nutrition[date].entries && 
+                 storage.nutrition[date].entries.length > 0;
+        });
         
       default:
         return false;
@@ -401,6 +442,39 @@ const DayCoachAnalysis = () => {
       });
     }
     
+    // ADDED: Include meditation sessions
+    if (storage.meditationData && storage.meditationData.sessions) {
+      result.meditationSessions = storage.meditationData.sessions.filter(session => {
+        const sessionDate = new Date(session.date || session.timestamp);
+        return sessionDate >= startDate && sessionDate <= today;
+      });
+    }
+    
+    // ADDED: Include nutrition data
+    result.nutrition = {};
+    for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+      const dateStr = formatDateForStorage(d);
+      if (storage.nutrition && storage.nutrition[dateStr]) {
+        result.nutrition[dateStr] = storage.nutrition[dateStr];
+      }
+    }
+    
+    // Add finance data
+    if (storage.finance) {
+      // Filter transactions to the date range
+      const transactions = storage.finance.transactions 
+        ? storage.finance.transactions.filter(t => {
+            const txDate = new Date(t.date || t.timestamp);
+            return txDate >= startDate && txDate <= today;
+          })
+        : [];
+      
+      result.finance = {
+        ...storage.finance,
+        transactions
+      };
+    }
+    
     // Add global data
     if (storage.habits) result.habits = storage.habits;
     
@@ -449,13 +523,16 @@ CRITICAL: Focus EXCLUSIVELY on ${tab} information. DO NOT discuss other categori
     let specificPrompt = '';
     switch (tab) {
       case 'overview':
-        specificPrompt = `Provide a brief overview highlighting only the most significant insights from different aspects of wellbeing (mood, energy, tasks, workouts, habits).
+        specificPrompt = `Provide a brief overview highlighting only the most significant insights from different aspects of wellbeing (mood, energy, tasks, workouts, habits, finance, nutrition, and mindfulness).
 
 For this overview:
-- Highlight only 2-3 key insights that stand out the most
+- Highlight only 3-4 key insights that stand out the most across all areas
 - Note any meaningful correlations between different data points
 - Focus on patterns instead of individual data points
-- Keep sections very short (1-2 sentences each)`;
+- Keep sections very short (1-2 sentences each)
+- Include finance insights if spending patterns affect overall wellbeing
+- Include nutrition observations if they relate to energy or mood
+- Include mindfulness/meditation insights if they impact overall wellbeing`;
         break;
         
       case 'mood':
@@ -517,6 +594,43 @@ For this journaling analysis:
 - Keep your analysis thoughtful, nuanced, and respectful of the personal nature of journal entries`;
         break;
         
+      case 'finance':
+        specificPrompt = `Focus EXCLUSIVELY on financial patterns and behaviors. DO NOT discuss other areas unless they directly relate to financial wellbeing.
+
+For this finance analysis:
+- Analyze spending patterns and identify key categories where money is spent
+- Evaluate income vs. expense balance over the ${timeframeText}
+- Identify any potential budget issues or opportunities for savings
+- Note progress toward financial goals if any are set
+- Look for correlations between spending behaviors and other aspects of wellbeing (like mood)
+- Examine consistency in financial habits
+- Keep your analysis specifically about financial health and behaviors`;
+        break;
+        
+      case 'mindfulness':
+        specificPrompt = `Focus EXCLUSIVELY on meditation and mindfulness practices. DO NOT discuss other areas unless they directly relate to mindfulness progress.
+
+For this mindfulness analysis:
+- Analyze meditation session frequency, duration, and consistency
+- Identify patterns in mindfulness practice throughout the ${timeframeText}
+- Note any techniques or approaches that appear most effective
+- Examine how meditation habits relate to mood and stress levels if data shows correlations
+- Look for improvements in focus or emotional regulation that might be connected to practice
+- Keep your analysis specifically about mindfulness and meditation progress`;
+        break;
+        
+      case 'nutrition':
+        specificPrompt = `Focus EXCLUSIVELY on nutrition and eating patterns. DO NOT discuss other areas unless they directly relate to nutrition.
+
+For this nutrition analysis:
+- Analyze eating patterns, meal types, and food choices
+- Identify any correlations between food choices and energy or mood levels
+- Note water intake patterns and consistency
+- Examine meal timing and frequency patterns
+- Look for any nutritional habits that appear to positively or negatively impact wellbeing
+- Keep your analysis specifically about nutrition and eating behaviors`;
+        break;
+        
       default:
         specificPrompt = `Provide concise insights about user's wellbeing, focusing on the most relevant data points.`;
     }
@@ -573,6 +687,20 @@ For this journaling analysis:
           people: entry.people,
           tags: entry.tags
         }));
+      } else if (key === 'finance' && (tab === 'overview' || tab === 'finance')) {
+        // Include relevant finance data
+        simplifiedUserData.finance = {
+          transactions: userData.finance.transactions,
+          budgets: userData.finance.budgets,
+          savingsGoals: userData.finance.savingsGoals,
+          recurringTransactions: userData.finance.recurringTransactions
+        };
+      } else if (key === 'meditationSessions' && (tab === 'overview' || tab === 'mindfulness')) {
+        // Include meditation sessions data
+        simplifiedUserData.meditationSessions = userData.meditationSessions;
+      } else if (key === 'nutrition' && (tab === 'overview' || tab === 'nutrition')) {
+        // Include nutrition data
+        simplifiedUserData.nutrition = userData.nutrition;
       }
     }
     
@@ -619,6 +747,12 @@ For this journaling analysis:
         return { icon: <Dumbbell size={16} />, name: 'Workouts', color: 'green' };
       case 'journaling':
         return { icon: <FileText size={16} />, name: 'Journaling', color: 'teal' };
+      case 'finance':
+        return { icon: <Coins size={16} />, name: 'Finance', color: 'yellow' };
+      case 'mindfulness':
+        return { icon: <Heart size={16} />, name: 'Mindfulness', color: 'pink' };
+      case 'nutrition':
+        return { icon: <Apple size={16} />, name: 'Nutrition', color: 'red' };
       default:
         return { icon: <Book size={16} />, name: 'Overview', color: 'blue' };
     }
@@ -886,6 +1020,9 @@ For this journaling analysis:
              activeTab === 'focus' ? 'Focus & Productivity Insights' :
              activeTab === 'habits' ? 'Habit Tracking Analysis' :
              activeTab === 'journaling' ? 'Journal & Reflection Analysis' :
+             activeTab === 'finance' ? 'Financial Health Analysis' :
+             activeTab === 'mindfulness' ? 'Mindfulness Practice Analysis' :
+             activeTab === 'nutrition' ? 'Nutrition & Eating Habits Analysis' :
              'Workout & Activity Insights'}
           </h3>
           

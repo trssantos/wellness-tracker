@@ -285,50 +285,12 @@ const handleDistanceUnitChange = (unit) => {
         </div>
 
         <div className="space-y-6">
-          {/* Weight Unit Preference */}
-<div className="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-4 transition-colors">
-  <h4 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-3 transition-colors">
-    Workout Settings
-  </h4>
-  
-  <div className="mb-4">
-    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 transition-colors">
-      Weight Unit
-    </label>
-    <div className="flex space-x-4">
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="radio"
-          name="weightUnit"
-          checked={weightUnit === 'lbs'}
-          onChange={() => handleWeightUnitChange('lbs')}
-          className="form-radio text-blue-500 focus:ring-blue-500"
-        />
-        <span className="text-slate-700 dark:text-slate-300 transition-colors">
-          Pounds (lbs)
-        </span>
-      </label>
-      
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="radio"
-          name="weightUnit"
-          checked={weightUnit === 'kg'}
-          onChange={() => handleWeightUnitChange('mi')}
-          className="form-radio text-blue-500 focus:ring-blue-500"
-        />
-        <span className="text-slate-700 dark:text-slate-300 transition-colors">
-          Kilograms (kg)
-        </span>
-      </label>
-    </div>
-  </div>
-</div>
+     
 
  {/* Workout Units Preferences */}
  <div className="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-4 transition-colors">
   <h4 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-3 transition-colors">
-    Workout Settings
+    Unit Settings
   </h4>
   
   <div className="mb-4">
@@ -369,6 +331,18 @@ const handleDistanceUnitChange = (unit) => {
       Distance Unit
     </label>
     <div className="flex space-x-4">
+    <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="radio"
+          name="distanceUnit"
+          checked={distanceUnit === 'mi'}
+          onChange={() => handleDistanceUnitChange('mi')}
+          className="form-radio text-blue-500 focus:ring-blue-500"
+        />
+        <span className="text-slate-700 dark:text-slate-300 transition-colors">
+          Miles (mi)
+        </span>
+      </label>
       <label className="flex items-center gap-2 cursor-pointer">
         <input
           type="radio"
@@ -382,18 +356,7 @@ const handleDistanceUnitChange = (unit) => {
         </span>
       </label>
       
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="radio"
-          name="distanceUnit"
-          checked={distanceUnit === 'mi'}
-          onChange={() => handleDistanceUnitChange('mi')}
-          className="form-radio text-blue-500 focus:ring-blue-500"
-        />
-        <span className="text-slate-700 dark:text-slate-300 transition-colors">
-          Miles (mi)
-        </span>
-      </label>
+      
     </div>
   </div>
 </div>

@@ -117,49 +117,50 @@ const DayCoachProfile = ({ userData }) => {
       </div>
       
       {/* Navigation Tabs */}
-      <div className="flex mb-6 border-b border-slate-200 dark:border-slate-700">
-      <button 
-          className={`py-2 px-4 focus:outline-none ${
-            activeTab === 'personal' 
-              ? 'border-b-2 border-blue-500 font-medium text-blue-600 dark:text-blue-400' 
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-          }`}
-          onClick={() => setActiveTab('personal')}
-        >
-          <div className="flex items-center gap-1.5">
-            <User size={16} />
-            <span>Personal Information</span>
-          </div>
-        </button>
+      <div className="flex mb-6 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+  <button 
+    className={`py-2 px-2 sm:px-4 focus:outline-none whitespace-nowrap ${
+      activeTab === 'personal' 
+        ? 'border-b-2 border-blue-500 font-medium text-blue-600 dark:text-blue-400' 
+        : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+    }`}
+    onClick={() => setActiveTab('personal')}
+  >
+    <div className="flex items-center gap-1.5">
+      <User size={16} />
+      <span className="hidden xs:inline">Profile</span>
+      <span className="hidden sm:inline"> Info</span>
+    </div>
+  </button>
 
-        <button 
-          className={`py-2 px-4 focus:outline-none ${
-            activeTab === 'preferences' 
-              ? 'border-b-2 border-blue-500 font-medium text-blue-600 dark:text-blue-400' 
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-          }`}
-          onClick={() => setActiveTab('preferences')}
-        >
-          <div className="flex items-center gap-1.5">
-            <Settings size={16} />
-            <span>Preferences</span>
-          </div>
-        </button>
-        
-        <button 
-          className={`py-2 px-4 focus:outline-none ${
-            activeTab === 'capabilities' 
-              ? 'border-b-2 border-blue-500 font-medium text-blue-600 dark:text-blue-400' 
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-          }`}
-          onClick={() => setActiveTab('capabilities')}
-        >
-          <div className="flex items-center gap-1.5">
-            <Award size={16} />
-            <span>Capabilities</span>
-          </div>
-        </button>
-      </div>
+  <button 
+    className={`py-2 px-2 sm:px-4 focus:outline-none whitespace-nowrap ${
+      activeTab === 'preferences' 
+        ? 'border-b-2 border-blue-500 font-medium text-blue-600 dark:text-blue-400' 
+        : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+    }`}
+    onClick={() => setActiveTab('preferences')}
+  >
+    <div className="flex items-center gap-1.5">
+      <Settings size={16} />
+      <span className="hidden xs:inline">Preferences</span>
+    </div>
+  </button>
+  
+  <button 
+    className={`py-2 px-2 sm:px-4 focus:outline-none whitespace-nowrap ${
+      activeTab === 'capabilities' 
+        ? 'border-b-2 border-blue-500 font-medium text-blue-600 dark:text-blue-400' 
+        : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+    }`}
+    onClick={() => setActiveTab('capabilities')}
+  >
+    <div className="flex items-center gap-1.5">
+      <Award size={16} />
+      <span className="hidden xs:inline">Features</span>
+    </div>
+  </button>
+</div>
       
       {/* Preference Settings Tab */}
       {activeTab === 'preferences' && (

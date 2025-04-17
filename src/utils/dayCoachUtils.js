@@ -451,6 +451,27 @@ export const checkForSignificantChanges = (currentData = {}, previousData = {}, 
 export const handleDataChange = (dateStr, moduleType, data) => {
   try {
     const storage = getStorage();
+
+    // Check if proactive messages are enabled in user preferences
+    const proactiveMessagesEnabled = storage.dayCoach?.userData?.preferences?.proactiveMessages !== false; // Default to true
+
+    if (!proactiveMessagesEnabled) {
+      console.log("Proactive messages are disabled - skipping notification");
+      
+      // Still update the last checked data even if notifications are disabled
+      if (!storage.dayCoach) {
+        initializeDayCoach();
+      }
+      
+      if (!storage.dayCoach.lastCheckedData) {
+        storage.dayCoach.lastCheckedData = {};
+      }
+      
+      storage.dayCoach.lastCheckedData[dateStr] = { ...data };
+      setStorage(storage);
+      
+      return false;
+    }
     
     // Get today's date in YYYY-MM-DD format
     const today = formatDateForStorage(new Date());
@@ -543,6 +564,10 @@ export const askSolaris = async (question, context = {}) => {
       timestamp: new Date().toISOString(),
       fromModule: context.module || null
     };
+
+    // Before setting unread flag, check if notifications are enabled
+    const notificationsEnabled = storage.dayCoach?.userData?.preferences?.notifications !== false;
+    
     
     // Save to storage
     saveDayCoachMessage(userMessage);
@@ -575,10 +600,12 @@ export const askSolaris = async (question, context = {}) => {
     
     // Save to storage
     saveDayCoachMessage(coachMessage);
-    
-    // Set unread flag
-    storage.dayCoach.hasUnreadMessages = true;
-    setStorage(storage);
+
+    // Set unread flag only if notifications are enabled
+    if (notificationsEnabled) {
+      storage.dayCoach.hasUnreadMessages = true;
+      setStorage(storage);
+    }
     
     // Return the response
     return {
@@ -598,6 +625,15 @@ export const askSolaris = async (question, context = {}) => {
 const generateProactiveMessage = async (triggerType, specificContext, dateStr) => {
   try {
     // Create context for the AI
+
+    const storage = getStorage();
+    const proactiveMessagesEnabled = storage.dayCoach?.userData?.preferences?.proactiveMessages !== false;
+    
+    if (!proactiveMessagesEnabled) {
+      console.log("Proactive messages are disabled - canceling message generation");
+      return null;
+    }
+
     const aiContext = {
       messageType: triggerType,
       specificContext,
@@ -625,7 +661,6 @@ const generateProactiveMessage = async (triggerType, specificContext, dateStr) =
     saveDayCoachMessage(newMessage);
     
     // Update hasUnread
-    const storage = getStorage();
     if (storage.dayCoach) {
       storage.dayCoach.hasUnreadMessages = true;
       setStorage(storage);

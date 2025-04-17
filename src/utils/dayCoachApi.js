@@ -105,12 +105,13 @@ export const fetchCoachResponse = async (context) => {
     // Get the storage settings to determine which approach to use
     const storage = getStorage();
     
-    // Check if we should use the two-pass approach
-    // Can be configured in settings or set based on performance metrics
-    const useTwoPass = storage.settings?.useTwoPassAI !== false; // Default to true
+    // Check if data analysis is enabled in user preferences
+    // If not, use the single-pass approach which is less data intensive
+    const dataAnalysisEnabled = storage.dayCoach?.userData?.preferences?.dataAnalysis !== false; // Default to true if not set
+    const useTwoPass = storage.dayCoach?.userData?.preferences?.useTwoPassAI !== false && dataAnalysisEnabled; // Only use two-pass if data analysis is enabled
     
     if (useTwoPass) {
-      console.log("Using two-pass approach for AI response");
+      console.log("Using two-pass approach for AI response (data analysis enabled)");
       
       // Get user data with the tiered summarization approach
       const userData = await gatherUserDataWithSummarization();
@@ -126,9 +127,12 @@ export const fetchCoachResponse = async (context) => {
     } else {
       // Fall back to the original approach
       console.log("Using single-pass approach for AI response");
+      if (!dataAnalysisEnabled) {
+        console.log("Reason: Data analysis is disabled in user preferences");
+      }
       
-      // Get user data with the tiered summarization approach
-      const userData = await gatherUserDataWithSummarization();
+      // Get simplified user data with minimal processing
+      const userData = await gatherSimplifiedUserData();
       
       // Add user data to the context
       const fullContext = {
@@ -152,6 +156,57 @@ export const fetchCoachResponse = async (context) => {
       ]
     };
   }
+};
+
+// Create a new function to gather simplified user data when data analysis is disabled
+const gatherSimplifiedUserData = async () => {
+  const storage = getStorage();
+  const today = new Date();
+  const todayStr = formatDateForStorage(today);
+  
+  // Get today's data only
+  const todayData = storage[todayStr] || {};
+  
+  // Get basic user info
+  const personalInfo = storage.dayCoach?.userData?.personalInfo || {
+    qualities: [],
+    interests: [],
+    challenges: [],
+    goals: [],
+    communicationStyle: 'balanced'
+  };
+  
+  // Prepare simplified data object with just essential info
+  return {
+    today: todayStr,
+    recentData: {
+      [todayStr]: filterRelevantData(todayData, 'dailyData')
+    },
+    personalInfo,
+    // Empty or minimal data for other fields
+    weeklySummaries: {},
+    monthlySummaries: {},
+    habits: (storage.habits || []).slice(0, 5).map(habit => filterRelevantData(habit, 'habit')),
+    focusSessions: [],
+    workouts: [],
+    finance: {},
+    nutrition: {},
+    journal: {
+      stats: {
+        entryCount: 0,
+        avgMood: null,
+        avgEnergy: null,
+        recentCategories: [],
+        peopleMentioned: []
+      },
+      entries: [],
+      recentPeople: {}
+    },
+    _meta: {
+      detailedDaysIncluded: 1,
+      dataAnalysisDisabled: true
+    }
+  };
 };
 
 // Gather user data with the tiered summarization approach
@@ -1225,11 +1280,6 @@ const fetchFromAI = async (context) => {
       
       IMPORTANT: You have access to their personal information, including qualities, interests, challenges, and goals. Use this information to personalize your responses and make them feel truly understood.
       
-      Adapt your communication style based on the user's preference:
-      - If they prefer "direct & concise": Be straightforward with minimal explanation, focus on clear instructions and actionable steps
-      - If they prefer "balanced": Use a mix of information and warmth, with moderate detail (this is the default)
-      - If they prefer "supportive & detailed": Be more empathetic and encouraging, provide thorough explanations
-      
       Keep your responses casual, warm and concise. Write like a supportive friend texting, not a formal coach writing an email.
       
       Be thoughtfully varied in your suggestions - don't focus repeatedly on habits unless the user specifically mentions them. 
@@ -1237,6 +1287,7 @@ const fetchFromAI = async (context) => {
       
       When suggesting new activities or habits:
       - Connect them to the user's stated interests when possible
+      - Suggest something new! Don't overly attach to their interests only, use them as a base to suggest something more varied and new to push the user to improve themselves.
       - Frame them as ways to overcome their specific challenges
       - Show how they contribute to their personal goals
       - Emphasize how they can leverage their existing qualities/strengths
@@ -1333,6 +1384,17 @@ const buildTargetedUserPrompt = (context) => {
     
     Today: ${userData.today}
   `;
+
+   // Add communication style preference prominently
+   const communicationStyle = userData.personalInfo?.communicationStyle || 'balanced';
+   prompt += `\n\nIMPORTANT: The user prefers a "${communicationStyle}" communication style.`;
+   if (communicationStyle === 'direct') {
+     prompt += ` Be concise and straightforward with minimal explanation. Focus on clear instructions and actionable steps.`;
+   } else if (communicationStyle === 'supportive') {
+     prompt += ` Be warm and empathetic with thorough explanations and encouragement.`;
+   } else {
+     prompt += ` Use a balanced mix of information and warmth, with moderate detail.`;
+   }
   
   // Add personal information if available - considered essential
   if (userData.personalInfo) {
@@ -1345,8 +1407,6 @@ const buildTargetedUserPrompt = (context) => {
         ? `\nChallenges & Difficulties: ${userData.personalInfo.challenges.join(', ')}` : ''}
       ${userData.personalInfo.goals && userData.personalInfo.goals.length > 0 
         ? `\nGoals & Aspirations: ${userData.personalInfo.goals.join(', ')}` : ''}
-      ${userData.personalInfo.communicationStyle 
-        ? `\nPreferred Communication Style: ${userData.personalInfo.communicationStyle}` : ''}
     `;
   }
   

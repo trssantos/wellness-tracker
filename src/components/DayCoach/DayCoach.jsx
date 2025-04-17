@@ -201,6 +201,12 @@ useEffect(() => {
       markAllMessagesAsRead();
       setHasUnread(false);
     }
+    
+    // Reload user data when switching to profile view
+    if (viewMode === 'profile') {
+      const freshData = getDayCoachData();
+      setUserData(freshData.userData);
+    }
   }, [viewMode, hasUnread]);
 
   const scrollToBottom = () => {
@@ -263,6 +269,12 @@ const isToday = (dateStr) => {
     try {
       const storage = getStorage();
       const now = Date.now();
+
+      // Check if proactive messages are enabled
+    if (!storage.dayCoach?.userData?.preferences?.proactiveMessages) {
+      console.log("Proactive messages are disabled - skipping data check");
+      return;
+    }
       
       // Don't check again if the component just mounted (within the last 10 seconds)
       // This prevents triggering on each visit to the coach section
@@ -322,6 +334,18 @@ const isToday = (dateStr) => {
       console.error("Error checking for data updates:", error);
     }
   };
+
+  // Add a handler for preference updates
+const handlePreferencesUpdated = (updatedPreferences) => {
+  // Update the local userData state
+  setUserData(prevData => ({
+    ...prevData,
+    preferences: updatedPreferences
+  }));
+  
+  console.log("Preferences updated in parent component:", updatedPreferences);
+};
+
   
   // Check if there are significant changes that would warrant a coach message
   const hasSignificantChanges = (currentData, previousData) => {
@@ -371,6 +395,14 @@ const isToday = (dateStr) => {
     setIsLoading(true);
     
     try {
+// Double-check that proactive messages are still enabled
+const storage = getStorage();
+if (!storage.dayCoach?.userData?.preferences?.proactiveMessages) {
+  console.log("Proactive messages disabled - canceling message generation");
+  setIsLoading(false);
+  return;
+}
+
       // Determine what kind of message to generate
       let messageType = 'general';
       let specificContext = null;
@@ -695,10 +727,13 @@ const isToday = (dateStr) => {
               )}
               
               {viewMode === 'profile' && (
-                <div className="flex-1 overflow-y-auto">
-                  <DayCoachProfile userData={userData} />
-                </div>
-              )}
+  <div className="flex-1 overflow-y-auto">
+    <DayCoachProfile 
+      userData={userData} 
+      onPreferencesUpdated={handlePreferencesUpdated} 
+    />
+  </div>
+)}
               
               {viewMode === 'analysis' && (
                 <div className="flex-1 overflow-y-auto">

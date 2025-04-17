@@ -227,6 +227,37 @@ const DayCoachProfile = ({ userData }) => {
                 <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-500 peer-checked:bg-blue-500 dark:peer-checked:bg-blue-600"></div>
               </label>
             </div>
+
+            {/* Two-Pass AI Toggle */}
+<div className="mb-4">
+  <h4 className="text-md font-medium text-slate-800 dark:text-slate-200 mb-2">AI Response Method</h4>
+  <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
+    <div>
+      <div className="font-medium text-slate-800 dark:text-slate-200">Two-Pass AI Approach</div>
+      <div className="text-sm text-slate-500 dark:text-slate-400">
+        Uses two AI calls to reduce tokens by selecting only needed data
+      </div>
+    </div>
+    <div>
+      <label className="relative inline-flex items-center cursor-pointer">
+        <input 
+          type="checkbox" 
+          className="sr-only peer"
+          checked={preferences.useTwoPassAI !== false}
+          onChange={(e) => handlePreferenceChange('useTwoPassAI', e.target.checked)}
+          
+         
+        />
+        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+      </label>
+    </div>
+  </div>
+  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 pl-1">
+    {preferences.useTwoPassAI !== false 
+      ? "Enabled: First determines what data is needed, then sends only that data" 
+      : "Disabled: Sends all relevant data in a single request"}
+  </div>
+</div>
           </div>
         </div>
       )}

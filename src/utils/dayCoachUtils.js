@@ -190,53 +190,115 @@ export const saveUserPreferences = (preferences) => {
 // Remove old data from storage to prevent bloat
 export const cleanupOldData = () => {
   try {
+    console.log("Running data maintenance and cleanup...");
     const storage = getStorage();
     
     if (!storage.dayCoach) return;
     
+    const startTime = Date.now();
+    
     // Limit the number of messages
     if (storage.dayCoach.messages.length > 100) {
+      console.log(`Trimming messages from ${storage.dayCoach.messages.length} to 100`);
       storage.dayCoach.messages = storage.dayCoach.messages.slice(-100);
     }
     
-    // Clean up old summaries (keep only last 6 months)
+    // Clean up old summaries
     if (storage.dayCoachSummaries) {
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      // REDUCED from 6 months to 3 months for monthly summaries
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
       
+      let monthlyDeleted = 0;
       // Filter monthly summaries
       for (const monthKey in storage.dayCoachSummaries.monthlySummaries) {
-        // Extract year and month from key (YYYY-MM format)
         const [year, month] = monthKey.split('-').map(Number);
         const summaryDate = new Date(year, month - 1, 1);
         
-        if (summaryDate < sixMonthsAgo) {
+        if (summaryDate < threeMonthsAgo) {
           delete storage.dayCoachSummaries.monthlySummaries[monthKey];
+          monthlyDeleted++;
         }
       }
       
-      // Filter weekly summaries
+      if (monthlyDeleted > 0) {
+        console.log(`Deleted ${monthlyDeleted} old monthly summaries`);
+      }
+      
+      // REDUCED to 6 weeks for weekly summaries
+      const sixWeeksAgo = new Date();
+      sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42); // 6 weeks
+      
+      let weeklyDeleted = 0;
       for (const weekKey in storage.dayCoachSummaries.weeklySummaries) {
-        // Extract year and week from key (YYYY-Www format)
         const match = weekKey.match(/^(\d{4})-W(\d{2})$/);
         if (match) {
           const [, year, week] = match;
-          
-          // Approximate date for this week
           const approximateDate = new Date(Number(year), 0, 1 + (Number(week) - 1) * 7);
           
-          if (approximateDate < sixMonthsAgo) {
+          if (approximateDate < sixWeeksAgo) {
             delete storage.dayCoachSummaries.weeklySummaries[weekKey];
+            weeklyDeleted++;
           }
         }
       }
+      
+      if (weeklyDeleted > 0) {
+        console.log(`Deleted ${weeklyDeleted} old weekly summaries`);
+      }
     }
     
+    // Cleanup recentTriggers to only keep current month
+    if (storage.dayCoach.recentTriggers) {
+      const thisMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
+      
+      const oldTriggerKeys = Object.keys(storage.dayCoach.recentTriggers).filter(dateKey => 
+        !dateKey.startsWith(thisMonth)
+      );
+      
+      if (oldTriggerKeys.length > 0) {
+        console.log(`Removing ${oldTriggerKeys.length} old trigger records`);
+        
+        oldTriggerKeys.forEach(key => {
+          delete storage.dayCoach.recentTriggers[key];
+        });
+      }
+    }
+    
+    // Cleanup lastCheckedData to only keep last 30 days
+    if (storage.dayCoach.lastCheckedData) {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const oldDataKeys = Object.keys(storage.dayCoach.lastCheckedData).filter(dateKey => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return false;
+        return new Date(dateKey) < thirtyDaysAgo;
+      });
+      
+      if (oldDataKeys.length > 0) {
+        console.log(`Removing ${oldDataKeys.length} old lastCheckedData records`);
+        
+        oldDataKeys.forEach(key => {
+          delete storage.dayCoach.lastCheckedData[key];
+        });
+      }
+    }
+    
+    // Update last maintenance timestamp
+    storage.dayCoach.lastMaintenance = Date.now();
+    
     setStorage(storage);
+    
+    const duration = Date.now() - startTime;
+    console.log(`Data maintenance completed in ${duration}ms`);
+    
+    return true;
   } catch (error) {
     console.error('Error cleaning up old data:', error);
+    return false;
   }
 };
+
 
 
 // New functions for proactive messaging

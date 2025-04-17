@@ -20,7 +20,7 @@ import DayCoachEmptyState from './DayCoachEmptyState';
 import DayCoachProfile from './DayCoachProfile';
 import DayCoachAnalysis from './DayCoachAnalysis';
 import DayCoachMoodTracker from './DayCoachMoodTracker';
-import { clearDayCoachMessages } from '../../utils/dayCoachUtils';
+import { clearDayCoachMessages, cleanupOldData } from '../../utils/dayCoachUtils';
 import ClearChatDialog from './ClearChatDialog';
 import { formatDateForStorage } from '../../utils/dateUtils';
 
@@ -44,7 +44,8 @@ const DayCoach = () => {
   const componentMountTime = useRef(Date.now());
 
   const [showClearDialog, setShowClearDialog] = useState(false);
-
+  const maintenanceTimeoutRef = useRef(null);
+  const maintenanceIntervalRef = useRef(null);
   
   // First-time initialization
   useEffect(() => {
@@ -95,6 +96,99 @@ const DayCoach = () => {
       }
     };
   }, []);
+
+  // Scheduled data maintenance effect
+useEffect(() => {
+  // Function to perform maintenance if needed
+  const performMaintenance = () => {
+    try {
+      const storage = getStorage();
+      const lastMaintenance = storage.dayCoach?.lastMaintenance || 0;
+      const now = Date.now();
+      
+      // If it's been more than a week, perform maintenance
+      if (now - lastMaintenance > 7 * 24 * 60 * 60 * 1000) {
+        console.log("Performing scheduled data maintenance...");
+        
+        // Perform cleanup
+        cleanupOldData();
+        
+        // Record maintenance time
+        const updatedStorage = getStorage(); // Get fresh storage after cleanup
+        if (!updatedStorage.dayCoach) {
+          initializeDayCoach();
+          updatedStorage = getStorage();
+        }
+        updatedStorage.dayCoach.lastMaintenance = now;
+        setStorage(updatedStorage);
+        
+        console.log("Scheduled maintenance completed");
+      } else {
+        // Calculate time until next maintenance
+        const nextMaintenance = new Date(lastMaintenance + 7 * 24 * 60 * 60 * 1000);
+        console.log(`Next scheduled maintenance: ${nextMaintenance.toLocaleString()}`);
+      }
+    } catch (error) {
+      console.error("Error during scheduled maintenance:", error);
+    }
+  };
+  
+  // Run on component mount
+  console.log("Checking if maintenance is needed...");
+  performMaintenance();
+  
+  // Also set a timer to check daily at a specific time (e.g., 3 AM)
+  const setupDailyCheck = () => {
+    const now = new Date();
+    const targetHour = 3; // 3 AM
+    
+    // Calculate milliseconds until 3 AM
+    let targetTime = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      targetHour,
+      0,
+      0
+    );
+    
+    // If it's already past 3 AM, schedule for tomorrow
+    if (now.getHours() >= targetHour) {
+      targetTime.setDate(targetTime.getDate() + 1);
+    }
+    
+    const msUntilTarget = targetTime - now;
+    
+    // Set timeout for first run at 3 AM
+    const timeoutId = setTimeout(() => {
+      // Perform maintenance
+      performMaintenance();
+      
+      // Then set up daily interval
+      const dailyInterval = 24 * 60 * 60 * 1000; // 24 hours
+      const intervalId = setInterval(performMaintenance, dailyInterval);
+      
+      // Store the interval ID for cleanup
+      maintenanceIntervalRef.current = intervalId;
+    }, msUntilTarget);
+    
+    // Store the timeout ID for cleanup
+    maintenanceTimeoutRef.current = timeoutId;
+  };
+  
+  // Set up the daily check
+  setupDailyCheck();
+  
+  // Cleanup function to remove timers
+  return () => {
+    if (maintenanceTimeoutRef.current) {
+      clearTimeout(maintenanceTimeoutRef.current);
+    }
+    if (maintenanceIntervalRef.current) {
+      clearInterval(maintenanceIntervalRef.current);
+    }
+  };
+}, []); // Empty dependency array means this runs once on mount
   
   // Scroll to bottom when messages change
   useEffect(() => {

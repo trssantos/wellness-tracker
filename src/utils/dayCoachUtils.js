@@ -17,6 +17,13 @@ export const initializeDayCoach = async () => {
             notifications: true,
             proactiveMessages: true,
             dataAnalysis: true
+          },
+          personalInfo: {
+            qualities: [],
+            interests: [],
+            challenges: [],
+            goals: [],
+            communicationStyle: 'balanced'
           }
         },
         lastDataCheck: Date.now(),
@@ -28,7 +35,7 @@ export const initializeDayCoach = async () => {
       const welcomeMessage = {
         id: `coach-msg-${Date.now()}`,
         sender: 'coach',
-        content: "Hey there! 👋 I'm your ZenTracker buddy. I'm here to chat about your wellbeing, habits, and goals. I'll keep an eye on your data and offer insights when helpful. What's on your mind today?",
+        content: "Hey there! 👋 I'm Solaris! I'm here to chat about your wellbeing, habits, and goals. I'll keep an eye on your data and offer insights when helpful. What's on your mind today?",
         timestamp: new Date().toISOString(),
         suggestions: [
           "What can you help me with?",
@@ -618,5 +625,62 @@ export const clearDayCoachMessages = () => {
   } catch (error) {
     console.error('Error clearing day coach messages:', error);
     return false;
+  }
+};
+
+// Save user personal information
+export const saveUserPersonalInfo = (personalInfo) => {
+  try {
+    const storage = getStorage();
+    
+    if (!storage.dayCoach) {
+      initializeDayCoach();
+    }
+    
+    // Update personal information
+    storage.dayCoach.userData.personalInfo = {
+      ...storage.dayCoach.userData.personalInfo,
+      ...personalInfo
+    };
+    
+    setStorage(storage);
+    return true;
+  } catch (error) {
+    console.error('Error saving user personal information:', error);
+    return false;
+  }
+};
+
+// Get user personal information
+export const getUserPersonalInfo = () => {
+  try {
+    const storage = getStorage();
+    
+    if (!storage.dayCoach || !storage.dayCoach.userData) {
+      return {
+        qualities: [],
+        interests: [],
+        challenges: [],
+        goals: [],
+        communicationStyle: 'balanced'
+      };
+    }
+    
+    return storage.dayCoach.userData.personalInfo || {
+      qualities: [],
+      interests: [],
+      challenges: [],
+      goals: [],
+      communicationStyle: 'balanced'
+    };
+  } catch (error) {
+    console.error('Error getting user personal information:', error);
+    return {
+      qualities: [],
+      interests: [],
+      challenges: [],
+      goals: [],
+      communicationStyle: 'balanced'
+    };
   }
 };

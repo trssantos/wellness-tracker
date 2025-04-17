@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot,User, BarChart2,Trash2,
+import { User, BarChart2,Trash2,
   MessageCircle, Send, SmilePlus, Calendar, Clock, 
   Dumbbell, Brain, Zap, Check, Bell, X, Moon, Sun,
   Lightbulb, Activity, ArrowRight, ChevronDown, ChevronUp, Sparkles
@@ -22,7 +22,6 @@ import DayCoachAnalysis from './DayCoachAnalysis';
 import DayCoachMoodTracker from './DayCoachMoodTracker';
 import { clearDayCoachMessages } from '../../utils/dayCoachUtils';
 import ClearChatDialog from './ClearChatDialog';
-import SolarisRobot from './SolarisRobot';
 import { formatDateForStorage } from '../../utils/dateUtils';
 
 const DayCoach = () => {
@@ -45,7 +44,6 @@ const DayCoach = () => {
   const componentMountTime = useRef(Date.now());
 
   const [showClearDialog, setShowClearDialog] = useState(false);
-  const [robotMode, setRobotMode] = useState(false);
 
   
   // First-time initialization
@@ -453,16 +451,8 @@ const isToday = (dateStr) => {
       </h2>
     </div>
 
-    {/* Add the Robot Mode button */}
     <div className="flex items-center gap-2">
-      <button
-        onClick={() => setRobotMode(true)}
-        className="p-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 shadow-md transition-all transform hover:scale-105"
-        title="Enter Robot Mode"
-        aria-label="Enter Robot Mode"
-      >
-        <Bot size={18} />
-      </button>
+      
     
     {/* Navigation tabs */}
     <div className="flex rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 shadow-sm border border-slate-200 dark:border-slate-600 h-8">
@@ -514,11 +504,11 @@ const isToday = (dateStr) => {
           <div className="bg-blue-50 dark:bg-blue-900/20 p-8 rounded-xl max-w-md mx-auto text-center">
             <Sparkles className="text-blue-500 dark:text-blue-400 mx-auto mb-4" size={48} />
             <h3 className="text-xl font-medium text-slate-800 dark:text-slate-200 mb-2">
-              Meet Your ZenTracker Coach
+              Meet Your ZenTracker Coach, Solaris!
             </h3>
             <p className="text-slate-600 dark:text-slate-400 mb-6">
               I'm here to help you stay on track, analyze your patterns, and provide personalized guidance based on your data. 
-              Ask me anything about your habits, mood, tasks, or focus sessions!
+              Ask me anything about your habits, mood, tasks, or focus sessions or lets just chat!
             </p>
             <button
               onClick={() => {
@@ -634,84 +624,7 @@ const isToday = (dateStr) => {
   onConfirm={handleClearChat}
 />
 
-{robotMode && (
-  <SolarisRobot
-    messages={messages}
-    onSendMessage={(message) => {
-      // Create a user message immediately for responsiveness
-      const userMessage = {
-        id: `user-msg-${Date.now()}`,
-        sender: 'user',
-        content: message,
-        timestamp: new Date().toISOString(),
-      };
-      
-      // Add user message to state immediately
-      setMessages(prev => [...prev, userMessage]);
-      
-      // Save the message to storage
-      saveDayCoachMessage(userMessage);
-      
-      // Process with AI - this should trigger your existing AI flow
-      setIsLoading(true);
-      
-      // Create context for AI
-      const aiContext = {
-        messageType: 'userQuery',
-        userMessage: message,
-        currentTime: new Date().toLocaleTimeString(),
-        previousMessages: [...messages, userMessage].slice(-10) // Include last 10 messages for context
-      };
-      
-      // Get AI response using your existing fetchCoachResponse
-      fetchCoachResponse(aiContext)
-        .then(response => {
-          console.log("Robot received AI response:", response);
-          
-          // Create coach response message
-          const coachMessage = {
-            id: `coach-msg-${Date.now()}`,
-            sender: 'coach',
-            content: response.message,
-            timestamp: new Date().toISOString(),
-            suggestions: response.suggestions || [],
-            isRead: true,
-            context: {
-              type: 'response',
-              userQuery: message
-            }
-          };
-          
-          // Save coach message
-          saveDayCoachMessage(coachMessage);
-          
-          // Update messages in state
-          setMessages(prev => [...prev, coachMessage]);
-          setQuickReplies(response.suggestions || []);
-        })
-        .catch(error => {
-          console.error('Error sending message to coach:', error);
-          
-          // Add an error message
-          const errorMessage = {
-            id: `coach-msg-${Date.now()}`,
-            sender: 'coach',
-            content: "I'm sorry, I'm having trouble processing your message right now. Could you try again in a moment?",
-            timestamp: new Date().toISOString(),
-            isError: true,
-            isRead: true
-          };
-          
-          saveDayCoachMessage(errorMessage);
-          setMessages(prev => [...prev, errorMessage]);
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    }}
-    onClose={() => setRobotMode(false)}
-  />
-)}
+
 
     </div>
   );

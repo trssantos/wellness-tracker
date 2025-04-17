@@ -4,15 +4,38 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="ZenTrack - Track your daily wellness and productivity"
-    />
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
+    <meta name="description" content="ZenTrack - Track your daily wellness and productivity" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>ZenTrack</title>
 
+    <script>
+      // Run this script BEFORE anything else
+      (function() {
+        // Check for saved theme preference or use system preference
+        const savedTheme = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        // Apply dark mode if explicitly saved as dark or if system prefers dark and no saved preference
+        const isDark = savedTheme === 'dark' || (systemPrefersDark && savedTheme !== 'light');
+        
+        // Apply theme class immediately
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        }
+        
+        // Update meta theme-color
+        document.querySelector('meta[name="theme-color"]').setAttribute(
+          'content', 
+          isDark ? '#0f172a' : '#f8fafc'
+        );
+      })();
+    </script>
+
     <style>
+      /* This style block must come AFTER the script */
+      
       /* Default light theme */
       :root {
         color-scheme: light;
@@ -25,51 +48,59 @@
         --bg-color: #0f172a; /* slate-900 */
       }
       
-      /* Apply background immediately */
-      html, body {
+      /* Apply background immediately and prevent any white flash */
+      html {
+        background-color: var(--bg-color) !important;
+      }
+      
+      body {
+        background-color: var(--bg-color) !important;
+        margin: 0;
+        visibility: hidden; /* Hide content until fully loaded */
+      }
+      
+      /* Special div to cover the screen with theme color */
+      #theme-init-cover {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
         background-color: var(--bg-color);
-        transition: background-color 0.2s ease;
+        z-index: 9999;
+        transition: opacity 0.4s ease;
       }
       
       /* Add transitions after initial load */
       .theme-transition {
         transition: background-color 0.2s ease, color 0.2s ease;
       }
-      
-      /* Hide content until styles are loaded */
-      body.loading {
-        visibility: hidden;
-      }
     </style>
-    
-    <script>
-      // Immediately set the initial theme before any content renders
-      (function() {
-        // Add loading class to hide content initially
-        document.body.classList.add('loading');
-        
-        // Check for saved theme preference or use system preference
-        const savedTheme = localStorage.getItem('theme');
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
-        // Apply dark mode if explicitly saved as dark or if system prefers dark and no saved preference
-        if (savedTheme === 'dark' || (systemPrefersDark && savedTheme !== 'light')) {
-          document.documentElement.classList.add('dark');
-        }
-        
-        // Remove loading class after a tiny delay to ensure styles are applied
-        setTimeout(function() {
-          document.body.classList.remove('loading');
-          // Add transition class for future theme changes
-          document.documentElement.classList.add('theme-transition');
-        }, 10);
-      })();
-    </script>
   </head>
   <body>
+    <div id="theme-init-cover"></div>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    
     <script>
+      // Wait for DOM to be interactive before applying transitions
+      document.addEventListener('DOMContentLoaded', function() {
+        // Add transition class for future theme changes
+        document.documentElement.classList.add('theme-transition');
+        
+        // Make body visible now that styles are applied
+        document.body.style.visibility = 'visible';
+        
+        // Fade out cover element
+        const cover = document.getElementById('theme-init-cover');
+        if (cover) {
+          cover.style.opacity = '0';
+          setTimeout(() => {
+            cover.remove();
+          }, 400); // Match the transition time
+        }
+      });
+    
       // Register service worker for notifications if browser supports it
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {

@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Apply background colors to html and body elements */
+html,
+body {
+  @apply bg-slate-50 dark:bg-slate-900 transition-colors;
+}
+
+/* For Safari and other browsers that might need it */
+:root {
+  background-color: theme('colors.slate.50');
+}
+
+:root.dark {
+  background-color: theme('colors.slate.900');
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

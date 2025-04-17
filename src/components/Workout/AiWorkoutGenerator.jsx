@@ -3,7 +3,7 @@ import { ArrowLeft, CheckCircle, X, Brain, AlertTriangle, Sliders, Dumbbell,
          Activity, Heart, Map, Clock, User, Loader, Book, Target, MessageSquare, Route } from 'lucide-react';
 import { generateWorkout } from '../../utils/workoutAiService';
 import { getWorkoutTypes, getWorkoutLocations, getEquipmentOptions, createWorkout } from '../../utils/workoutUtils';
-import { getWeightUnit } from '../../utils/storage';
+import { getWeightUnit, getDistanceUnit } from '../../utils/storage';
 
 const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
   // Form state for workout parameters
@@ -25,6 +25,7 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
   const [error, setError] = useState(null);
   const [showAllEquipment, setShowAllEquipment] = useState(false);
   const [weightUnit, setWeightUnit] = useState('lbs');
+  const [distanceUnit, setDistanceUnit] = useState('mi');
   
   // Handle input changes
   const handleInputChange = (e) => {
@@ -67,11 +68,22 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
     setIsGenerating(true);
     
     try {
-      // Get weight unit before generating workout
-      const unit = getWeightUnit();
-      setWeightUnit(unit);
+      // Get units before generating workout
+      const wUnit = getWeightUnit();
+      const dUnit = getDistanceUnit();
+      setWeightUnit(wUnit);
+      setDistanceUnit(dUnit);
       
-      const workout = await generateWorkout(params);
+      // Add preferred units to params
+      const workoutParams = {
+        ...params,
+        preferredUnits: {
+          weight: wUnit,
+          distance: dUnit
+        }
+      };
+      
+      const workout = await generateWorkout(workoutParams);
       setGeneratedWorkout(workout);
     } catch (error) {
       console.error('Error generating workout:', error);
@@ -478,13 +490,13 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
                           <span>{index + 1}. {exercise.name}</span>
                         </div>
                         <div className="text-sm">
-                          {exercise.isDurationBased ? (
+                        {exercise.isDurationBased ? (
                             // Display for duration-based exercise
                             <div className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full inline-block">
                               {exercise.sets && exercise.sets > 1 ? 
                                 `${exercise.sets}×${exercise.duration || 0} ${exercise.durationUnit || 'min'}` : 
                                 `${exercise.duration || 0} ${exercise.durationUnit || 'min'}`}
-                              {exercise.distance ? ` (${exercise.distance})` : ''}
+                              {exercise.distance ? ` (${exercise.distance}${!exercise.distance.includes('km') && !exercise.distance.includes('mi') ? ' ' + distanceUnit : ''})` : ''}
                             </div>
                           ) : (
                             // Display for traditional strength exercise
@@ -510,7 +522,10 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
                             {exercise.distance && (
                               <div className="flex items-center gap-1">
                                 <Route size={12} />
-                                <span>Distance: {exercise.distance}</span>
+                                <span>Distance: {exercise.distance}
+                                  {/* Add unit if not already in the distance string */}
+                                  {!exercise.distance.includes('km') && !exercise.distance.includes('mi') ? ` ${distanceUnit}` : ''}
+                                </span>
                               </div>
                             )}
                             

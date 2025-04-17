@@ -177,3 +177,37 @@ export const convertWeight = (weight, fromUnit, toUnit) => {
   
   return weight; // Return original if units are invalid
 };
+
+// Get user's preferred distance unit
+export const getDistanceUnit = () => {
+  const storage = getStorage();
+  return storage.settings?.distanceUnit || 'km'; // Default to km
+};
+
+// Optional: Function to convert between distance units
+export const convertDistance = (distance, fromUnit, toUnit) => {
+  if (!distance || fromUnit === toUnit) return distance;
+  
+  // Extract numeric value and handle cases like "5 km" or "10km"
+  let numDistance = distance;
+  if (typeof distance === 'string') {
+    const match = distance.match(/^([\d.]+)/);
+    if (match) {
+      numDistance = parseFloat(match[1]);
+    } else {
+      numDistance = parseFloat(distance);
+    }
+  }
+  
+  if (isNaN(numDistance)) return distance; // Return original if not a number
+  
+  if (fromUnit === 'km' && toUnit === 'mi') {
+    // Convert km to miles (1 km ≈ 0.621371 mi)
+    return (numDistance * 0.621371).toFixed(2);
+  } else if (fromUnit === 'mi' && toUnit === 'km') {
+    // Convert miles to km (1 mi ≈ 1.60934 km)
+    return (numDistance * 1.60934).toFixed(2);
+  }
+  
+  return distance; // Return original if units are invalid
+};

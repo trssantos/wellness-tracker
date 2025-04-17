@@ -244,6 +244,9 @@ const extractWorkoutWithRegex = (jsonText, defaultParams) => {
  * @returns {string} The generated prompt
  */
 const generateWorkoutPrompt = (params) => {
+  const distanceUnit = params.preferredUnits?.distance || 'mi';
+  const weightUnit = params.preferredUnits?.weight || 'lbs';
+
   return `
     Create a detailed workout plan based on the following parameters:
     
@@ -255,6 +258,7 @@ const generateWorkoutPrompt = (params) => {
     Limitations/Health concerns: ${params.limitations || 'None specified'}
     Focus areas: ${params.focusAreas ? params.focusAreas.join(', ') : 'Full body'}
     Workout Objective: ${params.objective || 'General fitness'}
+    Preferred units: Weight in ${weightUnit}, Distance in ${distanceUnit}
     
     Please generate a complete workout with the following structure:
     - name: A clear, motivating name for this workout
@@ -301,6 +305,7 @@ const generateWorkoutPrompt = (params) => {
     - Use "isDurationBased: false" for traditional strength exercises with repetitions
     - For running, cycling, swimming, sports and similar cardio activities, include distance if appropriate
     - On outdoor cardio or sports don't mix like running and cycling in the same workout since it is not practical
+    - Use the user's preferred distance and weight units
     
     Format the response as a JSON object.
     Example:

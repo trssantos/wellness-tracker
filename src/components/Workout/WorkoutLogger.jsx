@@ -3,7 +3,7 @@ import { Activity,ArrowLeft, CheckCircle, Clock, Calendar,
          Save, Plus, Minus, Info, AlertTriangle,
          Flame, Award, Trash2, RotateCcw, Dumbbell, Route } from 'lucide-react';
 import { getWorkoutById, logWorkout, getCompletedWorkoutById } from '../../utils/workoutUtils';
-import { getStorage, getWeightUnit } from '../../utils/storage';
+import { getStorage, getWeightUnit,getDistanceUnit } from '../../utils/storage';
 
 const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCancel }) => {
   const [workout, setWorkout] = useState(null);
@@ -17,6 +17,7 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
   const [completedWorkoutId, setCompletedWorkoutId] = useState(null);
   const [originalTimestamp, setOriginalTimestamp] = useState(null);
   const [weightUnit, setWeightUnit] = useState('lbs');
+  const [distanceUnit, setDistanceUnit] = useState('mi');
   const [intensity, setIntensity] = useState('3');
 
   // Load workout details or existing log on mount
@@ -95,6 +96,7 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
 
   useEffect(() => {
     setWeightUnit(getWeightUnit());
+    setDistanceUnit(getDistanceUnit());
   }, []);
   
   // Helper function to load a workout template
@@ -605,17 +607,26 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
       <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
         Distance
       </label>
-      <input
-        type="text"
-        value={exercise.actualDistance || ''}
-        onChange={(e) => handleExerciseValueChange(index, 'actualDistance', e.target.value)}
-        className={`w-full p-2 border rounded-lg text-sm transition-colors ${
+      <div className="flex">
+        <input
+          type="text"
+          value={exercise.actualDistance || ''}
+          onChange={(e) => handleExerciseValueChange(index, 'actualDistance', e.target.value)}
+          className={`flex-1 p-2 border border-r-0 rounded-l-lg text-sm transition-colors ${
+            exercise.completed 
+              ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
+              : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
+          }`}
+          placeholder="Distance"
+        />
+        <span className={`inline-flex items-center px-3 border border-l-0 rounded-r-lg text-sm ${
           exercise.completed 
-            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-800 dark:text-slate-100' 
-            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100'
-        }`}
-        placeholder="km/mi"
-      />
+            ? 'bg-white dark:bg-slate-700 border-green-200 dark:border-green-800 text-slate-500 dark:text-slate-400' 
+            : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400'
+        }`}>
+          {distanceUnit}
+        </span>
+      </div>
     </div>
   </div>
 ) : (

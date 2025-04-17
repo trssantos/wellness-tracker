@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Calendar, CheckSquare, ArrowLeft, 
          Trash2, Dumbbell, Flame, Edit, AlertTriangle } from 'lucide-react';
-import { getStorage, setStorage, getWeightUnit } from '../../utils/storage';
+import { getStorage, setStorage, getWeightUnit, getDistanceUnit } from '../../utils/storage';
 import { getWorkoutTypesWithColors } from '../../utils/workoutUtils';
 import { formatDateForStorage } from '../../utils/dateUtils';
 import QuickLogWorkout from './QuickLogWorkout';
@@ -15,6 +15,7 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
   const [showWorkoutEditor, setShowWorkoutEditor] = useState(false);
   const [showWorkoutLogger, setShowWorkoutLogger] = useState(false);
   const [weightUnit, setWeightUnit] = useState('lbs');
+  const [distanceUnit, setDistanceUnit] = useState('mi');
 
   
   // Load workouts on mount and when refreshTrigger changes
@@ -26,6 +27,7 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
   // Add this useEffect hook to fetch the weight unit setting
   useEffect(() => {
     setWeightUnit(getWeightUnit());
+    setDistanceUnit(getDistanceUnit());
   }, []);
   
   // Load workouts from all storage locations
@@ -571,19 +573,11 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
           {exercise.isDurationBased ? (
             // For duration-based exercises with sets
             exercise.sets && exercise.sets > 1 ? 
-              // Multi-set duration exercise
-              <span>
-                {exercise.sets}×{exercise.duration || 0} {exercise.durationUnit || 'min'}
-                {exercise.timeSpent ? ` (${formatExerciseTime(exercise.timeSpent)} total)` : ''}
-                {exercise.distance ? ` - ${exercise.distance}` : ''}
-              </span> 
-              : 
-              // Single-set duration exercise
-              <span>
-                {exercise.duration || 0} {exercise.durationUnit || 'min'}
-                {exercise.timeSpent ? ` (${formatExerciseTime(exercise.timeSpent)} actual)` : ''}
-                {exercise.distance ? ` - ${exercise.distance}` : ''}
-              </span>
+                /* Multi-set duration exercise */
+                `(${exercise.sets}×${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}${exercise.timeSpent ? ` - ${formatExerciseTime(exercise.timeSpent)} total` : ''}${(exercise.actualDistance || exercise.distance) ? ` - ${exercise.actualDistance || exercise.distance}${!(exercise.actualDistance || exercise.distance).includes('km') && !(exercise.actualDistance || exercise.distance).includes('mi') ? ' ' + distanceUnit : ''}` : ''})`
+                :
+                /* Single-set duration exercise */
+                `(${exercise.actualDuration || exercise.duration || 0} ${exercise.actualDurationUnit || exercise.durationUnit || 'min'}${exercise.timeSpent ? ` - ${formatExerciseTime(exercise.timeSpent)} actual` : ''}${(exercise.actualDistance || exercise.distance) ? ` - ${exercise.actualDistance || exercise.distance}${!(exercise.actualDistance || exercise.distance).includes('km') && !(exercise.actualDistance || exercise.distance).includes('mi') ? ' ' + distanceUnit : ''}` : ''})`
           ) : (
             // Display traditional strength exercise details
             <span>

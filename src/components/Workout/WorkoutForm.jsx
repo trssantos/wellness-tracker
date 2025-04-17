@@ -4,7 +4,7 @@ import {AlertTriangle, Sun, Moon,X, ArrowLeft, Plus, Trash2, Save, Clock, Calend
          ChevronUp, RotateCcw, Heart, Route, Target,
          Users, Award, Zap, Droplet, Ruler, Gauge, Repeat, Edit } from 'lucide-react';
 import { createWorkout, updateWorkout, getWorkoutTypes, getWorkoutLocations, getEquipmentOptions } from '../../utils/workoutUtils';
-import { getWeightUnit } from '../../utils/storage';
+import { getWeightUnit, getDistanceUnit } from '../../utils/storage';
 
 const WorkoutForm = ({ workout, onSave, onCancel }) => {
   // Form state
@@ -56,11 +56,18 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
   const [activeInfoSection, setActiveInfoSection] = useState('basic');
 
   const [weightUnit, setWeightUnit] = useState('lbs');
+  const [distanceUnit, setDistanceUnit] = useState('mi');
   
   
   // Initialize form with existing workout data if editing
   useEffect(() => {
-    setWeightUnit(getWeightUnit());
+    // Get user preferences
+    const userWeightUnit = getWeightUnit();
+    const userDistanceUnit = getDistanceUnit();
+    
+    setWeightUnit(userWeightUnit);
+    setDistanceUnit(userDistanceUnit);
+    
     if (workout) {
       setFormData({
         name: workout.name || '',
@@ -75,7 +82,7 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
         limitations: workout.limitations || '',
         // Additional fields
         distance: workout.distance || '',
-        distanceUnit: workout.distanceUnit || 'km',
+        distanceUnit: workout.distanceUnit || userDistanceUnit, // Use user preference as default
         targetPace: workout.targetPace || '',
         elevation: workout.elevation || '',
         sportType: workout.sportType || '',
@@ -130,8 +137,8 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
                       onChange={handleInputChange}
                       className="w-20 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
                     >
-                      <option value="km">km</option>
-                      <option value="mi">mi</option>
+                      <option value={distanceUnit}>{distanceUnit}</option>
+                      <option value={distanceUnit === 'km' ? 'mi' : 'km'}>{distanceUnit === 'km' ? 'mi' : 'km'}</option>
                       <option value="m">m</option>
                     </select>
                   </div>
@@ -1351,18 +1358,23 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
           </div>
         </div>
         <div>
-          <label htmlFor="exercise-distance" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+        <label htmlFor="exercise-distance" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
             Distance (opt)
           </label>
-          <input
-            type="text"
-            id="exercise-distance"
-            name="distance"
-            value={currentExercise.distance}
-            onChange={handleExerciseChange}
-            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
-            placeholder="e.g., 100m"
-          />
+          <div className="flex">
+            <input
+              type="text"
+              id="exercise-distance"
+              name="distance"
+              value={currentExercise.distance}
+              onChange={handleExerciseChange}
+              className="flex-1 p-2 border border-r-0 border-slate-300 dark:border-slate-600 rounded-l-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm"
+              placeholder="Distance"
+            />
+            <span className="inline-flex items-center px-3 border border-l-0 border-slate-300 dark:border-slate-600 rounded-r-lg text-sm bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+              {distanceUnit}
+            </span>
+          </div>
         </div>
       </>
     ) : (
@@ -1514,7 +1526,7 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
                       {exercise.sets > 1 ? 
                         `${exercise.sets}×${exercise.duration} ${exercise.durationUnit || 'min'}` : 
                         `${exercise.duration} ${exercise.durationUnit || 'min'}`}
-                      {exercise.distance ? ` • ${exercise.distance} distance` : ''}
+                      {exercise.distance ? ` • ${exercise.distance}${!exercise.distance.includes('km') && !exercise.distance.includes('mi') && !exercise.distance.includes('m') ? ' ' + distanceUnit : ''} distance` : ''}
                       {exercise.restTime ? ` • ${exercise.restTime}s rest` : ''}
                     </>
                   ) : (

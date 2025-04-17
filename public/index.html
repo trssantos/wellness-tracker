@@ -11,6 +11,60 @@
     />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>ZenTrack</title>
+
+    <style>
+      /* Default light theme */
+      :root {
+        color-scheme: light;
+        --bg-color: #f8fafc; /* slate-50 */
+      }
+      
+      /* Dark theme */
+      :root.dark {
+        color-scheme: dark;
+        --bg-color: #0f172a; /* slate-900 */
+      }
+      
+      /* Apply background immediately */
+      html, body {
+        background-color: var(--bg-color);
+        transition: background-color 0.2s ease;
+      }
+      
+      /* Add transitions after initial load */
+      .theme-transition {
+        transition: background-color 0.2s ease, color 0.2s ease;
+      }
+      
+      /* Hide content until styles are loaded */
+      body.loading {
+        visibility: hidden;
+      }
+    </style>
+    
+    <script>
+      // Immediately set the initial theme before any content renders
+      (function() {
+        // Add loading class to hide content initially
+        document.body.classList.add('loading');
+        
+        // Check for saved theme preference or use system preference
+        const savedTheme = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        // Apply dark mode if explicitly saved as dark or if system prefers dark and no saved preference
+        if (savedTheme === 'dark' || (systemPrefersDark && savedTheme !== 'light')) {
+          document.documentElement.classList.add('dark');
+        }
+        
+        // Remove loading class after a tiny delay to ensure styles are applied
+        setTimeout(function() {
+          document.body.classList.remove('loading');
+          // Add transition class for future theme changes
+          document.documentElement.classList.add('theme-transition');
+        }, 10);
+      })();
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

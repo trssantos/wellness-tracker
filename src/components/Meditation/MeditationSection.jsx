@@ -542,23 +542,9 @@ const MeditationSection = () => {
           >
             <div className="flex items-center justify-center">
               <Brain size={20} />
-              <span className="ml-2 font-medium hidden sm:inline">Practice</span>
+              <span className="ml-2 font-medium hidden sm:inline">Mindfulness</span>
             </div>
             {activeTab === 'practice' && (
-              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></div>
-            )}
-          </button>
-          <button
-            className={`pb-3 px-2 relative transition-colors ${activeTab === 'analytics' 
-              ? 'text-blue-600 dark:text-blue-400' 
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
-            onClick={() => setActiveTab('analytics')}
-          >
-            <div className="flex items-center justify-center">
-              <PieChart size={20} />
-              <span className="ml-2 font-medium hidden sm:inline">Analytics</span>
-            </div>
-            {activeTab === 'analytics' && (
               <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></div>
             )}
           </button>
@@ -576,6 +562,21 @@ const MeditationSection = () => {
               <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></div>
             )}
           </button>
+          <button
+            className={`pb-3 px-2 relative transition-colors ${activeTab === 'analytics' 
+              ? 'text-blue-600 dark:text-blue-400' 
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            <div className="flex items-center justify-center">
+              <PieChart size={20} />
+              <span className="ml-2 font-medium hidden sm:inline">Analytics</span>
+            </div>
+            {activeTab === 'analytics' && (
+              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></div>
+            )}
+          </button>
+          
           <button
             className={`pb-3 px-2 relative transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100`}
             onClick={toggleVoiceSettings}

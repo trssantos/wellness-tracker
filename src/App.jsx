@@ -631,8 +631,8 @@ const handlePendingTasksAction = (action, tasks = []) => {
   return (
     <ThemeProvider>
       <WorkoutThemeProvider>
-      <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors ${isFullscreenActive ? 'fullscreen-app-mode' : ''}`}>
-        <div className="flex">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors ${isFullscreenActive ? 'fullscreen-app-mode' : ''}">
+  <div className="grid grid-cols-[auto_1fr]">
           {/* Sidebar Navigation */}
           <Sidebar 
             activeSection={activeSection} 
@@ -643,8 +643,8 @@ const handlePendingTasksAction = (action, tasks = []) => {
           />
           
           {/* Main Content Area */}
-          <div className="flex-1 md:ml-20 lg:ml-64 transition-all flex justify-center">
-            <div className="w-full max-w-4xl px-4">
+          <div className="w-full flex justify-center px-4 py-4">
+      <div className="w-full max-w-6xl">
               {/* Section Containers */}
               <SectionContainer id="overview" isActive={activeSection === 'overview'}>
                 <Overview 

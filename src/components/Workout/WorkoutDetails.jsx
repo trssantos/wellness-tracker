@@ -6,6 +6,10 @@ import WorkoutPlayerModal from './WorkoutPlayerModal';
 import WorkoutCalendar from './WorkoutCalendar';
 import { formatDateForStorage } from '../../utils/dateUtils';
 import { getWeightUnit } from '../../utils/storage';
+import WorkoutProgress from './WorkoutProgress';
+import PersonalRecords from './PersonalRecords';
+import WorkoutTypeDetails from './WorkoutTypeDetails';
+
 
 const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -349,6 +353,9 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
         )}
       </div>
 
+      {/* Workout Type Specific Information */}
+<WorkoutTypeDetails workout={workoutData} />
+
       {/* Schedule */}
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-6">
         <h3 className="font-medium text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
@@ -528,7 +535,20 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
           </div>
         </div>
       </div>
+
+       {/* Workout Progress Tracking */}
+<WorkoutProgress 
+  workout={workoutData}
+  completedWorkouts={completedWorkouts}
+/>
+
+{/* Personal Records */}
+<PersonalRecords
+  workoutType={workoutData?.type}
+  exerciseFilter={workoutData?.exercises?.map(ex => ex.name) || []}
+/>
     </>
+    
   );
 
   if (!workoutData) return null;
@@ -584,6 +604,8 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
 
       {/* Tab Content */}
       {activeTab === 'overview' ? renderOverviewTab() : renderCalendarTab()}
+
+     
 
       {/* Edit / Delete Buttons */}
       <div className="flex justify-between pt-4 border-t border-slate-200 dark:border-slate-700 mt-6">

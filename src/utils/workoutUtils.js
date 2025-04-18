@@ -115,7 +115,49 @@ export const getCompletedWorkoutById = (workoutId) => {
      notes: workoutData.notes || '',
      isTemplate: true,
      createdAt: new Date().toISOString(),
-     lastUpdated: new Date().toISOString()
+     lastUpdated: new Date().toISOString(),
+
+     // Swimming fields
+  swimStroke: workoutData.swimStroke,
+  poolLength: workoutData.poolLength,
+  swimTargetType: workoutData.swimTargetType,
+  swimTargetValue: workoutData.swimTargetValue,
+  swimGoal: workoutData.swimGoal,
+  
+  // Running/walking fields
+  runType: workoutData.runType,
+  surfaceType: workoutData.surfaceType,
+  
+  // Cycling fields
+  cyclingType: workoutData.cyclingType,
+  cyclingTargetType: workoutData.cyclingTargetType,
+  cyclingTargetValue: workoutData.cyclingTargetValue,
+  cyclingGoal: workoutData.cyclingGoal,
+  
+  // Yoga/pilates/flexibility fields
+  practiceStyle: workoutData.practiceStyle,
+  experienceLevel: workoutData.experienceLevel,
+  poseTime: workoutData.poseTime,
+  
+  // Sports fields
+  sportType: workoutData.sportType,
+  sportGoal: workoutData.sportGoal,
+  teamSize: workoutData.teamSize,
+  
+  // Boxing/martial arts fields
+  martialStyle: workoutData.martialStyle,
+  trainingType: workoutData.trainingType,
+  numRounds: workoutData.numRounds,
+  roundLength: workoutData.roundLength,
+  
+  // Strength/bodyweight/hiit/crossfit fields
+  workoutFormat: workoutData.workoutFormat,
+  restInterval: workoutData.restInterval,
+  
+  // Shared fields
+  skillLevel: workoutData.skillLevel,
+  intensityLevel: workoutData.intensityLevel,
+  focusAreas: workoutData.focusAreas || [],
    };
    
    // Add the workout to storage
@@ -784,4 +826,260 @@ export const getWorkoutTypesWithColors = () => {
     { value: 'crossfit', label: 'CrossFit', color: '#7C3AED' },
     { value: 'martial_arts', label: 'Martial Arts', color: '#D946EF' }
   ];
+};
+
+// Add these functions to src/utils/workoutUtils.js
+
+/**
+ * Get exercise progress history for a specific exercise name
+ * @param {string} exerciseName - The name of the exercise to track
+ * @param {number} limit - Maximum number of records to return
+ * @returns {Array} Array of exercise instances sorted by date
+ */
+export const getExerciseProgressHistory = (exerciseName, limit = 10) => {
+  const allWorkouts = getAllCompletedWorkouts();
+  
+  // Extract all instances of this exercise from completed workouts
+  const exerciseInstances = [];
+  
+  allWorkouts.forEach(workout => {
+    if (!workout.exercises) return;
+    
+    const matchingExercises = workout.exercises.filter(ex => 
+      ex.name.toLowerCase() === exerciseName.toLowerCase()
+    );
+    
+    if (matchingExercises.length > 0) {
+      matchingExercises.forEach(exercise => {
+        exerciseInstances.push({
+          ...exercise,
+          workoutDate: workout.completedAt || workout.timestamp || workout.date,
+          workoutName: workout.name,
+          workoutId: workout.id,
+          workoutOriginalId: workout.workoutId
+        });
+      });
+    }
+  });
+  
+  // Sort by date (newest first)
+  exerciseInstances.sort((a, b) => {
+    return new Date(b.workoutDate) - new Date(a.workoutDate);
+  });
+  
+  // Limit the results
+  return exerciseInstances.slice(0, limit);
+};
+
+/**
+ * Calculate progress metrics for a specific workout template
+ * @param {string} workoutId - The template workout ID
+ * @returns {Object} Progress metrics
+ */
+export const calculateWorkoutProgress = (workoutId) => {
+  const completedInstances = getAllCompletedWorkouts()
+    .filter(workout => workout.workoutId === workoutId)
+    .sort((a, b) => {
+      return new Date(a.completedAt || a.timestamp || a.date) - 
+             new Date(b.completedAt || b.timestamp || b.date);
+    });
+  
+  if (completedInstances.length < 2) {
+    return {
+      hasEnoughData: false,
+      totalCompletions: completedInstances.length
+    };
+  }
+  
+  // Get the first and most recent completion
+  const firstCompletion = completedInstances[0];
+  const latestCompletion = completedInstances[completedInstances.length - 1];
+  
+  // Duration trend
+  const durationChange = (latestCompletion.duration || 0) - (firstCompletion.duration || 0);
+  const durationPercentChange = firstCompletion.duration ? 
+    Math.round((durationChange / firstCompletion.duration) * 100) : 0;
+  
+  // Intensity trend
+  const getIntensityValue = (intensity) => {
+    if (!intensity) return 3;
+    if (typeof intensity === 'number') return intensity;
+    
+    switch(intensity.toLowerCase()) {
+      case 'light': case 'easy': return 1;
+      case 'moderate': return 2;
+      case 'medium': return 3;
+      case 'challenging': return 4;
+      case 'intense': case 'high': case 'maximum': return 5;
+      default: return 3;
+    }
+  };
+  
+  const firstIntensity = getIntensityValue(firstCompletion.intensity);
+  const latestIntensity = getIntensityValue(latestCompletion.intensity);
+  const intensityChange = latestIntensity - firstIntensity;
+  
+  // Exercise completion trends
+  const getCompletionRate = (workout) => {
+    if (!workout.exercises || workout.exercises.length === 0) return 100;
+    const completed = workout.exercises.filter(ex => ex.completed !== false).length;
+    return Math.round((completed / workout.exercises.length) * 100);
+  };
+  
+  const firstCompletionRate = getCompletionRate(firstCompletion);
+  const latestCompletionRate = getCompletionRate(latestCompletion);
+  const completionRateChange = latestCompletionRate - firstCompletionRate;
+  
+  // Calculate average frequency
+  const averageFrequencyDays = calculateAverageFrequency(completedInstances);
+  
+  return {
+    hasEnoughData: true,
+    totalCompletions: completedInstances.length,
+    firstDate: new Date(firstCompletion.completedAt || firstCompletion.timestamp || firstCompletion.date),
+    latestDate: new Date(latestCompletion.completedAt || latestCompletion.timestamp || latestCompletion.date),
+    duration: {
+      first: firstCompletion.duration || 0,
+      latest: latestCompletion.duration || 0,
+      change: durationChange,
+      percentChange: durationPercentChange
+    },
+    intensity: {
+      first: firstIntensity,
+      latest: latestIntensity,
+      change: intensityChange
+    },
+    completionRate: {
+      first: firstCompletionRate,
+      latest: latestCompletionRate,
+      change: completionRateChange
+    },
+    averageFrequencyDays
+  };
+};
+
+/**
+ * Calculate the average frequency between workout completions
+ * @param {Array} workouts - Array of completed workouts
+ * @returns {number} Average days between workouts
+ */
+export const calculateAverageFrequency = (workouts) => {
+  if (!workouts || workouts.length < 2) return null;
+  
+  // Extract and sort dates
+  const dates = workouts.map(workout => 
+    new Date(workout.completedAt || workout.timestamp || workout.date)
+  ).sort((a, b) => a - b);
+  
+  // Calculate total days between first and last workout
+  const firstDate = dates[0];
+  const lastDate = dates[dates.length - 1];
+  const totalDays = Math.round((lastDate - firstDate) / (1000 * 60 * 60 * 24));
+  
+  // Calculate average days between sessions
+  return Math.round(totalDays / (dates.length - 1));
+};
+
+/**
+ * Get personal records for all exercises
+ * @returns {Object} Map of exercise names to personal records
+ */
+export const getPersonalRecords = () => {
+  const allWorkouts = getAllCompletedWorkouts();
+  const records = {};
+  
+  allWorkouts.forEach(workout => {
+    if (!workout.exercises) return;
+    
+    workout.exercises.forEach(exercise => {
+      if (!exercise || !exercise.name) return;
+      
+      const name = exercise.name;
+      
+      if (!records[name]) {
+        records[name] = {
+          // For strength exercises
+          maxWeight: 0,
+          maxReps: 0,
+          maxVolume: 0, // sets * reps * weight
+          // For duration exercises
+          maxDuration: 0,
+          maxDistance: 0,
+          bestPace: null,
+          // Metadata
+          isDurationBased: exercise.isDurationBased || false,
+          date: workout.completedAt || workout.timestamp || workout.date,
+          workoutId: workout.id
+        };
+      }
+      
+      const date = new Date(workout.completedAt || workout.timestamp || workout.date);
+      
+      // Update strength records
+      if (!exercise.isDurationBased) {
+        const weight = parseFloat(exercise.actualWeight || exercise.weight || 0);
+        const reps = parseInt(exercise.actualReps || exercise.reps || 0);
+        const sets = parseInt(exercise.actualSets || exercise.sets || 0);
+        const volume = sets * reps * weight;
+        
+        // Update max weight
+        if (weight > records[name].maxWeight) {
+          records[name].maxWeight = weight;
+          records[name].maxWeightDate = date;
+        }
+        
+        // Update max reps
+        if (reps > records[name].maxReps) {
+          records[name].maxReps = reps;
+          records[name].maxRepsDate = date;
+        }
+        
+        // Update max volume
+        if (volume > records[name].maxVolume && weight > 0) {
+          records[name].maxVolume = volume;
+          records[name].maxVolumeDate = date;
+        }
+      } 
+      // Update duration-based records
+      else {
+        const duration = parseInt(exercise.actualDuration || exercise.duration || 0);
+        const durationInSeconds = (exercise.actualDurationUnit || exercise.durationUnit || 'min') === 'min' ? 
+          duration * 60 : duration;
+        
+        // Try to parse distance if available
+        let distance = 0;
+        if (exercise.actualDistance || exercise.distance) {
+          const distanceStr = exercise.actualDistance || exercise.distance;
+          const match = distanceStr.match(/\d+(\.\d+)?/);
+          if (match) {
+            distance = parseFloat(match[0]);
+          }
+        }
+        
+        // Calculate pace (time per distance unit)
+        const pace = distance > 0 && durationInSeconds > 0 ? 
+          durationInSeconds / distance : null;
+        
+        // Update max duration
+        if (durationInSeconds > records[name].maxDuration) {
+          records[name].maxDuration = durationInSeconds;
+          records[name].maxDurationDate = date;
+        }
+        
+        // Update max distance
+        if (distance > records[name].maxDistance) {
+          records[name].maxDistance = distance;
+          records[name].maxDistanceDate = date;
+        }
+        
+        // Update best pace (lower is better)
+        if (pace && (records[name].bestPace === null || pace < records[name].bestPace)) {
+          records[name].bestPace = pace;
+          records[name].bestPaceDate = date;
+        }
+      }
+    });
+  });
+  
+  return records;
 };

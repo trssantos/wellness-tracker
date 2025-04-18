@@ -95,6 +95,7 @@ const WorkoutSummary = ({
       distanceUnit: distanceUnit,
       incline: incline || null,
       intensity: intensity,
+      completionRate: completedCount / exerciseCount * 100,
       waterBreaksTaken: waterBreaksTaken ? parseInt(waterBreaksTaken) : 0,
       notes
     };

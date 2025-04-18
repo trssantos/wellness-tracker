@@ -9,6 +9,7 @@ import { getWeightUnit, getDistanceUnit } from '../../utils/storage';
 const WorkoutForm = ({ workout, onSave, onCancel }) => {
   // Form state
   const [formData, setFormData] = useState({
+    // Existing fields
     name: '',
     type: 'strength',
     location: 'gym',
@@ -19,17 +20,54 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
     exercises: [],
     notes: '',
     limitations: '',
-    // Additional fields for specific workout types
+    
+    // New fields for swimming
+    swimStroke: 'freestyle',
+    poolLength: '25m',
+    swimTargetType: 'laps',
+    swimTargetValue: '',
+    swimGoal: 'technique',
+    
+    // New fields for running/walking
+    runType: 'steady',
+    surfaceType: 'road',
+    
+    // New fields for cycling
+    cyclingType: 'road',
+    cyclingTargetType: 'speed',
+    cyclingTargetValue: '',
+    cyclingGoal: 'endurance',
+    
+    // New fields for yoga/pilates/flexibility
+    practiceStyle: '',
+    experienceLevel: 'beginner',
+    poseTime: 'mixed',
+    
+    // New fields for sports
+    sportType: '',
+    sportGoal: 'game',
+    teamSize: '',
+    skillLevel: 'intermediate',
+    
+    // New fields for boxing/martial arts
+    martialStyle: '',
+    trainingType: 'technical',
+    numRounds: 3,
+    roundLength: 3,
+    
+    // New fields for strength/bodyweight/hiit/crossfit
+    workoutFormat: '',
+    restInterval: 'medium',
+    
+    // Other shared fields
+    focusAreas: [],
+    intensityLevel: 'moderate',
+    
+    // Existing cardio-specific fields
     distance: '',
     distanceUnit: 'km',
     targetPace: '',
     elevation: '',
-    sportType: '',
-    skillLevel: 'intermediate',
-    intensityLevel: 'moderate',
-    style: '',
-    teamSize: '',
-    focusAreas: []
   });
   
   const [errors, setErrors] = useState({});
@@ -98,323 +136,425 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
   
   
   // Get form fields based on workout type
-  const getTypeSpecificFields = () => {
-    switch(formData.type) {
-      case 'running':
-      case 'cycling':
-      case 'swimming':
-      case 'walking':
-      case 'cardio':
-        return (
-          <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 w-full">
-            <h4 className="font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-4">
-              <Route size={16} />
-              Cardio Information
-            </h4>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex gap-3 items-start">
-                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
-                  <Ruler size={18} className="text-blue-500 dark:text-blue-400" />
-                </div>
-                <div className="flex-1">
-                  <label htmlFor="distance" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Target Distance
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      id="distance"
-                      name="distance"
-                      value={formData.distance}
-                      onChange={handleInputChange}
-                      className="flex-1 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                      placeholder="e.g., 5.0"
-                    />
-                    <select
-                      name="distanceUnit"
-                      value={formData.distanceUnit}
-                      onChange={handleInputChange}
-                      className="w-20 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                    >
-                      <option value={distanceUnit}>{distanceUnit}</option>
-                      <option value={distanceUnit === 'km' ? 'mi' : 'km'}>{distanceUnit === 'km' ? 'mi' : 'km'}</option>
-                      <option value="m">m</option>
-                    </select>
-                  </div>
-                </div>
+const getTypeSpecificFields = () => {
+  switch(formData.type) {
+    case 'swimming':
+      return (
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 w-full">
+          <h4 className="font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-4">
+            <Droplet size={16} />
+            Swimming Information
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                <Droplet size={18} className="text-blue-500 dark:text-blue-400" />
               </div>
-              
-              <div className="flex gap-3 items-start">
-                <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
-                  <Gauge size={18} className="text-green-500 dark:text-green-400" />
-                </div>
-                <div className="flex-1">
-                  <label htmlFor="targetPace" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Target Pace
-                  </label>
+              <div className="flex-1">
+                <label htmlFor="swimStroke" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Primary Stroke
+                </label>
+                <select
+                  id="swimStroke"
+                  name="swimStroke"
+                  value={formData.swimStroke || 'freestyle'}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="freestyle">Freestyle</option>
+                  <option value="breaststroke">Breaststroke</option>
+                  <option value="backstroke">Backstroke</option>
+                  <option value="butterfly">Butterfly</option>
+                  <option value="medley">Individual Medley</option>
+                  <option value="mixed">Mixed</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center flex-shrink-0">
+                <Route size={18} className="text-cyan-500 dark:text-cyan-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="poolLength" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Pool Length
+                </label>
+                <select
+                  id="poolLength"
+                  name="poolLength"
+                  value={formData.poolLength || '25m'}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="25m">25 meters</option>
+                  <option value="50m">50 meters</option>
+                  <option value="25yd">25 yards</option>
+                  <option value="33yd">33 yards</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
+                <Activity size={18} className="text-indigo-500 dark:text-indigo-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="swimTargetType" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Target Metric
+                </label>
+                <div className="flex">
+                  <select
+                    id="swimTargetType"
+                    name="swimTargetType"
+                    value={formData.swimTargetType || 'laps'}
+                    onChange={handleInputChange}
+                    className="w-1/3 p-2 border border-r-0 border-slate-300 dark:border-slate-600 rounded-l-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                  >
+                    <option value="laps">Laps</option>
+                    <option value="distance">Distance</option>
+                    <option value="time">Time</option>
+                  </select>
                   <input
                     type="text"
-                    id="targetPace"
-                    name="targetPace"
-                    value={formData.targetPace}
+                    id="swimTargetValue"
+                    name="swimTargetValue"
+                    value={formData.swimTargetValue || ''}
                     onChange={handleInputChange}
-                    className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                    placeholder={formData.distanceUnit === 'km' ? "min/km (e.g., 5:30)" : "min/mile (e.g., 8:45)"}
+                    className="w-2/3 p-2 border border-slate-300 dark:border-slate-600 rounded-r-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    placeholder={formData.swimTargetType === 'laps' ? "Number of laps" : formData.swimTargetType === 'distance' ? "Distance" : "Time (min:sec)"}
                   />
                 </div>
               </div>
-              
-              <div className="flex gap-3 items-start">
-                <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
-                  <Target size={18} className="text-purple-500 dark:text-purple-400" />
-                </div>
-                <div className="flex-1">
-                  <label htmlFor="intensityLevel" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Intensity Level
-                  </label>
-                  <select
-                    id="intensityLevel"
-                    name="intensityLevel"
-                    value={formData.intensityLevel}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                  >
-                    <option value="easy">Easy</option>
-                    <option value="moderate">Moderate</option>
-                    <option value="challenging">Challenging</option>
-                    <option value="intense">Intense</option>
-                    <option value="maximum">Maximum</option>
-                  </select>
-                </div>
-              </div>
-              
-              {(formData.type === 'running' || formData.type === 'cycling') && (
-                <div className="flex gap-3 items-start">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
-                    <Activity size={18} className="text-amber-500 dark:text-amber-400" />
-                  </div>
-                  <div className="flex-1">
-                    <label htmlFor="elevation" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Elevation Gain
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        id="elevation"
-                        name="elevation"
-                        value={formData.elevation}
-                        onChange={handleInputChange}
-                        className="w-full p-2 pr-12 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                        placeholder="e.g., 150"
-                      />
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 dark:text-slate-400">
-                        {formData.distanceUnit === 'mi' ? 'ft' : 'm'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
-          </div>
-        );
-        
-        case 'strength':
-            case 'bodyweight':
-            case 'hiit':
-            case 'crossfit':
-              return (
-                <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 w-full">
-                  <h4 className="font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-4">
-                    <Dumbbell size={16} />
-                    Strength Training Information
-                  </h4>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex gap-3 items-start">
-                      <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
-                        <Target size={18} className="text-red-500 dark:text-red-400" />
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                          Focus Areas
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {['Upper Body', 'Lower Body', 'Core', 'Full Body', 'Push', 'Pull', 'Legs'].map(focus => (
-                            <button
-                              key={focus}
-                              type="button"
-                              onClick={() => handleFocusAreaToggle(focus)}
-                              className={`px-3 py-1 rounded-full text-xs transition-colors ${
-                                formData.focusAreas.includes(focus)
-                                  ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
-                                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
-                              }`}
-                            >
-                              {focus}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-3 items-start">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
-                        <Repeat size={18} className="text-amber-500 dark:text-amber-400" />
-                      </div>
-                      <div className="flex-1">
-                        <label htmlFor="style" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                          Training Style
-                        </label>
-                        <select
-                          id="style"
-                          name="style"
-                          value={formData.style}
-                          onChange={handleInputChange}
-                          className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                        >
-                          <option value="">Select Style</option>
-                          <option value="circuit">Circuit Training</option>
-                          <option value="supersets">Supersets</option>
-                          <option value="pyramid">Pyramid Sets</option>
-                          <option value="dropsets">Drop Sets</option>
-                          <option value="standard">Standard Sets</option>
-                          <option value="emom">Every Minute on the Minute (EMOM)</option>
-                          <option value="amrap">As Many Rounds as Possible (AMRAP)</option>
-                          <option value="tabata">Tabata</option>
-                        </select>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-3 items-start">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
-                        <Zap size={18} className="text-purple-500 dark:text-purple-400" />
-                      </div>
-                      <div className="flex-1">
-                        <label htmlFor="intensityLevel" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                          Intensity Level
-                        </label>
-                        <select
-                          id="intensityLevel"
-                          name="intensityLevel"
-                          value={formData.intensityLevel}
-                          onChange={handleInputChange}
-                          className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                        >
-                          <option value="easy">Easy</option>
-                          <option value="moderate">Moderate</option>
-                          <option value="challenging">Challenging</option>
-                          <option value="intense">Intense</option>
-                          <option value="maximum">Maximum</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-        
-      case 'sports':
-      case 'boxing':
-      case 'martial_arts':
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-            <h4 className="col-span-full font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-2">
-              <Award size={16} />
-              Sport Information
-            </h4>
             
             <div className="flex gap-3 items-start">
               <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
-                <Activity size={18} className="text-green-500 dark:text-green-400" />
+                <Target size={18} className="text-green-500 dark:text-green-400" />
               </div>
               <div className="flex-1">
-                <label htmlFor="sportType" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Sport Type
+                <label htmlFor="swimGoal" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Workout Goal
                 </label>
-                <input
-                  type="text"
-                  id="sportType"
-                  name="sportType"
-                  value={formData.sportType}
+                <select
+                  id="swimGoal"
+                  name="swimGoal"
+                  value={formData.swimGoal || 'technique'}
                   onChange={handleInputChange}
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                  placeholder="e.g., Basketball, Tennis, Boxing"
-                />
+                >
+                  <option value="endurance">Endurance</option>
+                  <option value="speed">Speed</option>
+                  <option value="technique">Technique</option>
+                  <option value="recovery">Recovery</option>
+                  <option value="mixed">Mixed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+    case 'running':
+    case 'walking':
+      return (
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 w-full">
+          <h4 className="font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-4">
+            <Route size={16} />
+            {formData.type === 'running' ? 'Running' : 'Walking'} Information
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                <Route size={18} className="text-blue-500 dark:text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="runType" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Workout Type
+                </label>
+                <select
+                  id="runType"
+                  name="runType"
+                  value={formData.runType || 'steady'}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="steady">Steady State</option>
+                  <option value="intervals">Intervals</option>
+                  <option value="tempo">Tempo</option>
+                  <option value="fartlek">Fartlek</option>
+                  <option value="hills">Hills</option>
+                  <option value="recovery">Recovery</option>
+                  {formData.type === 'walking' && <option value="power">Power Walking</option>}
+                  {formData.type === 'walking' && <option value="hiking">Hiking</option>}
+                </select>
               </div>
             </div>
             
             <div className="flex gap-3 items-start">
-              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
-                <Users size={18} className="text-blue-500 dark:text-blue-400" />
+              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
+                <Gauge size={18} className="text-green-500 dark:text-green-400" />
               </div>
               <div className="flex-1">
-                <label htmlFor="teamSize" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Team Size
+                <label htmlFor="targetPace" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Target Pace
                 </label>
                 <input
                   type="text"
-                  id="teamSize"
-                  name="teamSize"
-                  value={formData.teamSize}
+                  id="targetPace"
+                  name="targetPace"
+                  value={formData.targetPace}
                   onChange={handleInputChange}
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                  placeholder="e.g., Solo, 2v2, 5v5"
+                  placeholder={formData.distanceUnit === 'km' ? "min/km (e.g., 5:30)" : "min/mile (e.g., 8:45)"}
                 />
               </div>
             </div>
             
             <div className="flex gap-3 items-start">
               <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
-                <Award size={18} className="text-purple-500 dark:text-purple-400" />
+                <Target size={18} className="text-purple-500 dark:text-purple-400" />
               </div>
               <div className="flex-1">
-                <label htmlFor="skillLevel" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Skill Level
+                <label htmlFor="intensityLevel" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Intensity Level
                 </label>
                 <select
-                  id="skillLevel"
-                  name="skillLevel"
-                  value={formData.skillLevel}
+                  id="intensityLevel"
+                  name="intensityLevel"
+                  value={formData.intensityLevel}
                   onChange={handleInputChange}
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
                 >
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                  <option value="expert">Expert</option>
+                  <option value="easy">Easy</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="challenging">Challenging</option>
+                  <option value="intense">Intense</option>
+                  <option value="maximum">Maximum</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+                <Activity size={18} className="text-amber-500 dark:text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="surfaceType" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Surface Type
+                </label>
+                <select
+                  id="surfaceType"
+                  name="surfaceType"
+                  value={formData.surfaceType || 'road'}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="road">Road</option>
+                  <option value="track">Track</option>
+                  <option value="trail">Trail</option>
+                  <option value="treadmill">Treadmill</option>
+                  <option value="beach">Beach</option>
+                  <option value="mixed">Mixed Terrain</option>
                 </select>
               </div>
             </div>
           </div>
-        );
-        
-      case 'yoga':
-      case 'pilates':
-      case 'flexibility':
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-            <h4 className="col-span-full font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-2">
-              <Droplet size={16} />
-              Flexibility & Mindfulness
-            </h4>
+        </div>
+      );
+      
+    case 'cycling':
+      return (
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 w-full">
+          <h4 className="font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-4">
+            <Route size={16} />
+            Cycling Information
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                <Route size={18} className="text-blue-500 dark:text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="cyclingType" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Cycling Type
+                </label>
+                <select
+                  id="cyclingType"
+                  name="cyclingType"
+                  value={formData.cyclingType || 'road'}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="road">Road Cycling</option>
+                  <option value="mountain">Mountain Biking</option>
+                  <option value="gravel">Gravel Riding</option>
+                  <option value="stationary">Stationary Bike</option>
+                  <option value="spin">Spin Class</option>
+                  <option value="commute">Commuting</option>
+                </select>
+              </div>
+            </div>
             
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
+                <Gauge size={18} className="text-green-500 dark:text-green-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="targetMetric" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Target Metric
+                </label>
+                <div className="flex">
+                  <select
+                    id="cyclingTargetType"
+                    name="cyclingTargetType"
+                    value={formData.cyclingTargetType || 'speed'}
+                    onChange={handleInputChange}
+                    className="w-1/3 p-2 border border-r-0 border-slate-300 dark:border-slate-600 rounded-l-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                  >
+                    <option value="speed">Speed</option>
+                    <option value="power">Power</option>
+                    <option value="cadence">Cadence</option>
+                    <option value="hr">Heart Rate</option>
+                  </select>
+                  <input
+                    type="text"
+                    id="cyclingTargetValue"
+                    name="cyclingTargetValue"
+                    value={formData.cyclingTargetValue || ''}
+                    onChange={handleInputChange}
+                    className="w-2/3 p-2 border border-slate-300 dark:border-slate-600 rounded-r-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    placeholder={
+                      formData.cyclingTargetType === 'speed' ? `km/h or mph` :
+                      formData.cyclingTargetType === 'power' ? "watts" :
+                      formData.cyclingTargetType === 'cadence' ? "rpm" : "bpm"
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+                <Activity size={18} className="text-amber-500 dark:text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="elevation" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Elevation Gain
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="elevation"
+                    name="elevation"
+                    value={formData.elevation}
+                    onChange={handleInputChange}
+                    className="w-full p-2 pr-12 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    placeholder="e.g., 500"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 dark:text-slate-400">
+                    {formData.distanceUnit === 'mi' ? 'ft' : 'm'}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
+                <Target size={18} className="text-purple-500 dark:text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="cyclingGoal" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Workout Goal
+                </label>
+                <select
+                  id="cyclingGoal"
+                  name="cyclingGoal"
+                  value={formData.cyclingGoal || 'endurance'}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="endurance">Endurance</option>
+                  <option value="speed">Speed</option>
+                  <option value="intervals">Intervals</option>
+                  <option value="recovery">Recovery</option>
+                  <option value="hill">Hill Training</option>
+                  <option value="technique">Technique</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+      
+    case 'yoga':
+    case 'pilates':
+    case 'flexibility':
+      return (
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 w-full">
+          <h4 className="font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-4">
+            <Droplet size={16} />
+            {formData.type === 'yoga' ? 'Yoga' : 
+             formData.type === 'pilates' ? 'Pilates' : 'Flexibility'} Details
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex gap-3 items-start">
               <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center flex-shrink-0">
                 <Droplet size={18} className="text-teal-500 dark:text-teal-400" />
               </div>
               <div className="flex-1">
-                <label htmlFor="style" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <label htmlFor="practiceStyle" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Style/Approach
                 </label>
-                <input
-                  type="text"
-                  id="style"
-                  name="style"
-                  value={formData.style}
+                <select
+                  id="practiceStyle"
+                  name="practiceStyle"
+                  value={formData.practiceStyle || ''}
                   onChange={handleInputChange}
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                  placeholder="e.g., Vinyasa, Hatha, Restorative"
-                />
+                >
+                  {formData.type === 'yoga' && (
+                    <>
+                      <option value="">Select Style</option>
+                      <option value="vinyasa">Vinyasa</option>
+                      <option value="hatha">Hatha</option>
+                      <option value="yin">Yin</option>
+                      <option value="ashtanga">Ashtanga</option>
+                      <option value="restorative">Restorative</option>
+                      <option value="power">Power Yoga</option>
+                      <option value="kundalini">Kundalini</option>
+                      <option value="bikram">Bikram/Hot Yoga</option>
+                    </>
+                  )}
+                  
+                  {formData.type === 'pilates' && (
+                    <>
+                      <option value="">Select Style</option>
+                      <option value="mat">Mat Pilates</option>
+                      <option value="reformer">Reformer</option>
+                      <option value="classical">Classical</option>
+                      <option value="contemporary">Contemporary</option>
+                      <option value="clinical">Clinical Pilates</option>
+                      <option value="stott">STOTT Pilates</option>
+                    </>
+                  )}
+                  
+                  {formData.type === 'flexibility' && (
+                    <>
+                      <option value="">Select Style</option>
+                      <option value="static">Static Stretching</option>
+                      <option value="dynamic">Dynamic Stretching</option>
+                      <option value="pnf">PNF Stretching</option>
+                      <option value="ballistic">Ballistic Stretching</option>
+                      <option value="mobility">Mobility Work</option>
+                      <option value="foam">Foam Rolling</option>
+                    </>
+                  )}
+                </select>
               </div>
             </div>
             
@@ -427,7 +567,7 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
                   Focus Areas
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {['Strength', 'Flexibility', 'Balance', 'Relaxation', 'Meditation', 'Core', 'Recovery'].map(focus => (
+                  {['Strength', 'Flexibility', 'Balance', 'Relaxation', 'Core', 'Back', 'Hips', 'Recovery', 'Mind-Body'].map(focus => (
                     <button
                       key={focus}
                       type="button"
@@ -450,6 +590,492 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
                 <Heart size={18} className="text-blue-500 dark:text-blue-400" />
               </div>
               <div className="flex-1">
+                <label htmlFor="experienceLevel" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Experience Level
+                </label>
+                <select
+                  id="experienceLevel"
+                  name="experienceLevel"
+                  value={formData.experienceLevel || 'beginner'}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
+                <Clock size={18} className="text-green-500 dark:text-green-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="poseTime" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  {formData.type === 'yoga' ? 'Average Pose Hold' : 
+                   formData.type === 'pilates' ? 'Rep Timing' : 
+                   'Stretch Duration'}
+                </label>
+                <select
+                  id="poseTime"
+                  name="poseTime"
+                  value={formData.poseTime || 'mixed'}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="short">Short (10-20 sec)</option>
+                  <option value="medium">Medium (30-60 sec)</option>
+                  <option value="long">Long (1-3 min)</option>
+                  <option value="mixed">Mixed Durations</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+    case 'sports':
+      return (
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 w-full">
+          <h4 className="font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-4">
+            <Award size={16} />
+            Sports Information
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
+                <Activity size={18} className="text-green-500 dark:text-green-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="sportType" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Sport Type
+                </label>
+                <select
+                  id="sportType"
+                  name="sportType"
+                  value={formData.sportType || ''}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="">Select Sport</option>
+                  <option value="basketball">Basketball</option>
+                  <option value="soccer">Soccer/Football</option>
+                  <option value="tennis">Tennis</option>
+                  <option value="baseball">Baseball</option>
+                  <option value="volleyball">Volleyball</option>
+                  <option value="badminton">Badminton</option>
+                  <option value="golf">Golf</option>
+                  <option value="hockey">Hockey</option>
+                  <option value="cricket">Cricket</option>
+                  <option value="rugby">Rugby</option>
+                  <option value="tabletennis">Table Tennis</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Conditionally show sport-specific fields based on selected sportType */}
+            {formData.sportType && (
+              <div className="flex gap-3 items-start">
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                  <Target size={18} className="text-blue-500 dark:text-blue-400" />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="sportGoal" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Activity Focus
+                  </label>
+                  {formData.sportType === 'basketball' && (
+                    <select
+                      id="sportGoal"
+                      name="sportGoal"
+                      value={formData.sportGoal || 'game'}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    >
+                      <option value="game">Full Game</option>
+                      <option value="practice">Team Practice</option>
+                      <option value="shooting">Shooting Drills</option>
+                      <option value="defensive">Defensive Drills</option>
+                      <option value="conditioning">Conditioning</option>
+                      <option value="pickup">Pickup Game</option>
+                    </select>
+                  )}
+                  
+                  {formData.sportType === 'tennis' && (
+                    <select
+                      id="sportGoal"
+                      name="sportGoal"
+                      value={formData.sportGoal || 'match'}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    >
+                      <option value="match">Match Play</option>
+                      <option value="rallying">Rallying</option>
+                      <option value="serves">Serve Practice</option>
+                      <option value="groundstrokes">Groundstrokes</option>
+                      <option value="volley">Volley Practice</option>
+                      <option value="drills">Drills</option>
+                    </select>
+                  )}
+                  
+                  {formData.sportType === 'soccer' && (
+                    <select
+                      id="sportGoal"
+                      name="sportGoal"
+                      value={formData.sportGoal || 'match'}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    >
+                      <option value="match">Full Match</option>
+                      <option value="practice">Team Practice</option>
+                      <option value="shooting">Shooting Practice</option>
+                      <option value="drill">Drills</option>
+                      <option value="conditioning">Conditioning</option>
+                      <option value="pickup">Pickup Game</option>
+                    </select>
+                  )}
+                  
+                  {(formData.sportType !== 'basketball' && formData.sportType !== 'tennis' && formData.sportType !== 'soccer') && (
+                    <select
+                      id="sportGoal"
+                      name="sportGoal"
+                      value={formData.sportGoal || 'game'}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    >
+                      <option value="game">Full Game/Match</option>
+                      <option value="practice">Practice</option>
+                      <option value="skills">Skills Training</option>
+                      <option value="drills">Drills</option>
+                      <option value="casual">Casual Play</option>
+                    </select>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                <Users size={18} className="text-blue-500 dark:text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="teamSize" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Team Size
+                </label>
+                <select
+                  id="teamSize"
+                  name="teamSize"
+                  value={formData.teamSize || ''}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="">Select Format</option>
+                  <option value="solo">Solo/Individual</option>
+                  <option value="1v1">1v1</option>
+                  <option value="2v2">2v2</option>
+                  <option value="3v3">3v3</option>
+                  <option value="4v4">4v4</option>
+                  <option value="5v5">5v5</option>
+                  <option value="6v6">6v6</option>
+                  <option value="7v7">7v7</option>
+                  <option value="11v11">11v11</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
+                <Award size={18} className="text-purple-500 dark:text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="skillLevel" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Skill Level
+                </label>
+                <select
+                  id="skillLevel"
+                  name="skillLevel"
+                  value={formData.skillLevel}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                  <option value="competitive">Competitive</option>
+                  <option value="professional">Professional</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+      
+    case 'boxing':
+    case 'martial_arts':
+      return (
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 w-full">
+          <h4 className="font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-4">
+            <Activity size={16} />
+            {formData.type === 'boxing' ? 'Boxing' : 'Martial Arts'} Information
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
+                <Activity size={18} className="text-red-500 dark:text-red-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="martialStyle" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  {formData.type === 'boxing' ? 'Boxing Style' : 'Martial Art Style'}
+                </label>
+                <select
+                  id="martialStyle"
+                  name="martialStyle"
+                  value={formData.martialStyle || ''}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  {formData.type === 'boxing' ? (
+                    <>
+                      <option value="">Select Style</option>
+                      <option value="conventional">Conventional Boxing</option>
+                      <option value="kickboxing">Kickboxing</option>
+                      <option value="muaythai">Muay Thai</option>
+                      <option value="cardioboxing">Cardio Boxing</option>
+                      <option value="fitness">Boxing Fitness</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="">Select Style</option>
+                      <option value="karate">Karate</option>
+                      <option value="taekwondo">Taekwondo</option>
+                      <option value="judo">Judo</option>
+                      <option value="bjj">Brazilian Jiu-Jitsu</option>
+                      <option value="kung-fu">Kung Fu</option>
+                      <option value="mma">Mixed Martial Arts (MMA)</option>
+                      <option value="krav-maga">Krav Maga</option>
+                      <option value="capoeira">Capoeira</option>
+                      <option value="other">Other</option>
+                    </>
+                  )}
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
+                <Target size={18} className="text-orange-500 dark:text-orange-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="trainingType" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Training Type
+                </label>
+                <select
+                  id="trainingType"
+                  name="trainingType"
+                  value={formData.trainingType || 'technical'}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="technical">Technical Training</option>
+                  <option value="conditioning">Conditioning</option>
+                  <option value="sparring">Sparring</option>
+                  <option value="bagwork">Bag Work</option>
+                  <option value="padwork">Pad Work</option>
+                  <option value="shadowboxing">Shadow Boxing/Forms</option>
+                  <option value="competition">Competition Prep</option>
+                  <option value="class">Group Class</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                <Clock size={18} className="text-blue-500 dark:text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="roundFormat" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Round Format
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col">
+                    <label htmlFor="numRounds" className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      Number of Rounds
+                    </label>
+                    <input
+                      type="number"
+                      id="numRounds"
+                      name="numRounds"
+                      value={formData.numRounds || 3}
+                      onChange={handleInputChange}
+                      className="p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                      min="1"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label htmlFor="roundLength" className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                      Minutes per Round
+                    </label>
+                    <input
+                      type="number"
+                      id="roundLength"
+                      name="roundLength"
+                      value={formData.roundLength || 3}
+                      onChange={handleInputChange}
+                      className="p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                      min="1"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
+                <Award size={18} className="text-purple-500 dark:text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="skillLevel" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Skill Level
+                </label>
+                <select
+                  id="skillLevel"
+                  name="skillLevel"
+                  value={formData.skillLevel}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                  <option value="competitive">Competitive</option>
+                  <option value="professional">Professional</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+    case 'strength':
+    case 'bodyweight':
+    case 'hiit':
+    case 'crossfit':
+      return (
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 w-full">
+          <h4 className="font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-4">
+            <Dumbbell size={16} />
+            {formData.type === 'strength' ? 'Strength Training' : 
+             formData.type === 'bodyweight' ? 'Bodyweight' :
+             formData.type === 'hiit' ? 'HIIT' : 'CrossFit'} Information
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
+                <Target size={18} className="text-red-500 dark:text-red-400" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Focus Areas
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {['Upper Body', 'Lower Body', 'Core', 'Full Body', 'Push', 'Pull', 'Legs', 'Cardio', 'Endurance', 'Power'].map(focus => (
+                    <button
+                      key={focus}
+                      type="button"
+                      onClick={() => handleFocusAreaToggle(focus)}
+                      className={`px-3 py-1 rounded-full text-xs transition-colors ${
+                        formData.focusAreas.includes(focus)
+                          ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+                          : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
+                      }`}
+                    >
+                      {focus}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+                <Repeat size={18} className="text-amber-500 dark:text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="workoutFormat" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Workout Format
+                </label>
+                <select
+                  id="workoutFormat"
+                  name="workoutFormat"
+                  value={formData.workoutFormat || ''}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  {formData.type === 'strength' && (
+                    <>
+                      <option value="">Select Format</option>
+                      <option value="standard">Standard Sets</option>
+                      <option value="supersets">Supersets</option>
+                      <option value="circuits">Circuit Training</option>
+                      <option value="pyramid">Pyramid Sets</option>
+                      <option value="dropsets">Drop Sets</option>
+                      <option value="gvt">German Volume Training</option>
+                      <option value="rest-pause">Rest-Pause Training</option>
+                    </>
+                  )}
+                  
+                  {formData.type === 'bodyweight' && (
+                    <>
+                      <option value="">Select Format</option>
+                      <option value="standard">Standard Sets</option>
+                      <option value="circuit">Circuit Training</option>
+                      <option value="emom">Every Minute on the Minute</option>
+                      <option value="amrap">As Many Rounds As Possible</option>
+                      <option value="tabata">Tabata</option>
+                      <option value="ladder">Ladder Format</option>
+                    </>
+                  )}
+                  
+                  {formData.type === 'hiit' && (
+                    <>
+                      <option value="">Select Format</option>
+                      <option value="tabata">Tabata (20/10)</option>
+                      <option value="30-30">30s Work/30s Rest</option>
+                      <option value="40-20">40s Work/20s Rest</option>
+                      <option value="amrap">AMRAP</option>
+                      <option value="emom">EMOM</option>
+                      <option value="ladder">Ladder Format</option>
+                      <option value="sprint">Sprint Intervals</option>
+                    </>
+                  )}
+                  
+                  {formData.type === 'crossfit' && (
+                    <>
+                      <option value="">Select Format</option>
+                      <option value="wod">WOD</option>
+                      <option value="amrap">AMRAP</option>
+                      <option value="emom">EMOM</option>
+                      <option value="rft">Rounds for Time</option>
+                      <option value="chipper">Chipper</option>
+                      <option value="tabata">Tabata</option>
+                      <option value="strength">Strength Focus</option>
+                      <option value="metcon">Metabolic Conditioning</option>
+                    </>
+                  )}
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
+                <Zap size={18} className="text-purple-500 dark:text-purple-400" />
+              </div>
+              <div className="flex-1">
                 <label htmlFor="intensityLevel" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Intensity Level
                 </label>
@@ -460,21 +1086,133 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
                   onChange={handleInputChange}
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
                 >
-                  <option value="gentle">Gentle</option>
                   <option value="easy">Easy</option>
                   <option value="moderate">Moderate</option>
                   <option value="challenging">Challenging</option>
                   <option value="intense">Intense</option>
+                  <option value="maximum">Maximum</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                <Clock size={18} className="text-blue-500 dark:text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="restInterval" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Rest Intervals
+                </label>
+                <select
+                  id="restInterval"
+                  name="restInterval"
+                  value={formData.restInterval || 'medium'}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="short">Short (30s or less)</option>
+                  <option value="medium">Medium (30-90s)</option>
+                  <option value="long">Long (90s-3min)</option>
+                  <option value="very-long">Very Long (3+ min)</option>
+                  <option value="variable">Variable</option>
+                  {formData.type === 'hiit' && <option value="work-based">Work-based (e.g., 1:1 ratio)</option>}
                 </select>
               </div>
             </div>
           </div>
-        );
+        </div>
+      );
       
-      default:
-        return null;
-    }
-  };
+    // Add a default case for any other workout types
+    default:
+      return (
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800 w-full">
+          <h4 className="font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2 mb-4">
+            <Route size={16} />
+            Cardio Information
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                <Ruler size={18} className="text-blue-500 dark:text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="distance" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Target Distance
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    id="distance"
+                    name="distance"
+                    value={formData.distance}
+                    onChange={handleInputChange}
+                    className="flex-1 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    placeholder="e.g., 5.0"
+                  />
+                  <select
+                    name="distanceUnit"
+                    value={formData.distanceUnit}
+                    onChange={handleInputChange}
+                    className="w-20 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                  >
+                    <option value="km">km</option>
+                    <option value="mi">mi</option>
+                    <option value="m">m</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
+                <Gauge size={18} className="text-green-500 dark:text-green-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="targetPace" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Target Pace
+                </label>
+                <input
+                  type="text"
+                  id="targetPace"
+                  name="targetPace"
+                  value={formData.targetPace}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                  placeholder={formData.distanceUnit === 'km' ? "min/km (e.g., 5:30)" : "min/mile (e.g., 8:45)"}
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
+                <Target size={18} className="text-purple-500 dark:text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="intensityLevel" className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Intensity Level
+                </label>
+                <select
+                  id="intensityLevel"
+                  name="intensityLevel"
+                  value={formData.intensityLevel}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="easy">Easy</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="challenging">Challenging</option>
+                  <option value="intense">Intense</option>
+                  <option value="maximum">Maximum</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+  }
+};
   
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -707,92 +1445,169 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
   };
 
   // Add this helper function at the top of your component or outside
-  const getDefaultExercisesForType = (type, workoutDuration = 30) => {
+  const getDefaultExercisesForType = (type, formData, workoutDuration = 30) => {
     // If the workout duration is very short (< 5 minutes), use seconds as default unit for some types
     const useSeconds = workoutDuration < 5 && ['hiit', 'strength', 'bodyweight'].includes(type);
     const defaultDuration = useSeconds ? workoutDuration * 60 : workoutDuration;
     const defaultUnit = useSeconds ? 'sec' : 'min';
-  
+    
     switch(type) {
-      case 'running':
-        return [{
-          name: 'Running Session',
-          isDurationBased: true,
-          sets: 1,
-          duration: workoutDuration, // Use workout duration
-          durationUnit: 'min', // Always use minutes for running
-          distance: '', // user will fill in
-          intensity: 'medium',
-          notes: 'Track your time and distance'
-        }];
-      case 'walking':
-        return [{
-          name: 'Walking Session',
-          isDurationBased: true,
-          sets: 1,
-          duration: workoutDuration,
-          durationUnit: 'min', // Always use minutes for walking
-          distance: '',
-          intensity: 'light',
-          notes: 'Track your steps and distance'
-        }];
       case 'swimming':
         return [{
-          name: 'Swimming Session',
+          name: `Swimming - ${formData.swimStroke || 'Freestyle'}`,
           isDurationBased: true,
           sets: 1,
           duration: workoutDuration,
           durationUnit: 'min',
-          distance: '',
-          laps: '',
-          intensity: 'medium',
-          notes: 'Record distance and laps'
+          distance: formData.swimTargetValue ? 
+            `${formData.swimTargetValue} ${formData.swimTargetType === 'laps' ? 'laps' : formData.swimTargetType === 'distance' ? formData.distanceUnit : ''}` : 
+            '',
+          intensity: formData.intensityLevel || 'medium',
+          notes: `Pool length: ${formData.poolLength || '25m'}, Goal: ${formData.swimGoal || 'technique'}`
         }];
+        
+      case 'running':
+        return [{
+          name: `${formData.runType ? formData.runType.charAt(0).toUpperCase() + formData.runType.slice(1) : 'Steady'} Run`,
+          isDurationBased: true,
+          sets: 1,
+          duration: workoutDuration,
+          durationUnit: 'min',
+          distance: formData.distance ? `${formData.distance} ${formData.distanceUnit || 'km'}` : '',
+          intensity: formData.intensityLevel || 'medium',
+          notes: `Surface: ${formData.surfaceType || 'road'}, Target pace: ${formData.targetPace || 'N/A'}`
+        }];
+        
+      case 'walking':
+        return [{
+          name: `${formData.runType ? formData.runType.charAt(0).toUpperCase() + formData.runType.slice(1) : 'Regular'} Walk`,
+          isDurationBased: true,
+          sets: 1,
+          duration: workoutDuration,
+          durationUnit: 'min',
+          distance: formData.distance ? `${formData.distance} ${formData.distanceUnit || 'km'}` : '',
+          intensity: formData.intensityLevel || 'light',
+          notes: `Surface: ${formData.surfaceType || 'road'}, Elevation gain: ${formData.elevation || 'N/A'}`
+        }];
+        
       case 'cycling':
         return [{
-          name: 'Cycling Session',
+          name: `${formData.cyclingType ? formData.cyclingType.charAt(0).toUpperCase() + formData.cyclingType.slice(1) : 'Road'} Cycling`,
           isDurationBased: true,
           sets: 1,
           duration: workoutDuration,
           durationUnit: 'min',
-          distance: '',
-          intensity: 'medium',
-          notes: 'Track your cycling distance and time'
+          distance: formData.distance ? `${formData.distance} ${formData.distanceUnit || 'km'}` : '',
+          intensity: formData.intensityLevel || 'medium',
+          notes: `Target: ${formData.cyclingTargetType ? `${formData.cyclingTargetType} (${formData.cyclingTargetValue || 'N/A'})` : 'N/A'}, Goal: ${formData.cyclingGoal || 'endurance'}`
         }];
+        
       case 'yoga':
       case 'pilates':
       case 'flexibility':
+        let styleName = '';
+        if (formData.practiceStyle) {
+          styleName = ` - ${formData.practiceStyle.charAt(0).toUpperCase() + formData.practiceStyle.slice(1)}`;
+        }
+        
         return [{
-          name: `${type.charAt(0).toUpperCase() + type.slice(1)} Practice`,
+          name: `${type.charAt(0).toUpperCase() + type.slice(1)}${styleName}`,
           isDurationBased: true,
           sets: 1,
           duration: workoutDuration,
           durationUnit: 'min',
-          intensity: 'medium',
-          notes: 'Focus on form and breathing'
+          intensity: formData.intensityLevel || 'medium',
+          notes: `Experience level: ${formData.experienceLevel || 'intermediate'}, Average hold time: ${formData.poseTime || 'mixed'}, Focus: ${formData.focusAreas.join(', ') || 'general'}`
         }];
+        
       case 'sports':
+        return [{
+          name: formData.sportType ? `${formData.sportType.charAt(0).toUpperCase() + formData.sportType.slice(1)}` : 'Sports Session',
+          isDurationBased: true,
+          sets: 1,
+          duration: workoutDuration,
+          durationUnit: 'min',
+          intensity: formData.intensityLevel || 'high',
+          notes: `Activity: ${formData.sportGoal || 'game'}, Team Size: ${formData.teamSize || 'N/A'}, Skill Level: ${formData.skillLevel || 'intermediate'}`
+        }];
+        
       case 'martial_arts':
       case 'boxing':
+        const rounds = formData.numRounds || 3;
+        const roundLength = formData.roundLength || 3;
+        
+        // Calculate total workout duration based on rounds and round length
+        const totalRoundTime = rounds * roundLength;
+        // Add 1 minute rest between rounds
+        const totalRestTime = (rounds - 1) * 1;
+        // Total session time
+        const sessionTime = totalRoundTime + totalRestTime;
+        
         return [{
-          name: `${type.charAt(0).toUpperCase() + type.slice(1)} Session`,
+          name: formData.martialStyle ? 
+            `${formData.martialStyle.charAt(0).toUpperCase() + formData.martialStyle.slice(1)} - ${formData.trainingType || 'Training'}` : 
+            `${type === 'boxing' ? 'Boxing' : 'Martial Arts'} - ${formData.trainingType || 'Training'}`,
           isDurationBased: true,
-          sets: 1,
-          duration: workoutDuration,
+          sets: rounds,
+          duration: roundLength,
           durationUnit: 'min',
-          intensity: 'high',
-          notes: 'Track your session time and intensity'
+          intensity: formData.intensityLevel || 'high',
+          notes: `${rounds} rounds × ${roundLength} min with 1 min rest between rounds (${sessionTime} min total)`
         }];
+        
       case 'hiit':
+        // For HIIT, create interval-based exercises
+        const hiitFormat = formData.workoutFormat || 'tabata';
+        let intervals;
+        
+        if (hiitFormat === 'tabata') {
+          // Tabata: 20s work, 10s rest, 8 sets
+          return [{
+            name: 'Tabata Intervals',
+            isDurationBased: true,
+            sets: 8,
+            duration: 20,
+            durationUnit: 'sec',
+            intensity: formData.intensityLevel || 'high',
+            notes: `20s work / 10s rest × 8 sets, Focus: ${formData.focusAreas.join(', ') || 'full body'}`
+          }];
+        } else if (hiitFormat === '30-30') {
+          return [{
+            name: '30-30 Intervals',
+            isDurationBased: true,
+            sets: Math.round(workoutDuration / 2), // Roughly estimate sets based on duration
+            duration: 30,
+            durationUnit: 'sec',
+            intensity: formData.intensityLevel || 'high',
+            notes: `30s work / 30s rest, Rest intervals: ${formData.restInterval || 'medium'}, Focus: ${formData.focusAreas.join(', ') || 'full body'}`
+          }];
+        } else {
+          return [{
+            name: 'HIIT Workout',
+            isDurationBased: true,
+            sets: 3,
+            duration: defaultDuration / 3,
+            durationUnit: defaultUnit,
+            intensity: formData.intensityLevel || 'high',
+            notes: `Format: ${hiitFormat || 'custom'}, Rest intervals: ${formData.restInterval || 'medium'}, Focus: ${formData.focusAreas.join(', ') || 'full body'}`
+          }];
+        }
+        
+      case 'strength':
+      case 'bodyweight':
+      case 'crossfit':
+        // For strength-type workouts, create a basic template
         return [{
-          name: 'HIIT Workout',
-          isDurationBased: true,
-          sets: 3,  // Default to 3 sets for HIIT
-          duration: defaultDuration, // Use seconds for HIIT when duration is short
-          durationUnit: defaultUnit,
-          intensity: 'high',
-          notes: 'High intensity interval training'
+          name: `${formData.workoutFormat ? `${formData.workoutFormat.charAt(0).toUpperCase() + formData.workoutFormat.slice(1)} ` : ''}${type.charAt(0).toUpperCase() + type.slice(1)} Workout`,
+          isDurationBased: type === 'crossfit',
+          sets: type === 'crossfit' ? 1 : 3,
+          reps: 10,
+          duration: type === 'crossfit' ? workoutDuration : null,
+          durationUnit: 'min',
+          intensity: formData.intensityLevel || 'medium',
+          notes: `Focus areas: ${formData.focusAreas.join(', ') || 'general'}, Rest intervals: ${formData.restInterval || 'medium'}`
         }];
+        
       default:
         return [];
     }
@@ -811,15 +1626,19 @@ const WorkoutForm = ({ workout, onSave, onCancel }) => {
       
       // Only add default exercises if the exercises array is empty AND this is a workout type that needs default exercises
       if (dataToSave.exercises.length === 0) {
-        const needsDefaultExercises = ['running', 'walking', 'swimming', 'cycling', 'yoga', 'pilates',
-                                       'flexibility', 'sports', 'martial_arts', 'boxing', 'hiit'].includes(dataToSave.type);
-        
-        if (needsDefaultExercises) {
-          const defaultExercises = getDefaultExercisesForType(dataToSave.type, dataToSave.duration);
-          if (defaultExercises.length > 0) {
-            dataToSave.exercises = defaultExercises;
-          }
-        }
+        // Only add default exercises if the exercises array is empty
+if (dataToSave.exercises.length === 0) {
+  const needsDefaultExercises = ['running', 'walking', 'swimming', 'cycling', 'yoga', 'pilates',
+                               'flexibility', 'sports', 'martial_arts', 'boxing', 'hiit',
+                               'strength', 'bodyweight', 'crossfit'].includes(dataToSave.type);
+  
+  if (needsDefaultExercises) {
+    const defaultExercises = getDefaultExercisesForType(dataToSave.type, dataToSave, dataToSave.duration);
+    if (defaultExercises.length > 0) {
+      dataToSave.exercises = defaultExercises;
+    }
+  }
+}
       }
       
       // Save with the potentially updated exercises

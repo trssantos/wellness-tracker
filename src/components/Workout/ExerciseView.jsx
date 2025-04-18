@@ -234,6 +234,25 @@ const ExerciseView = ({
           <p>{exercise.notes}</p>
         </div>
       )}
+
+{exercise.previousPerformances && exercise.previousPerformances.length > 0 && (
+  <div className="exercise-progress mt-4">
+    <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+      Previous Performance
+    </div>
+    <div className="bg-slate-50 dark:bg-slate-700/50 p-2 rounded-lg text-xs">
+      <div className="flex justify-between">
+        <span>Last time:</span>
+        <span className="font-medium">
+          {!exercise.isDurationBased 
+            ? `${exercise.previousPerformances[0].sets || 0}×${exercise.previousPerformances[0].reps || 0} @ ${exercise.previousPerformances[0].weight || 0}` 
+            : `${exercise.previousPerformances[0].duration || 0} ${exercise.previousPerformances[0].durationUnit || 'min'}`
+          }
+        </span>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

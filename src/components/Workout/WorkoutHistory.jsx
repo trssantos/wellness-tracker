@@ -6,6 +6,8 @@ import { getWorkoutTypesWithColors } from '../../utils/workoutUtils';
 import { formatDateForStorage } from '../../utils/dateUtils';
 import QuickLogWorkout from './QuickLogWorkout';
 import WorkoutLogger from './WorkoutLogger';
+import ExerciseProgressMetrics from './ExerciseProgressMetrics';
+import { getPreviousExercisePerformance } from '../../utils/workoutUtils';
 
 const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChange }) => {
   const [workouts, setWorkouts] = useState([]);
@@ -562,7 +564,7 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
             {workout.exercises.map((exercise, index) => (
   <div 
     key={index}
-    className="p-3 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors"
+    className={`p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 transition-colors`}
   >
     <div className="flex items-start justify-between">
       <div className="flex-1">
@@ -586,6 +588,18 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
             </span>
           )}
         </div>
+        
+        {/* Add progress metrics component */}
+        {exercise.completed !== false && (
+          <ExerciseProgressMetrics
+            currentExercise={exercise}
+            previousExercise={getPreviousExercisePerformance(exercise.name, workout.id)}
+            isDurationBased={exercise.isDurationBased}
+            weightUnit={weightUnit}
+            distanceUnit={distanceUnit}
+            compact={true}
+          />
+        )}
       </div>
       {/* Completion status */}
       {exercise.completed !== undefined && (

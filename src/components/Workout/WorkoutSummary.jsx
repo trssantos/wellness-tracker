@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { 
   Award, Clock, Dumbbell, Check, X, Save, 
   Flame, Route, ArrowUp, Droplet, Activity 
 } from 'lucide-react';
 import './WorkoutSummary.css';
+import ExerciseProgressMetrics from './ExerciseProgressMetrics';
+import { debugExerciseComparison,getPreviousExercisePerformance } from '../../utils/workoutUtils';
+import { getWeightUnit, getDistanceUnit } from '../../utils/storage';
 
 const WorkoutSummary = ({ 
   workout, 
@@ -22,6 +25,7 @@ const WorkoutSummary = ({
   const [incline, setIncline] = useState('');
   const [intensity, setIntensity] = useState('3');
   const [waterBreaksTaken, setWaterBreaksTaken] = useState('0');
+  const [weightUnit, setWeightUnit] = useState('kg'); // Add this line
   
   // Calculate statistics
   const exerciseCount = completedExercises.length;
@@ -33,6 +37,12 @@ const WorkoutSummary = ({
   
   // Determine if this is a swimming workout
   const isSwimmingWorkout = workout?.type === 'swimming';
+
+  // Initialize user preferences on component mount
+  useEffect(() => {
+    setWeightUnit(getWeightUnit());
+    setDistanceUnit(getDistanceUnit());
+  }, []);
   
   // Format time as MM:SS
   const formatTime = (seconds) => {
@@ -296,6 +306,18 @@ const WorkoutSummary = ({
         </span>
       )}
     </div>
+    
+    {/* Add progress metrics for completed exercises */}
+    {exercise.completed && (
+      <ExerciseProgressMetrics
+        currentExercise={exercise}
+        previousExercise={getPreviousExercisePerformance(exercise.name, workout?.id)}
+        isDurationBased={exercise.isDurationBased}
+        weightUnit={weightUnit}
+        distanceUnit={distanceUnit}
+        compact={false}
+      />
+    )}
   </div>
 ))}
         </div>

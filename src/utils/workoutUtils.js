@@ -1083,3 +1083,127 @@ export const getPersonalRecords = () => {
   
   return records;
 };
+
+/**
+ * Get previous performance data for a specific exercise with improved reliability
+ * @param {string} exerciseName - Name of the exercise
+ * @param {string} currentWorkoutId - ID of the current workout (to exclude from history)
+ * @returns {Object|null} Previous exercise performance or null if not found
+ */
+export const getPreviousExercisePerformance = (exerciseName, currentWorkoutId = null) => {
+  const DEBUG = true;
+  if (DEBUG) console.log(`Looking for previous performance of "${exerciseName}" (excluding ${currentWorkoutId})`);
+  
+  try {
+    const allWorkouts = getAllCompletedWorkouts();
+    if (DEBUG) console.log(`Total completed workouts found: ${allWorkouts.length}`);
+    
+    // Filter to only include workouts with this exercise, excluding current workout
+    const relevantWorkouts = allWorkouts
+      .filter(workout => {
+        // Make sure workout has exercises array
+        if (!workout.exercises || !Array.isArray(workout.exercises)) return false;
+        
+        // Exclude current workout
+        if (currentWorkoutId && workout.id === currentWorkoutId) return false;
+        
+        // Check if workout contains the exercise
+        const hasExercise = workout.exercises.some(ex => 
+          ex && ex.name && ex.name.toLowerCase() === exerciseName.toLowerCase()
+        );
+        
+        return hasExercise;
+      })
+      .sort((a, b) => {
+        // Sort from newest to oldest
+        const dateA = new Date(a.completedAt || a.timestamp || a.date);
+        const dateB = new Date(b.completedAt || b.timestamp || b.date);
+        return dateB - dateA;
+      });
+    
+    if (DEBUG) console.log(`Relevant workouts with "${exerciseName}": ${relevantWorkouts.length}`);
+    
+    // If no previous workout found, return null
+    if (relevantWorkouts.length === 0) {
+      if (DEBUG) console.log(`No previous instances of "${exerciseName}" found.`);
+      return null;
+    }
+    
+    // Find the exercise in the most recent workout
+    const mostRecentWorkout = relevantWorkouts[0];
+    if (DEBUG) console.log(`Most recent workout found:`, {
+      id: mostRecentWorkout.id,
+      date: mostRecentWorkout.completedAt || mostRecentWorkout.timestamp || mostRecentWorkout.date
+    });
+    
+    // Find the specific exercise in the workout using case-insensitive comparison
+    const previousExercise = mostRecentWorkout.exercises.find(ex => 
+      ex && ex.name && ex.name.toLowerCase() === exerciseName.toLowerCase()
+    );
+    
+    if (!previousExercise) {
+      if (DEBUG) console.log(`Exercise "${exerciseName}" not found in the most recent workout.`);
+      return null;
+    }
+    
+    if (DEBUG) {
+      console.log(`Previous exercise performance found:`, {
+        sets: previousExercise.actualSets || previousExercise.sets,
+        reps: previousExercise.actualReps || previousExercise.reps,
+        weight: previousExercise.actualWeight || previousExercise.weight
+      });
+    }
+    
+    // Return the exercise with additional metadata
+    return {
+      ...previousExercise,
+      date: mostRecentWorkout.completedAt || mostRecentWorkout.timestamp || mostRecentWorkout.date,
+      workoutId: mostRecentWorkout.id
+    };
+  } catch (error) {
+    console.error('Error getting previous exercise performance:', error);
+    return null;
+  }
+};
+
+// Add this to workoutUtils.js or create a new file
+
+/**
+ * Debugging helper to check exercise comparison
+ * @param {Object} current - Current exercise data
+ * @param {Object} previous - Previous exercise data
+ * @param {string} exerciseName - Name of the exercise for reference
+ */
+export const debugExerciseComparison = (current, previous, exerciseName) => {
+  console.log(`=== DEBUGGING EXERCISE: ${exerciseName} ===`);
+  
+  // Extract values with clear logging
+  const extractAndLog = (exercise, prefix) => {
+    const weight = exercise.actualWeight || exercise.weight || 0;
+    const reps = exercise.actualReps || exercise.reps || 0;
+    const sets = exercise.actualSets || exercise.sets || 0;
+    
+    console.log(`${prefix} VALUES:`);
+    console.log(`- Weight: ${weight} (raw: ${JSON.stringify(exercise.actualWeight || exercise.weight)})`);
+    console.log(`- Reps: ${reps} (raw: ${JSON.stringify(exercise.actualReps || exercise.reps)})`);
+    console.log(`- Sets: ${sets} (raw: ${JSON.stringify(exercise.actualSets || exercise.sets)})`);
+    
+    return { weight, reps, sets };
+  };
+  
+  const currentVals = extractAndLog(current, 'CURRENT');
+  const previousVals = extractAndLog(previous, 'PREVIOUS');
+  
+  // Calculate and log differences
+  console.log('DIFFERENCES:');
+  console.log(`- Weight: ${currentVals.weight - previousVals.weight}`);
+  console.log(`- Reps: ${currentVals.reps - previousVals.reps}`);
+  console.log(`- Sets: ${currentVals.sets - previousVals.sets}`);
+  
+  // Calculate and log volume
+  const currentVolume = currentVals.weight * currentVals.reps * currentVals.sets;
+  const previousVolume = previousVals.weight * previousVals.reps * previousVals.sets;
+  console.log(`- Volume: Current=${currentVolume}, Previous=${previousVolume}, Diff=${currentVolume - previousVolume}`);
+  
+  console.log('=== END DEBUG ===');
+};

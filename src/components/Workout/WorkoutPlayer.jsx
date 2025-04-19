@@ -9,7 +9,6 @@ import WorkoutSummary from './WorkoutSummary';
 import RetroTapePlayer from './RetroTapePlayer';
 import { getWorkoutById, logWorkout } from '../../utils/workoutUtils';
 import { ThemeContext } from '../../context/ThemeContext';
-import ThemeSwitcher from './ThemeSwitcher';
 import './WorkoutPlayer.css';
 
 const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
@@ -1173,8 +1172,6 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       className={`wp-player theme-${theme} ${activeView === 'cassette' ? 'wp-cassette-mode' : 'wp-workout-mode'}`}
       onClick={() => setShowControls(true)}
     >
-      {/* Theme Switcher */}
-      <ThemeSwitcher />
       
       {/* View switcher tabs */}
       <div className="wp-view-tabs">
@@ -1441,12 +1438,21 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
               </button>
               
               <button
-                onClick={() => {
-                  onClose();
-                  localStorage.removeItem('workout-player-state');
-                }}
-                className="px-4 py-2 rounded-lg bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-              >
+          onClick={(e) => {
+            // Prevent event bubbling
+            onClose();
+           // e.stopPropagation();
+           
+            // Use setTimeout to ensure this happens after the current event cycle
+            setTimeout(() => {
+              
+              localStorage.removeItem('workout-player-state');
+            }, 0);
+            // Close modal and exit the workout
+            setShowCancelConfirmModal(false);
+          }}
+          className="px-4 py-2 rounded-lg bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+        >
                 <X size={20} />
                 End Workout
               </button>

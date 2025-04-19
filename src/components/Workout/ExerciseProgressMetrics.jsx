@@ -150,68 +150,117 @@ const ExerciseProgressMetrics = ({
       {!isDurationBased ? (
         // Strength exercise progress indicators
         <>
+          {/* Show weight changes in both directions */}
           {weightProgress.direction === 'up' && (
             <div className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
-              <TrendingUp size={12} />
-              <span>{compact ? 'Weight ↑' : 'Weight increase!'}</span>
+              <ArrowUp size={12} />
+              <span>{compact ? 'Weight' : 'Weight increase!'}</span>
               {!compact && <span className="ml-1 text-xs opacity-75">+{weightProgress.value} {weightUnit}</span>}
             </div>
           )}
           
-          {repsProgress.direction === 'up' && (
-            <div className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
-              <TrendingUp size={12} />
-              <span>{compact ? 'Reps ↑' : 'Rep increase!'}</span>
-              {!compact && <span className="ml-1 text-xs opacity-75">+{repsProgress.value}</span>}
+          {weightProgress.direction === 'down' && (
+            <div className="bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+              <ArrowDown size={12} />
+              <span>{compact ? 'Weight' : 'Weight decrease'}</span>
+              {!compact && <span className="ml-1 text-xs opacity-75">-{weightProgress.value} {weightUnit}</span>}
             </div>
           )}
           
+          {/* Show sets changes in both directions */}
           {setsProgress.direction === 'up' && (
             <div className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
-              <TrendingUp size={12} />
-              <span>{compact ? 'Sets ↑' : 'Sets increase!'}</span>
+              <ArrowUp size={12} />
+              <span>{compact ? 'Sets' : 'Sets increase!'}</span>
               {!compact && <span className="ml-1 text-xs opacity-75">+{setsProgress.value}</span>}
             </div>
           )}
           
-          {repsProgress.direction === 'down' && (
-            <div className="bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+          {setsProgress.direction === 'down' && (
+            <div className="bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
               <ArrowDown size={12} />
-              <span>{compact ? 'Reps ↓' : 'Rep decrease'}</span>
+              <span>{compact ? 'Sets' : 'Sets decrease'}</span>
+              {!compact && <span className="ml-1 text-xs opacity-75">-{setsProgress.value}</span>}
+            </div>
+          )}
+          
+          {/* Show reps changes in both directions */}
+          {repsProgress.direction === 'up' && (
+            <div className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+              <ArrowUp size={12} />
+              <span>{compact ? 'Reps' : 'Rep increase!'}</span>
+              {!compact && <span className="ml-1 text-xs opacity-75">+{repsProgress.value}</span>}
+            </div>
+          )}
+          
+          {repsProgress.direction === 'down' && (
+            <div className="bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+              <ArrowDown size={12} />
+              <span>{compact ? 'Reps' : 'Rep decrease'}</span>
               {!compact && <span className="ml-1 text-xs opacity-75">-{repsProgress.value}</span>}
             </div>
           )}
           
+          {/* Volume changes */}
           {volumeProgress.direction === 'up' && currentWeight > 0 && previousWeight > 0 && (
-            <div className="bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
-              <Award size={12} />
-              <span>{compact ? 'Volume ↑' : 'Total volume increase!'}</span>
+            <div className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+              <ArrowUp size={12} />
+              <span>{compact ? 'Total Volume' : 'Total volume increase!'}</span>
+            </div>
+          )}
+          
+          {volumeProgress.direction === 'down' && currentWeight > 0 && previousWeight > 0 && (
+            <div className="bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+              <ArrowDown size={12} />
+              <span>{compact ? 'Total Volume' : 'Total Volume decrease'}</span>
             </div>
           )}
         </>
       ) : (
         // Duration-based exercise progress indicators
         <>
+          {/* Duration changes in both directions */}
           {durationProgress.direction === 'up' && (
             <div className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
-              <TrendingUp size={12} />
-              <span>{compact ? 'Duration ↑' : 'Duration increase!'}</span>
+              <ArrowUp size={12} />
+              <span>{compact ? 'Duration' : 'Duration increase!'}</span>
               {!compact && <span className="ml-1 text-xs opacity-75">+{durationProgress.value} {currentDurationUnit}</span>}
             </div>
           )}
           
+          {durationProgress.direction === 'down' && (
+            <div className="bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+              <ArrowDown size={12} />
+              <span>{compact ? 'Duration' : 'Duration decrease'}</span>
+              {!compact && <span className="ml-1 text-xs opacity-75">-{durationProgress.value} {currentDurationUnit}</span>}
+            </div>
+          )}
+          
+          {/* Distance changes in both directions */}
           {distanceProgress.direction === 'up' && currentDistance > 0 && previousDistance > 0 && (
             <div className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
-              <TrendingUp size={12} />
-              <span>{compact ? 'Distance ↑' : 'Distance increase!'}</span>
+              <ArrowUp size={12} />
+              <span>{compact ? 'Distance' : 'Distance increase!'}</span>
               {!compact && <span className="ml-1 text-xs opacity-75">+{distanceProgress.value.toFixed(1)} {distanceUnit}</span>}
             </div>
           )}
           
-          {paceProgress.direction !== 'neutral' && currentPace > 0 && previousPace > 0 && paceProgress.isPositive && (
-            <div className="bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
-              <Award size={12} />
-              <span>{compact ? 'Pace ↑' : 'Pace improved!'}</span>
+          {distanceProgress.direction === 'down' && currentDistance > 0 && previousDistance > 0 && (
+            <div className="bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+              <ArrowDown size={12} />
+              <span>{compact ? 'Distance' : 'Distance decrease'}</span>
+              {!compact && <span className="ml-1 text-xs opacity-75">-{distanceProgress.value.toFixed(1)} {distanceUnit}</span>}
+            </div>
+          )}
+          
+          {/* Pace changes */}
+          {paceProgress.direction !== 'neutral' && currentPace > 0 && previousPace > 0 && (
+            <div className={`${paceProgress.isPositive ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'} text-xs px-2 py-1 rounded-full flex items-center gap-1`}>
+              {paceProgress.isPositive ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+              <span>{compact ? 
+                (paceProgress.isPositive ? 'Pace' : 'Pace ↓') : 
+                (paceProgress.isPositive ? 'Pace improved!' : 'Pace decreased')}
+              </span>
             </div>
           )}
         </>

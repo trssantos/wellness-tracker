@@ -73,17 +73,18 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 200px;
-  overflow-y: auto;
+  /* Removed max-height and overflow to allow list to grow */
+  width: 100%;
 }
 
 .exercise-item {
   display: flex;
-  align-items: center;
-  padding: 8px 12px;
+  align-items: flex-start;
+  padding: 12px;
   border-radius: var(--wp-border-radius);
   background: var(--wp-secondary-color);
   border: 1px solid var(--wp-border-color);
+  width: 100%;
 }
 
 .exercise-item.completed {
@@ -97,6 +98,7 @@
 
 .exercise-status {
   margin-right: 10px;
+  flex-shrink: 0;
 }
 
 .status-icon.completed {
@@ -108,14 +110,15 @@
 }
 
 .exercise-name {
-  flex: 1;
   font-weight: medium;
   color: var(--wp-text-color-dark);
+  margin-bottom: 5px;
 }
 
 .exercise-details {
   font-size: 0.9rem;
   color: var(--wp-text-color);
+  margin-bottom: 8px;
 }
 
 .notes-section {
@@ -251,3 +254,5 @@
   background: #8A7B59;
   color: #F5EAD5;
 }
+
+

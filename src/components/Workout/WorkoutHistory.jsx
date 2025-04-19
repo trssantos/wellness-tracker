@@ -628,16 +628,55 @@ const WorkoutHistory = ({ onBack, onEditWorkout, refreshTrigger = 0, onDataChang
                           </div>
                         </div>
                         
-                        {/* Progress metrics */}
+                        {/* Previous Performance */}
                         {exercise.completed !== false && (
-                          <ExerciseProgressMetrics
-                            currentExercise={exercise}
-                            previousExercise={getPreviousExercisePerformance(exercise.name, workout.id)}
-                            isDurationBased={exercise.isDurationBased}
-                            weightUnit={weightUnit}
-                            distanceUnit={distanceUnit}
-                            compact={true}
-                          />
+                          <>
+                            {/* Get previous performance */}
+                            {(() => {
+                              const previousExercise = getPreviousExercisePerformance(exercise.name, workout.id);
+                              if (previousExercise) {
+                                return (
+                                  <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-xs">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-blue-600 dark:text-blue-400 font-medium">Last performance:</span>
+                                      <span className="text-slate-500 dark:text-slate-400">
+                                        {previousExercise.date ? formatDate(previousExercise.date) : ''}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      {!previousExercise.isDurationBased 
+                                        ? <span>
+                                            {previousExercise.actualSets || previousExercise.sets || 0}×
+                                            {previousExercise.actualReps || previousExercise.reps || 0}
+                                            {previousExercise.actualWeight || previousExercise.weight 
+                                              ? ` @ ${previousExercise.actualWeight || previousExercise.weight} ${weightUnit}` 
+                                              : ''}
+                                          </span> 
+                                        : <span>
+                                            {previousExercise.actualDuration || previousExercise.duration || 0} 
+                                            {previousExercise.actualDurationUnit || previousExercise.durationUnit || 'min'}
+                                            {previousExercise.actualDistance || previousExercise.distance 
+                                              ? ` - ${previousExercise.actualDistance || previousExercise.distance}`
+                                              : ''}
+                                          </span>
+                                      }
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
+                            
+                            {/* Progress metrics */}
+                            <ExerciseProgressMetrics
+                              currentExercise={exercise}
+                              previousExercise={getPreviousExercisePerformance(exercise.name, workout.id)}
+                              isDurationBased={exercise.isDurationBased}
+                              weightUnit={weightUnit}
+                              distanceUnit={distanceUnit}
+                              compact={true}
+                            />
+                          </>
                         )}
                         
                         {/* Expandable section with original workout plan */}

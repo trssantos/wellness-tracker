@@ -20,6 +20,8 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   const [workoutData, setWorkoutData] = useState(null); // Store our workout data
   const [refreshTrigger, setRefreshTrigger] = useState(0); // To trigger refreshes
   const [weightUnit, setWeightUnit] = useState('lbs');
+  // Add state to track if player is showing
+const [isPlayerShowing, setIsPlayerShowing] = useState(false);
 
   // Initialize with the workout prop and load completions
   useEffect(() => {
@@ -201,12 +203,14 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
 
   // Start workout - simply show the modal
   const startWorkout = () => {
+    setIsPlayerShowing(true);
     setShowPlayer(true);
   };
 
   // Handle workout completion
   const handleWorkoutComplete = (completedWorkout) => {
     setShowPlayer(false);
+    setIsPlayerShowing(false);
     // Refresh data after completing a workout
     refreshWorkoutData();
   };
@@ -568,15 +572,17 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
       </div>
 
       {/* Quick Action Buttons */}
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={startWorkout}
-          className="flex-1 py-2 sm:py-3 rounded-lg bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 font-medium flex items-center justify-center gap-2 transition-colors"
-        >
-          <Play size={18} />
-          Start Workout
-        </button>
-      </div>
+      {!isPlayerShowing && (
+  <div className="flex gap-2 mb-6">
+    <button
+      onClick={startWorkout}
+      className="flex-1 py-2 sm:py-3 rounded-lg bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 font-medium flex items-center justify-center gap-2 transition-colors"
+    >
+      <Play size={18} />
+      Start Workout
+    </button>
+  </div>
+)}
 
       {/* Tab Navigation */}
       <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6">
@@ -659,13 +665,17 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
       
       {/* Workout Player Modal */}
       {showPlayer && (
-        <WorkoutPlayerModal
-          workoutId={workoutData.id}
-          date={currentDate}
-          onComplete={handleWorkoutComplete}
-          onClose={() => setShowPlayer(false)}
-        />
-      )}
+  <WorkoutPlayerModal
+    workoutId={workoutData.id}
+    date={currentDate}
+    onComplete={handleWorkoutComplete}
+    onClose={() => {
+      setShowPlayer(false);
+      setIsPlayerShowing(false);
+    }}
+  />
+)}
+
     </div>
   );
 };

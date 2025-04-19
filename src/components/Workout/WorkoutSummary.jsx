@@ -1,11 +1,12 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Award, Clock, Dumbbell, Check, X, Save, 
-  Flame, Route, ArrowUp, Droplet, Activity 
+  Flame, Route, ArrowUp, ArrowDown, Droplet, Activity,
+  ChevronDown, ChevronUp
 } from 'lucide-react';
 import './WorkoutSummary.css';
 import ExerciseProgressMetrics from './ExerciseProgressMetrics';
-import { debugExerciseComparison,getPreviousExercisePerformance } from '../../utils/workoutUtils';
+import { getPreviousExercisePerformance } from '../../utils/workoutUtils';
 import { getWeightUnit, getDistanceUnit } from '../../utils/storage';
 
 const WorkoutSummary = ({ 
@@ -26,6 +27,7 @@ const WorkoutSummary = ({
   const [intensity, setIntensity] = useState('3');
   const [waterBreaksTaken, setWaterBreaksTaken] = useState('0');
   const [weightUnit, setWeightUnit] = useState('kg'); // Add this line
+  const [expandedExercises, setExpandedExercises] = useState({});
   
   // Calculate statistics
   const exerciseCount = completedExercises.length;
@@ -44,11 +46,31 @@ const WorkoutSummary = ({
     setDistanceUnit(getDistanceUnit());
   }, []);
   
+  // Toggle exercise plan visibility
+  const toggleExerciseExpanded = (index) => {
+    setExpandedExercises(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+  
   // Format time as MM:SS
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}m ${secs}s`;
+  };
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   const formatExerciseTime = (seconds) => {
@@ -143,9 +165,10 @@ const WorkoutSummary = ({
       <div className="bg-white dark:bg-slate-800 rounded-lg p-4 mb-6 border border-slate-200 dark:border-slate-700">
         <h4 className="font-medium text-slate-800 dark:text-slate-100 mb-4">Workout Metrics</h4>
         
-        <div className="grid grid-cols-2 gap-4">
-          {/* Calories - for all workout types */}
-          <div className="col-span-2 md:col-span-1">
+        {/* First row: Calories and Water Breaks side by side */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          {/* Calories */}
+          <div className="col-span-1">
             <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
               <Flame size={14} className="text-red-500 dark:text-red-400" />
               Calories Burned
@@ -164,46 +187,8 @@ const WorkoutSummary = ({
             </div>
           </div>
           
-          {/* Intensity - for all workout types */}
-<div className="col-span-2 md:col-span-1">
-  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
-    <Activity size={14} className="text-purple-500 dark:text-purple-400" />
-    Intensity Level
-  </label>
-  <div className="flex flex-col">
-    <div className="flex justify-between mb-1 text-xs text-slate-500 dark:text-slate-400">
-      <span>Light</span>
-      <span>Medium</span>
-      <span>Maximum</span>
-    </div>
-    <div className="grid grid-cols-5 gap-1 mb-1">
-      {[1, 2, 3, 4, 5].map((level) => (
-        <button
-          key={level}
-          onClick={() => setIntensity(level.toString())}
-          className={`py-2 rounded ${
-            parseInt(intensity) === level 
-              ? 'bg-purple-500 dark:bg-purple-600 text-white' 
-              : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-          }`}
-        >
-          {level}
-        </button>
-      ))}
-    </div>
-    <div className="text-xs text-center text-slate-500 dark:text-slate-400">
-      {parseInt(intensity) === 1 && "Light"}
-      {parseInt(intensity) === 2 && "Moderate"}
-      {parseInt(intensity) === 3 && "Challenging"}
-      {parseInt(intensity) === 4 && "Intense"}
-      {parseInt(intensity) === 5 && "Maximum"}
-    </div>
-  </div>
-</div>
-
-          
-          {/* Water Breaks - for all workout types */}
-          <div className="col-span-2 md:col-span-1">
+          {/* Water Breaks */}
+          <div className="col-span-1">
             <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
               <Droplet size={14} className="text-blue-500 dark:text-blue-400" />
               Water Breaks Taken
@@ -216,10 +201,50 @@ const WorkoutSummary = ({
               className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
             />
           </div>
-          
-          {/* Distance - only for cardio workouts */}
-          {isCardioWorkout && (
-            <div className="col-span-2 md:col-span-1">
+        </div>
+        
+        {/* Second row: Intensity taking full width */}
+        <div className="w-full">
+          <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
+            <Activity size={14} className="text-purple-500 dark:text-purple-400" />
+            Intensity Level
+          </label>
+          <div className="flex flex-col">
+            <div className="flex justify-between mb-1 text-xs text-slate-500 dark:text-slate-400">
+              <span>Light</span>
+              <span>Medium</span>
+              <span>Maximum</span>
+            </div>
+            <div className="grid grid-cols-5 gap-1 mb-1">
+              {[1, 2, 3, 4, 5].map((level) => (
+                <button
+                  key={level}
+                  onClick={() => setIntensity(level.toString())}
+                  className={`py-2 rounded ${
+                    parseInt(intensity) === level 
+                      ? 'bg-purple-500 dark:bg-purple-600 text-white' 
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  {level}
+                </button>
+              ))}
+            </div>
+            <div className="text-xs text-center text-slate-500 dark:text-slate-400">
+              {parseInt(intensity) === 1 && "Light"}
+              {parseInt(intensity) === 2 && "Moderate"}
+              {parseInt(intensity) === 3 && "Challenging"}
+              {parseInt(intensity) === 4 && "Intense"}
+              {parseInt(intensity) === 5 && "Maximum"}
+            </div>
+          </div>
+        </div>
+        
+        {/* Conditionally show distance and incline for cardio workouts */}
+        {isCardioWorkout && (
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            {/* Distance */}
+            <div className="col-span-1">
               <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
                 <Route size={14} className="text-green-500 dark:text-green-400" />
                 Distance
@@ -244,82 +269,202 @@ const WorkoutSummary = ({
                 </select>
               </div>
             </div>
-          )}
-          
-          {/* Incline - only for running/walking/cycling */}
-          {['running', 'walking', 'cycling'].includes(workout?.type) && (
-            <div className="col-span-2 md:col-span-1">
-              <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
-                <ArrowUp size={14} className="text-amber-500 dark:text-amber-400" />
-                Incline
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={incline}
-                  onChange={(e) => setIncline(e.target.value)}
-                  placeholder="Enter incline..."
-                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 dark:text-slate-400">
-                  %
+            
+            {/* Incline - only for running/walking/cycling */}
+            {['running', 'walking', 'cycling'].includes(workout?.type) && (
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
+                  <ArrowUp size={14} className="text-amber-500 dark:text-amber-400" />
+                  Incline
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={incline}
+                    onChange={(e) => setIncline(e.target.value)}
+                    placeholder="Enter incline..."
+                    className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 dark:text-slate-400">
+                    %
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
       
-      {/* Exercise Summary */}
+      {/* Exercise Summary - Updated with last performance and planned details */}
       <div className="exercise-summary">
         <h4>Exercise Summary</h4>
         <div className="exercises-list">
-        {completedExercises.map((exercise, index) => (
-  <div 
-    key={index} 
-    className={`exercise-item ${exercise.completed ? 'completed' : 'incomplete'}`}
-  >
-    <div className="exercise-status">
-      {exercise.completed ? 
-        <Check size={16} className="status-icon completed" /> : 
-        <X size={16} className="status-icon incomplete" />
-      }
-    </div>
-    <div className="exercise-name">
-      {exercise.name}
-    </div>
-    <div className="exercise-details">
-      {exercise.completed && (
-        <span>
-          {exercise.isDurationBased ? (
-            // For duration-based exercises with sets
-            exercise.actualSets && exercise.actualSets > 1 ? 
-              // Multi-set duration exercise
-              `${exercise.actualSets}×${exercise.actualDuration || 0} ${exercise.actualDurationUnit || 'min'} (${formatExerciseTime(exercise.timeSpent)} total)${exercise.actualDistance ? ` - ${exercise.actualDistance}` : ''}` 
-              : 
-              // Single-set duration exercise
-              `${exercise.actualDuration || 0} ${exercise.actualDurationUnit || 'min'}${exercise.timeSpent && exercise.timeSpent !== (exercise.actualDuration * 60) ? ` (${formatExerciseTime(exercise.timeSpent)} actual)` : ''}${exercise.actualDistance ? ` - ${exercise.actualDistance}` : ''}`
-          ) : (
-            // Show sets/reps for traditional exercises
-            `${exercise.actualSets || 0}×${exercise.actualReps || 0}${exercise.actualWeight ? ` @ ${exercise.actualWeight}` : ''}`
-          )}
-        </span>
-      )}
-    </div>
-    
-    {/* Add progress metrics for completed exercises */}
-    {exercise.completed && (
-      <ExerciseProgressMetrics
-        currentExercise={exercise}
-        previousExercise={getPreviousExercisePerformance(exercise.name, workout?.id)}
-        isDurationBased={exercise.isDurationBased}
-        weightUnit={weightUnit}
-        distanceUnit={distanceUnit}
-        compact={false}
-      />
-    )}
-  </div>
-))}
+          {completedExercises.map((exercise, index) => {
+            // Determine if the exercise has actual values different from planned
+            const hasDifferentValues = 
+              (exercise.actualSets !== undefined && exercise.actualSets !== exercise.sets) ||
+              (exercise.actualReps !== undefined && exercise.actualReps !== exercise.reps) ||
+              (exercise.actualWeight !== undefined && exercise.actualWeight !== exercise.weight) ||
+              (exercise.actualDuration !== undefined && exercise.actualDuration !== exercise.duration) ||
+              (exercise.actualDistance !== undefined && exercise.actualDistance !== exercise.distance) ||
+              (exercise.actualDurationUnit !== undefined && exercise.actualDurationUnit !== exercise.durationUnit);
+            
+            const isExpanded = !!expandedExercises[index];
+            
+            return (
+              <div 
+                key={index} 
+                className={`exercise-item ${exercise.completed ? 'completed' : 'incomplete'}`}
+              >
+                <div className="exercise-status">
+                  {exercise.completed ? 
+                    <Check size={16} className="status-icon completed" /> : 
+                    <X size={16} className="status-icon incomplete" />
+                  }
+                </div>
+                <div className="flex-1">
+                  <div className="exercise-name">
+                    {exercise.name}
+                  </div>
+
+                  {/* Actual performance */}
+                  <div className="exercise-details">
+                    {exercise.completed && (
+                      <span className={hasDifferentValues ? "text-blue-600 dark:text-blue-400 font-medium" : ""}>
+                        {exercise.isDurationBased ? (
+                          // Duration-based exercise (actual performance)
+                          <span>
+                            {exercise.actualSets !== undefined ? exercise.actualSets : exercise.sets || 1}× 
+                            {exercise.actualDuration !== undefined ? exercise.actualDuration : exercise.duration || 0} 
+                            {exercise.actualDurationUnit || exercise.durationUnit || 'min'}
+                            {(exercise.actualDistance || exercise.distance) ? 
+                              ` - ${exercise.actualDistance || exercise.distance}${!(exercise.actualDistance || exercise.distance).includes('km') && !(exercise.actualDistance || exercise.distance).includes('mi') ? ' ' + distanceUnit : ''}` : 
+                              ''}
+                            {exercise.timeSpent ? ` (${formatExerciseTime(exercise.timeSpent)} total)` : ''}
+                          </span>
+                        ) : (
+                          // Traditional strength exercise (actual performance)
+                          <span>
+                            {exercise.actualSets !== undefined ? exercise.actualSets : exercise.sets || 0}× 
+                            {exercise.actualReps !== undefined ? exercise.actualReps : exercise.reps || 0} 
+                            {(exercise.actualWeight !== undefined || exercise.weight) ? 
+                              ` @ ${exercise.actualWeight !== undefined ? exercise.actualWeight : exercise.weight} ${weightUnit}` : 
+                              ''}
+                          </span>
+                        )}
+                        {hasDifferentValues && (
+                          <span className="ml-1 text-xs text-blue-600 dark:text-blue-400">(actual)</span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Last Performance Section */}
+                  {exercise.completed && (
+                    <>
+                      {/* Get previous performance */}
+                      {(() => {
+                        const previousExercise = getPreviousExercisePerformance(exercise.name);
+                        if (previousExercise) {
+                          return (
+                            <div className="mt-3 w-full p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-blue-600 dark:text-blue-400 font-medium">Last performance:</span>
+                                <span className="text-slate-500 dark:text-slate-400">
+                                  {previousExercise.date ? formatDate(previousExercise.date) : ''}
+                                </span>
+                              </div>
+                              <div className="mt-1">
+                                {!previousExercise.isDurationBased 
+                                  ? <span>
+                                      {previousExercise.actualSets || previousExercise.sets || 0}×
+                                      {previousExercise.actualReps || previousExercise.reps || 0}
+                                      {previousExercise.actualWeight || previousExercise.weight 
+                                        ? ` @ ${previousExercise.actualWeight || previousExercise.weight} ${weightUnit}` 
+                                        : ''}
+                                    </span> 
+                                  : <span>
+                                      {previousExercise.actualDuration || previousExercise.duration || 0} 
+                                      {previousExercise.actualDurationUnit || previousExercise.durationUnit || 'min'}
+                                      {previousExercise.actualDistance || previousExercise.distance 
+                                        ? ` - ${previousExercise.actualDistance || previousExercise.distance}`
+                                        : ''}
+                                    </span>
+                                }
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                      
+                      {/* Progress metrics */}
+                      <div className="mt-3 w-full">
+                        <ExerciseProgressMetrics
+                          currentExercise={exercise}
+                          previousExercise={getPreviousExercisePerformance(exercise.name)}
+                          isDurationBased={exercise.isDurationBased}
+                          weightUnit={weightUnit}
+                          distanceUnit={distanceUnit}
+                          compact={false}
+                        />
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* Expandable section with original workout plan */}
+                  {hasDifferentValues && (
+                    <div className="mt-3 w-full">
+                      <button 
+                        onClick={() => toggleExerciseExpanded(index)}
+                        className="flex items-center gap-1 px-3 py-1 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-full border border-blue-200 dark:border-blue-800"
+                      >
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp size={14} />
+                            Hide planned
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown size={14} />
+                            Show planned
+                          </>
+                        )}
+                      </button>
+                      
+                      {isExpanded && (
+                        <div className="mt-3 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg w-full">
+                          <div className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Planned:</div>
+                          <div className="text-slate-700 dark:text-slate-300 text-sm">
+                            {exercise.isDurationBased ? (
+                              // Duration-based exercise (planned)
+                              <span>
+                                {exercise.sets || 1}× 
+                                {exercise.duration || 0} 
+                                {exercise.durationUnit || 'min'}
+                                {exercise.distance ? 
+                                  ` • ${exercise.distance}${!exercise.distance.includes('km') && !exercise.distance.includes('mi') ? ' ' + distanceUnit : ''}` : 
+                                  ''}
+                              </span>
+                            ) : (
+                              // Traditional strength exercise (planned)
+                              <span>
+                                {exercise.sets || 0}× 
+                                {exercise.reps || 0} 
+                                {exercise.weight ? 
+                                  ` • ${exercise.weight} ${weightUnit}` : 
+                                  ''}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
       

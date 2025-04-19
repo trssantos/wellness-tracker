@@ -58,32 +58,8 @@ const WorkoutPlayerModal = ({ workoutId, date, onComplete, onClose }) => {
           workoutId={workoutId}
           date={date}
           onComplete={onComplete}
-          onClose={() => setShowConfirmation(true)}
+          onClose={handleConfirmExit}
         />
-        
-        {/* Exit Confirmation Dialog */}
-        {showConfirmation && (
-          <div className="exit-confirmation-overlay">
-            <div className={`exit-confirmation-dialog ${theme === 'vintage' ? 'theme-vintage' : ''} ${theme === 'modern' && document.documentElement.classList.contains('dark') ? 'theme-dark' : ''}`}>
-              <h2>End Workout?</h2>
-              <p>Are you sure you want to end your workout? Your progress will not be saved.</p>
-              <div className="exit-confirmation-buttons">
-                <button 
-                  className="cancel-button"
-                  onClick={handleCancelExit}
-                >
-                  Continue Workout
-                </button>
-                <button 
-                  className="confirm-button"
-                  onClick={handleConfirmExit}
-                >
-                  End Workout
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

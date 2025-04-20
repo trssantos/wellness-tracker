@@ -259,6 +259,7 @@ const generateWorkoutPrompt = (params) => {
     Focus areas: ${params.focusAreas ? params.focusAreas.join(', ') : 'Full body'}
     Workout Objective: ${params.objective || 'General fitness'}
     Preferred units: Weight in ${weightUnit}, Distance in ${distanceUnit}
+    Allow mixed exercise types: ${params.allowDurationExercises !== false ? 'Yes' : 'No'}
     
     Please generate a complete workout with the following structure:
     - name: A clear, motivating name for this workout
@@ -270,7 +271,7 @@ const generateWorkoutPrompt = (params) => {
     - timeOfDay: Recommended time of day (morning, afternoon, evening, anytime)
     - exercises: Array of exercise objects
 
-    IMPORTANT: You can only recommend two types of exercises according to these templates, you can recommend all exercises of one type if applicable (ex. In swimming only recommed swim type exercises or postures and distances):
+    IMPORTANT: You can freely mix the following two types of exercises in a single workout based on what's most appropriate for the workout type. For example, a HIIT workout might combine strength exercises with timed cardio intervals:
     
     1. Traditional strength exercises - use this format for strength-based exercises with repetitions:
        {
@@ -280,7 +281,7 @@ const generateWorkoutPrompt = (params) => {
          "reps": number of reps (as a string, especially if it includes notes like "10 each side"),
          "weight": weight recommendation (if applicable),
          "restTime": rest time in seconds (as a number),
-         "notes": form tips or variations
+         "notes": Brief exercise instructions
        }
        
     2. Duration-based exercises - use this format for cardio, planks, or timed exercises:
@@ -292,10 +293,15 @@ const generateWorkoutPrompt = (params) => {
          "durationUnit": unit for duration ("min" or "sec"),
          "distance": target distance if applicable (as a string),
          "restTime": rest time in seconds (as a number),
-         "notes": form tips or variations
+         "notes": Brief exercise instructions
        }
     
-    - notes: General notes or tips for the workout
+    MIXED WORKOUT GUIDANCE EXAMPLE:
+    - For cardio-focused workouts: Primarily use duration-based exercises
+    - For strength workouts: Primarily use traditional strength exercises (sets and reps)
+    - For HIIT or circuit training: Create a balanced mix of both types
+    - For swimming/running/cycling/walking: Use duration-based with appropriate distances
+    - For yoga/pilates: Mix duration-based poses with rep-based movements as appropriate
     
     VERY IMPORTANT FOR FORMATTING: 
     - Always include "isDurationBased" property for every exercise
@@ -308,24 +314,33 @@ const generateWorkoutPrompt = (params) => {
     - Use the user's preferred distance and weight units
     
     Format the response as a JSON object.
-    Example:
+    Example of a mixed workout:
     {
-      "name": "Full Body Strength Circuit",
-      "type": "strength",
+      "name": "HIIT Full Body Circuit",
+      "type": "hiit",
       "location": "gym",
       "duration": 45,
-      "equipment": ["dumbbells", "bench", "kettlebell"],
+      "equipment": ["dumbbells", "bench", "kettlebell", "jump rope"],
       "frequency": ["mon", "wed", "fri"],
       "timeOfDay": "morning",
       "exercises": [
         {
-          "name": "Goblet Squats",
+          "name": "Kettlebell Swings",
           "isDurationBased": false,
           "sets": 3,
-          "reps": "12",
+          "reps": "15",
           "weight": "moderate kettlebell",
-          "restTime": 60,
-          "notes": "Keep chest up, go to parallel depth"
+          "restTime": 30,
+          "notes": "Maintain good form with hips hinging back"
+        },
+        {
+          "name": "Jump Rope Intervals",
+          "isDurationBased": true,
+          "sets": 3,
+          "duration": 60,
+          "durationUnit": "sec",
+          "restTime": 20,
+          "notes": "Maintain a steady pace with minimal breaks"
         },
         {
           "name": "Alternating Lunges",
@@ -333,7 +348,7 @@ const generateWorkoutPrompt = (params) => {
           "sets": 3,
           "reps": "10 (each side)",
           "weight": "bodyweight",
-          "restTime": 45,
+          "restTime": 30,
           "notes": "Step forward and maintain balance"
         },
         {
@@ -346,25 +361,26 @@ const generateWorkoutPrompt = (params) => {
           "notes": "Keep core tight and maintain straight line from head to heels"
         },
         {
-          "name": "Treadmill Run",
+          "name": "Mountain Climbers",
           "isDurationBased": true,
-          "sets": 1,
-          "duration": 10,
-          "durationUnit": "min",
-          "distance": "1 mile",
-          "intensity": "medium",
-          "notes": "Maintain steady pace throughout"
+          "sets": 3,
+          "duration": 40,
+          "durationUnit": "sec",
+          "restTime": 20,
+          "notes": "Keep hips down and maintain a brisk pace"
         }
       ],
-      "notes": "Warm up with 5 minutes of light cardio before starting."
+      "notes": "Perform exercises in sequence with minimal rest between exercises. Complete one full circuit before taking a 2-minute break."
     }
     
     Only respond with the JSON object and nothing else. No explanations or additional text.
     
     ${params.objective ? `IMPORTANT: This workout should be specifically designed for: ${params.objective}` : ''}
     ${params.limitations ? 'IMPORTANT: Please carefully account for the mentioned health limitations/concerns in exercise selection and intensity.' : ''}
-    ${params.equipment && params.equipment.length > 0 ? 'IMPORTANT: Only include exercises that can be done with the listed available equipment.' : ''}
+    ${params.equipment && params.equipment.length > 0 ? 'IMPORTANT: Only include exercises that can be done with none or the listed available equipment.' : ''}
     ${params.location === 'home' ? 'IMPORTANT: Ensure all exercises are suitable for a home environment with potentially limited space.' : ''}
+    ${params.allowDurationExercises === false ? 'IMPORTANT: Only include traditional strength exercises with sets and reps (no duration-based exercises).' : ''}
+    ${params.allowDurationExercises === true && params.type === 'cardio' ? 'IMPORTANT: Primarily use duration-based exercises for this cardio workout.' : ''}
   `;
 };
 
@@ -376,7 +392,7 @@ const generateWorkoutPrompt = (params) => {
  */
 export const generateExerciseSuggestions = async (workoutType, equipment = []) => {
   const prompt = `
-    Suggest exercises appropriate for a ${workoutType} workout${equipment.length > 0 ? ` using the following equipment: ${equipment.join(', ')}` : ''}.
+    Suggest exercises appropriate for a ${workoutType} workout${equipment.length > 0 ? ` that can be done by using either none or the following equipment: ${equipment.join(', ')}` : ''}.
     
     For each exercise, provide:
     
@@ -388,7 +404,7 @@ export const generateExerciseSuggestions = async (workoutType, equipment = []) =
     - sets: Recommended sets (usually 3-5)
     - reps: Recommended reps
     - restTime: Rest time in seconds
-    - notes: Brief form tips
+    - notes: Brief exercise instructions
     
     For duration-based exercises:
     - name: Exercise name
@@ -399,7 +415,7 @@ export const generateExerciseSuggestions = async (workoutType, equipment = []) =
     - distance: Target distance (if applicable)
     - intensity: Intensity level ("light", "medium", "high")
     - restTime: Rest time in seconds
-    - notes: Brief form tips
+    - notes: Brief exercise instructions
     
     Format the response as a JSON array of exercise objects.
     Example with mixed exercise types:

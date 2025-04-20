@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { ArrowLeft, CheckCircle, X, Brain, AlertTriangle, Sliders, Dumbbell, 
-         Activity, Heart, Map, Clock, User, Loader, Book, Target, MessageSquare, Route } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Info,ArrowLeft, CheckCircle, X, Brain, AlertTriangle, Sliders, Dumbbell, 
+         Activity, Heart, Map, Clock, User, Loader, Book, Target, MessageSquare, Route, ToggleLeft, ToggleRight } from 'lucide-react';
 import { generateWorkout } from '../../utils/workoutAiService';
 import { getWorkoutTypes, getWorkoutLocations, getEquipmentOptions, createWorkout } from '../../utils/workoutUtils';
 import { getWeightUnit, getDistanceUnit } from '../../utils/storage';
@@ -16,7 +16,7 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
     limitations: '',
     focusAreas: [],
     objective: '', // Workout objective/description
-    allowDurationExercises: true // New field to tell AI it can mix exercise types
+    allowDurationExercises: true // Parameter to tell AI it can mix exercise types
   });
   
   // UI state
@@ -60,6 +60,14 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
         return { ...prev, focusAreas: [...focusAreas, area] };
       }
     });
+  };
+  
+  // Toggle allowDurationExercises parameter
+  const toggleAllowDurationExercises = () => {
+    setParams(prev => ({
+      ...prev,
+      allowDurationExercises: !prev.allowDurationExercises
+    }));
   };
   
   // Generate workout with AI
@@ -250,6 +258,60 @@ const AiWorkoutGenerator = ({ onWorkoutGenerated, onCancel }) => {
                 </select>
               </div>
             </div>
+          </div>
+          
+          {/* Exercise Type Preference */}
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Route size={18} className="text-slate-700 dark:text-slate-300" />
+                Exercise Type Preference
+              </h3>
+              <button
+                onClick={toggleAllowDurationExercises}
+                className="flex items-center gap-2 text-blue-600 dark:text-blue-400"
+              >
+                {params.allowDurationExercises ? (
+                  <ToggleRight size={24} className="text-blue-500 dark:text-blue-400" />
+                ) : (
+                  <ToggleLeft size={24} className="text-slate-400 dark:text-slate-600" />
+                )}
+              </button>
+            </div>
+            
+            <div className="text-sm text-slate-600 dark:text-slate-400">
+              {params.allowDurationExercises ? (
+                <div className="flex items-start gap-2">
+                  <CheckCircle size={16} className="text-green-500 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                  <span>
+                    Mixed approach enabled: AI will create a workout mixing both timed/distance exercises and traditional rep-based exercises
+                    as appropriate for your goals.
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2">
+                  <Activity size={16} className="text-slate-500 dark:text-slate-400 mt-0.5 flex-shrink-0" />
+                  <span>
+                    Traditional approach only: AI will create a workout using only rep-based exercises
+                    (sets × reps with weight when applicable).
+                  </span>
+                </div>
+              )}
+            </div>
+            
+            {params.type === 'cardio' && params.allowDurationExercises && (
+              <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs rounded">
+                <Info size={14} className="inline-block mr-1" />
+                For cardio workouts, duration and distance-based exercises are recommended.
+              </div>
+            )}
+            
+            {params.type === 'hiit' && params.allowDurationExercises && (
+              <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs rounded">
+                <Info size={14} className="inline-block mr-1" />
+                HIIT workouts benefit from a mix of both timed intervals and rep-based exercises.
+              </div>
+            )}
           </div>
           
           {/* Equipment */}

@@ -1427,193 +1427,63 @@ const getTypeSpecificFields = () => {
   // Validate the form before submission
   const validateForm = () => {
     const newErrors = {};
+    let hasScrolled = false; // Flag to ensure we only scroll to the first error
     
+    // Helper function to expand section and scroll to element
+    const expandAndScrollTo = (sectionName, elementId) => {
+      if (hasScrolled) return; // Only scroll to the first error
+      
+      // Set the flag to prevent multiple scrolls
+      hasScrolled = true;
+      
+      // Expand the section if it's not already active
+      if (activeInfoSection !== sectionName) {
+        setActiveInfoSection(sectionName);
+      }
+      
+      // Use setTimeout to ensure the section is expanded before scrolling
+      setTimeout(() => {
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          
+          // Optional: Add a brief highlight effect to the field
+          element.classList.add('highlight-error');
+          setTimeout(() => {
+            element.classList.remove('highlight-error');
+          }, 1000);
+        }
+      }, 100);
+    };
+    
+    // Validate Name (in basic section)
     if (!formData.name.trim()) {
       newErrors.name = 'Workout name is required';
+      expandAndScrollTo('basic', 'name');
     }
     
+    // Validate Frequency (in schedule section)
     if (formData.frequency.length === 0) {
       newErrors.frequency = 'Select at least one day';
+      expandAndScrollTo('schedule', 'frequency-container');
     }
     
+    // Validate Duration (in basic section)
     if (formData.duration <= 0) {
       newErrors.duration = 'Duration must be positive';
+      expandAndScrollTo('basic', 'duration');
+    }
+    
+    // Validate Exercises (in exercises section)
+    if (!formData.exercises || formData.exercises.length === 0) {
+      newErrors.exercises = 'At least one exercise is required';
+      expandAndScrollTo('exercises', 'exercise-form');
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Add this helper function at the top of your component or outside
-  const getDefaultExercisesForType = (type, formData, workoutDuration = 30) => {
-    // If the workout duration is very short (< 5 minutes), use seconds as default unit for some types
-    const useSeconds = workoutDuration < 5 && ['hiit', 'strength', 'bodyweight'].includes(type);
-    const defaultDuration = useSeconds ? workoutDuration * 60 : workoutDuration;
-    const defaultUnit = useSeconds ? 'sec' : 'min';
-    
-    switch(type) {
-      case 'swimming':
-        return [{
-          name: `Swimming - ${formData.swimStroke || 'Freestyle'}`,
-          isDurationBased: true,
-          sets: 1,
-          duration: workoutDuration,
-          durationUnit: 'min',
-          distance: formData.swimTargetValue ? 
-            `${formData.swimTargetValue} ${formData.swimTargetType === 'laps' ? 'laps' : formData.swimTargetType === 'distance' ? formData.distanceUnit : ''}` : 
-            '',
-          intensity: formData.intensityLevel || 'medium',
-          notes: `Pool length: ${formData.poolLength || '25m'}, Goal: ${formData.swimGoal || 'technique'}`
-        }];
-        
-      case 'running':
-        return [{
-          name: `${formData.runType ? formData.runType.charAt(0).toUpperCase() + formData.runType.slice(1) : 'Steady'} Run`,
-          isDurationBased: true,
-          sets: 1,
-          duration: workoutDuration,
-          durationUnit: 'min',
-          distance: formData.distance ? `${formData.distance} ${formData.distanceUnit || 'km'}` : '',
-          intensity: formData.intensityLevel || 'medium',
-          notes: `Surface: ${formData.surfaceType || 'road'}, Target pace: ${formData.targetPace || 'N/A'}`
-        }];
-        
-      case 'walking':
-        return [{
-          name: `${formData.runType ? formData.runType.charAt(0).toUpperCase() + formData.runType.slice(1) : 'Regular'} Walk`,
-          isDurationBased: true,
-          sets: 1,
-          duration: workoutDuration,
-          durationUnit: 'min',
-          distance: formData.distance ? `${formData.distance} ${formData.distanceUnit || 'km'}` : '',
-          intensity: formData.intensityLevel || 'light',
-          notes: `Surface: ${formData.surfaceType || 'road'}, Elevation gain: ${formData.elevation || 'N/A'}`
-        }];
-        
-      case 'cycling':
-        return [{
-          name: `${formData.cyclingType ? formData.cyclingType.charAt(0).toUpperCase() + formData.cyclingType.slice(1) : 'Road'} Cycling`,
-          isDurationBased: true,
-          sets: 1,
-          duration: workoutDuration,
-          durationUnit: 'min',
-          distance: formData.distance ? `${formData.distance} ${formData.distanceUnit || 'km'}` : '',
-          intensity: formData.intensityLevel || 'medium',
-          notes: `Target: ${formData.cyclingTargetType ? `${formData.cyclingTargetType} (${formData.cyclingTargetValue || 'N/A'})` : 'N/A'}, Goal: ${formData.cyclingGoal || 'endurance'}`
-        }];
-        
-      case 'yoga':
-      case 'pilates':
-      case 'flexibility':
-        let styleName = '';
-        if (formData.practiceStyle) {
-          styleName = ` - ${formData.practiceStyle.charAt(0).toUpperCase() + formData.practiceStyle.slice(1)}`;
-        }
-        
-        return [{
-          name: `${type.charAt(0).toUpperCase() + type.slice(1)}${styleName}`,
-          isDurationBased: true,
-          sets: 1,
-          duration: workoutDuration,
-          durationUnit: 'min',
-          intensity: formData.intensityLevel || 'medium',
-          notes: `Experience level: ${formData.experienceLevel || 'intermediate'}, Average hold time: ${formData.poseTime || 'mixed'}, Focus: ${formData.focusAreas.join(', ') || 'general'}`
-        }];
-        
-      case 'sports':
-        return [{
-          name: formData.sportType ? `${formData.sportType.charAt(0).toUpperCase() + formData.sportType.slice(1)}` : 'Sports Session',
-          isDurationBased: true,
-          sets: 1,
-          duration: workoutDuration,
-          durationUnit: 'min',
-          intensity: formData.intensityLevel || 'high',
-          notes: `Activity: ${formData.sportGoal || 'game'}, Team Size: ${formData.teamSize || 'N/A'}, Skill Level: ${formData.skillLevel || 'intermediate'}`
-        }];
-        
-      case 'martial_arts':
-      case 'boxing':
-        const rounds = formData.numRounds || 3;
-        const roundLength = formData.roundLength || 3;
-        
-        // Calculate total workout duration based on rounds and round length
-        const totalRoundTime = rounds * roundLength;
-        // Add 1 minute rest between rounds
-        const totalRestTime = (rounds - 1) * 1;
-        // Total session time
-        const sessionTime = totalRoundTime + totalRestTime;
-        
-        return [{
-          name: formData.martialStyle ? 
-            `${formData.martialStyle.charAt(0).toUpperCase() + formData.martialStyle.slice(1)} - ${formData.trainingType || 'Training'}` : 
-            `${type === 'boxing' ? 'Boxing' : 'Martial Arts'} - ${formData.trainingType || 'Training'}`,
-          isDurationBased: true,
-          sets: rounds,
-          duration: roundLength,
-          durationUnit: 'min',
-          intensity: formData.intensityLevel || 'high',
-          notes: `${rounds} rounds × ${roundLength} min with 1 min rest between rounds (${sessionTime} min total)`
-        }];
-        
-      case 'hiit':
-        // For HIIT, create interval-based exercises
-        const hiitFormat = formData.workoutFormat || 'tabata';
-        let intervals;
-        
-        if (hiitFormat === 'tabata') {
-          // Tabata: 20s work, 10s rest, 8 sets
-          return [{
-            name: 'Tabata Intervals',
-            isDurationBased: true,
-            sets: 8,
-            duration: 20,
-            durationUnit: 'sec',
-            intensity: formData.intensityLevel || 'high',
-            notes: `20s work / 10s rest × 8 sets, Focus: ${formData.focusAreas.join(', ') || 'full body'}`
-          }];
-        } else if (hiitFormat === '30-30') {
-          return [{
-            name: '30-30 Intervals',
-            isDurationBased: true,
-            sets: Math.round(workoutDuration / 2), // Roughly estimate sets based on duration
-            duration: 30,
-            durationUnit: 'sec',
-            intensity: formData.intensityLevel || 'high',
-            notes: `30s work / 30s rest, Rest intervals: ${formData.restInterval || 'medium'}, Focus: ${formData.focusAreas.join(', ') || 'full body'}`
-          }];
-        } else {
-          return [{
-            name: 'HIIT Workout',
-            isDurationBased: true,
-            sets: 3,
-            duration: defaultDuration / 3,
-            durationUnit: defaultUnit,
-            intensity: formData.intensityLevel || 'high',
-            notes: `Format: ${hiitFormat || 'custom'}, Rest intervals: ${formData.restInterval || 'medium'}, Focus: ${formData.focusAreas.join(', ') || 'full body'}`
-          }];
-        }
-        
-      case 'strength':
-      case 'bodyweight':
-      case 'crossfit':
-        // For strength-type workouts, create a basic template
-        return [{
-          name: `${formData.workoutFormat ? `${formData.workoutFormat.charAt(0).toUpperCase() + formData.workoutFormat.slice(1)} ` : ''}${type.charAt(0).toUpperCase() + type.slice(1)} Workout`,
-          isDurationBased: type === 'crossfit',
-          sets: type === 'crossfit' ? 1 : 3,
-          reps: 10,
-          duration: type === 'crossfit' ? workoutDuration : null,
-          durationUnit: 'min',
-          intensity: formData.intensityLevel || 'medium',
-          notes: `Focus areas: ${formData.focusAreas.join(', ') || 'general'}, Rest intervals: ${formData.restInterval || 'medium'}`
-        }];
-        
-      default:
-        return [];
-    }
-  };
-
-  
   // Handle form submission
   const handleSubmit = () => {
     if (!validateForm()) {
@@ -1624,24 +1494,7 @@ const getTypeSpecificFields = () => {
       // Clone form data to work with
       const dataToSave = { ...formData };
       
-      // Only add default exercises if the exercises array is empty AND this is a workout type that needs default exercises
-      if (dataToSave.exercises.length === 0) {
-        // Only add default exercises if the exercises array is empty
-if (dataToSave.exercises.length === 0) {
-  const needsDefaultExercises = ['running', 'walking', 'swimming', 'cycling', 'yoga', 'pilates',
-                               'flexibility', 'sports', 'martial_arts', 'boxing', 'hiit',
-                               'strength', 'bodyweight', 'crossfit'].includes(dataToSave.type);
-  
-  if (needsDefaultExercises) {
-    const defaultExercises = getDefaultExercisesForType(dataToSave.type, dataToSave, dataToSave.duration);
-    if (defaultExercises.length > 0) {
-      dataToSave.exercises = defaultExercises;
-    }
-  }
-}
-      }
-      
-      // Save with the potentially updated exercises
+      // Save workout data (without auto-generating exercises)
       if (workout) {
         // Update existing workout
         const updatedWorkout = updateWorkout(workout.id, dataToSave);
@@ -1659,6 +1512,7 @@ if (dataToSave.exercises.length === 0) {
       }));
     }
   };
+  
 
   return (
     <div className="px-2 sm:px-0 w-full overflow-hidden">
@@ -2078,10 +1932,16 @@ if (dataToSave.exercises.length === 0) {
   
   {/* Section Content */}
   {activeInfoSection === 'exercises' && (
-    <div className="p-4">
-      {/* Exercise Form */}
-<div id="exercise-form" className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4 border border-slate-200 dark:border-slate-700">
-  <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-3">
+  <div className="p-4">
+    {errors.exercises && (
+      <div id="exercise-error" className="p-3 my-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg flex items-center gap-2">
+        <AlertTriangle size={16} />
+        <span>{errors.exercises}</span>
+      </div>
+    )}
+    {/* Exercise Form */}
+    <div id="exercise-form" className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4 border border-slate-200 dark:border-slate-700">
+      <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-3">
     {isEditingExercise ? 'Edit Exercise' : 'Add Exercise'}
   </h4>
   

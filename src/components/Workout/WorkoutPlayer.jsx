@@ -124,6 +124,7 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
           
           if (firstExercise.isDurationBased) {
             // Initialize duration-based exercise
+            setCurrentSets(firstExercise.sets || 3);
             setExerciseDuration(firstExercise.duration); // Use exact value
             setExerciseDurationUnit(firstExercise.durationUnit || 'min');
             setExerciseDistance(firstExercise.distance || '');
@@ -1404,13 +1405,7 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
         </div>
       )}
       
-      {/* Next water break indicator */}
-      {nextWaterBreak && showControls && currentState !== 'ready' && currentState !== 'summary' && (
-        <div className="wp-water-indicator">
-          <Droplet size={14} />
-          <span>Next break: {nextWaterBreak}min</span>
-        </div>
-      )}
+     
 
       {/* Cancel Confirmation Modal */}
       {showCancelConfirmModal && (

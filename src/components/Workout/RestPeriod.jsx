@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, ChevronRight, Activity } from 'lucide-react';
+import { Clock, ChevronRight, Activity, Info } from 'lucide-react';
 import './RestPeriod.css';
 
 const RestPeriod = ({ 
@@ -55,6 +55,19 @@ const RestPeriod = ({
             </div>
             <ChevronRight size={16} className="next-arrow" />
           </div>
+          
+          {/* Add notes section if available */}
+          {nextExercise.notes && (
+            <div className="next-exercise-notes">
+              <div className="notes-header">
+                <Info size={16} className="notes-icon" />
+                <div className="notes-title">Form & Tips:</div>
+              </div>
+              <div className="notes-content">
+                {nextExercise.notes}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

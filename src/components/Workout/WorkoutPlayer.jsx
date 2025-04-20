@@ -76,6 +76,9 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const [exerciseIntensity, setExerciseIntensity] = useState('medium');
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
 
+  const [waterBreaksTaken, setWaterBreaksTaken] = useState(0);
+const [waterBreakTime, setWaterBreakTime] = useState(0);
+
   // Load workout on mount
   useEffect(() => {
     if (workoutId) {
@@ -985,6 +988,9 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const triggerWaterBreak = () => {
     console.log("Triggering water break");
     
+    // Increment water break counter
+    setWaterBreaksTaken(prev => prev + 1);
+    
     // Save current exercise timer state to restore later
     setExerciseTimerSaved(timeElapsed);
     
@@ -998,8 +1004,12 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
     // Pause timer if it's running
     if (isPlaying && timerRef.current) {
       clearInterval(timerRef.current);
-      setIsPlaying(false);
     }
+    
+    // Start a new timer for the water break
+    timerRef.current = setInterval(() => {
+      setTimeElapsed(prev => prev + 1);
+    }, 1000);
     
     // Play water break sound
     playSound(waterBreakSound);
@@ -1007,6 +1017,16 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
 
   // Complete water break
   const completeWaterBreak = () => {
+    // Stop the water break timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    console.log(`Adding ${timeElapsed} seconds to water break time`);
+    
+    // Add the current water break time to the total
+    setWaterBreakTime(prev => prev + timeElapsed);
+    
     updateNextWaterBreak();
     
     // Resume previous activity
@@ -1017,6 +1037,7 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       // Restore the previous exercise timer
       setTimeElapsed(exerciseTimerSaved);
       
+      // Start a new timer for the exercise
       startTimer();
     } else {
       endWorkout();
@@ -1075,11 +1096,6 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   // Skip to next exercise
   const skipToNext = () => {
     playSound(clickSound);
-    
-    if (currentState === 'exercise') {
-      markCurrentExerciseCompleted();
-    }
-    
     moveToNextExercise();
   };
 
@@ -1139,7 +1155,9 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
       distanceUnit: enhancedData.distanceUnit || 'km',
       incline: enhancedData.incline || null,
       intensity: enhancedData.intensity || 'medium',
-      waterBreaksTaken: enhancedData.waterBreaksTaken || 0
+      // Add water break data - use automatically tracked values if not provided
+      waterBreaksTaken: enhancedData.waterBreaksTaken || waterBreaksTaken,
+      waterBreakTime: waterBreakTime
     };
     
     // Log the workout
@@ -1327,17 +1345,19 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
           
           {/* Summary state */}
           {currentState === 'summary' && (
-            <WorkoutSummary 
-              workout={workout}
-              completedExercises={completedExercises}
-              totalTime={totalTimeElapsed}
-              notes={notes}
-              onNotesChange={setNotes}
-              onSave={saveWorkoutResults}
-              onClose={onClose}
-              theme={theme}
-            />
-          )}
+  <WorkoutSummary 
+    workout={workout}
+    completedExercises={completedExercises}
+    totalTime={totalTimeElapsed}
+    waterBreaksTaken={waterBreaksTaken}  // Pass the water break count
+    waterBreakTime={waterBreakTime}      // Pass the total water break time
+    notes={notes}
+    onNotesChange={setNotes}
+    onSave={saveWorkoutResults}
+    onClose={onClose}
+    theme={theme}
+  />
+)}
           
           {/* Achievement Popup */}
           {showAchievement && currentAchievement && (

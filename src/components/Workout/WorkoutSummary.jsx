@@ -13,19 +13,22 @@ const WorkoutSummary = ({
   workout, 
   completedExercises, 
   totalTime, 
+  waterBreaksTaken = 0,  // New prop with default
+  waterBreakTime = 0,    // New prop with default
   notes, 
   onNotesChange, 
   onSave, 
   onClose,
   theme = 'modern'
 }) => {
+
+  
   // Add state for additional metrics
   const [calories, setCalories] = useState('');
   const [distance, setDistance] = useState('');
   const [distanceUnit, setDistanceUnit] = useState('km');
   const [incline, setIncline] = useState('');
   const [intensity, setIntensity] = useState('3');
-  const [waterBreaksTaken, setWaterBreaksTaken] = useState('0');
   const [weightUnit, setWeightUnit] = useState('kg'); // Add this line
   const [expandedExercises, setExpandedExercises] = useState({});
   
@@ -59,6 +62,13 @@ const WorkoutSummary = ({
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}m ${secs}s`;
+  };
+
+  // Format time helper function
+  const formatTimeWaterBreak = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
   };
 
   // Format date for display
@@ -188,19 +198,28 @@ const WorkoutSummary = ({
           </div>
           
           {/* Water Breaks */}
-          <div className="col-span-1">
-            <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
-              <Droplet size={14} className="text-blue-500 dark:text-blue-400" />
-              Water Breaks Taken
-            </label>
-            <input
-              type="text"
-              value={waterBreaksTaken}
-              onChange={(e) => setWaterBreaksTaken(e.target.value.replace(/\D/g, ''))}
-              placeholder="Number of water breaks"
-              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-            />
-          </div>
+          <div className="mt-1 mb-4">
+    <div className="flex items-center gap-2 mb-1">
+      <Droplet size={14} className="text-blue-500 dark:text-blue-400" />
+      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Water Break Stats</span>
+    </div>
+    
+    <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <div className="flex flex-col">
+          <span className="text-blue-700 dark:text-blue-300 font-medium">{waterBreaksTaken}</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {waterBreaksTaken === 1 ? 'Break' : 'Breaks'} Taken
+          </span>
+        </div>
+        
+        <div className="flex flex-col">
+          <span className="text-blue-700 dark:text-blue-300 font-medium">{formatTimeWaterBreak(waterBreakTime)}</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">Total Break Time</span>
+        </div>
+      </div>
+    </div>
+  </div>
         </div>
         
         {/* Second row: Intensity taking full width */}

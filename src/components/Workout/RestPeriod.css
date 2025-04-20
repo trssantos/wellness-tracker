@@ -147,3 +147,58 @@
 .theme-vintage .next-arrow {
   color: #8A7B59;
 }
+
+.next-exercise-notes {
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--wp-border-color);
+  border-radius: var(--wp-border-radius);
+  padding: 12px;
+}
+
+.notes-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.notes-icon {
+  color: var(--wp-primary-color);
+  margin-right: 8px;
+}
+
+.notes-title {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--wp-text-color-dark);
+}
+
+.notes-content {
+  font-size: 0.9rem;
+  color: var(--wp-text-color);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Dark mode theme adjustments */
+html.dark .next-exercise-notes {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Vintage theme styles */
+.theme-vintage .next-exercise-notes {
+  background: #E5D8B9;
+  border: 1px solid #C9B690;
+}
+
+.theme-vintage .notes-icon {
+  color: #8A7B59;
+}
+
+.theme-vintage .notes-title {
+  color: #5C4E33;
+}
+
+.theme-vintage .notes-content {
+  color: #8A7B59;
+}

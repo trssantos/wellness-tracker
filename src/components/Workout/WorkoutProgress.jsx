@@ -42,8 +42,7 @@ const WorkoutProgress = ({ workout, completedWorkouts }) => {
 
     setProgressData(progressData);
 
-    // Process exercise-specific progress (exercise completion, weights, etc.)
-    processExerciseProgress(sortedWorkouts);
+    
     
     // Compare latest workout with previous one
     if (sortedWorkouts.length >= 2) {
@@ -53,61 +52,6 @@ const WorkoutProgress = ({ workout, completedWorkouts }) => {
     }
   };
 
-  // Process exercise-specific progress
-  const processExerciseProgress = (sortedWorkouts) => {
-    // Get all unique exercises across workouts
-    const allExercises = new Map();
-    
-    sortedWorkouts.forEach(workout => {
-      if (workout.exercises && workout.exercises.length > 0) {
-        workout.exercises.forEach(exercise => {
-          if (!exercise) return;
-          
-          const exerciseName = exercise.name;
-          if (!allExercises.has(exerciseName)) {
-            allExercises.set(exerciseName, {
-              name: exerciseName,
-              history: [],
-              isDurationBased: exercise.isDurationBased || false
-            });
-          }
-          
-          // Add this instance to the exercise history
-          const date = new Date(workout.completedAt || workout.timestamp || workout.date);
-          allExercises.get(exerciseName).history.push({
-            date: date,
-            dateStr: date.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
-            weight: exercise.actualWeight || exercise.weight || '',
-            reps: exercise.actualReps || exercise.reps || 0,
-            sets: exercise.actualSets || exercise.sets || 0,
-            duration: exercise.actualDuration || exercise.duration || 0,
-            durationUnit: exercise.actualDurationUnit || exercise.durationUnit || 'min',
-            distance: exercise.actualDistance || exercise.distance || '',
-            intensity: exercise.actualIntensity || exercise.intensity || 'medium',
-            completed: exercise.completed !== false, // Default to true if not specified
-            isDurationBased: exercise.isDurationBased || false
-          });
-        });
-      }
-    });
-    
-    // Convert to array and sort by frequency (most common exercises first)
-    const exercisesArray = Array.from(allExercises.values())
-      .map(ex => ({
-        ...ex,
-        frequency: ex.history.length,
-        lastPerformed: ex.history.length > 0 ? ex.history[ex.history.length - 1].date : null
-      }))
-      .sort((a, b) => b.frequency - a.frequency);
-    
-    setExerciseProgress(exercisesArray);
-    
-    // Set initial selected exercise
-    if (exercisesArray.length > 0) {
-      setSelectedExercise(exercisesArray[0].name);
-      generateExerciseMetrics(exercisesArray[0]);
-    }
-  };
 
   // Generate comparison data between latest and previous workout
   const generateComparisonData = (latest, previous) => {
@@ -155,65 +99,7 @@ const WorkoutProgress = ({ workout, completedWorkouts }) => {
     });
   };
 
-  // Generate metrics for a specific exercise
-  const generateExerciseMetrics = (exerciseData) => {
-    if (!exerciseData || !exerciseData.history || exerciseData.history.length === 0) {
-      setExerciseMetrics([]);
-      return;
-    }
-    
-    const metrics = exerciseData.history.map(item => {
-      // For traditional strength exercises
-      if (!exerciseData.isDurationBased) {
-        // Calculate volume (sets * reps * weight)
-        const sets = parseInt(item.sets) || 0;
-        const reps = parseInt(item.reps) || 0;
-        const weight = parseFloat(item.weight) || 0;
-        const volume = sets * reps * weight;
-        
-        return {
-          dateStr: item.dateStr,
-          date: item.date,
-          weight: weight, 
-          reps: reps,
-          sets: sets,
-          volume: weight > 0 ? volume : null, // Only show volume if weight is tracked
-          completed: item.completed
-        };
-      } else {
-        // For duration-based exercises
-        const duration = parseInt(item.duration) || 0;
-        const durationInSeconds = item.durationUnit === 'min' ? duration * 60 : duration;
-        
-        // Try to parse distance if available
-        let distance = 0;
-        if (item.distance) {
-          const match = item.distance.match(/\d+(\.\d+)?/);
-          if (match) {
-            distance = parseFloat(match[0]);
-          }
-        }
-        
-        const pace = distance > 0 && durationInSeconds > 0 ? 
-          durationInSeconds / 60 / distance : // minutes per distance unit
-          null;
-        
-        return {
-          dateStr: item.dateStr,
-          date: item.date,
-          duration: duration,
-          durationUnit: item.durationUnit,
-          distance: distance > 0 ? distance : null,
-          pace: pace,
-          sets: parseInt(item.sets) || 1,
-          intensity: getIntensityValue(item.intensity),
-          completed: item.completed
-        };
-      }
-    });
-    
-    setExerciseMetrics(metrics);
-  };
+ 
 
   // Helper function to convert intensity string to numeric value
   const getIntensityValue = (intensity) => {
@@ -254,14 +140,6 @@ const WorkoutProgress = ({ workout, completedWorkouts }) => {
     }
   };
   
-  // Handle exercise selection
-  const handleExerciseSelect = (exerciseName) => {
-    setSelectedExercise(exerciseName);
-    const exercise = exerciseProgress.find(ex => ex.name === exerciseName);
-    if (exercise) {
-      generateExerciseMetrics(exercise);
-    }
-  };
 
   // Get trend direction for a metric
   const getTrendDirection = (metrics, key) => {
@@ -275,16 +153,7 @@ const WorkoutProgress = ({ workout, completedWorkouts }) => {
     return "neutral";
   };
 
-  // Get the appropriate icon for a trend
-  const getTrendIcon = (direction, isPositive = true) => {
-    if (direction === "up") {
-      return <ArrowUp size={16} className={isPositive ? "text-green-500" : "text-red-500"} />;
-    }
-    if (direction === "down") {
-      return <ArrowDown size={16} className={isPositive ? "text-red-500" : "text-green-500"} />;
-    }
-    return <Minus size={16} className="text-slate-500" />;
-  };
+  
 
   // Format date for display
   const formatDate = (date) => {
@@ -382,192 +251,6 @@ const WorkoutProgress = ({ workout, completedWorkouts }) => {
     );
   };
 
-  // Render exercise progress charts
-  const renderExerciseCharts = () => {
-    const selectedExerciseData = exerciseProgress.find(ex => ex.name === selectedExercise);
-    
-    if (!selectedExerciseData || exerciseMetrics.length < 2) {
-      return (
-        <div className="text-center p-6 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-          <p className="text-slate-500 dark:text-slate-400">
-            Not enough data to show exercise progress charts.
-          </p>
-        </div>
-      );
-    }
-    
-    return (
-      <div>
-        <div className="overflow-x-auto">
-          <div className="min-w-full">
-            {/* For strength exercises, show weight, reps, volume */}
-            {!selectedExerciseData.isDurationBased && (
-              <>
-                <div className="h-64 mt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={exerciseMetrics}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="dateStr" />
-                      <YAxis yAxisId="left" />
-                      <YAxis yAxisId="right" orientation="right" />
-                      <Tooltip />
-                      <Legend />
-                      {exerciseMetrics.some(m => m.weight > 0) && (
-                        <Line 
-                          yAxisId="left"
-                          type="monotone" 
-                          dataKey="weight" 
-                          stroke="#3b82f6" 
-                          activeDot={{ r: 8 }} 
-                          name="Weight" 
-                        />
-                      )}
-                      <Line 
-                        yAxisId="right"
-                        type="monotone" 
-                        dataKey="reps" 
-                        stroke="#10b981" 
-                        name="Reps" 
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                {exerciseMetrics.some(m => m.volume !== null) && (
-                  <div className="h-64 mt-6">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={exerciseMetrics}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="dateStr" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="volume" fill="#8884d8" name="Volume (sets × reps × weight)" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-              </>
-            )}
-            
-            {/* For duration exercises, show duration, distance, pace */}
-            {selectedExerciseData.isDurationBased && (
-              <>
-                <div className="h-64 mt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={exerciseMetrics}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="dateStr" />
-                      <YAxis yAxisId="left" />
-                      {exerciseMetrics.some(m => m.distance !== null) && (
-                        <YAxis yAxisId="right" orientation="right" />
-                      )}
-                      <Tooltip />
-                      <Legend />
-                      <Line 
-                        yAxisId="left"
-                        type="monotone" 
-                        dataKey="duration" 
-                        stroke="#3b82f6" 
-                        activeDot={{ r: 8 }} 
-                        name="Duration" 
-                      />
-                      {exerciseMetrics.some(m => m.distance !== null) && (
-                        <Line 
-                          yAxisId="right"
-                          type="monotone" 
-                          dataKey="distance" 
-                          stroke="#10b981" 
-                          name="Distance" 
-                        />
-                      )}
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                {exerciseMetrics.some(m => m.pace !== null) && (
-                  <div className="h-64 mt-6">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={exerciseMetrics}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="dateStr" />
-                        <YAxis domain={['dataMin - 0.5', 'dataMax + 0.5']} />
-                        <Tooltip />
-                        <Legend />
-                        <Line 
-                          type="monotone" 
-                          dataKey="pace" 
-                          stroke="#f59e0b" 
-                          name="Pace (min/unit)" 
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-        
-        <div className="mt-4">
-          <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Performance Insights</h4>
-          <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg text-sm text-slate-600 dark:text-slate-300">
-            {!selectedExerciseData.isDurationBased ? (
-              // Strength exercise insights
-              <>
-                {exerciseMetrics.length >= 3 && (
-                  <p>
-                    {selectedExerciseData.name} has been performed {exerciseMetrics.length} times. 
-                    {getTrendDirection(exerciseMetrics, 'weight') === 'up' && " You've been consistently increasing weight - great progress!"}
-                    {getTrendDirection(exerciseMetrics, 'reps') === 'up' && " Your rep count is trending upward, showing improved endurance."}
-                    {getTrendDirection(exerciseMetrics, 'weight') === 'neutral' && getTrendDirection(exerciseMetrics, 'reps') === 'neutral' && 
-                      " You've been maintaining consistent performance."}
-                  </p>
-                )}
-                
-                {exerciseMetrics.length >= 2 && exerciseMetrics.some(m => m.volume !== null) && (
-                  <p className="mt-2">
-                    {getTrendDirection(exerciseMetrics, 'volume') === 'up' 
-                      ? "Your total volume (sets × reps × weight) is increasing, indicating overall strength gains."
-                      : getTrendDirection(exerciseMetrics, 'volume') === 'down'
-                        ? "Your total volume has decreased recently. Consider adjusting your training to build back up."
-                        : "Your total volume has remained steady."}
-                  </p>
-                )}
-              </>
-            ) : (
-              // Duration exercise insights
-              <>
-                {exerciseMetrics.length >= 3 && (
-                  <p>
-                    {selectedExerciseData.name} has been performed {exerciseMetrics.length} times.
-                    {getTrendDirection(exerciseMetrics, 'duration') === 'up' && " Your duration is increasing, showing improved endurance."}
-                    {getTrendDirection(exerciseMetrics, 'distance') === 'up' && " You're covering more distance over time - excellent progress!"}
-                  </p>
-                )}
-                
-                {exerciseMetrics.length >= 2 && exerciseMetrics.some(m => m.pace !== null) && (
-                  <p className="mt-2">
-                    {getTrendDirection(exerciseMetrics, 'pace') === 'down'
-                      ? "Your pace is improving (lower minutes per distance unit), showing better efficiency."
-                      : getTrendDirection(exerciseMetrics, 'pace') === 'up'
-                        ? "Your pace has slowed recently. This could be intentional or might indicate fatigue."
-                        : "Your pace has remained consistent."}
-                  </p>
-                )}
-              </>
-            )}
-            
-            {exerciseMetrics.length >= 5 && (
-              <p className="mt-2">
-                Your consistency with this exercise is excellent, which typically leads to better long-term results.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // Main rendering
   return (
@@ -597,29 +280,7 @@ const WorkoutProgress = ({ workout, completedWorkouts }) => {
               </div>
             ) : (
               <>
-                {/* Tabs */}
-                <div className="flex border-b border-slate-200 dark:border-slate-700 mb-4">
-                  <button
-                    onClick={() => setActiveTab('overview')}
-                    className={`px-4 py-2 text-sm ${
-                      activeTab === 'overview'
-                        ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 dark:border-blue-400 font-medium'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    Overview
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('exercises')}
-                    className={`px-4 py-2 text-sm ${
-                      activeTab === 'exercises'
-                        ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 dark:border-blue-400 font-medium'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    Exercise Tracking
-                  </button>
-                </div>
+                
                 
                 {/* Tab content */}
                 {activeTab === 'overview' && (
@@ -718,32 +379,7 @@ const WorkoutProgress = ({ workout, completedWorkouts }) => {
                     </div>
                   </div>
                 )}
-                
-                {activeTab === 'exercises' && (
-                  <div>
-                    {/* Exercise selector */}
-                    <div className="mb-4">
-                      <label htmlFor="exercise-select" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        Select Exercise
-                      </label>
-                      <select
-                        id="exercise-select"
-                        value={selectedExercise || ''}
-                        onChange={(e) => handleExerciseSelect(e.target.value)}
-                        className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-                      >
-                        {exerciseProgress.map(exercise => (
-                          <option key={exercise.name} value={exercise.name}>
-                            {exercise.name} ({exercise.frequency} times)
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    {/* Exercise charts */}
-                    {renderExerciseCharts()}
-                  </div>
-                )}
+               
               </>
             )}
           </div>

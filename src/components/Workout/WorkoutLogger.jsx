@@ -346,25 +346,26 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
     const [showError, setShowError] = useState(false);
     
     // Check if values are different from planned
-    const isDifferent = () => {
-      if (!exercise || !actualValues) return false;
-      
-      if (exercise.isDurationBased) {
-        return (
-          parseInt(actualValues.actualSets) !== parseInt(exercise.sets) ||
-          parseInt(actualValues.actualDuration) !== parseInt(exercise.duration) ||
-          actualValues.actualDurationUnit !== exercise.durationUnit ||
-          actualValues.actualDistance !== exercise.distance
-        );
-      } else {
-        return (
-          parseInt(actualValues.actualSets) !== parseInt(exercise.sets) ||
-          parseInt(actualValues.actualReps) !== parseInt(exercise.reps) ||
-          (actualValues.actualWeight !== exercise.weight && 
-           actualValues.actualWeight !== '')
-        );
-      }
-    };
+    // Check if values are different from planned
+const isDifferent = () => {
+  if (!exercise || !actualValues) return false;
+  
+  if (exercise.isDurationBased) {
+    return (
+      parseInt(actualValues.actualSets || 0) !== parseInt(exercise.sets || 0) ||
+      parseInt(actualValues.actualDuration || 0) !== parseInt(exercise.duration || 0) ||
+      (actualValues.actualDurationUnit || 'min') !== (exercise.durationUnit || 'min') ||
+      (actualValues.actualDistance || '') !== (exercise.distance || '')
+    );
+  } else {
+    return (
+      parseInt(actualValues.actualSets || 0) !== parseInt(exercise.sets || 0) ||
+      parseInt(actualValues.actualReps || 0) !== parseInt(exercise.reps || 0) ||
+      (actualValues.actualWeight !== exercise.weight && 
+       actualValues.actualWeight !== '')
+    );
+  }
+};
     
     // Handle the button click
     const handleClick = async () => {

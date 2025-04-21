@@ -1207,3 +1207,102 @@ export const debugExerciseComparison = (current, previous, exerciseName) => {
   
   console.log('=== END DEBUG ===');
 };
+
+/**
+ * Update an exercise in a workout template to use actual values as the new baseline
+ * @param {string} workoutId - The ID of the workout template
+ * @param {string} exerciseName - The name of the exercise to update
+ * @param {Object} actualValues - The actual values to set as baseline
+ * @returns {Object|null} The updated workout or null if not found
+ */
+export const updateExerciseBaseline = (workoutId, exerciseName, actualValues) => {
+  // Get the workout template
+  const workout = getWorkoutById(workoutId);
+  if (!workout) return null;
+  
+  // Find the exercise in the template
+  const exerciseIndex = workout.exercises.findIndex(e => e.name === exerciseName);
+  if (exerciseIndex === -1) return null;
+  
+  // Create updated exercise object
+  let updatedExercise;
+  
+  if (workout.exercises[exerciseIndex].isDurationBased) {
+    // For duration-based exercises
+    updatedExercise = {
+      ...workout.exercises[exerciseIndex],
+      sets: actualValues.actualSets || workout.exercises[exerciseIndex].sets,
+      duration: actualValues.actualDuration || workout.exercises[exerciseIndex].duration,
+      durationUnit: actualValues.actualDurationUnit || workout.exercises[exerciseIndex].durationUnit,
+      distance: actualValues.actualDistance || workout.exercises[exerciseIndex].distance
+    };
+  } else {
+    // For traditional strength exercises
+    updatedExercise = {
+      ...workout.exercises[exerciseIndex],
+      sets: actualValues.actualSets || workout.exercises[exerciseIndex].sets,
+      reps: actualValues.actualReps || workout.exercises[exerciseIndex].reps,
+      weight: actualValues.actualWeight || workout.exercises[exerciseIndex].weight
+    };
+  }
+  
+  // Update the workout template
+  const updatedExercises = [...workout.exercises];
+  updatedExercises[exerciseIndex] = updatedExercise;
+  
+  return updateWorkout(workoutId, {
+    exercises: updatedExercises
+  });
+};
+
+/**
+ * Get detailed exercise progression history for a specific exercise
+ * @param {string} exerciseName - Name of the exercise to track
+ * @param {number} limit - Maximum number of records to return
+ * @returns {Array} Array of exercise instances sorted by date (newest first)
+ */
+export const getExerciseProgressionHistory = (exerciseName, limit = 10) => {
+  const allWorkouts = getAllCompletedWorkouts();
+  
+  // Extract all instances of this exercise from completed workouts
+  const exerciseInstances = [];
+  
+  allWorkouts.forEach(workout => {
+    if (!workout.exercises) return;
+    
+    const matchingExercises = workout.exercises.filter(ex => 
+      ex && ex.name && ex.name.toLowerCase() === exerciseName.toLowerCase()
+    );
+    
+    if (matchingExercises.length > 0) {
+      matchingExercises.forEach(exercise => {
+        // Create a normalized exercise object
+        const normalizedExercise = {
+          name: exercise.name,
+          isDurationBased: exercise.isDurationBased || false,
+          // For strength exercises
+          sets: exercise.actualSets || exercise.sets,
+          reps: exercise.actualReps || exercise.reps,
+          weight: exercise.actualWeight || exercise.weight,
+          // For duration exercises
+          duration: exercise.actualDuration || exercise.duration,
+          durationUnit: exercise.actualDurationUnit || exercise.durationUnit || 'min',
+          distance: exercise.actualDistance || exercise.distance,
+          intensity: exercise.actualIntensity || exercise.intensity,
+          // Metadata
+          date: workout.completedAt || workout.timestamp || workout.date,
+          workoutId: workout.id,
+          workoutName: workout.name
+        };
+        
+        exerciseInstances.push(normalizedExercise);
+      });
+    }
+  });
+  
+  // Sort by date (newest first)
+  exerciseInstances.sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  // Limit the results
+  return exerciseInstances.slice(0, limit);
+};

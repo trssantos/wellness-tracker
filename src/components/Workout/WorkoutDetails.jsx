@@ -7,7 +7,7 @@ import WorkoutCalendar from './WorkoutCalendar';
 import { formatDateForStorage } from '../../utils/dateUtils';
 import { getWeightUnit } from '../../utils/storage';
 import WorkoutProgress from './WorkoutProgress';
-import PersonalRecords from './PersonalRecords';
+import PersonalRecords from './ExerciseProgressionTracker';
 import WorkoutTypeDetails from './WorkoutTypeDetails';
 
 

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, ArrowLeft, CheckCircle, Clock, Calendar, 
+import { Check, AlertCircle,Activity, ArrowLeft, CheckCircle, Clock, Calendar, 
          Save, Plus, Minus, Info, AlertTriangle,
          Flame, Award, Trash2, RotateCcw, Dumbbell, Route, 
          TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
-import { getWorkoutById, logWorkout, getCompletedWorkoutById, getAllCompletedWorkouts } from '../../utils/workoutUtils';
+import { getWorkoutById, logWorkout, getCompletedWorkoutById, getAllCompletedWorkouts,updateExerciseBaseline } from '../../utils/workoutUtils';
 import { getStorage, getWeightUnit, getDistanceUnit } from '../../utils/storage';
 
 /**
@@ -41,6 +41,13 @@ const getPreviousPerformances = (exerciseName) => {
     return [];
   }
 };
+
+// Add a success handler function to the WorkoutLogger component
+const handleBaselineUpdated = (exerciseName, updatedWorkout) => {
+  console.log(`Baseline updated for ${exerciseName}`);
+  // Optionally refresh the workout data if needed
+};
+
 
 const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCancel }) => {
   const [workout, setWorkout] = useState(null);
@@ -327,6 +334,88 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
       return '';
     }
   };
+
+  // Add this component inside WorkoutLogger.jsx
+const SetAsBaselineButton = ({ 
+  exercise, 
+  actualValues,
+  workoutId,
+  onSuccess = () => {}
+}) => {
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
+  
+  // Check if values are different from planned
+  const isDifferent = () => {
+    if (!exercise || !actualValues) return false;
+    
+    if (exercise.isDurationBased) {
+      return (
+        parseInt(actualValues.actualSets) !== parseInt(exercise.sets) ||
+        parseInt(actualValues.actualDuration) !== parseInt(exercise.duration) ||
+        actualValues.actualDurationUnit !== exercise.durationUnit ||
+        actualValues.actualDistance !== exercise.distance
+      );
+    } else {
+      return (
+        parseInt(actualValues.actualSets) !== parseInt(exercise.sets) ||
+        parseInt(actualValues.actualReps) !== parseInt(exercise.reps) ||
+        (actualValues.actualWeight !== exercise.weight && 
+         actualValues.actualWeight !== '')
+      );
+    }
+  };
+  
+  // Handle the button click
+  const handleClick = async () => {
+    try {
+      const updatedWorkout = await updateExerciseBaseline(workoutId, exercise.name, actualValues);
+      if (updatedWorkout) {
+        setShowSuccess(true);
+        onSuccess(exercise.name, updatedWorkout);
+        setTimeout(() => setShowSuccess(false), 3000);
+      } else {
+        throw new Error("Failed to update baseline");
+      }
+    } catch (error) {
+      console.error("Error updating exercise baseline:", error);
+      setShowError(true);
+      setTimeout(() => setShowError(false), 3000);
+    }
+  };
+  
+  // Don't show the button if values aren't different
+  if (!isDifferent()) return null;
+  
+  return (
+    <div className="relative mt-2">
+      <button
+        onClick={handleClick}
+        className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs flex items-center gap-1 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+        title="Update the planned values to match your actual performance"
+      >
+        <ArrowUp size={12} />
+        Set as new baseline
+      </button>
+      
+      {/* Success notification */}
+      {showSuccess && (
+        <div className="absolute top-full left-0 mt-2 p-2 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded text-xs flex items-center gap-1 z-10 whitespace-nowrap">
+          <Check size={12} />
+          Baseline updated!
+        </div>
+      )}
+      
+      {/* Error notification */}
+      {showError && (
+        <div className="absolute top-full left-0 mt-2 p-2 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded text-xs flex items-center gap-1 z-10 whitespace-nowrap">
+          <AlertCircle size={12} />
+          Failed to update baseline
+        </div>
+      )}
+    </div>
+  );
+};
 
   // Save completed workout
   const handleSaveWorkout = () => {
@@ -653,6 +742,23 @@ const WorkoutLogger = ({ workoutId, date, existingWorkoutId, onComplete, onCance
                       Completed
                     </span>
                   )}
+
+                  {/* Add the Set as Baseline button */}
+    {workout && workout.id && (
+      <SetAsBaselineButton
+        exercise={workout.exercises[index]}
+        actualValues={{
+          actualSets: exercise.actualSets,
+          actualReps: exercise.actualReps,
+          actualWeight: exercise.actualWeight,
+          actualDuration: exercise.actualDuration,
+          actualDurationUnit: exercise.actualDurationUnit,
+          actualDistance: exercise.actualDistance
+        }}
+        workoutId={workout.id}
+        onSuccess={handleBaselineUpdated}
+      />
+    )}
                 </div>
                 
                 {/* Previous Performance Data */}

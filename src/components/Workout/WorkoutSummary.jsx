@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Award, Clock, Dumbbell, Check, X, Save, 
+  AlertCircle,Award, Clock, Dumbbell, Check, X, Save, 
   Flame, Route, ArrowUp, ArrowDown, Droplet, Activity,
   ChevronDown, ChevronUp
 } from 'lucide-react';
 import './WorkoutSummary.css';
 import ExerciseProgressMetrics from './ExerciseProgressMetrics';
-import { getPreviousExercisePerformance } from '../../utils/workoutUtils';
+import { getPreviousExercisePerformance,updateExerciseBaseline } from '../../utils/workoutUtils';
 import { getWeightUnit, getDistanceUnit } from '../../utils/storage';
 
 const WorkoutSummary = ({ 
@@ -56,6 +56,94 @@ const WorkoutSummary = ({
       [index]: !prev[index]
     }));
   };
+
+  // Add this component to WorkoutSummary.jsx
+const SetAsBaselineButton = ({ 
+  exercise, 
+  actualValues,
+  workoutId,
+  onSuccess = () => {}
+}) => {
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
+  
+  // Check if values are different from planned
+  const isDifferent = () => {
+    if (!exercise || !actualValues) return false;
+    
+    if (exercise.isDurationBased) {
+      return (
+        parseInt(actualValues.actualSets || 0) !== parseInt(exercise.sets || 0) ||
+        parseInt(actualValues.actualDuration || 0) !== parseInt(exercise.duration || 0) ||
+        actualValues.actualDurationUnit !== exercise.durationUnit ||
+        actualValues.actualDistance !== exercise.distance
+      );
+    } else {
+      return (
+        parseInt(actualValues.actualSets || 0) !== parseInt(exercise.sets || 0) ||
+        parseInt(actualValues.actualReps || 0) !== parseInt(exercise.reps || 0) ||
+        (actualValues.actualWeight !== exercise.weight && 
+         actualValues.actualWeight !== '')
+      );
+    }
+  };
+  
+  // Handle the button click
+  const handleClick = async () => {
+    try {
+      const updatedWorkout = await updateExerciseBaseline(workoutId, exercise.name, actualValues);
+      if (updatedWorkout) {
+        setShowSuccess(true);
+        onSuccess(exercise.name, updatedWorkout);
+        setTimeout(() => setShowSuccess(false), 3000);
+      } else {
+        throw new Error("Failed to update baseline");
+      }
+    } catch (error) {
+      console.error("Error updating exercise baseline:", error);
+      setShowError(true);
+      setTimeout(() => setShowError(false), 3000);
+    }
+  };
+  
+  // Don't show the button if values aren't different
+  if (!isDifferent()) return null;
+  
+  return (
+    <div className="relative">
+      <button
+        onClick={handleClick}
+        className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs flex items-center gap-1 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+        title="Update the planned values to match your actual performance"
+      >
+        <ArrowUp size={12} />
+        Set as new baseline
+      </button>
+      
+      {/* Success notification */}
+      {showSuccess && (
+        <div className="absolute top-full right-0 mt-2 p-2 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded text-xs flex items-center gap-1 z-10 whitespace-nowrap">
+          <Check size={12} />
+          Baseline updated!
+        </div>
+      )}
+      
+      {/* Error notification */}
+      {showError && (
+        <div className="absolute top-full right-0 mt-2 p-2 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded text-xs flex items-center gap-1 z-10 whitespace-nowrap">
+          <AlertCircle size={12} />
+          Failed to update baseline
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Add a function to handle successful baseline updates
+const handleBaselineUpdated = (exerciseName, updatedWorkout) => {
+  console.log(`Baseline updated for ${exerciseName}`);
+  // You could show a global notification or update state if needed
+};
   
   // Format time as MM:SS
   const formatTime = (seconds) => {
@@ -377,6 +465,22 @@ const WorkoutSummary = ({
                       </span>
                     )}
                   </div>
+
+                  {hasDifferentValues && workout && workout.id && (
+          <SetAsBaselineButton
+            exercise={exercise}
+            actualValues={{
+              actualSets: exercise.actualSets,
+              actualReps: exercise.actualReps,
+              actualWeight: exercise.actualWeight,
+              actualDuration: exercise.actualDuration,
+              actualDurationUnit: exercise.actualDurationUnit,
+              actualDistance: exercise.actualDistance
+            }}
+            workoutId={workout.id}
+            onSuccess={handleBaselineUpdated}
+          />
+        )}
 
                   {/* Last Performance Section */}
                   {exercise.completed && (

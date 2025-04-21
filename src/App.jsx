@@ -49,6 +49,7 @@ import BucketList from './components/BucketList/BucketList';
 import MeditationSection  from './components/Meditation/MeditationSection';
 import { formatDateForStorage } from './utils/dateUtils';
 import TaskSearchModal from './components/TaskSearchModal';
+import NotesSection from './components/Notes/NotesSection';
 
 const App = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -704,6 +705,10 @@ const handlePendingTasksAction = (action, tasks = []) => {
               <SectionContainer id="templates" isActive={activeSection === 'templates'}>
                 <TemplatesSection />
               </SectionContainer>
+
+              <SectionContainer id="notes" isActive={activeSection === 'notes'}>
+  <NotesSection />
+</SectionContainer>
 
 
 

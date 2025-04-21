@@ -168,7 +168,30 @@ export const getCompletedWorkoutById = (workoutId) => {
  };
 
  /**
- * Update an existing workout template
+ * Helper function to determine if an exercise has changed significantly
+ * @param {Object} oldExercise - The original exercise
+ * @param {Object} newExercise - The new exercise
+ * @returns {boolean} True if there are significant differences
+ */
+function isDifferent(oldExercise, newExercise) {
+  if (oldExercise.isDurationBased) {
+    return (
+      Number(oldExercise.sets) !== Number(newExercise.sets) ||
+      Number(oldExercise.duration) !== Number(newExercise.duration) ||
+      oldExercise.distance !== newExercise.distance
+    );
+  } else {
+    return (
+      Number(oldExercise.sets) !== Number(newExercise.sets) ||
+      Number(oldExercise.reps) !== Number(newExercise.reps) ||
+      oldExercise.weight !== newExercise.weight
+    );
+  }
+};
+
+
+/**
+ * Update an existing workout template and track exercise version history
  * @param {string} workoutId - The ID of the workout to update
  * @param {Object} updates - The updates to apply
  * @returns {Object|null} The updated workout or null if not found
@@ -187,9 +210,78 @@ export const updateWorkout = (workoutId, updates) => {
     return null;
   }
   
+  const currentWorkout = storage.workouts[workoutIndex];
+  
+  // Handle exercise changes specifically to track version history
+  if (updates.exercises && currentWorkout.exercises) {
+    // For each exercise in the updated list, check if it exists in current workout
+    updates.exercises.forEach((updatedExercise, idx) => {
+      const currentExerciseIndex = currentWorkout.exercises.findIndex(e => e.name === updatedExercise.name);
+      
+      // If exercise exists and has changed
+      if (currentExerciseIndex !== -1) {
+        const currentExercise = currentWorkout.exercises[currentExerciseIndex];
+        
+        // Check if actual exercise parameters changed
+        const hasChanged = isDifferent(currentExercise, updatedExercise);
+        
+        if (hasChanged) {
+          // Init version history array if it doesn't exist
+          if (!updatedExercise.versionHistory) {
+            updatedExercise.versionHistory = [];
+            
+            // If this is the first version, save the original values
+            updatedExercise.versionHistory.push({
+              sets: currentExercise.sets,
+              reps: currentExercise.reps,
+              weight: currentExercise.weight,
+              duration: currentExercise.duration,
+              durationUnit: currentExercise.durationUnit,
+              distance: currentExercise.distance,
+              date: currentExercise.lastUpdated || currentWorkout.createdAt || new Date().toISOString(),
+              source: 'initial'
+            });
+          } else if (updatedExercise.versionHistory.length === 0) {
+            // If history array exists but empty, add initial version
+            updatedExercise.versionHistory.push({
+              sets: currentExercise.sets,
+              reps: currentExercise.reps,
+              weight: currentExercise.weight,
+              duration: currentExercise.duration,
+              durationUnit: currentExercise.durationUnit,
+              distance: currentExercise.distance,
+              date: currentExercise.lastUpdated || currentWorkout.createdAt || new Date().toISOString(),
+              source: 'initial'
+            });
+          }
+          
+          // Copy over existing version history if available
+          if (currentExercise.versionHistory && currentExercise.versionHistory.length > 0) {
+            updatedExercise.versionHistory = [...currentExercise.versionHistory];
+          }
+          
+          // Add the new version
+          updatedExercise.versionHistory.push({
+            sets: updatedExercise.sets,
+            reps: updatedExercise.reps,
+            weight: updatedExercise.weight,
+            duration: updatedExercise.duration,
+            durationUnit: updatedExercise.durationUnit,
+            distance: updatedExercise.distance,
+            date: new Date().toISOString(),
+            source: 'edit_update'
+          });
+          
+          // Update lastUpdated timestamp
+          updatedExercise.lastUpdated = new Date().toISOString();
+        }
+      }
+    });
+  }
+  
   // Create updated workout
   const updatedWorkout = {
-    ...storage.workouts[workoutIndex],
+    ...currentWorkout,
     ...updates,
     lastUpdated: new Date().toISOString()
   };
@@ -1210,6 +1302,7 @@ export const debugExerciseComparison = (current, previous, exerciseName) => {
 
 /**
  * Update an exercise in a workout template to use actual values as the new baseline
+ * and track the version history
  * @param {string} workoutId - The ID of the workout template
  * @param {string} exerciseName - The name of the exercise to update
  * @param {Object} actualValues - The actual values to set as baseline
@@ -1224,50 +1317,97 @@ export const updateExerciseBaseline = (workoutId, exerciseName, actualValues) =>
   const exerciseIndex = workout.exercises.findIndex(e => e.name === exerciseName);
   if (exerciseIndex === -1) return null;
   
-  // Create updated exercise object
+  // Get the current exercise
+  const currentExercise = workout.exercises[exerciseIndex];
+  
+  // Create updated exercise object with the new values
   let updatedExercise;
   
-  if (workout.exercises[exerciseIndex].isDurationBased) {
+  if (currentExercise.isDurationBased) {
     // For duration-based exercises
     updatedExercise = {
-      ...workout.exercises[exerciseIndex],
-      sets: actualValues.actualSets || workout.exercises[exerciseIndex].sets,
-      duration: actualValues.actualDuration || workout.exercises[exerciseIndex].duration,
-      durationUnit: actualValues.actualDurationUnit || workout.exercises[exerciseIndex].durationUnit,
-      distance: actualValues.actualDistance || workout.exercises[exerciseIndex].distance
+      ...currentExercise,
+      sets: actualValues.actualSets || currentExercise.sets,
+      duration: actualValues.actualDuration || currentExercise.duration,
+      durationUnit: actualValues.actualDurationUnit || currentExercise.durationUnit,
+      distance: actualValues.actualDistance || currentExercise.distance
     };
   } else {
     // For traditional strength exercises
     updatedExercise = {
-      ...workout.exercises[exerciseIndex],
-      sets: actualValues.actualSets || workout.exercises[exerciseIndex].sets,
-      reps: actualValues.actualReps || workout.exercises[exerciseIndex].reps,
-      weight: actualValues.actualWeight || workout.exercises[exerciseIndex].weight
+      ...currentExercise,
+      sets: actualValues.actualSets || currentExercise.sets,
+      reps: actualValues.actualReps || currentExercise.reps,
+      weight: actualValues.actualWeight || currentExercise.weight
     };
   }
+  
+  // Check if values actually changed
+  const hasChanged = isDifferent(currentExercise, updatedExercise);
+  
+  if (!hasChanged) {
+    // No actual changes, return the workout unchanged
+    return workout;
+  }
+  
+  // Add version history to the exercise if it doesn't exist
+  if (!updatedExercise.versionHistory) {
+    updatedExercise.versionHistory = [];
+  }
+  
+  // First, if this is the first version, save the original values
+  if (updatedExercise.versionHistory.length === 0) {
+    updatedExercise.versionHistory.push({
+      sets: currentExercise.sets,
+      reps: currentExercise.reps,
+      weight: currentExercise.weight,
+      duration: currentExercise.duration,
+      durationUnit: currentExercise.durationUnit,
+      distance: currentExercise.distance,
+      date: currentExercise.lastUpdated || workout.createdAt || new Date().toISOString(),
+      source: 'initial'
+    });
+  }
+  
+  // Add the new version
+  updatedExercise.versionHistory.push({
+    sets: updatedExercise.sets,
+    reps: updatedExercise.reps,
+    weight: updatedExercise.weight,
+    duration: updatedExercise.duration,
+    durationUnit: updatedExercise.durationUnit,
+    distance: updatedExercise.distance,
+    date: new Date().toISOString(),
+    source: 'baseline_update'
+  });
+  
+  // Update the exercise's lastUpdated timestamp
+  updatedExercise.lastUpdated = new Date().toISOString();
   
   // Update the workout template
   const updatedExercises = [...workout.exercises];
   updatedExercises[exerciseIndex] = updatedExercise;
   
   return updateWorkout(workoutId, {
-    exercises: updatedExercises
+    exercises: updatedExercises,
+    lastUpdated: new Date().toISOString()
   });
 };
 
 /**
- * Get detailed exercise progression history for a specific exercise
+ * Get detailed exercise progression history for a specific exercise from its version history
  * @param {string} exerciseName - Name of the exercise to track
  * @param {number} limit - Maximum number of records to return
- * @returns {Array} Array of exercise instances sorted by date (newest first)
+ * @returns {Array} Array of exercise versions sorted by date (newest first)
  */
 export const getExerciseProgressionHistory = (exerciseName, limit = 10) => {
-  const allWorkouts = getAllCompletedWorkouts();
+  // Get all workout templates first
+  const workouts = getWorkouts();
   
-  // Extract all instances of this exercise from completed workouts
+  // Find all instances of this exercise across templates
   const exerciseInstances = [];
   
-  allWorkouts.forEach(workout => {
+  workouts.forEach(workout => {
     if (!workout.exercises) return;
     
     const matchingExercises = workout.exercises.filter(ex => 
@@ -1276,26 +1416,50 @@ export const getExerciseProgressionHistory = (exerciseName, limit = 10) => {
     
     if (matchingExercises.length > 0) {
       matchingExercises.forEach(exercise => {
-        // Create a normalized exercise object
-        const normalizedExercise = {
-          name: exercise.name,
-          isDurationBased: exercise.isDurationBased || false,
-          // For strength exercises
-          sets: exercise.actualSets || exercise.sets,
-          reps: exercise.actualReps || exercise.reps,
-          weight: exercise.actualWeight || exercise.weight,
-          // For duration exercises
-          duration: exercise.actualDuration || exercise.duration,
-          durationUnit: exercise.actualDurationUnit || exercise.durationUnit || 'min',
-          distance: exercise.actualDistance || exercise.distance,
-          intensity: exercise.actualIntensity || exercise.intensity,
-          // Metadata
-          date: workout.completedAt || workout.timestamp || workout.date,
-          workoutId: workout.id,
-          workoutName: workout.name
-        };
-        
-        exerciseInstances.push(normalizedExercise);
+        // If the exercise has version history, use it
+        if (exercise.versionHistory && exercise.versionHistory.length > 0) {
+          exercise.versionHistory.forEach(version => {
+            // Create a normalized version object
+            const normalizedVersion = {
+              name: exercise.name,
+              isDurationBased: exercise.isDurationBased || false,
+              // Version data
+              sets: version.sets,
+              reps: version.reps,
+              weight: version.weight,
+              duration: version.duration,
+              durationUnit: version.durationUnit || 'min',
+              distance: version.distance,
+              // Metadata
+              date: version.date,
+              source: version.source,
+              workoutId: workout.id,
+              workoutName: workout.name
+            };
+            
+            exerciseInstances.push(normalizedVersion);
+          });
+        } else {
+          // If no version history, create one from the current exercise data
+          const normalizedVersion = {
+            name: exercise.name,
+            isDurationBased: exercise.isDurationBased || false,
+            // Exercise data
+            sets: exercise.sets,
+            reps: exercise.reps,
+            weight: exercise.weight,
+            duration: exercise.duration,
+            durationUnit: exercise.durationUnit || 'min',
+            distance: exercise.distance,
+            // Metadata
+            date: exercise.lastUpdated || workout.lastUpdated || workout.createdAt || new Date().toISOString(),
+            source: 'current',
+            workoutId: workout.id,
+            workoutName: workout.name
+          };
+          
+          exerciseInstances.push(normalizedVersion);
+        }
       });
     }
   });
@@ -1303,6 +1467,20 @@ export const getExerciseProgressionHistory = (exerciseName, limit = 10) => {
   // Sort by date (newest first)
   exerciseInstances.sort((a, b) => new Date(b.date) - new Date(a.date));
   
+  // Remove duplicates (same values at the same time)
+  const uniqueInstances = [];
+  const seen = new Set();
+  
+  exerciseInstances.forEach(instance => {
+    // Create a key from the important values
+    const key = `${instance.sets}-${instance.reps}-${instance.weight}-${instance.duration}-${instance.distance}`;
+    
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueInstances.push(instance);
+    }
+  });
+  
   // Limit the results
-  return exerciseInstances.slice(0, limit);
+  return uniqueInstances.slice(0, limit);
 };

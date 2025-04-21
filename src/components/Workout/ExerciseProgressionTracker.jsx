@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, ChevronDown, ChevronUp, Dumbbell, Activity, Calendar } from 'lucide-react';
 import { getWeightUnit, getDistanceUnit } from '../../utils/storage';
-import { getWorkouts, getAllCompletedWorkouts } from '../../utils/workoutUtils';
+import { getExerciseProgressionHistory } from '../../utils/workoutUtils';
 
 const ExerciseProgressionTracker = ({ workoutType, exerciseFilter = [] }) => {
   const [progressionData, setProgressionData] = useState([]); // Initialize as array
-  const [showComponent, setShowComponent] = useState(true);
+  const [showComponent, setShowComponent] = useState(false);
   const [weightUnit, setWeightUnit] = useState('lbs');
   const [distanceUnit, setDistanceUnit] = useState('km');
   const [selectedType, setSelectedType] = useState('all'); // 'all', 'strength', 'cardio'
+  const [expandedExercises, setExpandedExercises] = useState({}); // Track expanded exercises
 
   // Load progression data on mount
   useEffect(() => {
@@ -16,232 +17,75 @@ const ExerciseProgressionTracker = ({ workoutType, exerciseFilter = [] }) => {
     setWeightUnit(getWeightUnit());
     setDistanceUnit(getDistanceUnit());
 
-    // Calculate progression data
-    calculateExerciseProgressions();
+    // Load exercise progression data
+    loadExerciseProgressions();
   }, [exerciseFilter, workoutType]);
 
-  // Calculate exercise progressions from workout data
-  const calculateExerciseProgressions = () => {
-    // Get all workout templates (to get initial values)
-    const workoutTemplates = getWorkouts();
-    
-    // Initialize exercise map from all templates
-    const exerciseMap = {};
-    
-    // Add all exercises from templates first (so we have even those with no changes)
-    workoutTemplates.forEach(template => {
-      if (template.exercises) {
-        template.exercises.forEach(exercise => {
-          if (!exercise || !exercise.name) return;
-          
-          const exerciseName = exercise.name;
-          
-          if (!exerciseMap[exerciseName]) {
-            exerciseMap[exerciseName] = {
-              name: exerciseName,
-              isDurationBased: !!exercise.isDurationBased,
-              versions: [{
-                // Initial version from template
-                planned: {
-                  sets: exercise.sets,
-                  reps: exercise.reps,
-                  weight: exercise.weight,
-                  duration: exercise.duration,
-                  durationUnit: exercise.durationUnit,
-                  distance: exercise.distance
-                },
-                isInitial: true,
-                isCurrent: true,
-                date: template.createdAt || new Date().toISOString()
-              }],
-              workouts: [template.name]
-            };
-          } else if (!exerciseMap[exerciseName].workouts.includes(template.name)) {
-            // Add workout name if not already there
-            exerciseMap[exerciseName].workouts.push(template.name);
-          }
-        });
-      }
-    });
-    
-    // Get all completed workouts to find baseline changes
-    const allWorkouts = getAllCompletedWorkouts();
-    
-    // Find all exercises that have been changed through updateExerciseBaseline
-    allWorkouts.forEach(workout => {
-      if (!workout.workoutId || !workout.exercises) return;
+  // Load exercise progressions data from the new version history
+  const loadExerciseProgressions = () => {
+    // Process exercises from filters if provided
+    if (Array.isArray(exerciseFilter) && exerciseFilter.length > 0) {
+      const exerciseData = [];
       
-      // Get the template for this workout
-      const template = workoutTemplates.find(t => t.id === workout.workoutId);
-      if (!template) return;
-      
-      // Compare each exercise with its template version
-      workout.exercises.forEach(exercise => {
-        if (!exercise || !exercise.name) return;
+      // For each exercise name, get its progression history
+      exerciseFilter.forEach(exerciseName => {
+        if (!exerciseName) return;
         
-        const exerciseName = exercise.name;
-        const templateExercise = template.exercises.find(e => e.name === exerciseName);
-        if (!templateExercise) return;
+        // Get all versions for this exercise
+        const versions = getExerciseProgressionHistory(exerciseName, 15); // Get up to 15 versions
         
-        // Check if this represents a baseline change
-        // We consider it a change if the actual values don't match the template's values
-        // but match the current exercise values in the template (which would happen after updateExerciseBaseline)
-        const currentTemplateExercise = template.exercises.find(e => e.name === exerciseName);
-        
-        const hasBaselineChange = (
-          exercise.actualSets !== undefined && currentTemplateExercise.sets === exercise.actualSets ||
-          exercise.actualReps !== undefined && currentTemplateExercise.reps === exercise.actualReps ||
-          exercise.actualWeight !== undefined && currentTemplateExercise.weight === exercise.actualWeight ||
-          exercise.actualDuration !== undefined && currentTemplateExercise.duration === exercise.actualDuration ||
-          exercise.actualDistance !== undefined && currentTemplateExercise.distance === exercise.actualDistance
-        );
-        
-        if (hasBaselineChange) {
-          // Ensure the exercise exists in our map
-          if (!exerciseMap[exerciseName]) {
-            exerciseMap[exerciseName] = {
-              name: exerciseName,
-              isDurationBased: !!exercise.isDurationBased,
-              versions: [],
-              workouts: [workout.name]
-            };
-          }
+        if (versions.length > 0) {
+          // Identify if this is a duration-based exercise
+          const isDurationBased = versions.some(v => v.isDurationBased) || 
+                                  versions.some(v => v.duration) ||
+                                  versions.some(v => !v.reps);
           
-          // Create a new version
-          const newVersion = {
-            planned: {
-              sets: templateExercise.sets,
-              reps: templateExercise.reps,
-              weight: templateExercise.weight,
-              duration: templateExercise.duration,
-              durationUnit: templateExercise.durationUnit,
-              distance: templateExercise.distance
-            },
-            actual: {
-              sets: exercise.actualSets,
-              reps: exercise.actualReps,
-              weight: exercise.actualWeight,
-              duration: exercise.actualDuration,
-              durationUnit: exercise.actualDurationUnit,
-              distance: exercise.actualDistance
-            },
-            date: workout.completedAt || workout.timestamp || workout.date
-          };
+          // Extract unique workout names this exercise appears in
+          const workoutNames = [...new Set(versions.map(v => v.workoutName).filter(Boolean))];
           
-          // Add this as a new version if it's different from the last one
-          const existingVersions = exerciseMap[exerciseName].versions;
-          const lastVersion = existingVersions[existingVersions.length - 1];
+          // Group versions by having unique exercise parameters (to prevent duplicates)
+          const uniqueVersions = [];
+          const seen = new Set();
           
-          // Check if this version is different from the last one
-          let isDifferent = false;
-          
-          if (lastVersion) {
-            // Compare values between versions
-            if (exercise.isDurationBased) {
-              isDifferent = (
-                newVersion.actual.sets !== lastVersion.planned.sets ||
-                newVersion.actual.duration !== lastVersion.planned.duration ||
-                newVersion.actual.distance !== lastVersion.planned.distance
-              );
-            } else {
-              isDifferent = (
-                newVersion.actual.sets !== lastVersion.planned.sets ||
-                newVersion.actual.reps !== lastVersion.planned.reps ||
-                newVersion.actual.weight !== lastVersion.planned.weight
-              );
-            }
-          }
-          
-          if (isDifferent) {
-            // Add the new version and mark previous as not current
-            if (lastVersion) {
-              lastVersion.isCurrent = false;
-            }
+          versions.forEach(version => {
+            const key = `${version.sets}-${version.reps}-${version.weight}-${version.duration}-${version.distance}`;
             
-            // Add the new version as current
-            newVersion.isCurrent = true;
-            exerciseMap[exerciseName].versions.push(newVersion);
-          }
+            if (!seen.has(key)) {
+              seen.add(key);
+              // Create a formatted version object
+              uniqueVersions.push({
+                planned: {
+                  sets: version.sets,
+                  reps: version.reps,
+                  weight: version.weight,
+                  duration: version.duration,
+                  durationUnit: version.durationUnit,
+                  distance: version.distance
+                },
+                date: version.date,
+                source: version.source,
+                isCurrent: version.source === 'current',
+                isInitial: version.source === 'initial'
+              });
+            }
+          });
+          
+          // Add exercise data with its versions
+          exerciseData.push({
+            name: exerciseName,
+            isDurationBased: isDurationBased,
+            versions: uniqueVersions,
+            workouts: workoutNames,
+            baselineChanges: uniqueVersions.length - 1
+          });
         }
       });
-    });
-    
-    // Second approach: Check for exercises in templates that have been updated
-    workoutTemplates.forEach(template => {
-      if (template.exercises) {
-        template.exercises.forEach(exercise => {
-          if (!exercise || !exercise.name) return;
-          
-          const exerciseName = exercise.name;
-          
-          if (exerciseMap[exerciseName]) {
-            // Get the initial values
-            const initialVersion = exerciseMap[exerciseName].versions[0];
-            
-            // Check if current template values differ from initial values
-            if (initialVersion && initialVersion.planned) {
-              const isDifferent = (
-                parseInt(exercise.sets) !== parseInt(initialVersion.planned.sets) ||
-                (exercise.reps && initialVersion.planned.reps && parseInt(exercise.reps) !== parseInt(initialVersion.planned.reps)) ||
-                (exercise.weight && initialVersion.planned.weight && parseFloat(exercise.weight) !== parseFloat(initialVersion.planned.weight)) ||
-                (exercise.duration && initialVersion.planned.duration && parseInt(exercise.duration) !== parseInt(initialVersion.planned.duration)) ||
-                (exercise.distance && initialVersion.planned.distance && exercise.distance !== initialVersion.planned.distance)
-              );
-              
-              if (isDifferent && initialVersion.isInitial) {
-                // Create a new version based on current template values
-                const newVersion = {
-                  planned: {
-                    sets: exercise.sets,
-                    reps: exercise.reps,
-                    weight: exercise.weight,
-                    duration: exercise.duration,
-                    durationUnit: exercise.durationUnit,
-                    distance: exercise.distance
-                  },
-                  isCurrent: true,
-                  date: template.lastUpdated || new Date().toISOString()
-                };
-                
-                // Update initial version
-                initialVersion.isCurrent = false;
-                
-                // Add the new version
-                exerciseMap[exerciseName].versions.push(newVersion);
-              }
-            }
-          }
-        });
-      }
-    });
-    
-    // Convert to array for easier filtering/sorting
-    let exercisesArray = Object.values(exerciseMap);
-    
-    // Sort versions within each exercise (newest first - meaning current is first)
-    exercisesArray.forEach(exercise => {
-      exercise.versions.sort((a, b) => new Date(b.date) - new Date(a.date));
-    });
-    
-    // Count the baseline changes
-    exercisesArray.forEach(exercise => {
-      exercise.baselineChanges = exercise.versions.length > 1 ? exercise.versions.length - 1 : 0;
-    });
-    
-    // Filter by workout type if specified
-    if (workoutType) {
-      const isCardioType = ['running', 'walking', 'cycling', 'swimming', 'cardio', 'hiit'].includes(workoutType);
-      exercisesArray = exercisesArray.filter(exercise => isCardioType ? exercise.isDurationBased : !exercise.isDurationBased);
+      
+      setProgressionData(exerciseData);
+    } else {
+      // No filters provided, we can't show anything
+      setProgressionData([]);
     }
-    
-    // Filter by exercise names if specified
-    if (exerciseFilter && exerciseFilter.length > 0) {
-      exercisesArray = exercisesArray.filter(exercise => 
-        exerciseFilter.some(name => name.toLowerCase() === exercise.name.toLowerCase())
-      );
-    }
-    
-    setProgressionData(exercisesArray);
   };
 
   // Filter exercises by type
@@ -260,12 +104,30 @@ const ExerciseProgressionTracker = ({ workoutType, exerciseFilter = [] }) => {
     ).length;
   };
 
-  // Get values from a version (actual or planned)
+  // Get values from a version
   const getVersionValues = (version) => {
-    if (version.actual) {
-      return version.actual;
-    }
     return version.planned;
+  };
+
+  // Toggle exercise expansion
+  const toggleExercise = (exerciseName) => {
+    setExpandedExercises(prev => ({
+      ...prev,
+      [exerciseName]: !prev[exerciseName]
+    }));
+  };
+  
+  // Format date display
+  const formatDate = (dateStr) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('default', {
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return '';
+    }
   };
 
   return (
@@ -294,7 +156,7 @@ const ExerciseProgressionTracker = ({ workoutType, exerciseFilter = [] }) => {
                 No exercise data available yet.
               </p>
               <p className="text-sm text-slate-500 dark:text-slate-500 mt-2">
-                Add exercises to your workouts to track progression.
+                Add exercises to your workouts and update them to track progression.
               </p>
             </div>
           ) : (
@@ -336,7 +198,7 @@ const ExerciseProgressionTracker = ({ workoutType, exerciseFilter = [] }) => {
               </div>
 
               {/* Exercise list with progressions */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {progressionData
                   .filter(exercise => {
                     if (selectedType === 'all') return true;
@@ -345,9 +207,12 @@ const ExerciseProgressionTracker = ({ workoutType, exerciseFilter = [] }) => {
                     return true;
                   })
                   .map((exercise) => (
-                    <div key={exercise.name} className="bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                    <div key={exercise.name} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
                       {/* Exercise header */}
-                      <div className="p-3 flex items-center justify-between">
+                      <div 
+                        className="p-3 flex items-center justify-between cursor-pointer"
+                        onClick={() => toggleExercise(exercise.name)}
+                      >
                         <div className="flex items-center gap-2">
                           {exercise.isDurationBased ? (
                             <Activity size={16} className="text-green-500 dark:text-green-400" />
@@ -356,194 +221,211 @@ const ExerciseProgressionTracker = ({ workoutType, exerciseFilter = [] }) => {
                           )}
                           <h4 className="font-medium text-slate-800 dark:text-slate-100">{exercise.name}</h4>
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                          {exercise.baselineChanges} baseline changes
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            {exercise.baselineChanges} baseline changes
+                          </span>
+                          {expandedExercises[exercise.name] ? (
+                            <ChevronUp size={16} className="text-slate-500 dark:text-slate-400" />
+                          ) : (
+                            <ChevronDown size={16} className="text-slate-500 dark:text-slate-400" />
+                          )}
                         </div>
                       </div>
                       
-                      {/* Versions grid - with newest first */}
-                      <div className="p-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {exercise.versions.map((version, idx) => (
-                            <div 
-                              key={idx}
-                              className={`p-3 rounded-lg border ${
-                                version.isCurrent
-                                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-                                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
-                              }`}
-                            >
-                              <div className="flex justify-between items-center mb-2">
-                                <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                  Version {exercise.versions.length - idx}
-                                </div>
-                                {version.isCurrent && (
-                                  <div className="text-xs text-green-600 dark:text-green-400">
-                                    Current
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* Exercise details */}
-                              {!exercise.isDurationBased ? (
-                                // Strength exercise
-                                <div className="space-y-1">
-                                  {/* Sets */}
-                                  <div className="flex justify-between">
-                                    <span className="text-xs text-slate-500 dark:text-slate-400">Sets:</span>
-                                    <span className="font-medium text-slate-700 dark:text-slate-300">
-                                      {getVersionValues(version).sets}
-                                    </span>
-                                  </div>
-                                  
-                                  {/* Reps */}
-                                  {getVersionValues(version).reps && (
-                                    <div className="flex justify-between">
-                                      <span className="text-xs text-slate-500 dark:text-slate-400">Reps:</span>
-                                      <span className="font-medium text-slate-700 dark:text-slate-300">
-                                        {getVersionValues(version).reps}
-                                      </span>
+                      {/* Versions grid - only shown if exercise is expanded */}
+                      {expandedExercises[exercise.name] && (
+                        <div className="p-3 border-t border-slate-100 dark:border-slate-700">
+                          {/* Horizontal scrollable container for versions */}
+                          <div className="overflow-x-auto pb-2">
+                            <div className="flex gap-3" style={{ minWidth: "min-content" }}>
+                              {exercise.versions.map((version, idx) => (
+                                <div 
+                                  key={idx}
+                                  className={`flex-shrink-0 p-3 rounded-lg border w-44 ${
+                                    version.isCurrent
+                                      ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-center mb-2">
+                                    <div className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                      Version {exercise.versions.length - idx}
                                     </div>
-                                  )}
-                                  
-                                  {/* Weight */}
-                                  {getVersionValues(version).weight && (
-                                    <div className="flex justify-between">
-                                      <span className="text-xs text-slate-500 dark:text-slate-400">Weight:</span>
-                                      <span className="font-medium text-slate-700 dark:text-slate-300">
-                                        {getVersionValues(version).weight} {weightUnit}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                // Cardio/duration exercise
-                                <div className="space-y-1">
-                                  {/* Duration */}
-                                  {getVersionValues(version).duration && (
-                                    <div className="flex justify-between">
-                                      <span className="text-xs text-slate-500 dark:text-slate-400">Duration:</span>
-                                      <span className="font-medium text-slate-700 dark:text-slate-300">
-                                        {getVersionValues(version).duration}
-                                        {getVersionValues(version).durationUnit === 'sec' ? 'sec' : ''}
-                                      </span>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Sets */}
-                                  <div className="flex justify-between">
-                                    <span className="text-xs text-slate-500 dark:text-slate-400">Sets:</span>
-                                    <span className="font-medium text-slate-700 dark:text-slate-300">
-                                      {getVersionValues(version).sets || 1}
-                                    </span>
-                                  </div>
-                                  
-                                  {/* Distance */}
-                                  {getVersionValues(version).distance && (
-                                    <div className="flex justify-between">
-                                      <span className="text-xs text-slate-500 dark:text-slate-400">Distance:</span>
-                                      <span className="font-medium text-slate-700 dark:text-slate-300">
-                                        {getVersionValues(version).distance}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              
-                              {/* Show percentage changes if this isn't the first version */}
-                              {idx < exercise.versions.length - 1 && (
-                                <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                                  {(() => {
-                                    const nextVersion = exercise.versions[idx + 1];
-                                    const currentValues = getVersionValues(version);
-                                    const prevValues = getVersionValues(nextVersion);
-                                    
-                                    // Calculate changes
-                                    const changes = [];
-                                    
-                                    // For duration-based exercises
-                                    if (exercise.isDurationBased) {
-                                      if (currentValues.duration && prevValues.duration) {
-                                        const diff = parseInt(currentValues.duration) - parseInt(prevValues.duration);
-                                        if (diff !== 0) {
-                                          changes.push({
-                                            label: 'Duration',
-                                            diff,
-                                            value: `${Math.abs(diff)}${currentValues.durationUnit === 'sec' ? 'sec' : ''}`
-                                          });
-                                        }
-                                      }
-                                    } else {
-                                      // For strength exercises
-                                      if (currentValues.reps && prevValues.reps) {
-                                        const diff = parseInt(currentValues.reps) - parseInt(prevValues.reps);
-                                        if (diff !== 0) {
-                                          changes.push({
-                                            label: 'Reps',
-                                            diff,
-                                            value: Math.abs(diff)
-                                          });
-                                        }
-                                      }
-                                      
-                                      if (currentValues.weight && prevValues.weight) {
-                                        const diff = parseFloat(currentValues.weight) - parseFloat(prevValues.weight);
-                                        if (diff !== 0) {
-                                          changes.push({
-                                            label: 'Weight',
-                                            diff,
-                                            value: `${Math.abs(diff)} ${weightUnit}`
-                                          });
-                                        }
-                                      }
-                                    }
-                                    
-                                    // Sets for both types
-                                    if (currentValues.sets && prevValues.sets) {
-                                      const diff = parseInt(currentValues.sets) - parseInt(prevValues.sets);
-                                      if (diff !== 0) {
-                                        changes.push({
-                                          label: 'Sets',
-                                          diff,
-                                          value: Math.abs(diff)
-                                        });
-                                      }
-                                    }
-                                    
-                                    return changes.length > 0 ? (
-                                      <div className="text-xs">
-                                        {changes.map((change, changeIdx) => (
-                                          <div 
-                                            key={changeIdx}
-                                            className={`flex items-center justify-between ${
-                                              change.diff > 0 
-                                                ? 'text-green-600 dark:text-green-400' 
-                                                : 'text-red-500 dark:text-red-400'
-                                            }`}
-                                          >
-                                            <span>{change.label + ':'}</span>
-                                            <span className="font-medium">
-                                              {change.diff > 0 ? '+' : '-'}{change.value}
-                                            </span>
-                                          </div>
-                                        ))}
+                                    {version.isCurrent && (
+                                      <div className="text-xs bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded-full">
+                                        Current
                                       </div>
-                                    ) : null;
-                                  })()}
+                                    )}
+                                  </div>
+                                  
+                                  {/* Exercise details */}
+                                  {!exercise.isDurationBased ? (
+                                    // Strength exercise
+                                    <div className="space-y-1 text-sm">
+                                      {/* Sets */}
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">Sets:</span>
+                                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                                          {getVersionValues(version).sets}
+                                        </span>
+                                      </div>
+                                      
+                                      {/* Reps */}
+                                      {getVersionValues(version).reps && (
+                                        <div className="flex justify-between">
+                                          <span className="text-xs text-slate-500 dark:text-slate-400">Reps:</span>
+                                          <span className="font-medium text-slate-700 dark:text-slate-300">
+                                            {getVersionValues(version).reps}
+                                          </span>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Weight */}
+                                      {getVersionValues(version).weight && (
+                                        <div className="flex justify-between">
+                                          <span className="text-xs text-slate-500 dark:text-slate-400">Weight:</span>
+                                          <span className="font-medium text-slate-700 dark:text-slate-300">
+                                            {getVersionValues(version).weight} {weightUnit}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    // Cardio/duration exercise
+                                    <div className="space-y-1 text-sm">
+                                      {/* Duration */}
+                                      {getVersionValues(version).duration && (
+                                        <div className="flex justify-between">
+                                          <span className="text-xs text-slate-500 dark:text-slate-400">Duration:</span>
+                                          <span className="font-medium text-slate-700 dark:text-slate-300">
+                                            {getVersionValues(version).duration}
+                                            {getVersionValues(version).durationUnit === 'sec' ? 'sec' : ''}
+                                          </span>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Sets */}
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">Sets:</span>
+                                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                                          {getVersionValues(version).sets || 1}
+                                        </span>
+                                      </div>
+                                      
+                                      {/* Distance */}
+                                      {getVersionValues(version).distance && (
+                                        <div className="flex justify-between">
+                                          <span className="text-xs text-slate-500 dark:text-slate-400">Distance:</span>
+                                          <span className="font-medium text-slate-700 dark:text-slate-300">
+                                            {getVersionValues(version).distance}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Show percentage changes if this isn't the first version */}
+                                  {idx < exercise.versions.length - 1 && (
+                                    <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                                      {(() => {
+                                        const nextVersion = exercise.versions[idx + 1];
+                                        const currentValues = getVersionValues(version);
+                                        const prevValues = getVersionValues(nextVersion);
+                                        
+                                        // Calculate changes
+                                        const changes = [];
+                                        
+                                        // For duration-based exercises
+                                        if (exercise.isDurationBased) {
+                                          if (currentValues.duration && prevValues.duration) {
+                                            const diff = parseInt(currentValues.duration) - parseInt(prevValues.duration);
+                                            if (diff !== 0) {
+                                              changes.push({
+                                                label: 'Duration',
+                                                diff,
+                                                value: `${Math.abs(diff)}${currentValues.durationUnit === 'sec' ? 'sec' : ''}`
+                                              });
+                                            }
+                                          }
+                                        } else {
+                                          // For strength exercises
+                                          if (currentValues.reps && prevValues.reps) {
+                                            const diff = parseInt(currentValues.reps) - parseInt(prevValues.reps);
+                                            if (diff !== 0) {
+                                              changes.push({
+                                                label: 'Reps',
+                                                diff,
+                                                value: Math.abs(diff)
+                                              });
+                                            }
+                                          }
+                                          
+                                          if (currentValues.weight && prevValues.weight) {
+                                            const diff = parseFloat(currentValues.weight) - parseFloat(prevValues.weight);
+                                            if (diff !== 0) {
+                                              changes.push({
+                                                label: 'Weight',
+                                                diff,
+                                                value: `${Math.abs(diff)} ${weightUnit}`
+                                              });
+                                            }
+                                          }
+                                        }
+                                        
+                                        // Sets for both types
+                                        if (currentValues.sets && prevValues.sets) {
+                                          const diff = parseInt(currentValues.sets) - parseInt(prevValues.sets);
+                                          if (diff !== 0) {
+                                            changes.push({
+                                              label: 'Sets',
+                                              diff,
+                                              value: Math.abs(diff)
+                                            });
+                                          }
+                                        }
+                                        
+                                        return changes.length > 0 ? (
+                                          <div className="text-xs">
+                                            {changes.map((change, changeIdx) => (
+                                              <div 
+                                                key={changeIdx}
+                                                className={`flex items-center justify-between ${
+                                                  change.diff > 0 
+                                                    ? 'text-green-600 dark:text-green-400' 
+                                                    : 'text-red-500 dark:text-red-400'
+                                                }`}
+                                              >
+                                                <span>{change.label + ':'}</span>
+                                                <span className="font-medium">
+                                                  {change.diff > 0 ? '+' : '-'}{change.value}
+                                                </span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        ) : null;
+                                      })()}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Date display */}
+                                  <div className="mt-2 pt-1 text-xs text-slate-400 dark:text-slate-500">
+                                    {formatDate(version.date)}
+                                  </div>
                                 </div>
-                              )}
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                        
-                        {/* Used in workouts list */}
-                        {exercise.workouts && exercise.workouts.length > 0 && (
-                          <div className="mt-3 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                            <Calendar size={12} />
-                            <span>Used in: {exercise.workouts.join(', ')}</span>
                           </div>
-                        )}
-                      </div>
+                          
+                          {/* Used in workouts list */}
+                          {exercise.workouts && exercise.workouts.length > 0 && (
+                            <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                              <Calendar size={12} />
+                              <span>Used in: {exercise.workouts.join(', ')}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
               </div>

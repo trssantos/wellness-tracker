@@ -3,9 +3,11 @@ import {
   StickyNote, Search, Plus, Tag, Trash2, Edit2, Check, X, Calendar, 
   EyeOff, Eye, Pin, Sun, Moon, Filter, ArrowUpDown, 
   LayoutGrid, LayoutList, Clock, Lock, Unlock, Star, StarOff, Save, 
-  Download, Upload, Info, Bell, Copy, Palette, Heart, AlertTriangle
+  Download, Upload, Info, Bell, Copy, Palette, Heart, AlertTriangle,
+  Mic, MicOff
 } from 'lucide-react';
 import { getStorage, setStorage } from '../../utils/storage';
+import VoiceNoteInput from './VoiceNoteInput';
 
 // Main component for the Notes section
 const NotesSection = () => {
@@ -19,9 +21,13 @@ const NotesSection = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
-  const [sortBy, setSortBy] = useState('dateDesc'); // 'dateDesc', 'dateAsc', 'titleAsc'
+  const [sortBy, setSortBy] = useState('custom'); // 'custom', 'dateDesc', 'dateAsc', 'titleAsc'
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
+  const [customOrder, setCustomOrder] = useState([]);
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
+  const [voiceNoteContent, setVoiceNoteContent] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
   
   // Container ref for the grid layout
   const notesContainerRef = useRef(null);
@@ -57,24 +63,34 @@ const NotesSection = () => {
     
     // Initialize zenNotes in storage if it doesn't exist
     if (!storage.zenNotes) {
+      const sampleNotes = getSampleNotes();
       storage.zenNotes = {
-        notes: getSampleNotes(),
+        notes: sampleNotes,
         settings: {
           viewMode: 'grid',
-          sortBy: 'dateDesc'
-        }
+          sortBy: 'custom'
+        },
+        // Initialize custom order with sample note IDs
+        customOrder: sampleNotes.map(note => note.id)
       };
       setStorage(storage);
     }
     
-    const zenNotes = storage.zenNotes || { notes: [], settings: {} };
+    const zenNotes = storage.zenNotes || { notes: [], settings: {}, customOrder: [] };
     
     // Apply settings
     setViewMode(zenNotes.settings.viewMode || 'grid');
-    setSortBy(zenNotes.settings.sortBy || 'dateDesc');
+    setSortBy(zenNotes.settings.sortBy || 'custom');
     
     // Set notes state
     setNotes(zenNotes.notes || []);
+    
+    // Set custom order if it exists, otherwise create it from current notes
+    if (zenNotes.customOrder && zenNotes.customOrder.length > 0) {
+      setCustomOrder(zenNotes.customOrder);
+    } else {
+      setCustomOrder((zenNotes.notes || []).map(note => note.id));
+    }
     
     // Extract all unique tags
     const allTags = [];
@@ -96,11 +112,16 @@ const NotesSection = () => {
     const storage = getStorage();
     
     if (!storage.zenNotes) {
-      storage.zenNotes = { notes: [], settings: {} };
+      storage.zenNotes = { notes: [], settings: {}, customOrder: [] };
     }
     
     // Save notes
     storage.zenNotes.notes = updatedNotes;
+    
+    // Save custom order if it exists
+    if (customOrder.length > 0) {
+      storage.zenNotes.customOrder = customOrder;
+    }
     
     // Save settings if provided
     if (updatedSettings) {
@@ -157,6 +178,18 @@ const NotesSection = () => {
     const sortedNotes = [...notesToSort];
     
     switch (sortType) {
+      case 'custom':
+        // Sort based on custom order
+        return sortedNotes.sort((a, b) => {
+          const indexA = customOrder.indexOf(a.id);
+          const indexB = customOrder.indexOf(b.id);
+          
+          // If a note is not in customOrder (new note), place it at the beginning
+          if (indexA === -1) return -1;
+          if (indexB === -1) return 1;
+          
+          return indexA - indexB;
+        });
       case 'dateAsc':
         return sortedNotes.sort((a, b) => new Date(a.dateCreated) - new Date(b.dateCreated));
       case 'dateDesc':
@@ -188,6 +221,41 @@ const NotesSection = () => {
       isPrivate: false
     });
   };
+  
+  const handleVoiceAddNote = () => {
+    setShowVoiceInput(true);
+  };
+  
+  const handleVoiceSaveNote = (noteData) => {
+    const newNote = {
+      id: Date.now().toString(),
+      title: noteData.title,
+      content: noteData.content,
+      color: 'yellow', // Default color
+      tags: [],
+      dateCreated: new Date().toISOString(),
+      dateModified: new Date().toISOString(),
+      isPinned: false,
+      isPrivate: false
+    };
+    
+    // Add to beginning of notes list
+    const updatedNotes = [newNote, ...notes];
+    
+    // Add to custom order at the beginning
+    const updatedOrder = [newNote.id, ...customOrder];
+    
+    // Update state
+    setNotes(updatedNotes);
+    setCustomOrder(updatedOrder);
+    
+    // Save to storage
+    saveNotes(updatedNotes);
+    
+    // Close voice input
+    setShowVoiceInput(false);
+    setVoiceNoteContent('');
+  };
 
   const handleEditNote = (note) => {
     setIsCreatingNote(false);
@@ -202,7 +270,12 @@ const NotesSection = () => {
     if (!confirmed) return;
     
     const updatedNotes = notes.filter(note => note.id !== noteId);
+    
+    // Also remove from custom order
+    const updatedOrder = customOrder.filter(id => id !== noteId);
+    
     setNotes(updatedNotes);
+    setCustomOrder(updatedOrder);
     saveNotes(updatedNotes);
   };
 
@@ -212,6 +285,10 @@ const NotesSection = () => {
     if (isCreatingNote) {
       // Add new note
       updatedNotes = [updatedNote, ...notes];
+      
+      // Add to custom order at the beginning
+      const updatedOrder = [updatedNote.id, ...customOrder];
+      setCustomOrder(updatedOrder);
     } else {
       // Update existing note
       updatedNotes = notes.map(note => 
@@ -259,91 +336,106 @@ const NotesSection = () => {
   };
 
   const handleDragStart = (e, note) => {
-    // Store the dragged note in state
-    setDraggedNote(note);
+    if (sortBy !== 'custom') return;
+    console.log("Drag started with note:", note.title);
     
-    // Set data to ensure compatibility across browsers
+    // Set data for Firefox compatibility
     e.dataTransfer.setData('text/plain', note.id);
     e.dataTransfer.effectAllowed = 'move';
     
-    // Create a semi-transparent drag image of the actual note element
-    // This provides better visual feedback than a transparent image
-    const noteElement = e.currentTarget;
+    // Set state without any delays
+    setDraggedNote(note);
     
-    // Give some time for the draggedNote state to be applied
-    setTimeout(() => {
-      // Add a dragging class for styling during drag
-      noteElement.classList.add('note-dragging');
-    }, 0);
+    // Add a class to the element being dragged for visual feedback
+    const element = e.currentTarget;
+    element.classList.add('actively-dragging');
   };
-
+  
   const handleDragOver = (e, targetNoteId) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    if (sortBy !== 'custom') return;
+    e.preventDefault(); // Critical for enabling drop
     
-    if (draggedNote && targetNoteId !== draggedNote.id) {
-      setDragOverNoteId(targetNoteId);
+    if (!draggedNote || targetNoteId === draggedNote.id) {
+      return;
     }
+    
+    // Add a class to the target for visual feedback
+    const element = e.currentTarget;
+    element.classList.add('drop-target');
+    
+    // Update state for additional visual feedback in render
+    setDragOverNoteId(targetNoteId);
   };
-
+  
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+  
+    // Remove the visual feedback class
+    const element = e.currentTarget;
+    element.classList.remove('drop-target');
+  };
+  
   const handleDrop = (e, targetNoteId) => {
     e.preventDefault();
-    
+    e.stopPropagation();
+  
+    if (sortBy !== 'custom') return;
+  
+    // Remove visual feedback classes
+    document.querySelectorAll('.actively-dragging, .drop-target').forEach(el => {
+      el.classList.remove('actively-dragging', 'drop-target');
+    });
+  
     if (!draggedNote || targetNoteId === draggedNote.id) {
       setDraggedNote(null);
       setDragOverNoteId(null);
       return;
     }
-    
-    // Make a deep copy of the notes array
-    const updatedNotes = JSON.parse(JSON.stringify(notes));
-    
-    // Find the source and target indices
-    const draggedIndex = updatedNotes.findIndex(note => note.id === draggedNote.id);
-    const targetIndex = updatedNotes.findIndex(note => note.id === targetNoteId);
-    
-    if (draggedIndex !== -1 && targetIndex !== -1) {
-      // Extract the dragged item
-      const [draggedItem] = updatedNotes.splice(draggedIndex, 1);
-      
-      // Insert at the target position
-      updatedNotes.splice(targetIndex, 0, draggedItem);
-      
-      // Update the state and storage with the new order
-      setNotes(updatedNotes);
-      saveNotes(updatedNotes);
-      
-      // Force the filtered notes to update as well
-      filterNotes();
+  
+    const draggedIndex = filteredNotes.findIndex(note => note.id === draggedNote.id);
+    const targetIndex = filteredNotes.findIndex(note => note.id === targetNoteId);
+  
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedNote(null);
+      setDragOverNoteId(null);
+      return;
     }
-    
-    // Clear drag states
+  
+    // Reorder the filtered notes array
+    const reordered = [...filteredNotes];
+    const [dragged] = reordered.splice(draggedIndex, 1);
+    reordered.splice(targetIndex, 0, dragged);
+  
+    // Update customOrder based on the reordered filtered list
+    const newOrder = reordered.map(note => note.id);
+  
+    setCustomOrder(newOrder);
+  
+    // Save new order in storage
+    const storage = getStorage();
+    if (storage.zenNotes) {
+      storage.zenNotes.customOrder = newOrder;
+      setStorage(storage);
+    }
+  
+    // Trigger UI update
+    filterNotes();
+  
+    // Clear drag state
     setDraggedNote(null);
     setDragOverNoteId(null);
   };
-
+  
+  
   const handleDragEnd = (e) => {
-    // Remove dragging class from all note elements
-    const noteElements = document.querySelectorAll('.note-card');
-    noteElements.forEach(el => {
-      el.classList.remove('note-dragging');
+    // Clean up any lingering visual classes
+    document.querySelectorAll('.actively-dragging, .drop-target').forEach(el => {
+      el.classList.remove('actively-dragging', 'drop-target');
     });
     
-    // Clear drag states
+    // Reset drag state
     setDraggedNote(null);
     setDragOverNoteId(null);
-    
-    // Show animation for the note returning to position if drop failed
-    if (e.dataTransfer.dropEffect === 'none') {
-      // Add return animation class
-      const noteElement = e.currentTarget;
-      noteElement.classList.add('note-return-animation');
-      
-      // Remove the animation class after it completes
-      setTimeout(() => {
-        noteElement.classList.remove('note-return-animation');
-      }, 300);
-    }
   };
 
   const generateColorClass = (colorName) => {
@@ -399,16 +491,17 @@ const NotesSection = () => {
     return (
       <div 
         className={`
-          relative border rounded-lg p-3 shadow-sm transition-all duration-200 note-card
+          relative border rounded-lg p-3 shadow-sm transition-colors note-card
           ${colorClasses}
           ${note.isPinned ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''}
-          ${isDragging ? 'opacity-50 note-dragging' : ''}
-          ${isDragOver ? 'border-blue-500 dark:border-blue-400 border-2' : ''}
+          ${draggedNote?.id === note.id ? 'opacity-50' : ''}
+          ${dragOverNoteId === note.id ? 'border-blue-500 dark:border-blue-400 border-2' : ''}
           ${viewMode === 'grid' ? 'hover:shadow-md' : 'mb-3 hover:shadow-md'}
         `}
-        draggable
+        draggable={sortBy === 'custom'}
         onDragStart={(e) => handleDragStart(e, note)}
         onDragOver={(e) => handleDragOver(e, note.id)}
+        onDragLeave={handleDragLeave}
         onDrop={(e) => handleDrop(e, note.id)}
         onDragEnd={handleDragEnd}
         key={note.id}
@@ -811,6 +904,19 @@ const NotesSection = () => {
             </label>
             <div className="flex flex-wrap gap-2">
               <button
+                onClick={() => handleChangeSortBy('custom')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
+                  sortBy === 'custom'
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                }`}
+              >
+                <span className="flex items-center">
+                  <ArrowUpDown size={14} className="mr-1" />
+                  Custom Order
+                </span>
+              </button>
+              <button
                 onClick={() => handleChangeSortBy('dateDesc')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
                   sortBy === 'dateDesc'
@@ -985,7 +1091,14 @@ const NotesSection = () => {
     <div className="space-y-4 p-1">
       <FilterBar />
       
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end mb-4 gap-2">
+        <button
+          onClick={handleVoiceAddNote}
+          className="px-4 py-2 bg-amber-500 dark:bg-amber-600 text-white rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 inline-flex items-center shadow-sm"
+        >
+          <Mic size={18} className="mr-1" />
+          Voice Note
+        </button>
         <button
           onClick={handleAddNote}
           className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 inline-flex items-center shadow-sm"
@@ -1005,8 +1118,16 @@ const NotesSection = () => {
         />
       )}
       
+      {showVoiceInput && (
+        <VoiceNoteInput
+          onClose={() => setShowVoiceInput(false)}
+          onSave={handleVoiceSaveNote}
+        />
+      )}
+      
       {/* Add styles for animations and drag and drop effects */}
-      <style jsx global>{`
+      <style>
+        {`
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -1032,34 +1153,26 @@ const NotesSection = () => {
           animation: fadeIn 0.3s ease-out, slideUp 0.3s ease-out;
         }
         
-        .note-dragging {
+        .actively-dragging {
+          opacity: 0.7 !important;
           cursor: grabbing !important;
-          opacity: 0.65 !important;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
-          transform: scale(1.02);
-          z-index: 10;
+          z-index: 100 !important;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2) !important;
+          border: 2px dashed #60a5fa !important;
         }
         
-        .note-drag-over {
-          box-shadow: 0 0 0 2px #3b82f6 !important;
-          transform: scale(1.02);
-          transition: all 0.2s ease-in-out;
-        }
-        
-        .note-drag-indicator {
-          position: absolute;
-          height: 3px;
-          background-color: #3b82f6;
-          width: 100%;
-          left: 0;
-          z-index: 5;
-          animation: fadeIn 0.2s ease-out;
+        .drop-target {
+          border: 2px solid #60a5fa !important;
+          box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3) !important;
+          transform: scale(1.03);
+          transition: all 0.1s ease;
         }
         
         .note-return-animation {
           animation: returnToPosition 0.3s ease-out;
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };

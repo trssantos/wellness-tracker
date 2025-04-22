@@ -236,7 +236,7 @@ const BucketList = () => {
         return (
           <div className="space-y-4">
             {/* Filters and search */}
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm flex flex-col md:flex-row gap-3">
+            <div className="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-xl shadow-sm flex flex-col md:flex-row gap-3">
               <div className="flex-1 flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
@@ -248,12 +248,12 @@ const BucketList = () => {
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm"
                   />
                 </div>
-                <div className="flex gap-2">
-                  <div className="relative">
+                <div className="flex flex-wrap gap-2">
+                  <div className="relative flex-1 min-w-[120px]">
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="appearance-none pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm"
+                      className="w-full appearance-none pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm"
                     >
                       <option value="all">All Status</option>
                       <option value="active">Active</option>
@@ -262,11 +262,11 @@ const BucketList = () => {
                     <Filter className="absolute left-2 top-2.5 text-slate-400" size={16} />
                     <ChevronDown className="absolute right-2 top-2.5 text-slate-400" size={16} />
                   </div>
-                  <div className="relative">
+                  <div className="relative flex-1 min-w-[140px]">
                     <select
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="appearance-none pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm"
+                      className="w-full appearance-none pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm"
                     >
                       <option value="all">All Categories</option>
                       {categories.map(category => (
@@ -278,12 +278,12 @@ const BucketList = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <div className="relative">
+              <div className="flex flex-wrap gap-2">
+                <div className="relative flex-1 min-w-[140px]">
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm"
+                    className="w-full appearance-none pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm"
                   >
                     <option value="date">Date Created</option>
                     <option value="title">Title</option>
@@ -363,14 +363,14 @@ const BucketList = () => {
                           </h3>
                           
                           {goal.priority === 'high' && (
-                            <span className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs px-2 py-0.5 rounded-full">
+                            <span className="flex-shrink-0 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs px-2 py-0.5 rounded-full">
                               High
                             </span>
                           )}
                         </div>
                         
                         <div className="flex flex-wrap gap-2 mt-2">
-                          <div className="w-32 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div className="w-24 sm:w-32 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-amber-500 dark:bg-amber-600 transition-all"
                               style={{ width: `${calculateProgress(goal)}%` }}
@@ -382,8 +382,8 @@ const BucketList = () => {
                           
                           {goal.targetDate && (
                             <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 ml-2">
-                              <Calendar size={12} />
-                              {formatRemainingTime(goal.targetDate)}
+                              <Calendar size={12} className="flex-shrink-0" />
+                              <span className="truncate">{formatRemainingTime(goal.targetDate)}</span>
                             </span>
                           )}
                         </div>
@@ -441,8 +441,8 @@ const BucketList = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl shadow-sm">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-              <Target className="text-amber-500" />
-              <span>My Bucket List</span>
+              <Target className="text-amber-500 flex-shrink-0" />
+              <span className="truncate">My Bucket List</span>
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base mt-1">
               Track your life goals and dreams
@@ -460,11 +460,11 @@ const BucketList = () => {
           </div>
         </div>
         
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden mt-3">
-          <nav className="flex overflow-x-auto no-scrollbar">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-x-auto no-scrollbar mt-3">
+          <nav className="flex min-w-[320px]">
             <button
               onClick={() => handleTabChange('dashboard')}
-              className={`px-4 py-3 font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 sm:px-4 py-3 font-medium whitespace-nowrap transition-colors ${
                 activeTab === 'dashboard' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -474,7 +474,7 @@ const BucketList = () => {
             </button>
             <button
               onClick={() => handleTabChange('goals')}
-              className={`px-4 py-3 font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 sm:px-4 py-3 font-medium whitespace-nowrap transition-colors ${
                 activeTab === 'goals' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -484,7 +484,7 @@ const BucketList = () => {
             </button>
             <button
               onClick={() => handleTabChange('inspiration')}
-              className={`px-4 py-3 font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 sm:px-4 py-3 font-medium whitespace-nowrap transition-colors ${
                 activeTab === 'inspiration' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -494,7 +494,7 @@ const BucketList = () => {
             </button>
             <button
               onClick={() => handleTabChange('vision')}
-              className={`px-4 py-3 font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 sm:px-4 py-3 font-medium whitespace-nowrap transition-colors ${
                 activeTab === 'vision' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -514,13 +514,13 @@ const BucketList = () => {
       
       {/* Goal Detail Modal */}
       {isDetailOpen && selectedGoal && (
-  <GoalDetailView 
-    goal={selectedGoal}
-    onClose={handleCloseDetail}
-    onUpdate={handleGoalUpdate}
-    onOpenEditForm={() => handleOpenEditor(selectedGoal)}
-  />
-)}
+        <GoalDetailView 
+          goal={selectedGoal}
+          onClose={handleCloseDetail}
+          onUpdate={handleGoalUpdate}
+          onOpenEditForm={() => handleOpenEditor(selectedGoal)}
+        />
+      )}
       
       {/* Goal Editor Modal */}
       {isEditorOpen && (

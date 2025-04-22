@@ -310,61 +310,61 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
   
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className={`p-4 flex justify-between items-center border-b ${colorClasses.bg} border-amber-200 dark:border-amber-800`}>
-          <div className="flex items-center gap-3">
+        <div className={`p-3 sm:p-4 flex justify-between items-center border-b ${colorClasses.bg} border-amber-200 dark:border-amber-800`}>
+          <div className="flex items-center gap-2 sm:gap-3">
             <button 
               onClick={onClose}
-              className="p-2 rounded-full bg-white/80 dark:bg-slate-700/80 hover:bg-white dark:hover:bg-slate-700 transition-colors"
+              className="p-1.5 sm:p-2 rounded-full bg-white/80 dark:bg-slate-700/80 hover:bg-white dark:hover:bg-slate-700 transition-colors flex-shrink-0"
             >
-              <ArrowLeft size={18} className="text-slate-600 dark:text-slate-300" />
+              <ArrowLeft size={16} className="text-slate-600 dark:text-slate-300" />
             </button>
-            <div className="bg-white dark:bg-slate-700 p-2 rounded-lg">
+            <div className="bg-white dark:bg-slate-700 p-2 rounded-lg flex-shrink-0">
               {getCategoryIcon(goal.category)}
             </div>
-            <h2 className="text-lg font-medium text-slate-800 dark:text-slate-200 truncate max-w-[140px] sm:max-w-xs md:max-w-md">
+            <h2 className="text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200 truncate max-w-[120px] sm:max-w-xs md:max-w-md">
               {goal.title}
             </h2>
           </div>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 rounded-full"
+              className="p-1.5 sm:p-2 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 rounded-full"
               title="Delete goal"
             >
-              <Trash2 size={18} />
+              <Trash2 size={16} className="sm:size-18" />
             </button>
             <button
               onClick={onOpenEditForm}
-              className="p-2 text-slate-500 hover:text-blue-500 dark:text-slate-400 dark:hover:text-blue-400 rounded-full"
+              className="p-1.5 sm:p-2 text-slate-500 hover:text-blue-500 dark:text-slate-400 dark:hover:text-blue-400 rounded-full"
               title="Edit goal details"
             >
-              <Edit3 size={18} />
+              <Edit3 size={16} className="sm:size-18" />
             </button>
           </div>
         </div>
         
         {/* Content */}
         <div className="overflow-y-auto max-h-[calc(90vh-72px)]">
-          <div className="p-4 sm:p-6 space-y-6">
+          <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
             {/* Progress Bar */}
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <div className={`px-2 py-0.5 rounded-full ${colorClasses.bg} ${colorClasses.text}`}>
+                  <div className={`px-2 py-0.5 rounded-full ${colorClasses.bg} ${colorClasses.text} text-xs sm:text-sm`}>
                     {goal.priority ? goal.priority.charAt(0).toUpperCase() + goal.priority.slice(1) : 'Medium'} Priority
                   </div>
-                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                  <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                     {getProgressDisplay()}
                   </div>
                 </div>
                 {goal.targetDate && (
-                  <div className="flex items-center gap-1 text-sm">
-                    <Calendar size={14} className="text-slate-400" />
-                    <span className="text-slate-600 dark:text-slate-400">{formatDate(goal.targetDate)}</span>
+                  <div className="flex items-center gap-1 text-xs sm:text-sm">
+                    <Calendar size={14} className="text-slate-400 flex-shrink-0" />
+                    <span className="text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDate(goal.targetDate)}</span>
                     {getDaysLeft(goal.targetDate) !== null && (
-                      <span className={`ml-1 px-2 py-0.5 text-xs rounded-full ${
+                      <span className={`ml-1 px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${
                         getDaysLeft(goal.targetDate) < 0 
                           ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' 
                           : getDaysLeft(goal.targetDate) < 7
@@ -403,11 +403,11 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
             
             {/* Description */}
             {goal.description && (
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 border border-slate-200 dark:border-slate-600">
+              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 sm:p-4 border border-slate-200 dark:border-slate-600">
                 <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Description
                 </h3>
-                <p className="text-slate-600 dark:text-slate-400 text-sm">
+                <p className="text-slate-600 dark:text-slate-400 text-sm break-words">
                   {goal.description}
                 </p>
               </div>
@@ -417,7 +417,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
             <div className="flex justify-center">
               <button
                 onClick={handleToggleComplete}
-                className={`px-6 py-3 rounded-lg flex items-center gap-2 text-white transition-colors ${
+                className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-2 text-white transition-colors ${
                   isCompleted 
                     ? 'bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700' 
                     : 'bg-slate-500 hover:bg-slate-600 dark:bg-slate-600 dark:hover:bg-slate-700'
@@ -425,12 +425,12 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
               >
                 {isCompleted ? (
                   <>
-                    <CheckCircle size={20} />
+                    <CheckCircle size={18} className="sm:size-20" />
                     <span>Completed</span>
                   </>
                 ) : (
                   <>
-                    <Check size={20} />
+                    <Check size={18} className="sm:size-20" />
                     <span>Mark as Complete</span>
                   </>
                 )}
@@ -439,7 +439,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
             
             {/* Progress Controls */}
             {goal.progressType === 'percentage' && !isCompleted && (
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 border border-slate-200 dark:border-slate-600">
+              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 sm:p-4 border border-slate-200 dark:border-slate-600">
                 <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                   <Target size={16} className="text-amber-500" />
                   <span>Update Progress</span>
@@ -461,7 +461,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
             )}
             
             {goal.progressType === 'counter' && !isCompleted && (
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 border border-slate-200 dark:border-slate-600">
+              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 sm:p-4 border border-slate-200 dark:border-slate-600">
                 <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                   <Target size={16} className="text-amber-500" />
                   <span>Update Progress</span>
@@ -502,7 +502,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
               <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
                 <button
                   onClick={() => toggleSection('milestones')}
-                  className="w-full p-4 text-left flex items-center justify-between border-b border-slate-200 dark:border-slate-600"
+                  className="w-full p-3 sm:p-4 text-left flex items-center justify-between border-b border-slate-200 dark:border-slate-600"
                 >
                   <h3 className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
                     <Award size={16} className="text-amber-500" />
@@ -521,14 +521,14 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
                 </button>
                 
                 {isExpanded.milestones && (
-                  <div className="p-4">
+                  <div className="p-3 sm:p-4">
                     {milestones?.length > 0 ? (
                       <div className="space-y-2 mb-4">
                         {milestones.map((milestone, index) => (
-                          <div key={index} className="flex items-center gap-3 p-3 bg-white dark:bg-slate-700 rounded-lg shadow-sm">
+                          <div key={index} className="flex items-start gap-3 p-3 bg-white dark:bg-slate-700 rounded-lg shadow-sm">
                             <button
                               onClick={() => handleToggleMilestone(index)}
-                              className={`flex-shrink-0 w-6 h-6 rounded-full ${
+                              className={`flex-shrink-0 w-6 h-6 mt-0.5 rounded-full ${
                                 milestone.completed 
                                   ? 'bg-green-500 text-white' 
                                   : 'border-2 border-slate-300 dark:border-slate-500'
@@ -536,7 +536,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
                             >
                               {milestone.completed && <Check size={14} />}
                             </button>
-                            <span className={`flex-1 ${
+                            <span className={`flex-1 break-words ${
                               milestone.completed 
                                 ? 'text-slate-500 dark:text-slate-400 line-through' 
                                 : 'text-slate-700 dark:text-slate-300'
@@ -569,7 +569,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
                       <button
                         onClick={handleAddMilestone}
                         disabled={!newMilestone.trim()}
-                        className={`p-2 rounded-lg flex items-center justify-center ${
+                        className={`p-2 rounded-lg flex items-center justify-center flex-shrink-0 ${
                           !newMilestone.trim()
                             ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
                             : 'bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-700'
@@ -587,7 +587,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
             <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
               <button
                 onClick={() => toggleSection('notes')}
-                className="w-full p-4 text-left flex items-center justify-between border-b border-slate-200 dark:border-slate-600"
+                className="w-full p-3 sm:p-4 text-left flex items-center justify-between border-b border-slate-200 dark:border-slate-600"
               >
                 <h3 className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
                   <MessageSquare size={16} className="text-amber-500" />
@@ -606,7 +606,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
               </button>
               
               {isExpanded.notes && (
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   <div className="flex gap-2 mb-4">
                     <input
                       type="text"
@@ -621,16 +621,10 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
                         }
                       }}
                     />
-                    {noteFeedback && (
-  <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-300 text-sm flex items-center">
-    <CheckCircle size={14} className="mr-2" />
-    {noteFeedback}
-  </div>
-)}
                     <button
                       onClick={handleAddNote}
                       disabled={!newNote.trim()}
-                      className={`p-2 rounded-lg flex items-center justify-center ${
+                      className={`p-2 rounded-lg flex items-center justify-center flex-shrink-0 ${
                         !newNote.trim()
                           ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
                           : 'bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-700'
@@ -640,11 +634,18 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
                     </button>
                   </div>
                   
+                  {noteFeedback && (
+                    <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-300 text-sm flex items-center mb-3">
+                      <CheckCircle size={14} className="mr-2 flex-shrink-0" />
+                      <span className="break-words">{noteFeedback}</span>
+                    </div>
+                  )}
+                  
                   {goal.notes?.length > 0 ? (
                     <div className="space-y-3 max-h-40 overflow-y-auto">
                       {goal.notes.map(note => (
                         <div key={note.id} className="p-3 bg-white dark:bg-slate-700 rounded-lg shadow-sm">
-                          <p className="text-slate-700 dark:text-slate-300 text-sm mb-1">{note.text}</p>
+                          <p className="text-slate-700 dark:text-slate-300 text-sm mb-1 break-words">{note.text}</p>
                           <div className="flex justify-between items-center">
                             <span className="text-xs text-slate-500 dark:text-slate-400">
                               {new Date(note.date).toLocaleDateString('en-US', { 
@@ -693,7 +694,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
                   </h3>
                 </div>
                 <div className="px-3 pb-3">
-                  <div className="p-2 bg-white dark:bg-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-300">
+                  <div className="p-2 bg-white dark:bg-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-300 break-words">
                     {aiTips[0]}
                   </div>
                 </div>
@@ -706,28 +707,28 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={(e) => e.stopPropagation()}>
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-sm w-full shadow-xl">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-4 sm:p-6 max-w-sm w-full shadow-xl">
             <div className="mb-4 flex items-center gap-3">
               <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-full">
                 <AlertCircle size={24} className="text-red-500 dark:text-red-400" />
               </div>
-              <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">Delete Goal</h3>
+              <h3 className="text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200">Delete Goal</h3>
             </div>
             
-            <p className="text-slate-600 dark:text-slate-400 mb-6">
+            <p className="text-slate-600 dark:text-slate-400 mb-6 break-words">
               Are you sure you want to delete "{goal.title}"? This action cannot be undone.
             </p>
             
-            <div className="flex justify-end gap-3">
+            <div className="flex gap-3 flex-col sm:flex-row sm:justify-end">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700"
+                className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 w-full sm:w-auto"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteGoal}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 w-full sm:w-auto"
               >
                 Delete Goal
               </button>

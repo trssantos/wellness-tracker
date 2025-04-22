@@ -199,37 +199,37 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
   };
   
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/20">
-          <div className="flex items-center gap-3">
+        <div className="p-3 sm:p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/20">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button 
               onClick={onClose}
-              className="p-2 rounded-full bg-white/80 dark:bg-slate-700/80 hover:bg-white dark:hover:bg-slate-700 transition-colors"
+              className="p-1.5 sm:p-2 rounded-full bg-white/80 dark:bg-slate-700/80 hover:bg-white dark:hover:bg-slate-700 transition-colors"
             >
-              <ArrowLeft size={18} className="text-slate-600 dark:text-slate-300" />
+              <ArrowLeft size={16} className="text-slate-600 dark:text-slate-300" />
             </button>
-            <h2 className="text-lg font-medium text-slate-800 dark:text-slate-200">
+            <h2 className="text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200 truncate">
               {isNew ? 'Create New Goal' : 'Edit Goal'}
             </h2>
           </div>
           <button 
             onClick={handleSubmit}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg shadow-sm transition-colors"
+            className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg shadow-sm transition-colors"
           >
-            <Save size={18} />
-            <span>Save Goal</span>
+            <Save size={16} />
+            <span className="text-sm sm:text-base whitespace-nowrap">Save Goal</span>
           </button>
         </div>
         
         {/* Form content */}
         <div className="overflow-y-auto max-h-[calc(90vh-72px)]">
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* General section */}
             <div>
               <h3 className="text-md font-medium text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                <Info size={18} className="text-amber-500" />
+                <Info size={18} className="text-amber-500 flex-shrink-0" />
                 <span>General Information</span>
               </h3>
               
@@ -271,22 +271,22 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Category
                 </label>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-2">
+                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-6 gap-2 mb-2">
                   {categories.map(category => (
                     <button
                       key={category.id}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, category: category.id }))}
-                      className={`p-3 rounded-lg border flex flex-col items-center gap-2 transition-all ${
+                      className={`p-2 sm:p-3 rounded-lg border flex flex-col items-center gap-1 sm:gap-2 transition-all ${
                         formData.category === category.id
                           ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800 shadow-sm'
                           : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
                         {getCategoryIcon(category.id)}
                       </div>
-                      <span className="text-xs text-center text-slate-700 dark:text-slate-300">
+                      <span className="text-xs text-center text-slate-700 dark:text-slate-300 truncate w-full">
                         {category.name}
                       </span>
                     </button>
@@ -387,9 +387,9 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
             </div>
             
             {/* Progress Tracking section */}
-            <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4 sm:pt-6">
               <h3 className="text-md font-medium text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                <Target size={18} className="text-amber-500" />
+                <Target size={18} className="text-amber-500 flex-shrink-0" />
                 <span>Progress Tracking</span>
               </h3>
               
@@ -398,26 +398,26 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   How do you want to track your progress?
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {['simple', 'percentage', 'counter', 'milestone'].map(type => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, progressType: type }))}
-                      className={`p-3 rounded-lg border flex flex-col items-center gap-2 text-center transition-all ${
+                      className={`p-2 sm:p-3 rounded-lg border flex flex-col items-center gap-1 sm:gap-2 text-center transition-all ${
                         formData.progressType === type
                           ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800 shadow-sm'
                           : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
-                      <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
                         {getProgressTypeIcon(type)}
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <div className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
                           {getProgressTypeLabel(type)}
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1 hidden sm:block">
                           {type === 'simple' && 'Done or not done'}
                           {type === 'percentage' && 'Track with percentages'}
                           {type === 'counter' && 'Track with numbers'}
@@ -431,7 +431,7 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
               
               {/* Percentage-specific settings */}
               {formData.progressType === 'percentage' && (
-                <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                <div className="mb-4 p-3 sm:p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Initial progress ({formData.progress}%)
                   </label>
@@ -454,7 +454,7 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
               
               {/* Counter-specific settings */}
               {formData.progressType === 'counter' && (
-                <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                <div className="mb-4 p-3 sm:p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -486,8 +486,8 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
                   </div>
                   
                   <div className="mt-3 flex items-center text-sm">
-                    <HelpCircle size={14} className="text-slate-400 mr-1" />
-                    <span className="text-slate-500 dark:text-slate-400">
+                    <HelpCircle size={14} className="text-slate-400 mr-1 flex-shrink-0" />
+                    <span className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
                       Example: "Save $5000" with current value $1000 and target value 5000
                     </span>
                   </div>
@@ -496,7 +496,7 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
               
               {/* Milestone-specific settings */}
               {formData.progressType === 'milestone' && (
-                <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                <div className="mb-4 p-3 sm:p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Milestones
                   </label>
@@ -504,11 +504,11 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
                   {formData.milestones.length > 0 ? (
                     <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
                       {formData.milestones.map((milestone, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <div key={index} className="flex items-start gap-2 p-2 bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
                           <button
                             type="button"
                             onClick={() => handleToggleMilestone(index)}
-                            className={`flex-shrink-0 w-5 h-5 rounded-full ${
+                            className={`flex-shrink-0 w-5 h-5 mt-0.5 rounded-full ${
                               milestone.completed 
                                 ? 'bg-green-500 text-white' 
                                 : 'border-2 border-slate-300 dark:border-slate-500'
@@ -516,13 +516,13 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
                           >
                             {milestone.completed && <Check size={12} />}
                           </button>
-                          <span className="flex-1 text-sm text-slate-700 dark:text-slate-300">
+                          <span className="flex-1 text-sm text-slate-700 dark:text-slate-300 break-words">
                             {milestone.text}
                           </span>
                           <button
                             type="button"
                             onClick={() => handleRemoveMilestone(index)}
-                            className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400"
+                            className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 flex-shrink-0"
                           >
                             <X size={16} />
                           </button>
@@ -555,7 +555,7 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
                       type="button"
                       onClick={handleAddMilestone}
                       disabled={!newMilestone.trim()}
-                      className={`p-2 rounded-lg flex items-center justify-center ${
+                      className={`p-2 rounded-lg flex items-center justify-center flex-shrink-0 ${
                         !newMilestone.trim()
                           ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
                           : 'bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-700'
@@ -566,8 +566,8 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
                   </div>
                   
                   <div className="mt-3 flex items-center text-sm">
-                    <HelpCircle size={14} className="text-slate-400 mr-1" />
-                    <span className="text-slate-500 dark:text-slate-400">
+                    <HelpCircle size={14} className="text-slate-400 mr-1 flex-shrink-0" />
+                    <span className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
                       Break down your goal into smaller, achievable steps
                     </span>
                   </div>
@@ -580,7 +580,7 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
             {errors.form && (
               <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-lg border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 flex items-start gap-2">
                 <AlertCircle size={20} className="flex-shrink-0 mt-0.5" />
-                <p className="text-sm">{errors.form}</p>
+                <p className="text-sm break-words">{errors.form}</p>
               </div>
             )}
           </div>

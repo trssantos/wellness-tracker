@@ -240,17 +240,17 @@ const VisionBoardComponent = () => {
   
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-sm">
         <div>
-          <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-            <Sparkles className="text-amber-500" />
-            <span>Vision Board</span>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+            <Sparkles className="text-amber-500 flex-shrink-0" />
+            <span className="truncate">Vision Board</span>
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
-            <span>Visualize your dreams and aspirations</span>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+            <span className="truncate">Visualize your dreams</span>
             <button
               onClick={() => setShowExplanation(true)}
-              className="text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300"
+              className="text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 flex-shrink-0"
               title="Learn more about Vision Boards"
             >
               <Info size={14} />
@@ -258,11 +258,11 @@ const VisionBoardComponent = () => {
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="flex border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 flex items-center gap-1 ${
+              className={`p-2 flex items-center ${
                 viewMode === 'grid' 
                   ? 'bg-amber-500 dark:bg-amber-600 text-white' 
                   : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
@@ -270,11 +270,10 @@ const VisionBoardComponent = () => {
               title="Grid View"
             >
               <LayoutGrid size={18} />
-              <span className="text-xs hidden sm:inline">Grid</span>
             </button>
             <button
               onClick={() => setViewMode('flow')}
-              className={`p-2 flex items-center gap-1 ${
+              className={`p-2 flex items-center ${
                 viewMode === 'flow' 
                   ? 'bg-amber-500 dark:bg-amber-600 text-white' 
                   : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
@@ -282,17 +281,14 @@ const VisionBoardComponent = () => {
               title="Free Canvas View"
             >
               <Move size={18} />
-              <span className="text-xs hidden sm:inline">Canvas</span>
             </button>
           </div>
-          
-          
         </div>
       </div>
       
       {/* Content */}
       {viewMode === 'grid' ? (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+        <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-sm">
           {items.length === 0 && !isAddingItem ? (
             <div className="text-center py-12">
               <div className="bg-amber-100 dark:bg-amber-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -322,12 +318,12 @@ const VisionBoardComponent = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* New Item Form */}
               {(isAddingItem || isEditingItem) && (
-                <div className="col-span-1 sm:col-span-2 lg:col-span-3 bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-200 dark:border-amber-800 shadow-sm">
+                <div className="col-span-1 sm:col-span-2 lg:col-span-3 bg-amber-50 dark:bg-amber-900/20 p-3 sm:p-4 rounded-xl border border-amber-200 dark:border-amber-800 shadow-sm">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
+                    <h3 className="text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200">
                       {isEditingItem ? 'Edit Dream' : 'Add Dream'}
                     </h3>
                     <button 
@@ -411,7 +407,7 @@ const VisionBoardComponent = () => {
                       </div>
                     </div>
                     
-                    <div className="flex justify-end gap-2">
+                    <div className="flex gap-2 justify-end">
                       <button
                         type="button"
                         onClick={() => {
@@ -449,9 +445,9 @@ const VisionBoardComponent = () => {
                   onMouseEnter={() => setHoveredItem(item.id)}
                   onMouseLeave={() => setHoveredItem(null)}
                 >
-                  <div className="p-5">
+                  <div className="p-4">
                     <div className="flex items-start justify-between mb-3">
-                      <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center flex-shrink-0">
                         {renderIcon(item.icon, item.color)}
                       </div>
                       
@@ -471,12 +467,12 @@ const VisionBoardComponent = () => {
                       </div>
                     </div>
                     
-                    <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-2">
+                    <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-2 truncate">
                       {item.title}
                     </h3>
                     
                     {item.description && (
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                      <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
                         {item.description}
                       </p>
                     )}
@@ -499,7 +495,7 @@ const VisionBoardComponent = () => {
         </div>
       ) : (
         // Flow View - more creative, free-form layout
-        <div className="bg-gradient-to-br from-amber-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 p-6 rounded-xl shadow-sm min-h-[400px] relative">
+        <div className="bg-gradient-to-br from-amber-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 p-4 sm:p-6 rounded-xl shadow-sm min-h-[400px] relative">
           <div className="absolute top-4 right-4 flex gap-2 z-10">
             <button
               className="p-2 bg-white dark:bg-slate-700 rounded-lg shadow-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
@@ -548,10 +544,10 @@ const VisionBoardComponent = () => {
             >
               {/* New Item Form (centered in flow view) */}
               {(isAddingItem || isEditingItem) && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-20">
-                  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg max-w-lg w-full mx-4">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-20 p-4">
+                  <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-lg max-w-lg w-full mx-4">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
+                      <h3 className="text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200">
                         {isEditingItem ? 'Edit Dream' : 'Add Dream'}
                       </h3>
                       <button 
@@ -635,14 +631,14 @@ const VisionBoardComponent = () => {
                         </div>
                       </div>
                       
-                      <div className="flex justify-end gap-2">
+                      <div className="flex gap-2 flex-col sm:flex-row sm:justify-end">
                         <button
                           type="button"
                           onClick={() => {
                             setIsAddingItem(false);
                             setIsEditingItem(null);
                           }}
-                          className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600"
+                          className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 w-full sm:w-auto"
                         >
                           Cancel
                         </button>
@@ -650,7 +646,7 @@ const VisionBoardComponent = () => {
                           type="button"
                           onClick={isEditingItem ? handleUpdateItem : handleAddItem}
                           disabled={!newItem.title.trim()}
-                          className={`px-4 py-2 rounded-lg flex items-center gap-1 ${
+                          className={`px-4 py-2 rounded-lg flex items-center justify-center gap-1 w-full sm:w-auto ${
                             !newItem.title.trim()
                               ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
                               : 'bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-700'
@@ -669,7 +665,7 @@ const VisionBoardComponent = () => {
               {items.map(item => (
                 <div
                   key={item.id}
-                  className={`absolute p-4 w-52 bg-white dark:bg-slate-700 rounded-xl shadow-lg cursor-move transition-transform duration-200 hover:z-10 hover:shadow-xl ${isDragging && dragItem === item.id ? 'opacity-70' : 'opacity-100'}`}
+                  className={`absolute p-4 w-48 sm:w-52 bg-white dark:bg-slate-700 rounded-xl shadow-lg cursor-move transition-transform duration-200 hover:z-10 hover:shadow-xl ${isDragging && dragItem === item.id ? 'opacity-70' : 'opacity-100'}`}
                   style={{
                     ...positions[item.id],
                     zIndex: hoveredItem === item.id ? 10 : dragItem === item.id ? 20 : 1,
@@ -680,7 +676,7 @@ const VisionBoardComponent = () => {
                   onDragEnd={handleDragEnd}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center flex-shrink-0">
                       {renderIcon(item.icon, item.color)}
                     </div>
                     
@@ -700,12 +696,12 @@ const VisionBoardComponent = () => {
                     </div>
                   </div>
                   
-                  <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-1">
+                  <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-1 truncate">
                     {item.title}
                   </h3>
                   
                   {item.description && (
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
                       {item.description}
                     </p>
                   )}
@@ -716,7 +712,7 @@ const VisionBoardComponent = () => {
               {viewMode === 'flow' && items.length === 0 && !isAddingItem && (
                 <div className="absolute bottom-24 left-0 right-0 mx-auto max-w-md bg-white dark:bg-slate-700 p-3 rounded-lg shadow-md border border-amber-200 dark:border-amber-800 text-center">
                   <p className="text-sm text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1">
-                    <Info size={14} className="text-amber-500" />
+                    <Info size={14} className="text-amber-500 flex-shrink-0" />
                     <span>Dreams are aspirational visions of what you want to manifest in your life</span>
                   </p>
                 </div>
@@ -738,11 +734,11 @@ const VisionBoardComponent = () => {
       
       {/* Vision Board Explanation Modal */}
       {showExplanation && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowExplanation(false)}>
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4" onClick={() => setShowExplanation(false)}>
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-4 sm:p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <Sparkles className="text-amber-500" size={20} />
+              <h3 className="text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <Sparkles className="text-amber-500 flex-shrink-0" size={20} />
                 <span>Vision Board vs. Goals</span>
               </h3>
               <button 
@@ -754,9 +750,9 @@ const VisionBoardComponent = () => {
             </div>
             
             <div className="space-y-4">
-              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-800">
+              <div className="p-3 sm:p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-800">
                 <h4 className="font-medium text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-1">
-                  <Sparkles size={16} />
+                  <Sparkles size={16} className="flex-shrink-0" />
                   <span>Vision Board: Dreams & Aspirations</span>
                 </h4>
                 <p className="text-slate-700 dark:text-slate-300 text-sm">
@@ -764,9 +760,9 @@ const VisionBoardComponent = () => {
                 </p>
               </div>
               
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+              <div className="p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
                 <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-1">
-                  <Target size={16} />
+                  <Target size={16} className="flex-shrink-0" />
                   <span>Bucket List: Goals & Plans</span>
                 </h4>
                 <p className="text-slate-700 dark:text-slate-300 text-sm">
@@ -781,10 +777,10 @@ const VisionBoardComponent = () => {
               <div className="flex justify-between items-center mt-2 text-sm">
                 <div className="flex gap-2">
                   <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                    <LayoutGrid size={14} /> Grid View
+                    <LayoutGrid size={14} className="flex-shrink-0" /> Grid
                   </span>
                   <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                    <Move size={14} /> Canvas View
+                    <Move size={14} className="flex-shrink-0" /> Canvas
                   </span>
                 </div>
                 <button

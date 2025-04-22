@@ -136,12 +136,12 @@ const GoalInspirationTab = ({ onGoalAdded, onEditGoal }) => {
     }
   }, [feedback]);
 
-  // Add this function to handle opening the preview
-const handlePreviewSuggestion = (suggestion) => {
+  // Handle opening the preview
+  const handlePreviewSuggestion = (suggestion) => {
     setPreviewSuggestion(suggestion);
   };
   
-  // Add this function to handle editing the suggestion
+  // Handle editing the suggestion
   const handleEditSuggestion = (suggestion) => {
     setPreviewSuggestion(null);
     
@@ -181,7 +181,7 @@ const handlePreviewSuggestion = (suggestion) => {
     }
   };
   
-  // Add this function to get the progress display text based on goal type
+  // Get the progress display text based on goal type
   const getProgressTypeDisplay = (suggestion) => {
     switch(suggestion.progressType) {
       case 'percentage':
@@ -324,7 +324,7 @@ const handlePreviewSuggestion = (suggestion) => {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2">
-        <Sparkles className="text-amber-500" size={24} />
+        <Sparkles className="text-amber-500 flex-shrink-0" />
         <span>Goal Inspiration</span>
       </h2>
       
@@ -357,7 +357,7 @@ const handlePreviewSuggestion = (suggestion) => {
       )}
       
       {/* AI Search Section */}
-      <div className="bg-gradient-to-r from-amber-50 to-purple-50 dark:from-amber-900/20 dark:to-purple-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 mb-6">
+      <div className="bg-gradient-to-r from-amber-50 to-purple-50 dark:from-amber-900/20 dark:to-purple-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 sm:p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="p-2 bg-white dark:bg-slate-800 rounded-full shadow-sm">
             <Sparkles size={20} className="text-amber-500" />
@@ -385,7 +385,7 @@ const handlePreviewSuggestion = (suggestion) => {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="sm:w-48 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                className="w-full sm:w-48 p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
               >
                 <option value="">All Categories</option>
                 {categories.map(category => (
@@ -403,10 +403,10 @@ const handlePreviewSuggestion = (suggestion) => {
               <button
                 key={index}
                 onClick={() => setSearchTerm(starter)}
-                className="inline-flex items-center text-xs py-1 px-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                className="inline-flex items-center text-xs py-1 px-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors mb-1"
               >
-                <Lightbulb size={12} className="mr-1" />
-                {starter}
+                <Lightbulb size={12} className="mr-1 flex-shrink-0" />
+                <span className="truncate">{starter}</span>
               </button>
             ))}
           </div>
@@ -445,11 +445,11 @@ const handlePreviewSuggestion = (suggestion) => {
       
       {/* Tabs */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div className="border-b border-slate-200 dark:border-slate-700">
-          <div className="flex overflow-x-auto no-scrollbar">
+        <div className="border-b border-slate-200 dark:border-slate-700 overflow-x-auto no-scrollbar">
+          <div className="flex min-w-[400px]">
             <button
               onClick={() => setActiveSection('popular')}
-              className={`px-4 py-3 font-medium text-sm whitespace-nowrap ${
+              className={`px-3 sm:px-4 py-3 font-medium text-sm whitespace-nowrap ${
                 activeSection === 'popular' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400 -mb-px' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -459,7 +459,7 @@ const handlePreviewSuggestion = (suggestion) => {
             </button>
             <button
               onClick={() => setActiveSection('browse')}
-              className={`px-4 py-3 font-medium text-sm whitespace-nowrap ${
+              className={`px-3 sm:px-4 py-3 font-medium text-sm whitespace-nowrap ${
                 activeSection === 'browse' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400 -mb-px' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -469,7 +469,7 @@ const handlePreviewSuggestion = (suggestion) => {
             </button>
             <button
               onClick={() => setActiveSection('ai')}
-              className={`px-4 py-3 font-medium text-sm whitespace-nowrap ${
+              className={`px-3 sm:px-4 py-3 font-medium text-sm whitespace-nowrap ${
                 activeSection === 'ai' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400 -mb-px' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -479,7 +479,7 @@ const handlePreviewSuggestion = (suggestion) => {
             </button>
             <button
               onClick={() => setActiveSection('guide')}
-              className={`px-4 py-3 font-medium text-sm whitespace-nowrap ${
+              className={`px-3 sm:px-4 py-3 font-medium text-sm whitespace-nowrap ${
                 activeSection === 'guide' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400 -mb-px' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -490,14 +490,14 @@ const handlePreviewSuggestion = (suggestion) => {
           </div>
         </div>
         
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Quick filter tags */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-2">
-              <Filter size={16} className="text-slate-500" />
+              <Filter size={16} className="text-slate-500 flex-shrink-0" />
               <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">Quick Filters</h4>
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex flex-wrap gap-2">
               {popularTags.map(tag => (
                 <button
                   key={tag}
@@ -518,7 +518,7 @@ const handlePreviewSuggestion = (suggestion) => {
           {activeSection === 'popular' && (
             <div className="space-y-6">
               <h3 className="font-medium text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                <ThumbsUp size={18} className="text-blue-500" />
+                <ThumbsUp size={18} className="text-blue-500 flex-shrink-0" />
                 <span>Popular Goal Ideas</span>
               </h3>
               
@@ -539,9 +539,9 @@ const handlePreviewSuggestion = (suggestion) => {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate">{goal.title}</p>
                         {goal.tags && goal.tags.length > 0 && (
-                          <div className="flex gap-1 flex-wrap mt-1">
+                          <div className="flex flex-wrap gap-1 mt-1">
                             {goal.tags.map(tag => (
-                              <span key={tag} className="text-xs bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded-full">
+                              <span key={tag} className="text-xs bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded-full truncate max-w-[80px]">
                                 {tag}
                               </span>
                             ))}
@@ -596,7 +596,7 @@ const handlePreviewSuggestion = (suggestion) => {
                             key={`${categoryId}-${index}`}
                             className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600"
                           >
-                            <p className="text-sm text-slate-700 dark:text-slate-300 mr-2">{goal}</p>
+                            <p className="text-sm text-slate-700 dark:text-slate-300 mr-2 truncate">{goal}</p>
                             {addedGoals[goal] ? (
                               <div className="text-green-500 dark:text-green-400 flex-shrink-0">
                                 <CheckCircle size={18} />
@@ -604,7 +604,7 @@ const handlePreviewSuggestion = (suggestion) => {
                             ) : (
                               <button 
                                 onClick={() => handleAddGoal(goal, categoryId)}
-                                className="p-1 text-slate-400 dark:text-slate-500 hover:text-amber-500 dark:hover:text-amber-400 bg-white dark:bg-slate-700 rounded-md"
+                                className="p-1 text-slate-400 dark:text-slate-500 hover:text-amber-500 dark:hover:text-amber-400 bg-white dark:bg-slate-700 rounded-md flex-shrink-0"
                               >
                                 <Plus size={16} />
                               </button>
@@ -622,7 +622,7 @@ const handlePreviewSuggestion = (suggestion) => {
           {activeSection === 'ai' && (
             <div className="space-y-6">
               <h3 className="font-medium text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                <MessageCircle size={18} className="text-purple-500" />
+                <MessageCircle size={18} className="text-purple-500 flex-shrink-0" />
                 <span>AI-Generated Suggestions</span>
               </h3>
               
@@ -645,90 +645,89 @@ const handlePreviewSuggestion = (suggestion) => {
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {aiSuggestions.map((suggestion, index) => (
-  <div 
-    key={index}
-    className="flex items-center gap-3 p-3 bg-white dark:bg-slate-700 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 hover:shadow-md transition-shadow relative group"
-  >
-    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0">
-      {suggestion.category ? 
-        getCategoryIcon(suggestion.category) : 
-        <Sparkles size={18} className="text-white" />
-      }
-    </div>
-    <div className="flex-1 min-w-0">
-      <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{suggestion.title}</p>
-      {suggestion.description && (
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-          {suggestion.description}
-        </p>
-      )}
-      <div className="flex flex-wrap gap-2 mt-1">
-        {suggestion.category && (
-          <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-600 px-1.5 py-0.5 rounded-full">
-            {categories.find(c => c.id === suggestion.category)?.name || suggestion.category}
-          </span>
-        )}
-        {suggestion.progressType && suggestion.progressType !== 'simple' && (
-          <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-1.5 py-0.5 rounded-full flex items-center gap-1">
-            {suggestion.progressType === 'percentage' && <Percent size={10} />}
-            {suggestion.progressType === 'counter' && <Hash size={10} />}
-            {suggestion.progressType === 'milestone' && <ListChecks size={10} />}
-            {suggestion.progressType.charAt(0).toUpperCase() + suggestion.progressType.slice(1)}
-          </span>
-        )}
-      </div>
-    </div>
-    
-    {/* Action buttons */}
-    <div className="flex gap-2">
-      {/* Preview button - always visible */}
-      <button 
-        onClick={() => handlePreviewSuggestion(suggestion)}
-        className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800/50 flex items-center gap-1"
-        title="Preview Goal"
-      >
-        <Eye size={16} />
-        <span className="text-xs font-medium">Preview</span>
-      </button>
-      
-      {/* Add button */}
-      <button 
-        onClick={() => handleAddGoal(
-          suggestion.title, 
-          suggestion.category, 
-          {
-            progressType: suggestion.progressType,
-            description: suggestion.description,
-            progress: suggestion.initialProgress,
-            currentValue: suggestion.currentValue,
-            targetValue: suggestion.targetValue,
-            milestones: suggestion.milestones
-          }
-        )}
-        className="p-1.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-800/50"
-        title="Add Goal"
-      >
-        <Plus size={16} />
-      </button>
-      
-      {/* Edit button */}
-      <button 
-        onClick={() => handleEditSuggestion(suggestion)}
-        className="p-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800/50"
-        title="Edit Before Adding"
-      >
-        <Edit size={16} />
-      </button>
-    </div>
-    
-    {/* Added indicator */}
-    {addedGoals[suggestion.title] && (
-      <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-green-100 dark:bg-green-900/50 p-1 rounded-full border border-green-200 dark:border-green-800">
-        <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
-      </div>
-    )}
-  </div>
-))}
+                      <div 
+                        key={index}
+                        className="flex items-center gap-3 p-3 bg-white dark:bg-slate-700 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 hover:shadow-md transition-shadow relative group"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+                          {suggestion.category ? 
+                            getCategoryIcon(suggestion.category) : 
+                            <Sparkles size={18} className="text-white" />
+                          }
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate">{suggestion.title}</p>
+                          {suggestion.description && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+                              {suggestion.description}
+                            </p>
+                          )}
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {suggestion.category && (
+                              <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-600 px-1.5 py-0.5 rounded-full truncate max-w-[100px]">
+                                {categories.find(c => c.id === suggestion.category)?.name || suggestion.category}
+                              </span>
+                            )}
+                            {suggestion.progressType && suggestion.progressType !== 'simple' && (
+                              <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-1.5 py-0.5 rounded-full flex items-center gap-1 truncate">
+                                {suggestion.progressType === 'percentage' && <Percent size={10} className="flex-shrink-0" />}
+                                {suggestion.progressType === 'counter' && <Hash size={10} className="flex-shrink-0" />}
+                                {suggestion.progressType === 'milestone' && <ListChecks size={10} className="flex-shrink-0" />}
+                                <span className="truncate">{suggestion.progressType.charAt(0).toUpperCase() + suggestion.progressType.slice(1)}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Action buttons */}
+                        <div className="flex gap-1">
+                          {/* Preview button */}
+                          <button 
+                            onClick={() => handlePreviewSuggestion(suggestion)}
+                            className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800/50 flex-shrink-0"
+                            title="Preview Goal"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          
+                          {/* Add button */}
+                          <button 
+                            onClick={() => handleAddGoal(
+                              suggestion.title, 
+                              suggestion.category, 
+                              {
+                                progressType: suggestion.progressType,
+                                description: suggestion.description,
+                                progress: suggestion.initialProgress,
+                                currentValue: suggestion.currentValue,
+                                targetValue: suggestion.targetValue,
+                                milestones: suggestion.milestones
+                              }
+                            )}
+                            className="p-1.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-800/50 flex-shrink-0"
+                            title="Add Goal"
+                          >
+                            <Plus size={16} />
+                          </button>
+                          
+                          {/* Edit button */}
+                          <button 
+                            onClick={() => handleEditSuggestion(suggestion)}
+                            className="p-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800/50 flex-shrink-0"
+                            title="Edit Before Adding"
+                          >
+                            <Edit size={16} />
+                          </button>
+                        </div>
+                        
+                        {/* Added indicator */}
+                        {addedGoals[suggestion.title] && (
+                          <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-green-100 dark:bg-green-900/50 p-1 rounded-full border border-green-200 dark:border-green-800">
+                            <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                   
                   <div className="flex justify-center">
@@ -749,14 +748,14 @@ const handlePreviewSuggestion = (suggestion) => {
           {activeSection === 'guide' && (
             <div className="space-y-6">
               <h3 className="font-medium text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                <BookOpen size={18} className="text-blue-500" />
+                <BookOpen size={18} className="text-blue-500 flex-shrink-0" />
                 <span>Goal-Setting Guide</span>
               </h3>
               
-              <div className="bg-white dark:bg-slate-700 p-6 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm space-y-6">
+              <div className="bg-white dark:bg-slate-700 p-4 sm:p-6 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm space-y-4 sm:space-y-6">
                 <div className="space-y-4">
                   <h4 className="text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2">
-                    <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 w-6 h-6 rounded-full flex items-center justify-center">1</div>
+                    <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">1</div>
                     <span>Make your goals SMART</span>
                   </h4>
                   <p className="text-slate-600 dark:text-slate-400 text-sm pl-8">
@@ -766,7 +765,7 @@ const handlePreviewSuggestion = (suggestion) => {
                 
                 <div className="space-y-4">
                   <h4 className="text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2">
-                    <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 w-6 h-6 rounded-full flex items-center justify-center">2</div>
+                    <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">2</div>
                     <span>Break down big goals into milestones</span>
                   </h4>
                   <p className="text-slate-600 dark:text-slate-400 text-sm pl-8">
@@ -776,7 +775,7 @@ const handlePreviewSuggestion = (suggestion) => {
                 
                 <div className="space-y-4">
                   <h4 className="text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2">
-                    <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 w-6 h-6 rounded-full flex items-center justify-center">3</div>
+                    <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">3</div>
                     <span>Connect goals to your values</span>
                   </h4>
                   <p className="text-slate-600 dark:text-slate-400 text-sm pl-8">
@@ -786,7 +785,7 @@ const handlePreviewSuggestion = (suggestion) => {
                 
                 <div className="space-y-4">
                   <h4 className="text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2">
-                    <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 w-6 h-6 rounded-full flex items-center justify-center">4</div>
+                    <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">4</div>
                     <span>Balance different life areas</span>
                   </h4>
                   <p className="text-slate-600 dark:text-slate-400 text-sm pl-8">
@@ -796,7 +795,7 @@ const handlePreviewSuggestion = (suggestion) => {
                 
                 <div className="space-y-4">
                   <h4 className="text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2">
-                    <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 w-6 h-6 rounded-full flex items-center justify-center">5</div>
+                    <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">5</div>
                     <span>Review and adjust regularly</span>
                   </h4>
                   <p className="text-slate-600 dark:text-slate-400 text-sm pl-8">
@@ -824,128 +823,128 @@ const handlePreviewSuggestion = (suggestion) => {
             </div>
           )}
 
-{previewSuggestion && (
-  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-      <div className="p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/20">
-        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
-          <Sparkles className="text-amber-500" size={20} />
-          <span>Goal Preview</span>
-        </h3>
-        <button 
-          onClick={() => setPreviewSuggestion(null)}
-          className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-        >
-          <X size={20} />
-        </button>
-      </div>
-      
-      <div className="p-6 overflow-y-auto max-h-[calc(90vh-64px)]">
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
-            {previewSuggestion.title}
-          </h2>
-          
-          <div className="flex flex-wrap gap-2 mb-3">
-            {previewSuggestion.category && (
-              <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm flex items-center gap-1">
-                {getCategoryIcon(previewSuggestion.category)}
-                <span>{categories.find(c => c.id === previewSuggestion.category)?.name || previewSuggestion.category}</span>
-              </span>
-            )}
-            
-            {previewSuggestion.progressType && (
-              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm flex items-center gap-1">
-                {previewSuggestion.progressType === 'percentage' && <Percent size={14} />}
-                {previewSuggestion.progressType === 'counter' && <Hash size={14} />}
-                {previewSuggestion.progressType === 'milestone' && <ListChecks size={14} />}
-                {previewSuggestion.progressType === 'simple' && <Target size={14} />}
-                <span>{previewSuggestion.progressType.charAt(0).toUpperCase() + previewSuggestion.progressType.slice(1)}</span>
-              </span>
-            )}
-          </div>
-          
-          {previewSuggestion.description && (
-            <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg mb-4">
-              <p className="text-slate-700 dark:text-slate-300">
-                {previewSuggestion.description}
-              </p>
-            </div>
-          )}
-          
-          <div className="mt-4">
-            <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Progress Tracking Method
-            </h4>
-            <div className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700">
-              <p className="text-slate-600 dark:text-slate-400">
-                {getProgressTypeDisplay(previewSuggestion)}
-              </p>
-            </div>
-          </div>
-          
-          {previewSuggestion.progressType === 'milestone' && previewSuggestion.milestones && previewSuggestion.milestones.length > 0 && (
-            <div className="mt-4">
-              <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Milestones
-              </h4>
-              <div className="space-y-2">
-                {previewSuggestion.milestones.map((milestone, idx) => (
-                  <div 
-                    key={idx} 
-                    className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700 flex items-center gap-2"
+          {previewSuggestion && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+                <div className="p-3 sm:p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/20">
+                  <h3 className="text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <Sparkles className="text-amber-500 flex-shrink-0" size={20} />
+                    <span className="truncate">Goal Preview</span>
+                  </h3>
+                  <button 
+                    onClick={() => setPreviewSuggestion(null)}
+                    className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                   >
-                    <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600 flex-shrink-0"></div>
-                    <span className="text-slate-700 dark:text-slate-300">
-                      {milestone.text}
-                    </span>
+                    <X size={20} />
+                  </button>
+                </div>
+                
+                <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-64px)]">
+                  <div className="mb-6">
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2 break-words">
+                      {previewSuggestion.title}
+                    </h2>
+                    
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {previewSuggestion.category && (
+                        <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm flex items-center gap-1">
+                          {getCategoryIcon(previewSuggestion.category)}
+                          <span className="truncate">{categories.find(c => c.id === previewSuggestion.category)?.name || previewSuggestion.category}</span>
+                        </span>
+                      )}
+                      
+                      {previewSuggestion.progressType && (
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm flex items-center gap-1">
+                          {previewSuggestion.progressType === 'percentage' && <Percent size={14} />}
+                          {previewSuggestion.progressType === 'counter' && <Hash size={14} />}
+                          {previewSuggestion.progressType === 'milestone' && <ListChecks size={14} />}
+                          {previewSuggestion.progressType === 'simple' && <Target size={14} />}
+                          <span>{previewSuggestion.progressType.charAt(0).toUpperCase() + previewSuggestion.progressType.slice(1)}</span>
+                        </span>
+                      )}
+                    </div>
+                    
+                    {previewSuggestion.description && (
+                      <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg mb-4">
+                        <p className="text-slate-700 dark:text-slate-300 break-words">
+                          {previewSuggestion.description}
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className="mt-4">
+                      <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Progress Tracking Method
+                      </h4>
+                      <div className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700">
+                        <p className="text-slate-600 dark:text-slate-400">
+                          {getProgressTypeDisplay(previewSuggestion)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {previewSuggestion.progressType === 'milestone' && previewSuggestion.milestones && previewSuggestion.milestones.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-2">
+                          Milestones
+                        </h4>
+                        <div className="space-y-2">
+                          {previewSuggestion.milestones.map((milestone, idx) => (
+                            <div 
+                              key={idx} 
+                              className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700 flex items-center gap-2"
+                            >
+                              <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600 flex-shrink-0"></div>
+                              <span className="text-slate-700 dark:text-slate-300 break-words">
+                                {milestone.text}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
+                  
+                  <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
+                    <button
+                      onClick={() => setPreviewSuggestion(null)}
+                      className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleAddGoal(
+                          previewSuggestion.title, 
+                          previewSuggestion.category, 
+                          {
+                            progressType: previewSuggestion.progressType,
+                            description: previewSuggestion.description,
+                            progress: previewSuggestion.initialProgress,
+                            currentValue: previewSuggestion.currentValue,
+                            targetValue: previewSuggestion.targetValue,
+                            milestones: previewSuggestion.milestones
+                          }
+                        );
+                        setPreviewSuggestion(null);
+                      }}
+                      className="px-4 py-2 bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white rounded-lg shadow-sm flex items-center gap-2 justify-center"
+                    >
+                      <Check size={18} />
+                      <span>Add Goal</span>
+                    </button>
+                    <button
+                      onClick={() => handleEditSuggestion(previewSuggestion)}
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg shadow-sm flex items-center gap-2 justify-center"
+                    >
+                      <Edit size={18} />
+                      <span>Edit Before Adding</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
-        </div>
-        
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={() => setPreviewSuggestion(null)}
-            className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              handleAddGoal(
-                previewSuggestion.title, 
-                previewSuggestion.category, 
-                {
-                  progressType: previewSuggestion.progressType,
-                  description: previewSuggestion.description,
-                  progress: previewSuggestion.initialProgress,
-                  currentValue: previewSuggestion.currentValue,
-                  targetValue: previewSuggestion.targetValue,
-                  milestones: previewSuggestion.milestones
-                }
-              );
-              setPreviewSuggestion(null);
-            }}
-            className="px-4 py-2 bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white rounded-lg shadow-sm flex items-center gap-2"
-          >
-            <Check size={18} />
-            <span>Add Goal</span>
-          </button>
-          <button
-            onClick={() => handleEditSuggestion(previewSuggestion)}
-            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg shadow-sm flex items-center gap-2"
-          >
-            <Edit size={18} />
-            <span>Edit Before Adding</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
         </div>
       </div>
     </div>

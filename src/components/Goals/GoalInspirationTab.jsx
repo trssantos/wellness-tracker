@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    Eye,X,Target,Edit,Percent,Hash,ListChecks,Sparkles, Filter, ArrowRight, Search, Plus, 
+    Eye, X, Target, Edit, Percent, Hash, ListChecks, Sparkles, Filter, ArrowRight, Search, Plus, 
   MessageCircle, CheckCircle, Check, Loader, Star,
   Mountain, Brain, Dumbbell, Briefcase, Wallet, ThumbsUp,
-  AlertCircle, PencilLine, Lightbulb, BookOpen
+  AlertCircle, PencilLine, Lightbulb, BookOpen, ChevronDown
 } from 'lucide-react';
 import { getCategories, createGoal } from '../../utils/bucketListUtils';
 import { generateGoalSuggestion } from '../../utils/aiGoalService';
@@ -397,18 +397,24 @@ const GoalInspirationTab = ({ onGoalAdded, onEditGoal }) => {
             </div>
           </div>
           
-          {/* Topic starters */}
-          <div className="flex flex-wrap gap-2 p-3 bg-white/70 dark:bg-slate-800/50 rounded-lg">
-            {topicStarters.map((starter, index) => (
-              <button
-                key={index}
-                onClick={() => setSearchTerm(starter)}
-                className="inline-flex items-center text-xs py-1 px-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors mb-1"
-              >
-                <Lightbulb size={12} className="mr-1 flex-shrink-0" />
-                <span className="truncate">{starter}</span>
-              </button>
-            ))}
+          {/* Topic starters - Mobile-friendly vertical list */}
+          <div className="p-3 bg-white/70 dark:bg-slate-800/50 rounded-lg">
+            <div className="mb-2 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
+              <Lightbulb size={14} className="text-amber-500" />
+              <span>Try one of these prompts:</span>
+            </div>
+            
+            <div className="space-y-2">
+              {topicStarters.map((starter, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSearchTerm(starter)}
+                  className="w-full text-left p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/40 text-sm transition-colors"
+                >
+                  {starter}
+                </button>
+              ))}
+            </div>
           </div>
           
           <div className="flex justify-end">
@@ -443,13 +449,31 @@ const GoalInspirationTab = ({ onGoalAdded, onEditGoal }) => {
         </div>
       </div>
       
-      {/* Tabs */}
+      {/* Tabs - Mobile-Friendly Version */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div className="border-b border-slate-200 dark:border-slate-700 overflow-x-auto no-scrollbar">
-          <div className="flex min-w-[400px]">
+        {/* Mobile Dropdown - visible only on small screens */}
+        <div className="md:hidden p-3 border-b border-slate-200 dark:border-slate-700">
+          <div className="relative">
+            <select
+              value={activeSection}
+              onChange={(e) => setActiveSection(e.target.value)}
+              className="w-full appearance-none bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg py-2 pl-3 pr-10 text-sm font-medium text-slate-700 dark:text-slate-200"
+            >
+              <option value="popular">Popular Goals</option>
+              <option value="browse">Browse by Category</option>
+              <option value="ai">AI Suggestions</option>
+              <option value="guide">Goal-Setting Guide</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-2.5 text-slate-400 pointer-events-none" size={16} />
+          </div>
+        </div>
+        
+        {/* Desktop Tabs - hidden on mobile, visible on md screens and up */}
+        <div className="hidden md:block border-b border-slate-200 dark:border-slate-700">
+          <div className="flex">
             <button
               onClick={() => setActiveSection('popular')}
-              className={`px-3 sm:px-4 py-3 font-medium text-sm whitespace-nowrap ${
+              className={`px-4 py-3 font-medium text-sm whitespace-nowrap ${
                 activeSection === 'popular' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400 -mb-px' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -459,7 +483,7 @@ const GoalInspirationTab = ({ onGoalAdded, onEditGoal }) => {
             </button>
             <button
               onClick={() => setActiveSection('browse')}
-              className={`px-3 sm:px-4 py-3 font-medium text-sm whitespace-nowrap ${
+              className={`px-4 py-3 font-medium text-sm whitespace-nowrap ${
                 activeSection === 'browse' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400 -mb-px' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -469,7 +493,7 @@ const GoalInspirationTab = ({ onGoalAdded, onEditGoal }) => {
             </button>
             <button
               onClick={() => setActiveSection('ai')}
-              className={`px-3 sm:px-4 py-3 font-medium text-sm whitespace-nowrap ${
+              className={`px-4 py-3 font-medium text-sm whitespace-nowrap ${
                 activeSection === 'ai' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400 -mb-px' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -479,7 +503,7 @@ const GoalInspirationTab = ({ onGoalAdded, onEditGoal }) => {
             </button>
             <button
               onClick={() => setActiveSection('guide')}
-              className={`px-3 sm:px-4 py-3 font-medium text-sm whitespace-nowrap ${
+              className={`px-4 py-3 font-medium text-sm whitespace-nowrap ${
                 activeSection === 'guide' 
                   ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500 dark:border-amber-400 -mb-px' 
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'

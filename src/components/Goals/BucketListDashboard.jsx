@@ -225,34 +225,47 @@ const getRecentNotes = () => {
 </div>
         
         <div className="divide-y divide-slate-200 dark:divide-slate-700">
-          {getFeaturedGoals().map((goal, index) => (
-            <div 
-              key={goal.id || index} 
-              className="flex items-center p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer" 
-              onClick={() => onSelectGoal(goal.id)}
-            >
-              <div className="mr-3">
-                <Circle size={20} className="text-slate-300 dark:text-slate-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-slate-800 dark:text-slate-200 truncate">{goal.title}</h4>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {goal.targetDate && (
-                    <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-full">
-                      <Calendar size={12} />
-                      {formatRemainingTime(goal.targetDate)}
-                    </span>
-                  )}
-                  <span className="inline-flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-full">
-                    {calculateProgress(goal)}% complete
-                  </span>
-                </div>
-              </div>
-              <div className="ml-2">
-                <ArrowUpRight size={18} className="text-slate-400" />
-              </div>
-            </div>
-          ))}
+        {getFeaturedGoals().map((goal, index) => (
+  <div 
+    key={goal.id || index}
+    className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+    onClick={() => onSelectGoal(goal.id)}
+  >
+    <div className="flex justify-between items-start mb-3">
+      <div className="flex items-center gap-2 max-w-[75%]">
+        <div className="bg-slate-100 dark:bg-slate-700 p-2 rounded-lg flex-shrink-0">
+          {getCategoryIcon(goal.category)}
+        </div>
+        <h3 className="font-medium text-slate-800 dark:text-slate-200 line-clamp-1">
+          {goal.title}
+        </h3>
+      </div>
+      <ChevronRight className="text-slate-400 flex-shrink-0" size={18} />
+    </div>
+    
+    <div className="mb-3">
+      <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+        <div 
+          className="h-full bg-amber-500 dark:bg-amber-600 rounded-full transition-all"
+          style={{ width: `${calculateProgress(goal)}%` }}
+        ></div>
+      </div>
+    </div>
+    
+    <div className="flex flex-wrap justify-between items-center text-xs gap-2">
+      <span className="text-slate-500 dark:text-slate-400">
+        {calculateProgress(goal)}% complete
+      </span>
+      
+      {goal.targetDate && (
+        <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full flex items-center gap-1 flex-shrink-0">
+          <Calendar size={12} />
+          {formatRemainingTime(goal.targetDate)}
+        </span>
+      )}
+    </div>
+  </div>
+))}
           
           {getFeaturedGoals().length === 0 && (
   <div className="p-6 text-center">

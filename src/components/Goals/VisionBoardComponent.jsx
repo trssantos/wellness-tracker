@@ -360,146 +360,147 @@ const VisionBoardComponent = () => {
   }, [items.length, viewMode]);
   
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-sm">
-        <div>
-          <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-            <Sparkles className="text-amber-500 flex-shrink-0" />
-            <span className="truncate">Vision Board</span>
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
-            <span className="truncate">Visualize your dreams</span>
-            <button
-              onClick={() => setShowExplanation(true)}
-              className="text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 flex-shrink-0"
-              title="Learn more about Vision Boards"
-            >
-              <Info size={14} />
-            </button>
+    <div className="flex flex-col w-full max-w-full" style={{ width: '100%' }}>
+  {/* Header */}
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-sm w-full">
+    <div>
+      <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+        <Sparkles className="text-amber-500 flex-shrink-0" />
+        <span className="truncate">Vision Board</span>
+      </h2>
+      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+        <span className="truncate">Visualize your dreams</span>
+        <button
+          onClick={() => setShowExplanation(true)}
+          className="text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 flex-shrink-0"
+          title="Learn more about Vision Boards"
+        >
+          <Info size={14} />
+        </button>
+      </p>
+    </div>
+    
+    <div className="flex items-center gap-2">
+      <div className="flex border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+        <button
+          onClick={() => setViewMode('grid')}
+          className={`p-2 flex items-center ${
+            viewMode === 'grid' 
+              ? 'bg-amber-500 dark:bg-amber-600 text-white' 
+              : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
+          }`}
+          title="Grid View"
+        >
+          <LayoutGrid size={18} />
+        </button>
+        <button
+          onClick={() => setViewMode('flow')}
+          className={`p-2 flex items-center ${
+            viewMode === 'flow' 
+              ? 'bg-amber-500 dark:bg-amber-600 text-white' 
+              : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
+          }`}
+          title="Free Canvas View"
+        >
+          <Move size={18} />
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  {/* Content */}
+  {viewMode === 'grid' ? (
+    <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-sm w-full mt-4">
+      {items.length === 0 && !isAddingItem ? (
+        <div className="text-center py-12 w-full">
+          <div className="bg-amber-100 dark:bg-amber-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Image size={32} className="text-amber-500" />
+          </div>
+          <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Your vision board is empty
+          </h3>
+          <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
+            Add your dreams, aspirations, and goals to create a visual representation of what you want to achieve.
           </p>
+          <button
+            onClick={() => {
+              setIsAddingItem(true);
+              setIsEditingItem(null);
+              setNewItem({
+                title: '',
+                description: '',
+                color: '#3b82f6',
+                icon: 'star'
+              });
+            }}
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg inline-flex items-center gap-2"
+          >
+            <Plus size={18} />
+            <span>Add Your First Dream</span>
+          </button>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <div className="flex border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+      ) : (
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-4 w-full mx-auto px-0">
+  {/* Vision Board Items */}
+  {items.map(item => (
+    <div 
+      key={item.id}
+      className="relative group overflow-hidden bg-white dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 hover:shadow-md transition-shadow w-full"
+      style={{ borderTopColor: item.color, borderTopWidth: '4px' }}
+      onMouseEnter={() => setHoveredItem(item.id)}
+      onMouseLeave={() => setHoveredItem(null)}
+    >
+      <div className="p-4 w-full">
+        <div className="flex items-start justify-between mb-3 w-full">
+          <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center flex-shrink-0">
+            {renderIcon(item.icon, item.color)}
+          </div>
+          
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
             <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 flex items-center ${
-                viewMode === 'grid' 
-                  ? 'bg-amber-500 dark:bg-amber-600 text-white' 
-                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
-              }`}
-              title="Grid View"
+              onClick={() => handleEditItem(item)}
+              className="p-1 text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 bg-white dark:bg-slate-700 rounded-md"
             >
-              <LayoutGrid size={18} />
+              <Edit size={16} />
             </button>
             <button
-              onClick={() => setViewMode('flow')}
-              className={`p-2 flex items-center ${
-                viewMode === 'flow' 
-                  ? 'bg-amber-500 dark:bg-amber-600 text-white' 
-                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
-              }`}
-              title="Free Canvas View"
+              onClick={() => showDeleteModal(item.id)}
+              className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-700 rounded-md"
             >
-              <Move size={18} />
+              <Trash2 size={16} />
             </button>
           </div>
         </div>
+        
+        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-2 truncate">
+          {item.title}
+        </h3>
+        
+        {item.description && (
+          <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+            {item.description}
+          </p>
+        )}
       </div>
-      
-      {/* Content */}
-      {viewMode === 'grid' ? (
-        <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-sm">
-          {items.length === 0 && !isAddingItem ? (
-            <div className="text-center py-12">
-              <div className="bg-amber-100 dark:bg-amber-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Image size={32} className="text-amber-500" />
-              </div>
-              <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Your vision board is empty
-              </h3>
-              <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
-                Add your dreams, aspirations, and goals to create a visual representation of what you want to achieve.
-              </p>
-              <button
-                onClick={() => {
-                  setIsAddingItem(true);
-                  setIsEditingItem(null);
-                  setNewItem({
-                    title: '',
-                    description: '',
-                    color: '#3b82f6',
-                    icon: 'star'
-                  });
-                }}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg inline-flex items-center gap-2"
-              >
-                <Plus size={18} />
-                <span>Add Your First Dream</span>
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Vision Board Items */}
-              {items.map(item => (
-                <div 
-                  key={item.id}
-                  className="relative group overflow-hidden bg-white dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 hover:shadow-md transition-shadow"
-                  style={{ borderTopColor: item.color, borderTopWidth: '4px' }}
-                  onMouseEnter={() => setHoveredItem(item.id)}
-                  onMouseLeave={() => setHoveredItem(null)}
-                >
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center flex-shrink-0">
-                        {renderIcon(item.icon, item.color)}
-                      </div>
-                      
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                        <button
-                          onClick={() => handleEditItem(item)}
-                          className="p-1 text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 bg-white dark:bg-slate-700 rounded-md"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => showDeleteModal(item.id)}
-                          className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-700 rounded-md"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-2 truncate">
-                      {item.title}
-                    </h3>
-                    
-                    {item.description && (
-                      <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-              
-              {/* Add Item Button (shown in grid view when there are already items) */}
-              {items.length > 0 && !isAddingItem && !isEditingItem && (
-                <button
-                  onClick={() => setIsAddingItem(true)}
-                  className="flex flex-col items-center justify-center p-6 border border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors h-full"
-                >
-                  <PlusCircle size={24} className="mb-2" />
-                  <span>Add Dream</span>
-                </button>
-              )}
-            </div>
+    </div>
+  ))}
+  
+  {/* Add Item Button (shown in grid view when there are already items) */}
+  {items.length > 0 && !isAddingItem && !isEditingItem && (
+    <button
+      onClick={() => setIsAddingItem(true)}
+      className="flex flex-col items-center justify-center p-6 border border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors h-full w-full"
+    >
+      <PlusCircle size={24} className="mb-2" />
+      <span>Add Dream</span>
+    </button>
+  )}
+</div>
           )}
         </div>
       ) : (
         // Flow View - more creative, free-form layout
-        <div className="bg-gradient-to-br from-amber-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 p-4 sm:p-6 rounded-xl shadow-sm min-h-[400px] relative">
+        <div className=" mt-4 bg-gradient-to-br from-amber-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 p-4 sm:p-6 rounded-xl shadow-sm min-h-[400px] relative">
           <div className="absolute top-4 right-4 flex gap-2 z-10">
             <button
               className="p-2 bg-white dark:bg-slate-700 rounded-lg shadow-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
@@ -542,81 +543,82 @@ const VisionBoardComponent = () => {
             </div>
           ) : (
             <div 
-              ref={dragContainerRef}
-              className="relative h-[400px] sm:h-[500px] md:h-[600px] overflow-auto bg-slate-50 dark:bg-slate-800/50 rounded-lg"
-              onMouseMove={isDragging ? handleDragMove : null}
-              onMouseUp={handleDragEnd}
-              onMouseLeave={handleDragEnd}
-              onDragOver={(e) => e.preventDefault()}
-              onTouchEnd={handleDragEnd}
-              onTouchCancel={handleDragEnd}
-            >
-              {/* Randomly positioned vision items with improved drag */}
-              {items.map(item => (
-                <div
-                  key={item.id}
-                  className={`absolute p-4 w-40 sm:w-48 md:w-52 bg-white dark:bg-slate-700 rounded-xl shadow-lg cursor-move transition-transform duration-200 hover:z-10 hover:shadow-xl ${isDragging && dragItem === item.id ? 'opacity-70' : 'opacity-100'}`}
-                  style={{
-                    ...positions[item.id],
-                    zIndex: hoveredItem === item.id ? 10 : dragItem === item.id ? 20 : 1,
-                    borderLeft: `4px solid ${item.color}`
-                  }}
-                  onMouseDown={(e) => handleDragStart(e, item.id)}
-                  onTouchStart={(e) => handleDragStart(e, item.id)}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center flex-shrink-0">
-                      {renderIcon(item.icon, item.color)}
-                    </div>
-                    
-                    <div className="opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity flex gap-1">
-                      <button
-                        onClick={() => handleEditItem(item)}
-                        className="p-1 text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 bg-white dark:bg-slate-700 rounded-md"
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <button
-                        onClick={() => showDeleteModal(item.id)}
-                        className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-700 rounded-md"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-1 truncate">
-                    {item.title}
-                  </h3>
-                  
-                  {item.description && (
-                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
-                      {item.description}
-                    </p>
-                  )}
-                </div>
-              ))}
-              
-              {/* Info banner when empty in flow view */}
-              {viewMode === 'flow' && items.length === 0 && !isAddingItem && (
-                <div className="absolute bottom-24 left-0 right-0 mx-auto max-w-md bg-white dark:bg-slate-700 p-3 rounded-lg shadow-md border border-amber-200 dark:border-amber-800 text-center">
-                  <p className="text-sm text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1">
-                    <Info size={14} className="text-amber-500 flex-shrink-0" />
-                    <span>Dreams are aspirational visions of what you want to manifest in your life</span>
-                  </p>
-                </div>
-              )}
-              
-              {/* Add Button (for flow view) */}
-              {!isAddingItem && !isEditingItem && (
-                <button
-                  onClick={() => setIsAddingItem(true)}
-                  className="absolute bottom-6 right-6 w-14 h-14 rounded-full bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white shadow-lg flex items-center justify-center z-10"
-                >
-                  <Plus size={24} />
-                </button>
-              )}
-            </div>
+  ref={dragContainerRef}
+  className="relative h-[400px] sm:h-[500px] md:h-[600px] overflow-auto bg-slate-50 dark:bg-slate-800/50 rounded-lg w-full mx-auto"
+  style={{ width: '100%', minWidth: '100%' }}
+  onMouseMove={isDragging ? handleDragMove : null}
+  onMouseUp={handleDragEnd}
+  onMouseLeave={handleDragEnd}
+  onDragOver={(e) => e.preventDefault()}
+  onTouchEnd={handleDragEnd}
+  onTouchCancel={handleDragEnd}
+>
+  {/* Randomly positioned vision items with improved drag */}
+  {items.map(item => (
+    <div
+      key={item.id}
+      className={`absolute p-4 w-36 sm:w-44 md:w-48 bg-white dark:bg-slate-700 rounded-xl shadow-lg cursor-move transition-transform duration-200 hover:z-10 hover:shadow-xl ${isDragging && dragItem === item.id ? 'opacity-70' : 'opacity-100'}`}
+      style={{
+        ...positions[item.id],
+        zIndex: hoveredItem === item.id ? 10 : dragItem === item.id ? 20 : 1,
+        borderLeft: `4px solid ${item.color}`
+      }}
+      onMouseDown={(e) => handleDragStart(e, item.id)}
+      onTouchStart={(e) => handleDragStart(e, item.id)}
+    >
+      <div className="flex justify-between items-start mb-2 w-full">
+        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center flex-shrink-0">
+          {renderIcon(item.icon, item.color)}
+        </div>
+        
+        <div className="opacity-70 sm:opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity flex gap-1">
+          <button
+            onClick={() => handleEditItem(item)}
+            className="p-1 text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 bg-white dark:bg-slate-700 rounded-md"
+          >
+            <Edit size={14} />
+          </button>
+          <button
+            onClick={() => showDeleteModal(item.id)}
+            className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-700 rounded-md"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+      
+      <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-1 truncate">
+        {item.title}
+      </h3>
+      
+      {item.description && (
+        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
+          {item.description}
+        </p>
+      )}
+    </div>
+  ))}
+  
+  {/* Info banner when empty in flow view */}
+  {viewMode === 'flow' && items.length === 0 && !isAddingItem && (
+    <div className="absolute bottom-24 left-0 right-0 mx-auto max-w-md bg-white dark:bg-slate-700 p-3 rounded-lg shadow-md border border-amber-200 dark:border-amber-800 text-center">
+      <p className="text-sm text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1">
+        <Info size={14} className="text-amber-500 flex-shrink-0" />
+        <span>Dreams are aspirational visions of what you want to manifest in your life</span>
+      </p>
+    </div>
+  )}
+  
+  {/* Add Button (for flow view) */}
+  {!isAddingItem && !isEditingItem && (
+    <button
+      onClick={() => setIsAddingItem(true)}
+      className="absolute bottom-6 right-6 w-14 h-14 rounded-full bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white shadow-lg flex items-center justify-center z-10"
+    >
+      <Plus size={24} />
+    </button>
+  )}
+</div>
           )}
         </div>
       )}

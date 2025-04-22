@@ -337,86 +337,109 @@ const NotesSection = () => {
 
   const handleDragStart = (e, note) => {
     if (sortBy !== 'custom') return;
-  
+    
+    // Prevent issues with nested draggable elements
+    e.stopPropagation();
+    
+    // Set the drag data
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', note.id); // For Firefox
-  
-    setDraggedNote(note);
-  
+    e.dataTransfer.setData('text/plain', note.id);
+    
+    // Set a small timeout to ensure the draggedNote state is set after the current render cycle
+    setTimeout(() => {
+      setDraggedNote(note);
+      setIsDragging(true);
+    }, 0);
+    
+    // Add the drag styling
     e.currentTarget.classList.add('actively-dragging');
   };
   
   const handleDragOver = (e, targetNoteId) => {
-    if (sortBy !== 'custom') return;
-  
-    e.preventDefault(); // Necessary for drop to fire
-  
+    if (sortBy !== 'custom' || !isDragging) return;
+    
+    // Prevent default to allow drop
+    e.preventDefault();
+    
     if (!draggedNote || targetNoteId === draggedNote.id) return;
-  
+    
+    // Add visual feedback for drop target
+    e.currentTarget.classList.add('drop-target');
     setDragOverNoteId(targetNoteId);
   };
   
   const handleDragLeave = (e) => {
-    if (sortBy !== 'custom') return;
-  
+    if (sortBy !== 'custom' || !isDragging) return;
+    
+    // Remove visual feedback when dragging out
     e.currentTarget.classList.remove('drop-target');
   };
   
   const handleDrop = (e, targetNoteId) => {
-    if (sortBy !== 'custom') return;
-  
+    if (sortBy !== 'custom' || !isDragging) return;
+    
     e.preventDefault();
     e.stopPropagation();
-  
+    
+    // Clean up all drag-related classes
     document.querySelectorAll('.actively-dragging, .drop-target').forEach(el =>
       el.classList.remove('actively-dragging', 'drop-target')
     );
-  
+    
     if (!draggedNote || targetNoteId === draggedNote.id) {
+      // Reset state if dropping on same element
       setDraggedNote(null);
       setDragOverNoteId(null);
+      setIsDragging(false);
       return;
     }
-  
+    
+    // Find indices for the drag operation
     const draggedIndex = filteredNotes.findIndex(note => note.id === draggedNote.id);
     const targetIndex = filteredNotes.findIndex(note => note.id === targetNoteId);
-  
+    
     if (draggedIndex === -1 || targetIndex === -1) {
       setDraggedNote(null);
       setDragOverNoteId(null);
+      setIsDragging(false);
       return;
     }
-  
+    
+    // Reorder the notes
     const reordered = [...filteredNotes];
     const [draggedItem] = reordered.splice(draggedIndex, 1);
     reordered.splice(targetIndex, 0, draggedItem);
-  
+    
+    // Update custom order
     const newOrder = reordered.map(note => note.id);
     setCustomOrder(newOrder);
-  
+    
     // Save to storage
     const storage = getStorage();
     if (storage.zenNotes) {
       storage.zenNotes.customOrder = newOrder;
       setStorage(storage);
     }
-  
+    
     // Force immediate re-filter with the latest order
     const sortedNotes = sortNotes(notes, 'custom');
     setFilteredNotes(sortedNotes);
-  
+    
     // Clear drag state
     setDraggedNote(null);
     setDragOverNoteId(null);
+    setIsDragging(false);
   };
   
-  
-  const handleDragEnd = () => {
+  const handleDragEnd = (e) => {
+    // Clean up all drag-related classes and state
     document.querySelectorAll('.actively-dragging, .drop-target').forEach(el =>
       el.classList.remove('actively-dragging', 'drop-target')
     );
+    
     setDraggedNote(null);
     setDragOverNoteId(null);
+    setIsDragging(false);
   };
   
 
@@ -471,7 +494,7 @@ const NotesSection = () => {
     const colorClasses = generateColorClass(note.color);
     
     return (
-      <div 
+        <div 
         className={`
           relative border rounded-lg p-3 shadow-sm transition-colors note-card
           ${colorClasses}
@@ -481,11 +504,11 @@ const NotesSection = () => {
           ${viewMode === 'grid' ? 'hover:shadow-md' : 'mb-3 hover:shadow-md'}
         `}
         draggable={sortBy === 'custom'}
-  onDragStart={(e) => handleDragStart(e, note)}
-  onDragOver={(e) => handleDragOver(e, note.id)}
-  onDragLeave={handleDragLeave}
-  onDrop={(e) => handleDrop(e, note.id)}
-  onDragEnd={handleDragEnd}
+        onDragStart={(e) => handleDragStart(e, note)}
+        onDragOver={(e) => handleDragOver(e, note.id)}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => handleDrop(e, note.id)}
+        onDragEnd={handleDragEnd}
         key={note.id}
       >
         <div className="flex justify-between items-start mb-2">
@@ -518,8 +541,6 @@ const NotesSection = () => {
 
             {sortBy === 'custom' && (
   <div
-    draggable
-    onDragStart={(e) => handleDragStart(e, note)}
     className="cursor-grab p-1 text-slate-400 dark:text-slate-500 hover:text-blue-500"
     title="Drag to reorder"
   >
@@ -1147,19 +1168,22 @@ const NotesSection = () => {
         }
         
         .actively-dragging {
-          opacity: 0.7 !important;
-          cursor: grabbing !important;
-          z-index: 100 !important;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2) !important;
-          border: 2px dashed #60a5fa !important;
-        }
+  opacity: 0.7 !important;
+  cursor: grabbing !important;
+  z-index: 100 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2) !important;
+  border: 2px dashed #60a5fa !important;
+  transform: scale(1.02);
+  transition: transform 0.1s ease;
+}
         
         .drop-target {
-          border: 2px solid #60a5fa !important;
-          box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3) !important;
-          transform: scale(1.03);
-          transition: all 0.1s ease;
-        }
+  border: 2px solid #60a5fa !important;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3) !important;
+  transform: scale(1.03);
+  transition: all 0.1s ease;
+  z-index: 50;
+}
         
         .note-return-animation {
           animation: returnToPosition 0.3s ease-out;

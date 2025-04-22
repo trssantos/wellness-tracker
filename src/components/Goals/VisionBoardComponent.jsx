@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Sparkles, Plus, Edit, Trash2, Eye, Image, 
-  X, EyeOff, Heart, Star, Award, Sun, PlusCircle,
+  Sparkles, Plus, Edit, Trash2, Image, 
+  X, Heart, Star, Award, Sun, PlusCircle,
   Compass, Mountain, Brain, Dumbbell, Briefcase, 
-  Wallet, Zap, Camera, Share2, DownloadCloud, Save
+  Wallet, Zap, Camera, Share2, DownloadCloud, Save,
+  // New icons for view modes
+  LayoutGrid, Move, 
+  // Info icon for help tooltip
+  Info, HelpCircle, Target
 } from 'lucide-react';
 import { getVisionBoardItems, addVisionBoardItem, updateVisionBoardItem, deleteVisionBoardItem } from '../../utils/bucketListUtils';
+import { getStorage, setStorage } from '../../utils/storage';
+
 
 const VisionBoardComponent = () => {
   const [items, setItems] = useState([]);
@@ -20,6 +26,12 @@ const VisionBoardComponent = () => {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'flow'
   const [dragItem, setDragItem] = useState(null);
   const [hoveredItem, setHoveredItem] = useState(null);
+  const [showExplanation, setShowExplanation] = useState(false);
+  
+  // For improved drag and drop
+  const [positions, setPositions] = useState({});
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
   // Available colors and icons
   const colors = [
@@ -61,6 +73,14 @@ const VisionBoardComponent = () => {
     const loadedItems = getVisionBoardItems();
     setItems(loadedItems);
   };
+  
+  // Load saved positions on component mount
+  useEffect(() => {
+    const storage = getStorage();
+    if (storage.bucketList?.visionBoardPositions) {
+      setPositions(storage.bucketList.visionBoardPositions);
+    }
+  }, []);
   
   // Handle add new vision item
   const handleAddItem = () => {
@@ -122,10 +142,100 @@ const VisionBoardComponent = () => {
   // Generate a random position for flow layout
   const getRandomPosition = () => {
     return {
-      left: `${Math.floor(Math.random() * 65)}%`,
-      top: `${Math.floor(Math.random() * 65)}%`,
+      left: `${Math.floor(Math.random() * 85)}%`,
+      top: `${Math.floor(Math.random() * 85)}%`,
       transform: `rotate(${Math.floor(Math.random() * 10 - 5)}deg)`
     };
+  };
+  
+  // Load saved positions when items load
+  useEffect(() => {
+    // Create initial positions for items that don't have saved positions
+    const initialPositions = {};
+    items.forEach(item => {
+      if (!positions[item.id]) {
+        initialPositions[item.id] = getRandomPosition();
+      }
+    });
+    
+    if (Object.keys(initialPositions).length > 0) {
+      setPositions(prev => ({
+        ...prev,
+        ...initialPositions
+      }));
+    }
+  }, [items]);
+  
+  // Improved drag handlers
+  const handleDragStart = (e, itemId) => {
+    const boundingRect = e.currentTarget.getBoundingClientRect();
+    
+    // Calculate the offset from the mouse position to the top-left corner of the element
+    const offsetX = e.clientX - boundingRect.left;
+    const offsetY = e.clientY - boundingRect.top;
+    
+    setDragOffset({ x: offsetX, y: offsetY });
+    setDragItem(itemId);
+    setIsDragging(true);
+    
+    // Required for Firefox
+    e.dataTransfer.setData('text/plain', itemId);
+    
+    // Make the drag image transparent
+    const dragImage = document.createElement('div');
+    dragImage.style.width = '1px';
+    dragImage.style.height = '1px';
+    document.body.appendChild(dragImage);
+    e.dataTransfer.setDragImage(dragImage, 0, 0);
+    
+    // Remove the element after the drag starts
+    setTimeout(() => {
+      document.body.removeChild(dragImage);
+    }, 0);
+  };
+  
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    
+    if (dragItem && isDragging) {
+      // Get the container position
+      const container = e.currentTarget;
+      const containerRect = container.getBoundingClientRect();
+      
+      // Calculate the new position considering the drag offset
+      const newX = ((e.clientX - containerRect.left - dragOffset.x) / containerRect.width) * 100;
+      const newY = ((e.clientY - containerRect.top - dragOffset.y) / containerRect.height) * 100;
+      
+      // Clamp the values to keep the item within the container
+      const clampedX = Math.max(0, Math.min(newX, 95));
+      const clampedY = Math.max(0, Math.min(newY, 95));
+      
+      // Update the position
+      setPositions(prev => ({
+        ...prev,
+        [dragItem]: {
+          left: `${clampedX}%`,
+          top: `${clampedY}%`,
+          transform: prev[dragItem]?.transform || 'rotate(0deg)'
+        }
+      }));
+    }
+  };
+  
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setDragItem(null);
+    
+    // Save positions to storage
+    const storage = getStorage();
+    if (!storage.bucketList) {
+      storage.bucketList = {};
+    }
+    if (!storage.bucketList.visionBoardPositions) {
+      storage.bucketList.visionBoardPositions = {};
+    }
+    storage.bucketList.visionBoardPositions = positions;
+    setStorage(storage);
   };
   
   return (
@@ -136,8 +246,15 @@ const VisionBoardComponent = () => {
             <Sparkles className="text-amber-500" />
             <span>Vision Board</span>
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Visualize your dreams and aspirations
+          <p className="text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+            <span>Visualize your dreams and aspirations</span>
+            <button
+              onClick={() => setShowExplanation(true)}
+              className="text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300"
+              title="Learn more about Vision Boards"
+            >
+              <Info size={14} />
+            </button>
           </p>
         </div>
         
@@ -145,44 +262,31 @@ const VisionBoardComponent = () => {
           <div className="flex border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 ${
+              className={`p-2 flex items-center gap-1 ${
                 viewMode === 'grid' 
                   ? 'bg-amber-500 dark:bg-amber-600 text-white' 
                   : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
               }`}
               title="Grid View"
             >
-              <Eye size={18} />
+              <LayoutGrid size={18} />
+              <span className="text-xs hidden sm:inline">Grid</span>
             </button>
             <button
               onClick={() => setViewMode('flow')}
-              className={`p-2 ${
+              className={`p-2 flex items-center gap-1 ${
                 viewMode === 'flow' 
                   ? 'bg-amber-500 dark:bg-amber-600 text-white' 
                   : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
               }`}
-              title="Flow View"
+              title="Free Canvas View"
             >
-              <EyeOff size={18} />
+              <Move size={18} />
+              <span className="text-xs hidden sm:inline">Canvas</span>
             </button>
           </div>
           
-          <button 
-            onClick={() => {
-              setIsAddingItem(true);
-              setIsEditingItem(null);
-              setNewItem({
-                title: '',
-                description: '',
-                color: '#3b82f6',
-                icon: 'star'
-              });
-            }}
-            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg shadow-sm flex items-center gap-2 transition-all"
-          >
-            <Plus size={18} />
-            <span className="font-medium">Add Dream</span>
-          </button>
+          
         </div>
       </div>
       
@@ -437,7 +541,11 @@ const VisionBoardComponent = () => {
               </button>
             </div>
           ) : (
-            <div className="relative h-[600px] overflow-hidden">
+            <div 
+              className="relative h-[600px] overflow-hidden bg-slate-50 dark:bg-slate-800/50 rounded-lg"
+              onDragOver={handleDragOver}
+              onDrop={handleDragEnd}
+            >
               {/* New Item Form (centered in flow view) */}
               {(isAddingItem || isEditingItem) && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-20">
@@ -557,55 +665,62 @@ const VisionBoardComponent = () => {
                 </div>
               )}
               
-              {/* Randomly positioned vision items */}
-              {items.map(item => {
-                const randomPos = getRandomPosition();
-                
-                return (
-                  <div
-                    key={item.id}
-                    className="absolute p-4 w-52 bg-white dark:bg-slate-700 rounded-xl shadow-lg cursor-move transition-all duration-200 hover:z-10 hover:shadow-xl"
-                    style={{
-                      ...randomPos,
-                      borderLeft: `4px solid ${item.color}`,
-                      zIndex: hoveredItem === item.id ? 10 : 1
-                    }}
-                    draggable={true}
-                    onDragStart={() => setDragItem(item.id)}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center">
-                        {renderIcon(item.icon, item.color)}
-                      </div>
-                      
-                      <div className="opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity flex gap-1">
-                        <button
-                          onClick={() => handleEditItem(item)}
-                          className="p-1 text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 bg-white dark:bg-slate-700 rounded-md"
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-700 rounded-md"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+              {/* Randomly positioned vision items with improved drag */}
+              {items.map(item => (
+                <div
+                  key={item.id}
+                  className={`absolute p-4 w-52 bg-white dark:bg-slate-700 rounded-xl shadow-lg cursor-move transition-transform duration-200 hover:z-10 hover:shadow-xl ${isDragging && dragItem === item.id ? 'opacity-70' : 'opacity-100'}`}
+                  style={{
+                    ...positions[item.id],
+                    zIndex: hoveredItem === item.id ? 10 : dragItem === item.id ? 20 : 1,
+                    borderLeft: `4px solid ${item.color}`
+                  }}
+                  draggable={true}
+                  onDragStart={(e) => handleDragStart(e, item.id)}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center">
+                      {renderIcon(item.icon, item.color)}
                     </div>
                     
-                    <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-1">
-                      {item.title}
-                    </h3>
-                    
-                    {item.description && (
-                      <p className="text-xs text-slate-600 dark:text-slate-400">
-                        {item.description}
-                      </p>
-                    )}
+                    <div className="opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity flex gap-1">
+                      <button
+                        onClick={() => handleEditItem(item)}
+                        className="p-1 text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 bg-white dark:bg-slate-700 rounded-md"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-700 rounded-md"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
-                );
-              })}
+                  
+                  <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-1">
+                    {item.title}
+                  </h3>
+                  
+                  {item.description && (
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      {item.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+              
+              {/* Info banner when empty in flow view */}
+              {viewMode === 'flow' && items.length === 0 && !isAddingItem && (
+                <div className="absolute bottom-24 left-0 right-0 mx-auto max-w-md bg-white dark:bg-slate-700 p-3 rounded-lg shadow-md border border-amber-200 dark:border-amber-800 text-center">
+                  <p className="text-sm text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1">
+                    <Info size={14} className="text-amber-500" />
+                    <span>Dreams are aspirational visions of what you want to manifest in your life</span>
+                  </p>
+                </div>
+              )}
               
               {/* Add Button (for flow view) */}
               {!isAddingItem && !isEditingItem && (
@@ -618,6 +733,69 @@ const VisionBoardComponent = () => {
               )}
             </div>
           )}
+        </div>
+      )}
+      
+      {/* Vision Board Explanation Modal */}
+      {showExplanation && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowExplanation(false)}>
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <Sparkles className="text-amber-500" size={20} />
+                <span>Vision Board vs. Goals</span>
+              </h3>
+              <button 
+                onClick={() => setShowExplanation(false)}
+                className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-full"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-800">
+                <h4 className="font-medium text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-1">
+                  <Sparkles size={16} />
+                  <span>Vision Board: Dreams & Aspirations</span>
+                </h4>
+                <p className="text-slate-700 dark:text-slate-300 text-sm">
+                  Your Vision Board is a visual representation of what you want to manifest in your life. Dreams are aspirational, inspirational, and connect to the "why" behind your actions.
+                </p>
+              </div>
+              
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-1">
+                  <Target size={16} />
+                  <span>Bucket List: Goals & Plans</span>
+                </h4>
+                <p className="text-slate-700 dark:text-slate-300 text-sm">
+                  Your Bucket List contains specific, measurable goals with tracking methods, deadlines, and completion criteria. Goals focus on the "how" and "what" of achievement.
+                </p>
+              </div>
+              
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
+                Research shows that using both approaches together is powerful: The Vision Board keeps you inspired and connected to your "why," while the Bucket List provides the structure to turn those dreams into reality.
+              </p>
+              
+              <div className="flex justify-between items-center mt-2 text-sm">
+                <div className="flex gap-2">
+                  <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <LayoutGrid size={14} /> Grid View
+                  </span>
+                  <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <Move size={14} /> Canvas View
+                  </span>
+                </div>
+                <button
+                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                  onClick={() => setShowExplanation(false)}
+                >
+                  Got it
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

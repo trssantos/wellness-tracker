@@ -291,19 +291,6 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
                       </span>
                     </button>
                   ))}
-                  
-                  {/* Add new category button */}
-                  <button
-                    type="button"
-                    className="p-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
-                      <Plus size={18} className="text-slate-500" />
-                    </div>
-                    <span className="text-xs text-center text-slate-500 dark:text-slate-400">
-                      New Category
-                    </span>
-                  </button>
                 </div>
               </div>
               
@@ -588,45 +575,6 @@ const GoalEditorForm = ({ goal, onClose, onSave }) => {
               )}
             </div>
             
-            {/* Integrations section */}
-            <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-              <h3 className="text-md font-medium text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                <Link size={18} className="text-amber-500" />
-                <span>Integrations</span>
-              </h3>
-              
-              <div className="space-y-3">
-                {/* Habit connection */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
-                  <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-2">Connect to Habits</h4>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                    Link your daily habits to this goal to track progress automatically
-                  </p>
-                  <button 
-                    type="button"
-                    className="w-full p-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-lg flex items-center justify-center gap-2"
-                  >
-                    <Plus size={16} />
-                    <span>Link Habits</span>
-                  </button>
-                </div>
-                
-                {/* Finance goal connection */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
-                  <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-2">Connect to Finance</h4>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                    Link a finance goal to fund this bucket list item
-                  </p>
-                  <button 
-                    type="button"
-                    className="w-full p-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-lg flex items-center justify-center gap-2"
-                  >
-                    <Plus size={16} />
-                    <span>Link Finance Goal</span>
-                  </button>
-                </div>
-              </div>
-            </div>
             
             {/* Form error */}
             {errors.form && (

@@ -17,6 +17,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
   const [currentProgress, setCurrentProgress] = useState(goal?.progress || 0);
   const [currentValue, setCurrentValue] = useState(goal?.currentValue || 0);
   const [isCompleted, setIsCompleted] = useState(goal?.completed || false);
+  const [milestones, setMilestones] = useState(goal?.milestones || []);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [newMilestone, setNewMilestone] = useState('');
@@ -34,6 +35,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
       setCurrentProgress(goal.progress || 0);
       setCurrentValue(goal.currentValue || 0);
       setIsCompleted(goal.completed || false);
+      setMilestones(goal.milestones || []);
     }
   }, [goal]);
   
@@ -117,9 +119,9 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
       return currentProgress;
     } else if (goal.progressType === 'counter' && goal.targetValue > 0) {
       return Math.round((currentValue / goal.targetValue) * 100);
-    } else if (goal.progressType === 'milestone' && goal.milestones?.length > 0) {
-      const completedCount = goal.milestones.filter(m => m.completed).length;
-      return Math.round((completedCount / goal.milestones.length) * 100);
+    } else if (goal.progressType === 'milestone' && milestones.length > 0) {
+      const completedCount = milestones.filter(m => m.completed).length;
+      return Math.round((completedCount / milestones.length) * 100);
     } else {
       return isCompleted ? 100 : 0;
     }
@@ -132,8 +134,8 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
     } else if (goal.progressType === 'counter') {
       return `${currentValue} / ${goal.targetValue}`;
     } else if (goal.progressType === 'milestone') {
-      const completedCount = goal.milestones?.filter(m => m.completed).length || 0;
-      return `${completedCount} / ${goal.milestones?.length || 0} milestones`;
+      const completedCount = milestones.filter(m => m.completed).length || 0;
+      return `${completedCount} / ${milestones.length || 0} milestones`;
     } else {
       return isCompleted ? 'Completed' : 'In progress';
     }
@@ -152,6 +154,12 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
     // If marking as complete, set currentValue to targetValue for counter type
     if (newCompletedState && goal.progressType === 'counter') {
       setCurrentValue(goal.targetValue);
+    }
+    
+    // If marking as complete, set all milestones to completed
+    if (newCompletedState && goal.progressType === 'milestone') {
+      const updatedMilestones = milestones.map(m => ({ ...m, completed: true }));
+      setMilestones(updatedMilestones);
     }
     
     // Save changes
@@ -191,18 +199,20 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
     }
     
     // Save changes
-    saveChanges(newCompletedState, null, null, newValue);
+    saveChanges(newCompletedState, null, newValue);
   };
   
   // Handle toggle milestone
   const handleToggleMilestone = (index) => {
-    if (!goal.milestones) return;
+    if (!milestones) return;
     
-    const updatedMilestones = [...goal.milestones];
+    const updatedMilestones = [...milestones];
     updatedMilestones[index] = {
       ...updatedMilestones[index],
       completed: !updatedMilestones[index].completed
     };
+    
+    setMilestones(updatedMilestones);
     
     // Check if all milestones are completed
     const allCompleted = updatedMilestones.every(m => m.completed);
@@ -213,18 +223,19 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
     }
     
     // Save changes
-    saveChanges(allCompleted, null, updatedMilestones);
+    saveChanges(allCompleted, null, null, updatedMilestones);
   };
   
   // Add new milestone
   const handleAddMilestone = () => {
     if (!newMilestone.trim()) return;
     
-    const updatedMilestones = [...(goal.milestones || []), { text: newMilestone, completed: false }];
+    const updatedMilestones = [...milestones, { text: newMilestone, completed: false }];
+    setMilestones(updatedMilestones);
     setNewMilestone('');
     
     // Save changes
-    saveChanges(isCompleted, null, updatedMilestones);
+    saveChanges(isCompleted, null, null, updatedMilestones);
   };
   
   // Add a progress note
@@ -241,7 +252,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
     setNewNote('');
     
     // Save changes
-    saveChanges(isCompleted, currentProgress, goal.milestones, currentValue, updatedNotes);
+    saveChanges(isCompleted, currentProgress, currentValue, milestones, updatedNotes);
   };
   
   // Delete goal
@@ -252,7 +263,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
   };
   
   // Save all changes to the goal
-  const saveChanges = (completed, progress = currentProgress, updatedMilestones = goal.milestones, value = currentValue, updatedNotes = goal.notes) => {
+  const saveChanges = (completed, progress = currentProgress, value = currentValue, updatedMilestones = milestones, updatedNotes = goal.notes) => {
     const updates = {
       completed,
       modifiedAt: new Date().toISOString()
@@ -286,7 +297,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
   if (!goal) return null;
   
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className={`p-4 flex justify-between items-center border-b ${colorClasses.bg} border-amber-200 dark:border-amber-800`}>
@@ -300,7 +311,7 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
             <div className="bg-white dark:bg-slate-700 p-2 rounded-lg">
               {getCategoryIcon(goal.category)}
             </div>
-            <h2 className="text-lg font-medium text-slate-800 dark:text-slate-200 truncate max-w-xs sm:max-w-md">
+            <h2 className="text-lg font-medium text-slate-800 dark:text-slate-200 truncate max-w-[140px] sm:max-w-xs md:max-w-md">
               {goal.title}
             </h2>
           </div>
@@ -324,10 +335,10 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
         
         {/* Content */}
         <div className="overflow-y-auto max-h-[calc(90vh-72px)]">
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-6">
             {/* Progress Bar */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <div className={`px-2 py-0.5 rounded-full ${colorClasses.bg} ${colorClasses.text}`}>
                     {goal.priority ? goal.priority.charAt(0).toUpperCase() + goal.priority.slice(1) : 'Medium'} Priority
@@ -484,9 +495,9 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
                   <h3 className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
                     <Award size={16} className="text-amber-500" />
                     <span>Milestones</span>
-                    {goal.milestones?.length > 0 && (
+                    {milestones?.length > 0 && (
                       <span className="ml-2 px-1.5 py-0.5 bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-400 rounded-full text-xs">
-                        {goal.milestones.filter(m => m.completed).length}/{goal.milestones.length}
+                        {milestones.filter(m => m.completed).length}/{milestones.length}
                       </span>
                     )}
                   </h3>
@@ -499,9 +510,9 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
                 
                 {isExpanded.milestones && (
                   <div className="p-4">
-                    {goal.milestones?.length > 0 ? (
+                    {milestones?.length > 0 ? (
                       <div className="space-y-2 mb-4">
-                        {goal.milestones.map((milestone, index) => (
+                        {milestones.map((milestone, index) => (
                           <div key={index} className="flex items-center gap-3 p-3 bg-white dark:bg-slate-700 rounded-lg shadow-sm">
                             <button
                               onClick={() => handleToggleMilestone(index)}
@@ -637,82 +648,38 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
               )}
             </div>
             
-            {/* Reminders */}
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
-              <button
-                onClick={() => toggleSection('reminders')}
-                className="w-full p-4 text-left flex items-center justify-between border-b border-slate-200 dark:border-slate-600"
-              >
-                <h3 className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                  <Bell size={16} className="text-amber-500" />
-                  <span>Reminders</span>
-                </h3>
-                {isExpanded.reminders ? (
-                  <ChevronUp size={18} className="text-slate-400" />
-                ) : (
-                  <ChevronDown size={18} className="text-slate-400" />
-                )}
-              </button>
-              
-              {isExpanded.reminders && (
-                <div className="p-4">
-                  <div className="p-3 bg-white dark:bg-slate-700 rounded-lg shadow-sm mb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full">
-                          <Bell size={16} className="text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <span className="text-slate-700 dark:text-slate-300">Weekly check-in</span>
-                      </div>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        Every Monday
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <button className="w-full p-3 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-amber-600 dark:text-amber-400 flex items-center justify-center gap-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
-                    <Plus size={16} />
+            {/* Simplified Reminders & AI Tips Sections */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Reminders - simplified version */}
+              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
+                <div className="p-3 flex items-center justify-between">
+                  <h3 className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                    <Bell size={16} className="text-amber-500" />
+                    <span>Reminders</span>
+                  </h3>
+                </div>
+                <div className="px-3 pb-3">
+                  <button className="w-full p-2 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-amber-600 dark:text-amber-400 text-sm flex items-center justify-center gap-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
+                    <Plus size={14} />
                     <span>Add Reminder</span>
                   </button>
                 </div>
-              )}
-            </div>
-            
-            {/* AI Tips */}
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
-              <button
-                onClick={() => toggleSection('aiTips')}
-                className="w-full p-4 text-left flex items-center justify-between border-b border-slate-200 dark:border-slate-600"
-              >
-                <h3 className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                  <Sparkles size={16} className="text-amber-500" />
-                  <span>AI Suggestions</span>
-                </h3>
-                {isExpanded.aiTips ? (
-                  <ChevronUp size={18} className="text-slate-400" />
-                ) : (
-                  <ChevronDown size={18} className="text-slate-400" />
-                )}
-              </button>
+              </div>
               
-              {isExpanded.aiTips && (
-                <div className="p-4">
-                  <div className="space-y-3">
-                    {aiTips.map((tip, index) => (
-                      <div key={index} className="p-3 bg-white dark:bg-slate-700 rounded-lg shadow-sm">
-                        <p className="text-slate-700 dark:text-slate-300 text-sm">
-                          {tip}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <button className="w-full mt-3 p-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg shadow-sm flex items-center justify-center gap-2">
-                    <Sparkles size={16} />
-                    <span>Generate More Tips</span>
-                  </button>
+              {/* AI Tips - simplified version */}
+              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
+                <div className="p-3 flex justify-between items-center">
+                  <h3 className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                    <Sparkles size={16} className="text-amber-500" />
+                    <span>Tips</span>
+                  </h3>
                 </div>
-              )}
+                <div className="px-3 pb-3">
+                  <div className="p-2 bg-white dark:bg-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-300">
+                    {aiTips[0]}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

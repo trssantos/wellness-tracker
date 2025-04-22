@@ -21,6 +21,8 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [newMilestone, setNewMilestone] = useState('');
+  const [noteFeedback, setNoteFeedback] = useState(null);
+
   
   // AI Tips (simulated for demo)
   const aiTips = [
@@ -248,12 +250,23 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
       date: new Date().toISOString()
     };
     
+    // Create a local copy of updated notes
     const updatedNotes = [newNoteObj, ...(goal.notes || [])];
-    setNewNote('');
     
-    // Save changes
-    saveChanges(isCompleted, currentProgress, currentValue, milestones, updatedNotes);
+    // Clear input and show feedback
+    setNewNote('');
+    setNoteFeedback('Note added successfully!');
+    setTimeout(() => setNoteFeedback(null), 3000);
+    
+    // Save changes to storage and notify parent component
+    const updatedGoal = saveChanges(isCompleted, currentProgress, currentValue, milestones, updatedNotes);
+    
+    // Pass the updated goal to parent component through onUpdate
+    if (onUpdate) {
+      onUpdate(updatedGoal);
+    }
   };
+  
   
   // Delete goal
   const handleDeleteGoal = () => {
@@ -285,10 +298,9 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
     }
     
     // Update the goal
-    updateGoal(goal.id, updates);
+    const updatedGoal = updateGoal(goal.id, updates);
     
-    // Notify parent component
-    onUpdate();
+    return updatedGoal;
   };
   
   const progressPercentage = getProgressPercentage();
@@ -609,6 +621,12 @@ const GoalDetailView = ({ goal, onClose, onUpdate, onOpenEditForm }) => {
                         }
                       }}
                     />
+                    {noteFeedback && (
+  <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-300 text-sm flex items-center">
+    <CheckCircle size={14} className="mr-2" />
+    {noteFeedback}
+  </div>
+)}
                     <button
                       onClick={handleAddNote}
                       disabled={!newNote.trim()}

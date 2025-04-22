@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Sparkles, Filter, ArrowRight, Search, Plus, 
+    Eye,X,Target,Edit,Percent,Hash,ListChecks,Sparkles, Filter, ArrowRight, Search, Plus, 
   MessageCircle, CheckCircle, Check, Loader, Star,
   Mountain, Brain, Dumbbell, Briefcase, Wallet, ThumbsUp,
   AlertCircle, PencilLine, Lightbulb, BookOpen
@@ -8,7 +8,7 @@ import {
 import { getCategories, createGoal } from '../../utils/bucketListUtils';
 import { generateGoalSuggestion } from '../../utils/aiGoalService';
 
-const GoalInspirationTab = ({ onGoalAdded }) => {
+const GoalInspirationTab = ({ onGoalAdded, onEditGoal }) => {
   const [activeSection, setActiveSection] = useState('popular');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [categories, setCategories] = useState([]);
@@ -19,6 +19,7 @@ const GoalInspirationTab = ({ onGoalAdded }) => {
   const [error, setError] = useState('');
   const [addedGoals, setAddedGoals] = useState({});
   const [feedback, setFeedback] = useState(null);
+  const [previewSuggestion, setPreviewSuggestion] = useState(null);
   
   // Popular tags for quick filtering
   const popularTags = [
@@ -134,6 +135,66 @@ const GoalInspirationTab = ({ onGoalAdded }) => {
       return () => clearTimeout(timer);
     }
   }, [feedback]);
+
+  // Add this function to handle opening the preview
+const handlePreviewSuggestion = (suggestion) => {
+    setPreviewSuggestion(suggestion);
+  };
+  
+  // Add this function to handle editing the suggestion
+  const handleEditSuggestion = (suggestion) => {
+    setPreviewSuggestion(null);
+    
+    // Check if onEditGoal is provided
+    if (onEditGoal) {
+      onEditGoal({
+        title: suggestion.title,
+        description: suggestion.description || '',
+        category: suggestion.category || '',
+        progressType: suggestion.progressType || 'simple',
+        progress: suggestion.initialProgress || 0,
+        currentValue: suggestion.currentValue || 0,
+        targetValue: suggestion.targetValue || 100,
+        milestones: suggestion.milestones || []
+      });
+    } else {
+      // Fallback if onEditGoal is not provided - just add the goal directly
+      handleAddGoal(
+        suggestion.title, 
+        suggestion.category, 
+        {
+          progressType: suggestion.progressType,
+          description: suggestion.description,
+          progress: suggestion.initialProgress,
+          currentValue: suggestion.currentValue,
+          targetValue: suggestion.targetValue,
+          milestones: suggestion.milestones
+        }
+      );
+      
+      // Show feedback
+      setFeedback({
+        type: 'success',
+        message: `"${suggestion.title}" added to your goals!`,
+        action: 'Go to Goals tab to view'
+      });
+    }
+  };
+  
+  // Add this function to get the progress display text based on goal type
+  const getProgressTypeDisplay = (suggestion) => {
+    switch(suggestion.progressType) {
+      case 'percentage':
+        return `Progress tracking with initial ${suggestion.initialProgress || 0}%`;
+      case 'counter':
+        return `Count from ${suggestion.currentValue || 0} to ${suggestion.targetValue || 100}`;
+      case 'milestone':
+        return `${suggestion.milestones?.length || 0} steps to completion`;
+      default:
+        return 'Simple completion tracking';
+    }
+  };
+  
   
   // Toggle tag selection
   const toggleTag = (tag) => {
@@ -196,13 +257,40 @@ const GoalInspirationTab = ({ onGoalAdded }) => {
   };
   
   // Add a goal to the user's list
-  const handleAddGoal = (goalTitle, category = '') => {
+  const handleAddGoal = (goalTitle, category = '', goalData = {}) => {
     try {
-      const newGoal = createGoal({
+      // Create a base goal object
+      const baseGoal = {
         title: goalTitle,
         category: category,
         progressType: 'simple'
-      });
+      };
+      
+      // Merge with additional goal data if available
+      const goalToCreate = {
+        ...baseGoal,
+        ...goalData
+      };
+      
+      // Process specific goal types
+      if (goalData.progressType === 'percentage' && goalData.initialProgress !== undefined) {
+        goalToCreate.progress = goalData.initialProgress;
+      }
+      
+      if (goalData.progressType === 'counter') {
+        if (goalData.currentValue !== undefined) goalToCreate.currentValue = goalData.currentValue;
+        if (goalData.targetValue !== undefined) goalToCreate.targetValue = goalData.targetValue;
+      }
+      
+      if (goalData.progressType === 'milestone' && goalData.milestones) {
+        goalToCreate.milestones = goalData.milestones;
+      }
+      
+      if (goalData.description) {
+        goalToCreate.description = goalData.description;
+      }
+      
+      const newGoal = createGoal(goalToCreate);
       
       setAddedGoals(prev => ({
         ...prev,
@@ -218,7 +306,7 @@ const GoalInspirationTab = ({ onGoalAdded }) => {
       if (onGoalAdded) {
         onGoalAdded(newGoal);
       }
-
+  
       return newGoal;
     } catch (err) {
       console.error('Error adding goal:', err);
@@ -556,39 +644,91 @@ const GoalInspirationTab = ({ onGoalAdded }) => {
               ) : (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {aiSuggestions.map((suggestion, index) => (
-                      <div 
-                        key={index}
-                        className="flex items-center gap-3 p-3 bg-white dark:bg-slate-700 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 hover:shadow-md transition-shadow"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0">
-                          {suggestion.category ? 
-                            getCategoryIcon(suggestion.category) : 
-                            <Sparkles size={18} className="text-white" />
-                          }
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{suggestion.title}</p>
-                          {suggestion.category && (
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                              {categories.find(c => c.id === suggestion.category)?.name || suggestion.category}
-                            </p>
-                          )}
-                        </div>
-                        {addedGoals[suggestion.title] ? (
-                          <div className="text-green-500 dark:text-green-400 flex-shrink-0">
-                            <CheckCircle size={18} />
-                          </div>
-                        ) : (
-                          <button 
-                            onClick={() => handleAddGoal(suggestion.title, suggestion.category)}
-                            className="text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 flex-shrink-0"
-                          >
-                            <Plus size={18} />
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                  {aiSuggestions.map((suggestion, index) => (
+  <div 
+    key={index}
+    className="flex items-center gap-3 p-3 bg-white dark:bg-slate-700 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 hover:shadow-md transition-shadow relative group"
+  >
+    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+      {suggestion.category ? 
+        getCategoryIcon(suggestion.category) : 
+        <Sparkles size={18} className="text-white" />
+      }
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{suggestion.title}</p>
+      {suggestion.description && (
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+          {suggestion.description}
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2 mt-1">
+        {suggestion.category && (
+          <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-600 px-1.5 py-0.5 rounded-full">
+            {categories.find(c => c.id === suggestion.category)?.name || suggestion.category}
+          </span>
+        )}
+        {suggestion.progressType && suggestion.progressType !== 'simple' && (
+          <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+            {suggestion.progressType === 'percentage' && <Percent size={10} />}
+            {suggestion.progressType === 'counter' && <Hash size={10} />}
+            {suggestion.progressType === 'milestone' && <ListChecks size={10} />}
+            {suggestion.progressType.charAt(0).toUpperCase() + suggestion.progressType.slice(1)}
+          </span>
+        )}
+      </div>
+    </div>
+    
+    {/* Action buttons */}
+    <div className="flex gap-2">
+      {/* Preview button - always visible */}
+      <button 
+        onClick={() => handlePreviewSuggestion(suggestion)}
+        className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800/50 flex items-center gap-1"
+        title="Preview Goal"
+      >
+        <Eye size={16} />
+        <span className="text-xs font-medium">Preview</span>
+      </button>
+      
+      {/* Add button */}
+      <button 
+        onClick={() => handleAddGoal(
+          suggestion.title, 
+          suggestion.category, 
+          {
+            progressType: suggestion.progressType,
+            description: suggestion.description,
+            progress: suggestion.initialProgress,
+            currentValue: suggestion.currentValue,
+            targetValue: suggestion.targetValue,
+            milestones: suggestion.milestones
+          }
+        )}
+        className="p-1.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-800/50"
+        title="Add Goal"
+      >
+        <Plus size={16} />
+      </button>
+      
+      {/* Edit button */}
+      <button 
+        onClick={() => handleEditSuggestion(suggestion)}
+        className="p-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800/50"
+        title="Edit Before Adding"
+      >
+        <Edit size={16} />
+      </button>
+    </div>
+    
+    {/* Added indicator */}
+    {addedGoals[suggestion.title] && (
+      <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-green-100 dark:bg-green-900/50 p-1 rounded-full border border-green-200 dark:border-green-800">
+        <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
+      </div>
+    )}
+  </div>
+))}
                   </div>
                   
                   <div className="flex justify-center">
@@ -683,6 +823,129 @@ const GoalInspirationTab = ({ onGoalAdded }) => {
               </button>
             </div>
           )}
+
+{previewSuggestion && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+      <div className="p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/20">
+        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
+          <Sparkles className="text-amber-500" size={20} />
+          <span>Goal Preview</span>
+        </h3>
+        <button 
+          onClick={() => setPreviewSuggestion(null)}
+          className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+        >
+          <X size={20} />
+        </button>
+      </div>
+      
+      <div className="p-6 overflow-y-auto max-h-[calc(90vh-64px)]">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
+            {previewSuggestion.title}
+          </h2>
+          
+          <div className="flex flex-wrap gap-2 mb-3">
+            {previewSuggestion.category && (
+              <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm flex items-center gap-1">
+                {getCategoryIcon(previewSuggestion.category)}
+                <span>{categories.find(c => c.id === previewSuggestion.category)?.name || previewSuggestion.category}</span>
+              </span>
+            )}
+            
+            {previewSuggestion.progressType && (
+              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm flex items-center gap-1">
+                {previewSuggestion.progressType === 'percentage' && <Percent size={14} />}
+                {previewSuggestion.progressType === 'counter' && <Hash size={14} />}
+                {previewSuggestion.progressType === 'milestone' && <ListChecks size={14} />}
+                {previewSuggestion.progressType === 'simple' && <Target size={14} />}
+                <span>{previewSuggestion.progressType.charAt(0).toUpperCase() + previewSuggestion.progressType.slice(1)}</span>
+              </span>
+            )}
+          </div>
+          
+          {previewSuggestion.description && (
+            <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg mb-4">
+              <p className="text-slate-700 dark:text-slate-300">
+                {previewSuggestion.description}
+              </p>
+            </div>
+          )}
+          
+          <div className="mt-4">
+            <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Progress Tracking Method
+            </h4>
+            <div className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700">
+              <p className="text-slate-600 dark:text-slate-400">
+                {getProgressTypeDisplay(previewSuggestion)}
+              </p>
+            </div>
+          </div>
+          
+          {previewSuggestion.progressType === 'milestone' && previewSuggestion.milestones && previewSuggestion.milestones.length > 0 && (
+            <div className="mt-4">
+              <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Milestones
+              </h4>
+              <div className="space-y-2">
+                {previewSuggestion.milestones.map((milestone, idx) => (
+                  <div 
+                    key={idx} 
+                    className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700 flex items-center gap-2"
+                  >
+                    <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600 flex-shrink-0"></div>
+                    <span className="text-slate-700 dark:text-slate-300">
+                      {milestone.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setPreviewSuggestion(null)}
+            className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              handleAddGoal(
+                previewSuggestion.title, 
+                previewSuggestion.category, 
+                {
+                  progressType: previewSuggestion.progressType,
+                  description: previewSuggestion.description,
+                  progress: previewSuggestion.initialProgress,
+                  currentValue: previewSuggestion.currentValue,
+                  targetValue: previewSuggestion.targetValue,
+                  milestones: previewSuggestion.milestones
+                }
+              );
+              setPreviewSuggestion(null);
+            }}
+            className="px-4 py-2 bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white rounded-lg shadow-sm flex items-center gap-2"
+          >
+            <Check size={18} />
+            <span>Add Goal</span>
+          </button>
+          <button
+            onClick={() => handleEditSuggestion(previewSuggestion)}
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg shadow-sm flex items-center gap-2"
+          >
+            <Edit size={18} />
+            <span>Edit Before Adding</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
         </div>
       </div>
     </div>

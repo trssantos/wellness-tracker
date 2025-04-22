@@ -36,11 +36,37 @@ const BucketListDashboard = ({ onSelectGoal, onCreateGoal, onChangeTab = () => {
       default: return <Star size={20} className="text-slate-500" />;
     }
   };
+
+  // Add this function to get recent notes from all goals
+const getRecentNotes = () => {
+    const allGoals = getGoals();
+    
+    // Collect all notes with goal information
+    const allNotes = [];
+    allGoals.forEach(goal => {
+      if (goal.notes && goal.notes.length > 0) {
+        goal.notes.forEach(note => {
+          allNotes.push({
+            ...note,
+            goalId: goal.id,
+            goalTitle: goal.title,
+            category: goal.category
+          });
+        });
+      }
+    });
+    
+    // Sort by date (newest first)
+    allNotes.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    // Return the 5 most recent notes
+    return allNotes.slice(0, 5);
+  };
   
   // Get featured goals (pinned or upcoming)
   const getFeaturedGoals = () => {
     return goals
-      .filter(goal => !goal.completed)
+      .filter(goal => !goal.completed && goal.targetDate) // Added check for goal.targetDate
       .sort((a, b) => {
         // Sort by pinned first, then by target date
         if (a.pinned && !b.pinned) return -1;
@@ -187,16 +213,16 @@ const BucketListDashboard = ({ onSelectGoal, onCreateGoal, onChangeTab = () => {
       
       {/* Upcoming Deadlines */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-          <h3 className="font-medium text-slate-800 dark:text-slate-200">Upcoming Deadlines</h3>
-          <button 
-            onClick={() => onChangeTab('goals')}
-            className="text-amber-600 dark:text-amber-400 text-sm flex items-center gap-1"
-          >
-            <span>View all</span>
-            <ArrowRight size={14} />
-          </button>
-        </div>
+      <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+  <h3 className="font-medium text-slate-800 dark:text-slate-200">Upcoming Deadlines</h3>
+  <button 
+    onClick={() => onChangeTab('goals')}
+    className="text-amber-600 dark:text-amber-400 text-sm flex items-center gap-1"
+  >
+    <span>View all</span>
+    <ArrowRight size={14} />
+  </button>
+</div>
         
         <div className="divide-y divide-slate-200 dark:divide-slate-700">
           {getFeaturedGoals().map((goal, index) => (
@@ -229,21 +255,68 @@ const BucketListDashboard = ({ onSelectGoal, onCreateGoal, onChangeTab = () => {
           ))}
           
           {getFeaturedGoals().length === 0 && (
-            <div className="p-6 text-center">
-              <p className="text-slate-500 dark:text-slate-400">
-                No upcoming deadlines. Set target dates for your goals to see them here.
-              </p>
-              <button
-                onClick={onCreateGoal}
-                className="mt-4 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg inline-flex items-center gap-2"
-              >
-                <Plus size={16} />
-                <span>Create a Goal</span>
-              </button>
-            </div>
-          )}
+  <div className="p-6 text-center">
+    <p className="text-slate-500 dark:text-slate-400">
+      No upcoming deadlines. Set target dates for your goals to see them here.
+    </p>
+    <button
+      onClick={onCreateGoal}
+      className="mt-4 px-4 py-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg inline-flex items-center gap-2"
+    >
+      <Plus size={16} />
+      <span>Create a Goal with Deadline</span>
+    </button>
+  </div>
+)}
         </div>
       </div>
+      {/* Recent Progress Notes */}
+<div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+  <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+    <h3 className="font-medium text-slate-800 dark:text-slate-200">Recent Progress Notes</h3>
+    <button 
+      onClick={() => onChangeTab('goals')}
+      className="text-amber-600 dark:text-amber-400 text-sm flex items-center gap-1"
+    >
+      <span>View all</span>
+      <ArrowRight size={14} />
+    </button>
+  </div>
+  
+  <div className="divide-y divide-slate-200 dark:divide-slate-700">
+    {getRecentNotes().length > 0 ? (
+      getRecentNotes().map((note, index) => (
+        <div 
+          key={note.id || index} 
+          className="flex items-start p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer" 
+          onClick={() => onSelectGoal(note.goalId)}
+        >
+          <div className="mr-3 mt-1">
+            {getCategoryIcon(note.category)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-slate-800 dark:text-slate-200 text-sm">{note.goalTitle}</h4>
+            <p className="text-slate-600 dark:text-slate-400 text-sm mt-1 line-clamp-2">{note.text}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-slate-500 dark:text-slate-500">
+                {new Date(note.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            </div>
+          </div>
+          <div className="ml-2">
+            <ArrowRight size={16} className="text-slate-400" />
+          </div>
+        </div>
+      ))
+    ) : (
+      <div className="p-6 text-center">
+        <p className="text-slate-500 dark:text-slate-400">
+          No progress notes yet. Add notes to your goals to track your journey.
+        </p>
+      </div>
+    )}
+  </div>
+</div>
     </div>
   );
 };

@@ -85,9 +85,14 @@ const BucketList = () => {
   };
 
   // Handle goal updates from detail view
-  const handleGoalUpdate = () => {
+  const handleGoalUpdate = (updatedGoal) => {
     // Increment storage version to trigger a refresh
     setStorageVersion(prev => prev + 1);
+    
+    // If an updated goal was passed, update the selected goal state
+    if (updatedGoal) {
+      setSelectedGoal(updatedGoal);
+    }
   };
 
   // Handle tab change
@@ -509,13 +514,13 @@ const BucketList = () => {
       
       {/* Goal Detail Modal */}
       {isDetailOpen && selectedGoal && (
-        <GoalDetailView 
-          goal={selectedGoal}
-          onClose={handleCloseDetail}
-          onUpdate={handleGoalUpdate}
-          onOpenEditForm={() => handleOpenEditor(selectedGoal)}
-        />
-      )}
+  <GoalDetailView 
+    goal={selectedGoal}
+    onClose={handleCloseDetail}
+    onUpdate={handleGoalUpdate}
+    onOpenEditForm={() => handleOpenEditor(selectedGoal)}
+  />
+)}
       
       {/* Goal Editor Modal */}
       {isEditorOpen && (

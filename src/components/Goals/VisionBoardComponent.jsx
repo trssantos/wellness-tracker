@@ -152,12 +152,15 @@ const VisionBoardComponent = () => {
     return React.cloneElement(icon.component, { style: { color } });
   };
   
-  // Generate a random position for flow layout
+  // Generate a random position for flow layout with mobile-friendly values
   const getRandomPosition = () => {
+    // More constrained on smaller screens to prevent cards from going out of view
+    const isSmallScreen = window.innerWidth < 640;
+    
     return {
-      left: `${Math.floor(Math.random() * 85)}%`,
-      top: `${Math.floor(Math.random() * 85)}%`,
-      transform: `rotate(${Math.floor(Math.random() * 10 - 5)}deg)`
+      left: `${Math.floor(Math.random() * (isSmallScreen ? 60 : 85))}%`,
+      top: `${Math.floor(Math.random() * (isSmallScreen ? 250 : 85))}%`,
+      transform: `rotate(${Math.floor(Math.random() * 6 - 3)}deg)`
     };
   };
   
@@ -181,7 +184,11 @@ const VisionBoardComponent = () => {
   
   // Improved drag handlers for both mouse and touch events
   const handleDragStart = (e, itemId) => {
-    e.preventDefault(); // Prevent default behavior
+    // On mobile Safari, we shouldn't call preventDefault on touchstart or it breaks
+    // the ability to register other touch events like touchmove
+    if (e.type !== 'touchstart') {
+      e.preventDefault(); // Prevent default behavior for mouse events
+    }
     
     const target = e.currentTarget;
     const boundingRect = target.getBoundingClientRect();
@@ -190,6 +197,8 @@ const VisionBoardComponent = () => {
     let clientX, clientY;
     
     if (e.type === 'touchstart') {
+      // Store the item ID for touch events to check in touchmove
+      target.dataset.dragging = itemId;
       clientX = e.touches[0].clientX;
       clientY = e.touches[0].clientY;
     } else {
@@ -251,9 +260,14 @@ const VisionBoardComponent = () => {
       const newX = ((clientX - containerRect.left - dragOffset.x) / containerRect.width) * 100;
       const newY = ((clientY - containerRect.top - dragOffset.y) / containerRect.height) * 100;
       
+      // Adjust clamp values for mobile screens to prevent cards from going off-screen
+      const isSmallScreen = containerRect.width < 640;
+      const maxX = isSmallScreen ? 60 : 90; // Tighter constraint on small screens
+      const maxY = 90;
+      
       // Clamp the values to keep the item within the container
-      const clampedX = Math.max(0, Math.min(newX, 95));
-      const clampedY = Math.max(0, Math.min(newY, 95));
+      const clampedX = Math.max(0, Math.min(newX, maxX));
+      const clampedY = Math.max(0, Math.min(newY, maxY));
       
       // Update the position
       setPositions(prev => ({
@@ -301,11 +315,49 @@ const VisionBoardComponent = () => {
       // Passive: false is crucial to be able to preventDefault in the handlers
       container.addEventListener('touchmove', handleDragMove, { passive: false });
       
+      // Ensure we restore normal scrolling when component unmounts
       return () => {
         container.removeEventListener('touchmove', handleDragMove);
+        container.style.overflow = 'auto';
+        container.style.touchAction = 'auto';
       };
     }
   }, [dragItem, isDragging, dragOffset, viewMode]);
+  
+  // Add additional resize handler to adjust positioning for mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (items.length > 0 && viewMode === 'flow') {
+        // Refresh positions on resize to ensure they work well on new screen size
+        setPositions(prev => {
+          const updatedPositions = {};
+          
+          // Adjust positions based on new screen size
+          Object.keys(prev).forEach(itemId => {
+            const isSmallScreen = window.innerWidth < 640;
+            
+            // Parse current left/top percentages
+            let left = parseFloat(prev[itemId].left);
+            let top = parseFloat(prev[itemId].top);
+            
+            // Ensure values work on new screen size
+            left = Math.min(left, isSmallScreen ? 60 : 85);
+            
+            updatedPositions[itemId] = {
+              left: `${left}%`,
+              top: `${top}%`,
+              transform: prev[itemId].transform || 'rotate(0deg)'
+            };
+          });
+          
+          return updatedPositions;
+        });
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [items.length, viewMode]);
   
   return (
     <div className="space-y-6">
@@ -491,7 +543,7 @@ const VisionBoardComponent = () => {
           ) : (
             <div 
               ref={dragContainerRef}
-              className="relative h-[600px] overflow-hidden bg-slate-50 dark:bg-slate-800/50 rounded-lg"
+              className="relative h-[400px] sm:h-[500px] md:h-[600px] overflow-auto bg-slate-50 dark:bg-slate-800/50 rounded-lg"
               onMouseMove={isDragging ? handleDragMove : null}
               onMouseUp={handleDragEnd}
               onMouseLeave={handleDragEnd}
@@ -503,7 +555,7 @@ const VisionBoardComponent = () => {
               {items.map(item => (
                 <div
                   key={item.id}
-                  className={`absolute p-4 w-48 sm:w-52 bg-white dark:bg-slate-700 rounded-xl shadow-lg cursor-move transition-transform duration-200 hover:z-10 hover:shadow-xl ${isDragging && dragItem === item.id ? 'opacity-70' : 'opacity-100'}`}
+                  className={`absolute p-4 w-40 sm:w-48 md:w-52 bg-white dark:bg-slate-700 rounded-xl shadow-lg cursor-move transition-transform duration-200 hover:z-10 hover:shadow-xl ${isDragging && dragItem === item.id ? 'opacity-70' : 'opacity-100'}`}
                   style={{
                     ...positions[item.id],
                     zIndex: hoveredItem === item.id ? 10 : dragItem === item.id ? 20 : 1,

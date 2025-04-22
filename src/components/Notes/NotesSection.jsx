@@ -56,7 +56,7 @@ const NotesSection = () => {
   // Update filtered notes when search query, active tag, or notes change
   useEffect(() => {
     filterNotes();
-  }, [searchQuery, activeTag, notes, sortBy]);
+  }, [searchQuery, activeTag, notes, sortBy,customOrder]);
 
   const loadNotes = () => {
     const storage = getStorage();
@@ -337,54 +337,40 @@ const NotesSection = () => {
 
   const handleDragStart = (e, note) => {
     if (sortBy !== 'custom') return;
-    console.log("Drag started with note:", note.title);
-    
-    // Set data for Firefox compatibility
-    e.dataTransfer.setData('text/plain', note.id);
+  
     e.dataTransfer.effectAllowed = 'move';
-    
-    // Set state without any delays
+    e.dataTransfer.setData('text/plain', note.id); // For Firefox
+  
     setDraggedNote(note);
-    
-    // Add a class to the element being dragged for visual feedback
-    const element = e.currentTarget;
-    element.classList.add('actively-dragging');
+  
+    e.currentTarget.classList.add('actively-dragging');
   };
   
   const handleDragOver = (e, targetNoteId) => {
     if (sortBy !== 'custom') return;
-    e.preventDefault(); // Critical for enabling drop
-    
-    if (!draggedNote || targetNoteId === draggedNote.id) {
-      return;
-    }
-    
-    // Add a class to the target for visual feedback
-    const element = e.currentTarget;
-    element.classList.add('drop-target');
-    
-    // Update state for additional visual feedback in render
+  
+    e.preventDefault(); // Necessary for drop to fire
+  
+    if (!draggedNote || targetNoteId === draggedNote.id) return;
+  
     setDragOverNoteId(targetNoteId);
   };
   
   const handleDragLeave = (e) => {
-    e.preventDefault();
+    if (sortBy !== 'custom') return;
   
-    // Remove the visual feedback class
-    const element = e.currentTarget;
-    element.classList.remove('drop-target');
+    e.currentTarget.classList.remove('drop-target');
   };
   
   const handleDrop = (e, targetNoteId) => {
+    if (sortBy !== 'custom') return;
+  
     e.preventDefault();
     e.stopPropagation();
   
-    if (sortBy !== 'custom') return;
-  
-    // Remove visual feedback classes
-    document.querySelectorAll('.actively-dragging, .drop-target').forEach(el => {
-      el.classList.remove('actively-dragging', 'drop-target');
-    });
+    document.querySelectorAll('.actively-dragging, .drop-target').forEach(el =>
+      el.classList.remove('actively-dragging', 'drop-target')
+    );
   
     if (!draggedNote || targetNoteId === draggedNote.id) {
       setDraggedNote(null);
@@ -401,25 +387,23 @@ const NotesSection = () => {
       return;
     }
   
-    // Reorder the filtered notes array
     const reordered = [...filteredNotes];
-    const [dragged] = reordered.splice(draggedIndex, 1);
-    reordered.splice(targetIndex, 0, dragged);
+    const [draggedItem] = reordered.splice(draggedIndex, 1);
+    reordered.splice(targetIndex, 0, draggedItem);
   
-    // Update customOrder based on the reordered filtered list
     const newOrder = reordered.map(note => note.id);
-  
     setCustomOrder(newOrder);
   
-    // Save new order in storage
+    // Save to storage
     const storage = getStorage();
     if (storage.zenNotes) {
       storage.zenNotes.customOrder = newOrder;
       setStorage(storage);
     }
   
-    // Trigger UI update
-    filterNotes();
+    // Force immediate re-filter with the latest order
+    const sortedNotes = sortNotes(notes, 'custom');
+    setFilteredNotes(sortedNotes);
   
     // Clear drag state
     setDraggedNote(null);
@@ -427,16 +411,14 @@ const NotesSection = () => {
   };
   
   
-  const handleDragEnd = (e) => {
-    // Clean up any lingering visual classes
-    document.querySelectorAll('.actively-dragging, .drop-target').forEach(el => {
-      el.classList.remove('actively-dragging', 'drop-target');
-    });
-    
-    // Reset drag state
+  const handleDragEnd = () => {
+    document.querySelectorAll('.actively-dragging, .drop-target').forEach(el =>
+      el.classList.remove('actively-dragging', 'drop-target')
+    );
     setDraggedNote(null);
     setDragOverNoteId(null);
   };
+  
 
   const generateColorClass = (colorName) => {
     const color = noteColors.find(c => c.name === colorName) || noteColors[0];
@@ -499,11 +481,11 @@ const NotesSection = () => {
           ${viewMode === 'grid' ? 'hover:shadow-md' : 'mb-3 hover:shadow-md'}
         `}
         draggable={sortBy === 'custom'}
-        onDragStart={(e) => handleDragStart(e, note)}
-        onDragOver={(e) => handleDragOver(e, note.id)}
-        onDragLeave={handleDragLeave}
-        onDrop={(e) => handleDrop(e, note.id)}
-        onDragEnd={handleDragEnd}
+  onDragStart={(e) => handleDragStart(e, note)}
+  onDragOver={(e) => handleDragOver(e, note.id)}
+  onDragLeave={handleDragLeave}
+  onDrop={(e) => handleDrop(e, note.id)}
+  onDragEnd={handleDragEnd}
         key={note.id}
       >
         <div className="flex justify-between items-start mb-2">
@@ -533,6 +515,17 @@ const NotesSection = () => {
             >
               {note.isPrivate ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
+
+            {sortBy === 'custom' && (
+  <div
+    draggable
+    onDragStart={(e) => handleDragStart(e, note)}
+    className="cursor-grab p-1 text-slate-400 dark:text-slate-500 hover:text-blue-500"
+    title="Drag to reorder"
+  >
+    <ArrowUpDown size={14} />
+  </div>
+)}
           </div>
         </div>
         

@@ -1,7 +1,7 @@
 // components/Navigation/Sidebar.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  StickyNote,Trophy, Apple,Coins,Focus, Menu, X, Home, BarChart2, Brain, Dumbbell, 
+  Heart,StickyNote,Trophy, Apple,Coins,Focus, Menu, X, Home, BarChart2, Brain, Dumbbell, 
   MessageCircle, Layout, Bell, Settings, HelpCircle, Moon, Sun, Zap
 } from 'lucide-react';
 import { useTheme } from '../ThemeProvider';
@@ -157,6 +157,7 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
     { id: 'bucketList', label: 'Bucket List', icon: <Trophy size={20} /> },
     { id: 'templates', label: 'Templates', icon: <Layout size={20} /> },
     { id: 'notes', label: 'Notes', icon: <StickyNote size={20} /> },
+    { id: 'lifestyle', label: 'Lifestyle', icon: <Heart size={20} /> },
     { id: 'habitsShowcase', label: 'Habits - Showcase', icon: <Zap size={20} /> },
     { id: 'focusShowcase', label: 'Focus - Showcase', icon: <Focus size={20} /> },
     { id: 'financeShowcase', label: 'Finance - Showcase', icon: <Coins size={20} /> },

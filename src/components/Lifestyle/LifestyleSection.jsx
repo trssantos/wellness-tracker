@@ -1,12 +1,14 @@
 // src/components/Lifestyle/LifestyleSection.jsx
 import React, { useState, useEffect } from 'react';
-import { Heart, Book, UserCheck, Info, Star, Copy, Share2, Bookmark, Brain, Briefcase, Users, Coffee, ThumbsUp, ThumbsDown, HeartHandshake, RefreshCw, FileText, ArrowLeft, Moon, Sun, Sparkles, Calendar } from 'lucide-react';
+import { Heart, Book, UserCheck, Info, Star, Copy, Share2, Bookmark, Brain, Briefcase, Users, Coffee, ThumbsUp, ThumbsDown, HeartHandshake, RefreshCw, FileText, ArrowLeft, Moon, Sun, Sparkles, Calendar, BarChart2, Calculator } from 'lucide-react';
 import PersonalityQuiz from './PersonalityQuiz';
 import PersonalityResults from './PersonalityResults';
 import PersonalityTypeLibrary from './PersonalityTypeLibrary';
 import ZodiacDateSelector from './ZodiacDateSelector';
 import ZodiacResults from './ZodiacResults';
 import ZodiacLibrary from './ZodiacLibrary';
+import BiorhythmTracker from './BiorhythmTracker';
+import NumerologyCalculator from './NumerologyCalculator';
 import { getStorage, setStorage } from '../../utils/storage';
 import { personalityTypes } from '../../utils/personalityData';
 import { zodiacSigns, getZodiacSign } from '../../utils/zodiacData';
@@ -58,6 +60,12 @@ const LifestyleSection = () => {
     }
     
     return null;
+  }
+
+  // Get saved numerology results
+  function getSavedNumerologyResults() {
+    const storage = getStorage();
+    return storage.lifestyle?.numerology || null;
   }
 
   // Save personality results to storage
@@ -130,6 +138,10 @@ const LifestyleSection = () => {
   
   const currentZodiacSign = (zodiacResults || savedZodiacResults)?.sign;
   const currentZodiacResults = zodiacResults || savedZodiacResults;
+  
+  // Check if numerology results exist
+  const numerologyResults = getSavedNumerologyResults();
+  const hasNumerologyResults = !!numerologyResults;
 
   // Render different screens based on active state
   const renderScreen = () => {
@@ -195,6 +207,34 @@ const LifestyleSection = () => {
                 // If we wanted to do something with the selected sign
               }}
             />
+          </div>
+        );
+
+      case 'biorhythm-tracker':
+        return (
+          <div className="space-y-4">
+            <button 
+              onClick={() => setActiveScreen('dashboard')}
+              className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-4"
+            >
+              <ArrowLeft size={16} className="mr-1" />
+              Back to Dashboard
+            </button>
+            <BiorhythmTracker />
+          </div>
+        );
+        
+      case 'numerology-calculator':
+        return (
+          <div className="space-y-4">
+            <button 
+              onClick={() => setActiveScreen('dashboard')}
+              className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-4"
+            >
+              <ArrowLeft size={16} className="mr-1" />
+              Back to Dashboard
+            </button>
+            <NumerologyCalculator />
           </div>
         );
 
@@ -273,7 +313,7 @@ const LifestyleSection = () => {
           </h1>
           
           <p className="text-slate-600 dark:text-slate-400 mb-2 transition-colors">
-            Explore your personality traits, discover your zodiac sign, and learn more about what makes you unique.
+            Explore your personality traits, discover your zodiac sign, track your biorhythms, calculate your numerology numbers, and learn more about what makes you unique.
           </p>
         </div>
 
@@ -406,6 +446,76 @@ const LifestyleSection = () => {
           </div>
         )}
 
+        {/* Numerology Summary (if available) */}
+        {hasNumerologyResults && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2 transition-colors">
+              <Calculator className="text-indigo-500 dark:text-indigo-400" size={24} />
+              Your Numerology Chart
+            </h2>
+            
+            <div 
+              className="bg-indigo-50 dark:bg-indigo-900/30 p-4 sm:p-6 rounded-xl mb-4 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-800/40 transition-colors"
+              onClick={() => setActiveScreen('numerology-calculator')}
+            >
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1 break-words">
+                  {numerologyResults.fullName}
+                </h3>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                <div className="bg-white dark:bg-slate-800 rounded-lg p-3 text-center shadow-sm">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Life Path</div>
+                  <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                    {numerologyResults.lifePathNumber}
+                  </div>
+                </div>
+                
+                <div className="bg-white dark:bg-slate-800 rounded-lg p-3 text-center shadow-sm">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Destiny</div>
+                  <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                    {numerologyResults.destinyNumber}
+                  </div>
+                </div>
+                
+                <div className="bg-white dark:bg-slate-800 rounded-lg p-3 text-center shadow-sm">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Soul Urge</div>
+                  <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                    {numerologyResults.soulUrgeNumber}
+                  </div>
+                </div>
+                
+                <div className="bg-white dark:bg-slate-800 rounded-lg p-3 text-center shadow-sm">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Personality</div>
+                  <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                    {numerologyResults.personalityNumber}
+                  </div>
+                </div>
+                
+                <div className="bg-white dark:bg-slate-800 rounded-lg p-3 text-center shadow-sm">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Birthday</div>
+                  <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                    {numerologyResults.birthdayNumber}
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-4 text-center italic">Click to view detailed numerology chart →</p>
+            </div>
+            
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => setActiveScreen('numerology-calculator')}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium flex items-center"
+              >
+                <RefreshCw size={16} className="mr-2" />
+                Update Numerology
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Features grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Personality Quiz Card */}
@@ -472,17 +582,17 @@ const LifestyleSection = () => {
             </div>
           </div>
           
-          {/* Biorhythm Card (placeholder) */}
+          {/* Biorhythm Card */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors h-full">
             <div className="flex items-center mb-4">
-              <Moon className="text-blue-500 dark:text-blue-400" size={24} />
+              <BarChart2 className="text-blue-500 dark:text-blue-400" size={24} />
               <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 ml-3">
                 Biorhythm Tracker
               </h3>
             </div>
             
             <p className="text-slate-600 dark:text-slate-400 mb-6">
-              Track your physical, emotional, and intellectual cycles to find your optimal days.
+              Track your physical, emotional, and intellectual cycles to find your optimal days for different activities.
             </p>
             
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 rounded-lg p-4 mb-6">
@@ -497,11 +607,11 @@ const LifestyleSection = () => {
                       {Array.from({ length: 5 }).map((_, i) => (
                         <div key={i} className="h-full flex flex-col justify-center">
                           <div 
-                            className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400"
+                            className="w-2 h-2 rounded-full bg-red-500 dark:bg-red-400"
                             style={{ marginTop: `${Math.sin(i * 1.5) * 20}px` }}
                           ></div>
                           <div 
-                            className="w-2 h-2 rounded-full bg-red-500 dark:bg-red-400 mt-2"
+                            className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 mt-2"
                             style={{ marginTop: `${Math.cos(i * 1.2) * 15}px` }}
                           ></div>
                           <div 
@@ -517,23 +627,27 @@ const LifestyleSection = () => {
             </div>
             
             <div className="flex justify-center">
-              <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
-                Coming Soon
+              <button 
+                onClick={() => setActiveScreen('biorhythm-tracker')}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+                Open Biorhythm Tracker
               </button>
             </div>
           </div>
           
-          {/* Life Path Number Card (placeholder) */}
+          {/* Numerology Card */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors h-full">
             <div className="flex items-center mb-4">
-              <Sparkles className="text-indigo-500 dark:text-indigo-400" size={24} />
+              <Calculator className="text-indigo-500 dark:text-indigo-400" size={24} />
               <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 ml-3">
                 Numerology
               </h3>
             </div>
             
             <p className="text-slate-600 dark:text-slate-400 mb-6">
-              Calculate your life path number and discover its meaning for your personality and life journey.
+              {hasNumerologyResults
+                ? "View your full numerology chart and discover what your numbers reveal about your life path."
+                : "Calculate your life path number and discover its meaning for your personality and life journey."}
             </p>
             
             <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/30 rounded-lg p-4 mb-6">
@@ -541,7 +655,7 @@ const LifestyleSection = () => {
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                   <div 
                     key={num}
-                    className="w-14 h-14 rounded-full bg-white dark:bg-slate-700 border border-indigo-200 dark:border-indigo-700 flex items-center justify-center text-lg font-bold text-indigo-700 dark:text-indigo-300"
+                    className="w-10 h-10 rounded-full bg-white dark:bg-slate-700 border border-indigo-200 dark:border-indigo-700 flex items-center justify-center text-base font-bold text-indigo-700 dark:text-indigo-300"
                   >
                     {num}
                   </div>
@@ -550,8 +664,10 @@ const LifestyleSection = () => {
             </div>
             
             <div className="flex justify-center">
-              <button className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg text-sm font-medium">
-                Coming Soon
+              <button 
+                onClick={() => setActiveScreen('numerology-calculator')}
+                className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg text-sm font-medium">
+                {hasNumerologyResults ? "View Your Numerology Chart" : "Calculate Your Numbers"}
               </button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 // src/components/Lifestyle/LifestyleSection.jsx
 import React, { useState, useEffect } from 'react';
-import { Heart, Book, UserCheck, Info, Star, Copy, Share2, Bookmark, Brain, Briefcase, Users, Coffee, ThumbsUp, ThumbsDown, HeartHandshake, RefreshCw, FileText, ArrowLeft, Moon, Sun, Sparkles, Calendar, BarChart2, Calculator } from 'lucide-react';
+import { Heart, Book, UserCheck, Info, Star, Copy, Share2, Bookmark, Brain, Briefcase, Users, Coffee, ThumbsUp, ThumbsDown, HeartHandshake, RefreshCw, FileText, ArrowLeft, Moon, Sun, Sparkles, Calendar, BarChart2, Calculator, Lightbulb, Compass, Clock } from 'lucide-react';
 import PersonalityQuiz from './PersonalityQuiz';
 import PersonalityResults from './PersonalityResults';
 import PersonalityTypeLibrary from './PersonalityTypeLibrary';
@@ -9,6 +9,8 @@ import ZodiacResults from './ZodiacResults';
 import ZodiacLibrary from './ZodiacLibrary';
 import BiorhythmTracker from './BiorhythmTracker';
 import NumerologyCalculator from './NumerologyCalculator';
+import LifeTimelineView from './LifeTimelineView';
+import DailyInsightsView from './DailyInsightsView';
 import { getStorage, setStorage } from '../../utils/storage';
 import { personalityTypes } from '../../utils/personalityData';
 import { zodiacSigns, getZodiacSign } from '../../utils/zodiacData';
@@ -33,6 +35,11 @@ const LifestyleSection = () => {
     }
     return storage.lifestyle.personalityResults;
   }
+
+  useEffect(() => {
+    // Scroll to top when activeScreen changes
+    window.scrollTo(0, 0);
+  }, [activeScreen]);
 
   // Get saved zodiac results from storage
   function getSavedZodiacResults() {
@@ -66,6 +73,12 @@ const LifestyleSection = () => {
   function getSavedNumerologyResults() {
     const storage = getStorage();
     return storage.lifestyle?.numerology || null;
+  }
+
+  // Check if birth date is available
+  function hasBirthDate() {
+    const storage = getStorage();
+    return !!storage.lifestyle?.birthDate;
   }
 
   // Save personality results to storage
@@ -142,6 +155,7 @@ const LifestyleSection = () => {
   // Check if numerology results exist
   const numerologyResults = getSavedNumerologyResults();
   const hasNumerologyResults = !!numerologyResults;
+  const hasBirthDateInfo = hasBirthDate();
 
   // Render different screens based on active state
   const renderScreen = () => {
@@ -238,6 +252,21 @@ const LifestyleSection = () => {
           </div>
         );
 
+      case 'life-timeline':
+        return (
+          <LifeTimelineView 
+            birthDate={hasBirthDateInfo ? getStorage().lifestyle.birthDate : null}
+            onBack={() => setActiveScreen('dashboard')}
+          />
+        );
+
+      case 'daily-insights':
+        return (
+          <DailyInsightsView 
+            onBack={() => setActiveScreen('dashboard')}
+          />
+        );
+
       case 'dashboard':
       default:
         // If detailed personality results should be shown
@@ -315,6 +344,110 @@ const LifestyleSection = () => {
           <p className="text-slate-600 dark:text-slate-400 mb-2 transition-colors">
             Explore your personality traits, discover your zodiac sign, track your biorhythms, calculate your numerology numbers, and learn more about what makes you unique.
           </p>
+        </div>
+
+        {/* NEW: Daily Insights Feature */}
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-xl shadow-sm p-6 border border-purple-100 dark:border-purple-800/30 transition-colors">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2 transition-colors">
+                <Lightbulb className="text-amber-500 dark:text-amber-400" size={24} />
+                Daily Insights
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400 mb-2">
+                Get personalized guidance combining your biorhythm data with zodiac transits for optimal daily planning.
+              </p>
+              <ul className="text-sm text-slate-600 dark:text-slate-400 flex flex-wrap gap-x-4 gap-y-1 mt-3">
+                <li className="flex items-center">
+                  <div className="h-2 w-2 rounded-full bg-red-500 dark:bg-red-400 mr-1"></div>
+                  Physical Energy
+                </li>
+                <li className="flex items-center">
+                  <div className="h-2 w-2 rounded-full bg-blue-500 dark:bg-blue-400 mr-1"></div>
+                  Emotional Balance
+                </li>
+                <li className="flex items-center">
+                  <div className="h-2 w-2 rounded-full bg-green-500 dark:bg-green-400 mr-1"></div>
+                  Mental Clarity
+                </li>
+                <li className="flex items-center">
+                  <div className="h-2 w-2 rounded-full bg-purple-500 dark:bg-purple-400 mr-1"></div>
+                  Cosmic Influences
+                </li>
+              </ul>
+            </div>
+            
+            <button
+              onClick={() => setActiveScreen('daily-insights')}
+              className={`px-6 py-3 rounded-lg font-medium ${
+                hasBirthDateInfo
+                  ? 'bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-white'
+                  : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+              }`}
+              disabled={!hasBirthDateInfo}
+            >
+              {hasBirthDateInfo ? 'View Today\'s Insights' : 'Set Birth Date First'}
+            </button>
+          </div>
+          
+          {!hasBirthDateInfo && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mt-4 text-sm text-blue-600 dark:text-blue-400">
+              <Info className="inline-block mr-1" size={16} />
+              Set your birth date in the Zodiac or Biorhythm sections to use Daily Insights.
+            </div>
+          )}
+        </div>
+
+        {/* NEW: Life Timeline Feature */}
+        <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 rounded-xl shadow-sm p-6 border border-indigo-100 dark:border-indigo-800/30 transition-colors">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2 transition-colors">
+                <Clock className="text-indigo-500 dark:text-indigo-400" size={24} />
+                Life Timeline
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400 mb-2">
+                Discover the significant periods of your life based on numerology cycles and astrological transits.
+              </p>
+              <ul className="text-sm text-slate-600 dark:text-slate-400 flex flex-wrap gap-x-4 gap-y-1 mt-3">
+                <li className="flex items-center">
+                  <div className="h-2 w-2 rounded-full bg-indigo-500 dark:bg-indigo-400 mr-1"></div>
+                  Personal Year Cycles
+                </li>
+                <li className="flex items-center">
+                  <div className="h-2 w-2 rounded-full bg-blue-500 dark:bg-blue-400 mr-1"></div>
+                  Major Life Transitions
+                </li>
+                <li className="flex items-center">
+                  <div className="h-2 w-2 rounded-full bg-purple-500 dark:bg-purple-400 mr-1"></div>
+                  Life Path Periods
+                </li>
+                <li className="flex items-center">
+                  <div className="h-2 w-2 rounded-full bg-amber-500 dark:bg-amber-400 mr-1"></div>
+                  Significant Years
+                </li>
+              </ul>
+            </div>
+            
+            <button
+              onClick={() => setActiveScreen('life-timeline')}
+              className={`px-6 py-3 rounded-lg font-medium ${
+                hasBirthDateInfo
+                  ? 'bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white'
+                  : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+              }`}
+              disabled={!hasBirthDateInfo}
+            >
+              {hasBirthDateInfo ? 'View Your Timeline' : 'Set Birth Date First'}
+            </button>
+          </div>
+          
+          {!hasBirthDateInfo && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mt-4 text-sm text-blue-600 dark:text-blue-400">
+              <Info className="inline-block mr-1" size={16} />
+              Set your birth date in the Zodiac or Biorhythm sections to view your Life Timeline.
+            </div>
+          )}
         </div>
 
         {/* Current Personality Results (if available) */}

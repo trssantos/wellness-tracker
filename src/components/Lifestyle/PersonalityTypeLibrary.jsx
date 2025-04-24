@@ -6,7 +6,7 @@ import { Search, Grid, List, Brain, ArrowLeft, ChevronDown, ChevronUp, X, Thumbs
 const PersonalityTypeLibrary = ({ personalityTypes, onClose, currentType = null }) => {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState(currentType);
+  const [selectedType, setSelectedType] = useState(null);
   const [expandedSection, setExpandedSection] = useState(null);
   
   // Group personality types by categories
@@ -73,12 +73,6 @@ const PersonalityTypeLibrary = ({ personalityTypes, onClose, currentType = null 
           >
             <ArrowLeft size={20} className="mr-1" />
             Back to All Types
-          </button>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400"
-          >
-            <X size={18} />
           </button>
         </div>
         
@@ -243,38 +237,42 @@ const PersonalityTypeLibrary = ({ personalityTypes, onClose, currentType = null 
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-6 space-y-6">
         {/* Header with search and view toggles */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-            <Brain className="text-purple-500 dark:text-purple-400" size={24} />
-            Personality Type Library
-          </h2>
+          <div className="flex items-center">
+            <Brain className="text-purple-500 dark:text-purple-400 mr-2" size={24} />
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+              Personality Type Library
+            </h2>
+          </div>
           
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search types..."
-                className="pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-700 border-none rounded-lg text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 w-full sm:w-auto"
-              />
-              <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-            </div>
-            
-            <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white dark:bg-slate-600' : ''}`}
-                title="Grid view"
-              >
-                <Grid size={18} className="text-slate-600 dark:text-slate-300" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded ${viewMode === 'list' ? 'bg-white dark:bg-slate-600' : ''}`}
-                title="List view"
-              >
-                <List size={18} className="text-slate-600 dark:text-slate-300" />
-              </button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search types..."
+                  className="pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-700 border-none rounded-lg text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 w-full sm:w-auto"
+                />
+                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              </div>
+              
+              <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white dark:bg-slate-600' : ''}`}
+                  title="Grid view"
+                >
+                  <Grid size={18} className="text-slate-600 dark:text-slate-300" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded ${viewMode === 'list' ? 'bg-white dark:bg-slate-600' : ''}`}
+                  title="List view"
+                >
+                  <List size={18} className="text-slate-600 dark:text-slate-300" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -296,7 +294,7 @@ const PersonalityTypeLibrary = ({ personalityTypes, onClose, currentType = null 
                     {filteredCategoryTypes.map(type => (
                       <div
                         key={type}
-                        className={`${getTypeColorClass(type)} border rounded-lg p-4 cursor-pointer transition-all hover:shadow-md`}
+                        className={`${getTypeColorClass(type)} border rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${type === currentType ? 'ring-2 ring-purple-500 dark:ring-purple-400' : ''}`}
                         onClick={() => setSelectedType(type)}
                       >
                         <div className="flex flex-col items-center text-center">
@@ -318,7 +316,7 @@ const PersonalityTypeLibrary = ({ personalityTypes, onClose, currentType = null 
                     {filteredCategoryTypes.map(type => (
                       <div
                         key={type}
-                        className={`${getTypeColorClass(type)} border rounded-lg p-3 cursor-pointer transition-all hover:shadow-md`}
+                        className={`${getTypeColorClass(type)} border rounded-lg p-3 cursor-pointer transition-all hover:shadow-md ${type === currentType ? 'ring-2 ring-purple-500 dark:ring-purple-400' : ''}`}
                         onClick={() => setSelectedType(type)}
                       >
                         <div className="flex items-center">

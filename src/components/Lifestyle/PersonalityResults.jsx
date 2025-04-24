@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Brain, Users, Briefcase, Heart, Coffee, ThumbsUp, ThumbsDown, Share2, Download, RefreshCw, FileText, ArrowLeft, ArrowRight, ChevronDown } from 'lucide-react';
+import { Info,Brain, Users, Briefcase, Heart, Coffee, ThumbsUp, ThumbsDown, Share2, Download, RefreshCw, FileText, ArrowLeft, ArrowRight, ChevronDown, Library } from 'lucide-react';
+import PersonalityTypeLibrary from './PersonalityTypeLibrary';
+import { personalityTypes } from '../../utils/personalityData';
 
 const PersonalityResults = ({ results, onReset, onRetake }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
   const dropdownRef = useRef(null);
   
   // Close dropdown when clicking outside
@@ -23,6 +26,17 @@ const PersonalityResults = ({ results, onReset, onRetake }) => {
   if (!results) return null;
   
   const { type, name, description, details, scores } = results;
+
+  // If the library view is active, show that instead
+  if (showLibrary) {
+    return (
+      <PersonalityTypeLibrary 
+        personalityTypes={personalityTypes}
+        onClose={() => setShowLibrary(false)}
+        currentType={type} // Pass the user's type for potential highlighting
+      />
+    );
+  }
   
   // Calculate percentages for each dimension
   const calculatePercentage = (score1, score2) => {
@@ -79,6 +93,7 @@ const PersonalityResults = ({ results, onReset, onRetake }) => {
     { id: 'career', label: 'Career', icon: <Briefcase size={18} /> },
     { id: 'relationships', label: 'Relationships', icon: <Users size={18} /> },
     { id: 'lifestyle', label: 'Lifestyle', icon: <Coffee size={18} /> },
+    { id: 'explore', label: 'Explore All Types', icon: <FileText size={18} /> },
   ];
   
   // Get current tab info
@@ -481,6 +496,48 @@ const PersonalityResults = ({ results, onReset, onRetake }) => {
     </div>
   );
   
+  const renderExploreTab = () => (
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-6">
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+          <FileText className="text-purple-500 dark:text-purple-400" size={20} />
+          Explore All Personality Types
+        </h3>
+        
+        <p className="text-slate-600 dark:text-slate-400 mb-6">
+          Discover more about all 16 personality types in the Myers-Briggs system, including their traits, strengths, career paths, and relationship styles.
+        </p>
+        
+        <button
+          onClick={() => setShowLibrary(true)}
+          className="w-full px-4 py-3 bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/40 text-purple-700 dark:text-purple-300 rounded-lg transition-colors flex items-center justify-center font-medium"
+        >
+          <FileText size={18} className="mr-2" />
+          Open Personality Type Library
+        </button>
+        
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 rounded-lg p-4">
+          <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2 flex items-center">
+            <Info size={18} className="mr-2" />
+            About the 16 Personalities
+          </h4>
+          <p className="text-blue-700 dark:text-blue-400 text-sm">
+            The 16 personality types are based on the Myers-Briggs Type Indicator (MBTI), which categorizes people based on four preference scales:
+          </p>
+          <ul className="mt-2 space-y-1 text-sm text-blue-700 dark:text-blue-400 pl-5 list-disc">
+            <li>Extraversion (E) or Introversion (I)</li>
+            <li>Sensing (S) or Intuition (N)</li>
+            <li>Thinking (T) or Feeling (F)</li>
+            <li>Judging (J) or Perceiving (P)</li>
+          </ul>
+          <p className="text-blue-700 dark:text-blue-400 text-sm mt-2">
+            These combinations create 16 distinct personality types, each with unique cognitive functions, strengths, and growth areas.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+  
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 sm:p-6 transition-colors">
@@ -580,10 +637,9 @@ const PersonalityResults = ({ results, onReset, onRetake }) => {
           {activeTab === 'career' && renderCareerTab()}
           {activeTab === 'relationships' && renderRelationshipsTab()}
           {activeTab === 'lifestyle' && renderLifestyleTab()}
+          {activeTab === 'explore' && renderExploreTab()}
         </div>
       </div>
-      
-     
     </div>
   );
 };

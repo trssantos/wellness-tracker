@@ -1,16 +1,26 @@
-import React, { useState } from 'react';
-import { Heart, Book, UserCheck, Info, Star, Copy, Share2, Bookmark, Brain, Briefcase, Users, Coffee, ThumbsUp, ThumbsDown, HeartHandshake, RefreshCw, FileText, ArrowLeft, Moon, Sun, Sparkles } from 'lucide-react';
+// src/components/Lifestyle/LifestyleSection.jsx
+import React, { useState, useEffect } from 'react';
+import { Heart, Book, UserCheck, Info, Star, Copy, Share2, Bookmark, Brain, Briefcase, Users, Coffee, ThumbsUp, ThumbsDown, HeartHandshake, RefreshCw, FileText, ArrowLeft, Moon, Sun, Sparkles, Calendar } from 'lucide-react';
 import PersonalityQuiz from './PersonalityQuiz';
 import PersonalityResults from './PersonalityResults';
 import PersonalityTypeLibrary from './PersonalityTypeLibrary';
+import ZodiacDateSelector from './ZodiacDateSelector';
+import ZodiacResults from './ZodiacResults';
+import ZodiacLibrary from './ZodiacLibrary';
 import { getStorage, setStorage } from '../../utils/storage';
 import { personalityTypes } from '../../utils/personalityData';
+import { zodiacSigns, getZodiacSign } from '../../utils/zodiacData';
 
 const LifestyleSection = () => {
   const [activeScreen, setActiveScreen] = useState('dashboard');
   const [quizResults, setQuizResults] = useState(null);
   const [savedResults, setSavedResults] = useState(getSavedResults());
   const [showDetailedResults, setShowDetailedResults] = useState(false);
+  
+  // Zodiac state
+  const [zodiacResults, setZodiacResults] = useState(null);
+  const [savedZodiacResults, setSavedZodiacResults] = useState(getSavedZodiacResults());
+  const [showDetailedZodiacResults, setShowDetailedZodiacResults] = useState(false);
 
   // Get saved personality results from storage
   function getSavedResults() {
@@ -22,6 +32,34 @@ const LifestyleSection = () => {
     return storage.lifestyle.personalityResults;
   }
 
+  // Get saved zodiac results from storage
+  function getSavedZodiacResults() {
+    const storage = getStorage();
+    if (!storage.lifestyle) {
+      storage.lifestyle = { zodiacSign: null };
+      setStorage(storage);
+    } else if (storage.lifestyle.birthDate && !storage.lifestyle.zodiacSign) {
+      // If we have a birth date but no zodiac sign data, create it
+      const sign = getZodiacSign(new Date(storage.lifestyle.birthDate));
+      if (sign) {
+        storage.lifestyle.zodiacSign = sign;
+        storage.lifestyle.zodiacTimestamp = new Date().toISOString();
+        setStorage(storage);
+      }
+    }
+    
+    if (storage.lifestyle.birthDate && storage.lifestyle.zodiacSign) {
+      return {
+        birthDate: storage.lifestyle.birthDate,
+        sign: storage.lifestyle.zodiacSign,
+        signData: zodiacSigns[storage.lifestyle.zodiacSign],
+        timestamp: storage.lifestyle.zodiacTimestamp || new Date().toISOString()
+      };
+    }
+    
+    return null;
+  }
+
   // Save personality results to storage
   function saveResults(results) {
     const storage = getStorage();
@@ -31,30 +69,67 @@ const LifestyleSection = () => {
     storage.lifestyle.personalityResults = results;
     setStorage(storage);
     setSavedResults(results);
-    // Return to dashboard after saving results
-    setActiveScreen('dashboard');
   }
 
-  // Handle completing a quiz
+  // Save zodiac results to storage
+  function saveZodiacResults(results) {
+    const storage = getStorage();
+    if (!storage.lifestyle) {
+      storage.lifestyle = {};
+    }
+    
+    storage.lifestyle.birthDate = results.birthDate;
+    storage.lifestyle.zodiacSign = results.sign;
+    storage.lifestyle.zodiacTimestamp = results.timestamp;
+    
+    setStorage(storage);
+    setSavedZodiacResults(results);
+  }
+
+  // Handle completing a personality quiz
   const handleQuizComplete = (results) => {
     setQuizResults(results);
     saveResults(results);
+    // Return to dashboard after saving results
+    setActiveScreen('dashboard');
+  };
+  
+  // Handle completing zodiac date entry
+  const handleZodiacComplete = (results) => {
+    setZodiacResults(results);
+    saveZodiacResults(results);
+    // Return to dashboard after saving results
+    setActiveScreen('dashboard');
   };
 
-  // Reset saved results
+  // Reset saved personality results
   const clearSavedResults = () => {
     saveResults(null);
     setQuizResults(null);
+    setShowDetailedResults(false);
+  };
+  
+  // Reset saved zodiac results
+  const clearSavedZodiacResults = () => {
+    const storage = getStorage();
+    if (storage.lifestyle) {
+      delete storage.lifestyle.birthDate;
+      delete storage.lifestyle.zodiacSign;
+      delete storage.lifestyle.zodiacTimestamp;
+      setStorage(storage);
+    }
+    
+    setZodiacResults(null);
+    setSavedZodiacResults(null);
+    setShowDetailedZodiacResults(false);
   };
 
-  // Handle clicking on the personality card to show detailed results
-  const handleShowDetailedResults = () => {
-    setShowDetailedResults(true);
-  };
-
-  // Determine current personality type
+  // Determine current personality type and zodiac sign
   const currentType = (quizResults || savedResults)?.type;
   const currentResults = quizResults || savedResults;
+  
+  const currentZodiacSign = (zodiacResults || savedZodiacResults)?.sign;
+  const currentZodiacResults = zodiacResults || savedZodiacResults;
 
   // Render different screens based on active state
   const renderScreen = () => {
@@ -76,7 +151,24 @@ const LifestyleSection = () => {
           </div>
         );
 
-      case 'library':
+      case 'zodiac-selector':
+        return (
+          <div className="space-y-4">
+            <button 
+              onClick={() => setActiveScreen('dashboard')}
+              className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-4"
+            >
+              <ArrowLeft size={16} className="mr-1" />
+              Back to Dashboard
+            </button>
+            <ZodiacDateSelector 
+              onComplete={handleZodiacComplete} 
+              onCancel={() => setActiveScreen('dashboard')}
+            />
+          </div>
+        );
+
+      case 'personality-library':
         return (
           <div className="space-y-4">
             <button 
@@ -94,9 +186,21 @@ const LifestyleSection = () => {
           </div>
         );
 
+      case 'zodiac-library':
+        return (
+          <div className="space-y-4">
+            <ZodiacLibrary 
+              onBack={() => setActiveScreen('dashboard')}
+              onSelectSign={(sign) => {
+                // If we wanted to do something with the selected sign
+              }}
+            />
+          </div>
+        );
+
       case 'dashboard':
       default:
-        // If detailed results should be shown
+        // If detailed personality results should be shown
         if (showDetailedResults && currentResults) {
           return (
             <div className="space-y-4">
@@ -122,6 +226,36 @@ const LifestyleSection = () => {
           );
         }
         
+        // If detailed zodiac results should be shown
+        if (showDetailedZodiacResults && currentZodiacResults) {
+          return (
+            <div className="space-y-4">
+              <button 
+                onClick={() => setShowDetailedZodiacResults(false)}
+                className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-4"
+              >
+                <ArrowLeft size={16} className="mr-1" />
+                Back to Dashboard
+              </button>
+              <ZodiacResults 
+                results={currentZodiacResults} 
+                onReset={() => {
+                  clearSavedZodiacResults();
+                  setShowDetailedZodiacResults(false);
+                }}
+                onRetake={() => {
+                  setShowDetailedZodiacResults(false);
+                  setActiveScreen('zodiac-selector');
+                }}
+                onViewLibrary={() => {
+                  setShowDetailedZodiacResults(false);
+                  setActiveScreen('zodiac-library');
+                }}
+              />
+            </div>
+          );
+        }
+        
         // Otherwise show the dashboard
         return renderDashboard();
     }
@@ -139,7 +273,7 @@ const LifestyleSection = () => {
           </h1>
           
           <p className="text-slate-600 dark:text-slate-400 mb-2 transition-colors">
-            Explore your personality traits, discover compatible types, and learn more about what makes you unique.
+            Explore your personality traits, discover your zodiac sign, and learn more about what makes you unique.
           </p>
         </div>
 
@@ -153,7 +287,7 @@ const LifestyleSection = () => {
             
             <div 
               className="bg-purple-50 dark:bg-purple-900/30 p-4 sm:p-6 rounded-xl flex flex-col md:flex-row items-center gap-6 mb-4 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-800/40 transition-colors"
-              onClick={handleShowDetailedResults}
+              onClick={() => setShowDetailedResults(true)}
             >
               <div className="flex-shrink-0">
                 <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center border-4 border-purple-200 dark:border-purple-700 shadow-sm">
@@ -196,7 +330,7 @@ const LifestyleSection = () => {
               </button>
               
               <button
-                onClick={() => setActiveScreen('library')}
+                onClick={() => setActiveScreen('personality-library')}
                 className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-700 dark:text-purple-300 rounded-lg text-sm font-medium flex items-center"
               >
                 <FileText size={16} className="mr-2" />
@@ -206,7 +340,73 @@ const LifestyleSection = () => {
           </div>
         )}
 
-        {/* Personality features grid */}
+        {/* Current Zodiac Results (if available) */}
+        {currentZodiacResults && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2 transition-colors">
+              <Star className="text-amber-500 dark:text-amber-400" size={24} />
+              Your Zodiac Profile
+            </h2>
+            
+            <div 
+              className="bg-amber-50 dark:bg-amber-900/30 p-4 sm:p-6 rounded-xl flex flex-col md:flex-row items-center gap-6 mb-4 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-800/40 transition-colors"
+              onClick={() => setShowDetailedZodiacResults(true)}
+            >
+              <div className="flex-shrink-0">
+                <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center border-4 border-amber-200 dark:border-amber-700 shadow-sm">
+                  <span className="text-2xl font-bold text-amber-600 dark:text-amber-400" dangerouslySetInnerHTML={{ __html: zodiacSigns[currentZodiacSign].symbol }}></span>
+                </div>
+              </div>
+              
+              <div className="text-center md:text-left flex-1">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 break-words">
+                  {zodiacSigns[currentZodiacSign].name}
+                </h3>
+                <p className="text-amber-700 dark:text-amber-300 text-sm mb-1 break-words">
+                  {zodiacSigns[currentZodiacSign].dates}
+                </p>
+                <p className="text-slate-600 dark:text-slate-400 text-sm break-words">
+                  {zodiacSigns[currentZodiacSign].description}
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 italic">Click to view detailed profile →</p>
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => setActiveScreen('zodiac-selector')}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium flex items-center"
+              >
+                <Calendar size={16} className="mr-2" />
+                Update Birth Date
+              </button>
+              
+              <button
+                onClick={clearSavedZodiacResults}
+                className="px-4 py-2 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-800/50 text-red-700 dark:text-red-300 rounded-lg text-sm font-medium flex items-center"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+                Clear Results
+              </button>
+              
+              <button
+                onClick={() => setActiveScreen('zodiac-library')}
+                className="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/50 text-amber-700 dark:text-amber-300 rounded-lg text-sm font-medium flex items-center"
+              >
+                <FileText size={16} className="mr-2" />
+                Explore All Signs
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Features grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Personality Quiz Card */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors h-full">
@@ -232,7 +432,7 @@ const LifestyleSection = () => {
               </button>
               
               <button
-                onClick={() => setActiveScreen('library')}
+                onClick={() => setActiveScreen('personality-library')}
                 className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg text-sm font-medium"
               >
                 Browse All Types
@@ -240,7 +440,7 @@ const LifestyleSection = () => {
             </div>
           </div>
           
-          {/* Zodiac Card (placeholder) */}
+          {/* Zodiac Card */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors h-full">
             <div className="flex items-center mb-4">
               <Star className="text-amber-500 dark:text-amber-400" size={24} />
@@ -250,24 +450,24 @@ const LifestyleSection = () => {
             </div>
             
             <p className="text-slate-600 dark:text-slate-400 mb-6">
-              Explore astrological signs and how they might relate to personality and compatibility.
+              {currentZodiacResults
+                ? `Explore how your ${zodiacSigns[currentZodiacSign].name} sign influences different aspects of your life.`
+                : "Discover your zodiac sign and learn how celestial forces might influence your personality and life."}
             </p>
             
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-6">
-              {/* Zodiac sign icons (placeholders) */}
-              {['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'].map((sign, index) => (
-                <div 
-                  key={index}
-                  className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30 rounded-lg p-3 flex items-center justify-center text-amber-700 dark:text-amber-300 text-xl cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-800/40"
-                >
-                  {sign}
-                </div>
-              ))}
-            </div>
-            
-            <div className="flex justify-center">
-              <button className="px-4 py-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg text-sm font-medium">
-                Coming Soon
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => setActiveScreen('zodiac-selector')}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white rounded-lg text-sm font-medium"
+              >
+                {currentZodiacResults ? "Update Birth Date" : "Find Your Sign"}
+              </button>
+              
+              <button
+                onClick={() => setActiveScreen('zodiac-library')}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg text-sm font-medium"
+              >
+                Explore All Signs
               </button>
             </div>
           </div>

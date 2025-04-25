@@ -1,6 +1,6 @@
 // src/components/Lifestyle/AstrologicalTransits.jsx
 import React, { useState, useEffect } from 'react';
-import { Calendar, Moon, Sparkles, AlertTriangle, Sun, Cloud, Sunrise, RefreshCw, ArrowDown, ArrowUp, Star, ChevronRight, Compass, ArrowLeft, ArrowRight } from 'lucide-react'; // Added ArrowLeft, ArrowRight
+import { Calendar, Moon, Sparkles, AlertTriangle, Sun, Cloud, Sunrise, RefreshCw, ArrowDown, ArrowUp, Star, ChevronRight, Compass, ArrowLeft, ArrowRight } from 'lucide-react';
 import { getStorage } from '../../utils/storage';
 // Import zodiac data and colors
 import { zodiacSigns, getZodiacColors } from '../../utils/zodiacData';
@@ -126,6 +126,8 @@ const AstrologicalTransits = ({ onBack }) => {
     const baseDate = new Date(startDate);
     const userElement = getElementForSign(userZodiac); // Get user's element once
     const userModality = getModalityForSign(userZodiac); // Get user's modality once
+    const userZodiacName = zodiacSigns[userZodiac]?.name || 'Your Sign';
+
 
     for (let i = 0; i < 7; i++) {
       const currentDay = new Date(baseDate);
@@ -134,116 +136,84 @@ const AstrologicalTransits = ({ onBack }) => {
 
       const dayForecast = {};
 
-      // Simulate transits for the current day of the week to add some variation
+      // Simulate transits and moon phase for the current day of the week
       const dailyTransits = getPlanetaryPositions(currentDay); // Use utility function
+      const dailyMoonPhase = calculateMoonPhase(currentDay); // Use utility function
+
+      // Simplified mapping of planets to areas of influence
+      const planetInfluence = {
+          love: ['Venus', 'Moon'],
+          career: ['Sun', 'Mars', 'Jupiter', 'Saturn', 'Mercury'],
+          health: ['Mars', 'Sun', 'Moon'],
+          social: ['Venus', 'Mercury', 'Moon'],
+          finances: ['Jupiter', 'Saturn', 'Venus', 'Mercury']
+      };
+
 
       areas.forEach(area => {
          // Keep random rating for now - a true non-random rating needs complex logic
         const rating = Math.floor(Math.random() * 5) + 1; // 1-5 stars
 
         // Generate more dynamic advice/opportunities/challenges
-        let advice, opportunities, challenges;
+        let advice = '';
+        let opportunities = '';
+        let challenges = '';
 
         const dayOfWeek = currentDay.getDay(); // 0 for Sunday, 6 for Saturday
         const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek];
 
 
-        // Base text on area and user's element/modality, add variation based on day/simulated transits
-        let baseAdvice, baseOpportunities, baseChallenges;
-
-         // Base on Element
-        if (userElement === 'Fire') {
-           baseAdvice = "Channel your energy and take initiative.";
-           baseOpportunities = "Dynamic action and creative expression.";
-           baseChallenges = "Impatience and potential conflict.";
-        } else if (userElement === 'Earth') {
-           baseAdvice = "Ground yourself and focus on practical matters.";
-           baseOpportunities = "Stability and tangible results.";
-           baseChallenges = "Resistance to change and being stuck in routine.";
-        } else if (userElement === 'Air') {
-           baseAdvice = "Engage your mind and communicate clearly.";
-           baseOpportunities = "New ideas and social connections.";
-           baseChallenges = "Overthinking and scattered energy.";
-        } else { // Water
-           baseAdvice = "Trust your intuition and connect emotionally.";
-           baseOpportunities = "Deep emotional bonds and creative flow.";
-           baseChallenges = "Emotional sensitivity and difficulty setting boundaries.";
-        }
-
-         // Layer on Modality influence (simplified)
-         if (userModality === 'Cardinal') {
-             baseAdvice += " This is a good day to start something new.";
-             baseOpportunities += " Leadership roles and initiating projects.";
-             baseChallenges += " Starting too many things at once.";
-         } else if (userModality === 'Fixed') {
-             baseAdvice += " Focus on seeing things through.";
-             baseOpportunities += " Building stability and mastering skills.";
-             baseChallenges += " Stubbornness and resistance to compromise.";
-         } else { // Mutable
-             baseAdvice += " Adaptability is your strength today.";
-             baseOpportunities += " Exploring different options and versatile approaches.";
-             baseChallenges += " Indecisiveness and inconsistency.";
-         }
-
-        // Add variation based on the day of the week
-        if (dayOfWeek === 5) { // Friday (ruled by Venus) - generally good for love/social
-            if (area === 'love' || area === 'social') {
-                baseOpportunities += " Enhanced opportunities for connection and harmony.";
-            }
-        } else if (dayOfWeek === 2) { // Tuesday (ruled by Mars) - generally good for action/career
-             if (area === 'career' || area === 'health') {
-                baseOpportunities += " Increased energy for pursuing goals.";
-             }
-        }
-         // Add other day of week influences...
-
-         // Add variation based on simulated key transits for the day (simplified)
-         const sunTransit = dailyTransits.find(p => p.name === 'Sun');
-         const moonTransit = dailyTransits.find(p => p.name === 'Moon');
-         const mercuryTransit = dailyTransits.find(p => p.name === 'Mercury');
-
-         if (sunTransit?.sign === userZodiac) { // Sun in your sign
-             baseAdvice = `With the Sun in your sign, ${baseAdvice.replace('Channel your energy', 'Your personal power is highlighted today. Channel it')}`;
-         }
-         if (moonTransit?.sign === userZodiac) { // Moon in your sign
-             baseAdvice = `Your emotions align with the cosmos today. ${baseAdvice.replace('Trust your intuition', 'Your intuition is particularly strong.')}`;
-         }
-         if (mercuryTransit?.retrograde && area === 'communication') { // Mercury retrograde affecting communication
-              baseChallenges += " Be mindful of misunderstandings in communication.";
-         }
+        // Start building advice/opportunities/challenges based on user's sign and the area
+         advice = `As a ${userZodiacName}, today's focus in the area of ${area} involves... `;
+         opportunities = `Opportunities for ${userZodiacName} in ${area} include... `;
+         challenges = `Potential challenges for ${userZodiacName} in ${area} may be... `;
 
 
-        // Refine text based on area
-        switch (area) {
-            case 'love':
-                 advice = `In love, ${baseAdvice.replace('Channel your energy and take initiative.', 'Take initiative in romance.').replace('Ground yourself and focus on practical matters.', 'Build stable connections.').replace('Engage your mind and communicate clearly.', 'Communicate your feelings.').replace('Trust your intuition and connect emotionally.', 'Deepen emotional bonds.')}`;
-                 opportunities = `Opportunities for ${baseOpportunities.replace('Dynamic action', 'Romantic gestures').replace('Stability and tangible results', 'Lasting intimacy').replace('New ideas and social connections', 'Meaningful conversations').replace('Deep emotional bonds', 'Empathetic connection')}`;
-                 challenges = `Challenges may arise from ${baseChallenges.replace('Impatience', 'Romantic impatience').replace('Resistance to change', 'Resistance to vulnerability').replace('Overthinking', 'Overthinking relationships').replace('Emotional sensitivity', 'Boundary issues in relationships')}`;
-                break;
-            case 'career':
-                 advice = `For career, ${baseAdvice.replace('Channel your energy and take initiative.', 'Take the lead at work.').replace('Ground yourself and focus on practical matters.', 'Focus on practical work goals.').replace('Engage your mind and communicate clearly.', 'Communicate effectively with colleagues.').replace('Trust your intuition and connect emotionally.', 'Use intuition in problem-solving.')}`;
-                 opportunities = `Opportunities for ${baseOpportunities.replace('Dynamic action', 'Advancement').replace('Stability and tangible results', 'Steady progress').replace('New ideas and social connections', 'Networking').replace('Deep emotional bonds', 'Collaborative success')}`;
-                 challenges = `Challenges may arise from ${baseChallenges.replace('Impatience', 'Impatience with projects').replace('Resistance to change', 'Resistance to new methods').replace('Overthinking', 'Difficulty focusing on tasks').replace('Emotional sensitivity', 'Work-life balance issues')}`;
-                break;
-             case 'health':
-                advice = `In terms of health, ${baseAdvice.replace('Channel your energy and take initiative.', 'Start a new fitness routine.').replace('Ground yourself and focus on practical matters.', 'Maintain consistent healthy habits.').replace('Engage your mind and communicate clearly.', 'Research wellness strategies.').replace('Trust your intuition and connect emotionally.', 'Listen to your body\'s needs.')}`;
-                opportunities = `Opportunities for ${baseOpportunities.replace('Dynamic action', 'Increased vitality').replace('Stability and tangible results', 'Building physical strength').replace('New ideas and social connections', 'Finding new workout buddies').replace('Deep emotional bonds', 'Emotional well-being supporting health')}`;
-                challenges = `Challenges may arise from ${baseChallenges.replace('Impatience', 'Risk of overexertion').replace('Resistance to change', 'Difficulty adapting to new diets').replace('Overthinking', 'Anxiety affecting health').replace('Emotional sensitivity', 'Stress impacting well-being')}`;
-                break;
-             case 'social':
-                 advice = `Socially, ${baseAdvice.replace('Channel your energy and take initiative.', 'Plan social activities.').replace('Ground yourself and focus on practical matters.', 'Nurture stable friendships.').replace('Engage your mind and communicate clearly.', 'Engage in stimulating group discussions.').replace('Trust your intuition and connect emotionally.', 'Deepen connections with empathy.')}`;
-                 opportunities = `Opportunities for ${baseOpportunities.replace('Dynamic action', 'Meeting new people').replace('Stability and tangible results', 'Strengthening bonds').replace('New ideas and social connections', 'Networking').replace('Deep emotional bonds', 'Empathetic connections')}`;
-                 challenges = `Challenges may arise from ${baseChallenges.replace('Impatience', 'Dominating conversations').replace('Resistance to change', 'Being too reserved').replace('Overthinking', 'Social anxiety').replace('Emotional sensitivity', 'Taking on others\' problems')}`;
-                break;
-             case 'finances':
-                 advice = `Financially, ${baseAdvice.replace('Channel your energy and take initiative.', 'Take calculated financial risks.').replace('Ground yourself and focus on practical matters.', 'Focus on budgeting and saving.').replace('Engage your mind and communicate clearly.', 'Analyze financial data.').replace('Trust your intuition and connect emotionally.', 'Trust your gut on investments.')}`;
-                 opportunities = `Opportunities for ${baseOpportunities.replace('Dynamic action', 'Quick gains').replace('Stability and tangible results', 'Steady growth').replace('New ideas and social connections', 'Innovative financial ideas').replace('Deep emotional bonds', 'Financial security supporting peace of mind')}`;
-                 challenges = `Challenges may arise from ${baseChallenges.replace('Impatience', 'Impulsive spending').replace('Resistance to change', 'Fear of investing').replace('Overthinking', 'Financial anxiety').replace('Emotional sensitivity', 'Stress over money affecting mood')}`;
-                break;
-            default:
-              advice = 'Balance your energy across all life areas today.';
-              opportunities = 'Growth through a balanced approach.';
-              challenges = 'Spreading yourself too thin.';
+        // Add layer based on user's Element and Modality
+        advice += `Your ${userElement} energy and ${userModality} approach influence how you navigate this area. `;
+
+
+        // Add layer based on the Day of the Week
+        advice += `The energy of ${dayName} impacts your ${area} outlook. `;
+        opportunities += `The spirit of ${dayName} brings opportunities. `;
+        challenges += `Be mindful of ${dayName}'s potential pitfalls. `;
+
+
+        // Add layer based on the Moon Phase for the day
+         advice += `The ${dailyMoonPhase.name} (${dailyMoonPhase.energy} energy) also plays a role. `;
+         opportunities += `The Moon's energy favors: ${dailyMoonPhase.activities}. `;
+         challenges += `The Moon's energy cautions against: ${dailyMoonPhase.avoid}. `;
+
+
+        // Add layer based on relevant Simulated Planetary Positions and Retrogrades for the day
+        const relevantPlanets = planetInfluence[area] || [];
+        const activeInfluences = dailyTransits.filter(p => relevantPlanets.includes(p.name));
+
+        if (activeInfluences.length > 0) {
+            advice += `Planetary influences from `;
+            opportunities += `Leverage the energy of `;
+            challenges += `Navigate potential friction from `;
+
+            activeInfluences.forEach((planet, idx) => {
+                advice += `${planet.name} in ${planet.signName}${planet.retrograde ? ' (Retrograde)' : ''}${idx < activeInfluences.length - 1 ? ', ' : '.'} `;
+                opportunities += `${planet.name}${planet.retrograde ? ' (Retrograde)' : ''}${idx < activeInfluences.length - 1 ? ', ' : '.'} `;
+                challenges += `${planet.name}${planet.retrograde ? ' (Retrograde)' : ''}${idx < activeInfluences.length - 1 ? ', ' : '.'} `;
+
+                // Add a very simplified interpretation based on planet/retrograde status
+                if (planet.retrograde) {
+                     advice += ` Review and be patient.`;
+                     opportunities += ` Inner work and refinement.`;
+                     challenges += ` Delays or miscommunication.`;
+                } else {
+                     advice += ` Forward movement is favored.`;
+                     opportunities += ` Action and progress.`;
+                     challenges += ` Impulsiveness.`;
+                }
+            });
+        } else {
+             advice += `No major direct planetary influences on ${area} today. Focus on fundamentals.`;
+             opportunities += `A stable day for routine activities.`;
+             challenges += `Lack of dynamic energy.`;
         }
 
 
@@ -258,12 +228,15 @@ const AstrologicalTransits = ({ onBack }) => {
 
   // Check for current retrogrades - Modified to accept retrogrades as a parameter
   const checkRetrogrades = (date, currentRetrogrades) => {
-       // Ensure currentRetrogrades is an array, if not, fetch them
+       // Ensure currentRetrogrades is an array, if not, fetch them (should be fetched in generateAstrologicalData)
         const retrogradesList = Array.isArray(currentRetrogrades) ? currentRetrogrades : getCurrentRetrogrades(date);
 
         // Add personalized impact based on user's zodiac sign and element
         if (userZodiac && Array.isArray(retrogradesList)) {
             retrogradesList.forEach(retrograde => {
+                // Prevent adding impact/strategies multiple times if function is called repeatedly with the same data
+                 if (retrograde.personal) return;
+
                 const planetaryRuler = getPlanetaryRuler(userZodiac); // Use utility function
                 if (retrograde.planet === planetaryRuler) {
                     retrograde.personal = `As ${retrograde.planet} is your ruling planet, this retrograde particularly affects your core identity and expression. Pay special attention to the coping strategies.`;
@@ -291,7 +264,8 @@ const AstrologicalTransits = ({ onBack }) => {
                  if (!retrograde.impact) {
                      retrograde.impact = `Potential shifts or slowdowns related to ${retrograde.planet}'s energies.`;
                  }
-                 if (!retrograde.copingStrategies) {
+                 // Ensure copingStrategies is an array or default to empty array if missing or not array
+                 if (!Array.isArray(retrograde.copingStrategies) || retrograde.copingStrategies.length === 0) {
                       retrograde.copingStrategies = [
                          `Review and refine plans related to ${retrograde.planet}'s domain.`,
                          `Practice patience and flexibility.`,
@@ -301,8 +275,8 @@ const AstrologicalTransits = ({ onBack }) => {
              });
         }
 
-       // Set the state with the processed list
-       setRetrogrades(retrogradesList || []);
+       // Set the state with the processed list (or empty array if input was not an array)
+       setRetrogrades(Array.isArray(retrogradesList) ? retrogradesList : []);
    };
 
   // Format date for display

@@ -14,26 +14,29 @@ import DailyInsightsView from './DailyInsightsView';
 import CompatibilityFinder from './CompatibilityFinder';
 import EnneagramTest from './EnneagramTest';
 import EnneagramResults from './EnneagramResults';
+import AstrologicalTransits from './AstrologicalTransits';
+import MoonPhaseWidget from './MoonPhaseWidget';
+import TarotCardOfTheDay from './TarotCardOfTheDay'; // Import the new component
+
 import { getStorage, setStorage } from '../../utils/storage';
 import { personalityTypes } from '../../utils/personalityData';
 import { zodiacSigns, getZodiacSign } from '../../utils/zodiacData';
 import { enneagramTypes } from '../../utils/enneagramData';
-import AstrologicalTransits from './AstrologicalTransits';
-import MoonPhaseWidget from './MoonPhaseWidget';
+
 
 const LifestyleSection = () => {
   const [activeScreen, setActiveScreen] = useState('dashboard');
-  
+
   // MBTI state
   const [quizResults, setQuizResults] = useState(null);
   const [savedResults, setSavedResults] = useState(getSavedResults());
   const [showDetailedResults, setShowDetailedResults] = useState(false);
-  
+
   // Zodiac state
   const [zodiacResults, setZodiacResults] = useState(null);
   const [savedZodiacResults, setSavedZodiacResults] = useState(getSavedZodiacResults());
   const [showDetailedZodiacResults, setShowDetailedZodiacResults] = useState(false);
-  
+
   // Enneagram state
   const [enneagramResults, setEnneagramResults] = useState(null);
   const [savedEnneagramResults, setSavedEnneagramResults] = useState(getSavedEnneagramResults());
@@ -69,7 +72,7 @@ const LifestyleSection = () => {
         setStorage(storage);
       }
     }
-    
+
     if (storage.lifestyle.birthDate && storage.lifestyle.zodiacSign) {
       return {
         birthDate: storage.lifestyle.birthDate,
@@ -78,10 +81,10 @@ const LifestyleSection = () => {
         timestamp: storage.lifestyle.zodiacTimestamp || new Date().toISOString()
       };
     }
-    
+
     return null;
   }
-  
+
   // Get saved enneagram results from storage
   function getSavedEnneagramResults() {
     const storage = getStorage();
@@ -121,15 +124,15 @@ const LifestyleSection = () => {
     if (!storage.lifestyle) {
       storage.lifestyle = {};
     }
-    
+
     storage.lifestyle.birthDate = results.birthDate;
     storage.lifestyle.zodiacSign = results.sign;
     storage.lifestyle.zodiacTimestamp = results.timestamp;
-    
+
     setStorage(storage);
     setSavedZodiacResults(results);
   }
-  
+
   // Save enneagram results to storage
   function saveEnneagramResults(results) {
     const storage = getStorage();
@@ -148,7 +151,7 @@ const LifestyleSection = () => {
     // Return to dashboard after saving results
     setActiveScreen('dashboard');
   };
-  
+
   // Handle completing zodiac date entry
   const handleZodiacComplete = (results) => {
     setZodiacResults(results);
@@ -156,7 +159,7 @@ const LifestyleSection = () => {
     // Return to dashboard after saving results
     setActiveScreen('dashboard');
   };
-  
+
   // Handle completing enneagram test
   const handleEnneagramComplete = (results) => {
     setEnneagramResults(results);
@@ -171,7 +174,7 @@ const LifestyleSection = () => {
     setQuizResults(null);
     setShowDetailedResults(false);
   };
-  
+
   // Reset saved zodiac results
   const clearSavedZodiacResults = () => {
     const storage = getStorage();
@@ -181,12 +184,12 @@ const LifestyleSection = () => {
       delete storage.lifestyle.zodiacTimestamp;
       setStorage(storage);
     }
-    
+
     setZodiacResults(null);
     setSavedZodiacResults(null);
     setShowDetailedZodiacResults(false);
   };
-  
+
   // Reset saved enneagram results
   const clearSavedEnneagramResults = () => {
     const storage = getStorage();
@@ -194,7 +197,7 @@ const LifestyleSection = () => {
       delete storage.lifestyle.enneagramResults;
       setStorage(storage);
     }
-    
+
     setEnneagramResults(null);
     setSavedEnneagramResults(null);
     setShowDetailedEnneagramResults(false);
@@ -203,14 +206,14 @@ const LifestyleSection = () => {
   // Determine current personality type and zodiac sign
   const currentType = (quizResults || savedResults)?.type;
   const currentResults = quizResults || savedResults;
-  
+
   const currentZodiacSign = (zodiacResults || savedZodiacResults)?.sign;
   const currentZodiacResults = zodiacResults || savedZodiacResults;
-  
+
   const currentEnneagramType = (enneagramResults || savedEnneagramResults)?.primaryType;
   const currentEnneagramWing = (enneagramResults || savedEnneagramResults)?.wing;
   const currentEnneagramResults = enneagramResults || savedEnneagramResults;
-  
+
   // Check if numerology results exist
   const numerologyResults = getSavedNumerologyResults();
   const hasNumerologyResults = !!numerologyResults;
@@ -222,31 +225,31 @@ const LifestyleSection = () => {
       case 'quiz':
         return (
           <div className="space-y-4">
-            <button 
+            <button
               onClick={() => setActiveScreen('dashboard')}
               className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-4"
             >
               <ArrowLeft size={16} className="mr-1" />
               Back to Dashboard
             </button>
-            <PersonalityQuiz 
-              onComplete={handleQuizComplete} 
+            <PersonalityQuiz
+              onComplete={handleQuizComplete}
               onCancel={() => setActiveScreen('dashboard')}
             />
           </div>
         );
-        
+
       case 'enneagram-test':
         return (
           <div className="space-y-4">
-            <button 
+            <button
               onClick={() => setActiveScreen('dashboard')}
               className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-4"
             >
               <ArrowLeft size={16} className="mr-1" />
               Back to Dashboard
             </button>
-            <EnneagramTest 
+            <EnneagramTest
               onComplete={handleEnneagramComplete}
               onCancel={() => setActiveScreen('dashboard')}
             />
@@ -256,15 +259,15 @@ const LifestyleSection = () => {
       case 'zodiac-selector':
         return (
           <div className="space-y-4">
-            <button 
+            <button
               onClick={() => setActiveScreen('dashboard')}
               className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-4"
             >
               <ArrowLeft size={16} className="mr-1" />
               Back to Dashboard
             </button>
-            <ZodiacDateSelector 
-              onComplete={handleZodiacComplete} 
+            <ZodiacDateSelector
+              onComplete={handleZodiacComplete}
               onCancel={() => setActiveScreen('dashboard')}
             />
           </div>
@@ -273,14 +276,14 @@ const LifestyleSection = () => {
       case 'personality-library':
         return (
           <div className="space-y-4">
-            <button 
+            <button
               onClick={() => setActiveScreen('dashboard')}
               className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-4"
             >
               <ArrowLeft size={16} className="mr-1" />
               Back to Dashboard
             </button>
-            <PersonalityTypeLibrary 
+            <PersonalityTypeLibrary
               personalityTypes={personalityTypes}
               onClose={() => setActiveScreen('dashboard')}
               currentType={currentType}
@@ -291,7 +294,7 @@ const LifestyleSection = () => {
       case 'zodiac-library':
         return (
           <div className="space-y-4">
-            <ZodiacLibrary 
+            <ZodiacLibrary
               onBack={() => setActiveScreen('dashboard')}
               onSelectSign={(sign) => {
                 // If we wanted to do something with the selected sign
@@ -303,7 +306,7 @@ const LifestyleSection = () => {
       case 'biorhythm-tracker':
         return (
           <div className="space-y-4">
-            <button 
+            <button
               onClick={() => setActiveScreen('dashboard')}
               className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-4"
             >
@@ -313,11 +316,11 @@ const LifestyleSection = () => {
             <BiorhythmTracker />
           </div>
         );
-        
+
       case 'numerology-calculator':
         return (
           <div className="space-y-4">
-            <button 
+            <button
               onClick={() => setActiveScreen('dashboard')}
               className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-4"
             >
@@ -330,7 +333,7 @@ const LifestyleSection = () => {
 
       case 'life-timeline':
         return (
-          <LifeTimelineView 
+          <LifeTimelineView
             birthDate={hasBirthDateInfo ? getStorage().lifestyle.birthDate : null}
             onBack={() => setActiveScreen('dashboard')}
           />
@@ -338,26 +341,33 @@ const LifestyleSection = () => {
 
       case 'daily-insights':
         return (
-          <DailyInsightsView 
-            onBack={() => setActiveScreen('dashboard')}
-          />
-        );
-        
-      case 'compatibility-finder':
-        return (
-          <CompatibilityFinder 
+          <DailyInsightsView
             onBack={() => setActiveScreen('dashboard')}
           />
         );
 
-        case 'astrological-transits':
-  return (
-    <div className="space-y-4">
-      <AstrologicalTransits 
-        onBack={() => setActiveScreen('dashboard')}
-      />
-    </div>
-  );
+      case 'compatibility-finder':
+        return (
+          <CompatibilityFinder
+            onBack={() => setActiveScreen('dashboard')}
+          />
+        );
+
+      case 'astrological-transits':
+        return (
+          <div className="space-y-4">
+            <AstrologicalTransits
+              onBack={() => setActiveScreen('dashboard')}
+            />
+          </div>
+        );
+
+      case 'tarot': // New case for the Tarot Card of the Day
+        return (
+          <TarotCardOfTheDay
+            onBack={() => setActiveScreen('dashboard')}
+          />
+        );
 
 
       case 'dashboard':
@@ -366,15 +376,15 @@ const LifestyleSection = () => {
         if (showDetailedResults && currentResults) {
           return (
             <div className="space-y-4">
-              <button 
+              <button
                 onClick={() => setShowDetailedResults(false)}
                 className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-4"
               >
                 <ArrowLeft size={16} className="mr-1" />
                 Back to Dashboard
               </button>
-              <PersonalityResults 
-                results={currentResults} 
+              <PersonalityResults
+                results={currentResults}
                 onReset={() => {
                   clearSavedResults();
                   setShowDetailedResults(false);
@@ -387,20 +397,20 @@ const LifestyleSection = () => {
             </div>
           );
         }
-        
+
         // If detailed zodiac results should be shown
         if (showDetailedZodiacResults && currentZodiacResults) {
           return (
             <div className="space-y-4">
-              <button 
+              <button
                 onClick={() => setShowDetailedZodiacResults(false)}
                 className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-4"
               >
                 <ArrowLeft size={16} className="mr-1" />
                 Back to Dashboard
               </button>
-              <ZodiacResults 
-                results={currentZodiacResults} 
+              <ZodiacResults
+                results={currentZodiacResults}
                 onReset={() => {
                   clearSavedZodiacResults();
                   setShowDetailedZodiacResults(false);
@@ -419,21 +429,21 @@ const LifestyleSection = () => {
         }
 
 
-        
-        
+
+
         // If detailed enneagram results should be shown
         if (showDetailedEnneagramResults && currentEnneagramResults) {
           return (
             <div className="space-y-4">
-              <button 
+              <button
                 onClick={() => setShowDetailedEnneagramResults(false)}
                 className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-4"
               >
                 <ArrowLeft size={16} className="mr-1" />
                 Back to Dashboard
               </button>
-              <EnneagramResults 
-                results={currentEnneagramResults} 
+              <EnneagramResults
+                results={currentEnneagramResults}
                 onReset={() => {
                   clearSavedEnneagramResults();
                   setShowDetailedEnneagramResults(false);
@@ -446,7 +456,7 @@ const LifestyleSection = () => {
             </div>
           );
         }
-        
+
         // Otherwise show the dashboard
         return renderDashboard();
     }
@@ -462,11 +472,48 @@ const LifestyleSection = () => {
             <Heart className="text-red-500 dark:text-red-400" size={28} />
             Lifestyle Dashboard
           </h1>
-          
+
           <p className="text-slate-600 dark:text-slate-400 mb-2 transition-colors">
             Explore your personality traits, discover your zodiac sign, track your biorhythms, calculate your numerology numbers, and learn more about what makes you unique.
           </p>
         </div>
+
+         {/* NEW: Tarot Card of the Day Feature */}
+        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 rounded-xl shadow-sm p-6 border border-amber-100 dark:border-amber-800/30 transition-colors">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2 transition-colors">
+                <Star className="text-amber-500 dark:text-amber-400" size={24} />
+                Tarot Card of the Day
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400 mb-2">
+                Draw a daily tarot card for personalized guidance and reflection based on your profile.
+              </p>
+              <ul className="text-sm text-slate-600 dark:text-slate-400 flex flex-wrap gap-x-4 gap-y-1 mt-3">
+                <li className="flex items-center">
+                  <div className="h-2 w-2 rounded-full bg-amber-500 dark:bg-amber-400 mr-1"></div>
+                  Daily Draw
+                </li>
+                <li className="flex items-center">
+                  <div className="h-2 w-2 rounded-full bg-purple-500 dark:bg-purple-400 mr-1"></div>
+                  Personalized Interpretation
+                </li>
+                 <li className="flex items-center">
+                  <div className="h-2 w-2 rounded-full bg-blue-500 dark:bg-blue-400 mr-1"></div>
+                  Journaling Prompts
+                </li>
+              </ul>
+            </div>
+
+            <button
+              onClick={() => setActiveScreen('tarot')} // Navigate to the new screen
+              className="px-6 py-3 rounded-lg font-medium bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white"
+            >
+              Draw Your Card
+            </button>
+          </div>
+        </div>
+
 
         {/* NEW: Compatibility Finder Feature */}
         <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/30 dark:to-purple-900/30 rounded-xl shadow-sm p-6 border border-pink-100 dark:border-pink-800/30 transition-colors">
@@ -498,7 +545,7 @@ const LifestyleSection = () => {
                 </li>
               </ul>
             </div>
-            
+
             <button
               onClick={() => setActiveScreen('compatibility-finder')}
               className="px-6 py-3 rounded-lg font-medium bg-pink-500 hover:bg-pink-600 dark:bg-pink-600 dark:hover:bg-pink-700 text-white"
@@ -538,7 +585,7 @@ const LifestyleSection = () => {
                 </li>
               </ul>
             </div>
-            
+
             <button
               onClick={() => setActiveScreen('daily-insights')}
               className={`px-6 py-3 rounded-lg font-medium ${
@@ -548,11 +595,11 @@ const LifestyleSection = () => {
               }`}
               disabled={!hasBirthDateInfo}
             >
-              
+
               {hasBirthDateInfo ? 'View Today\'s Insights' : 'Set Birth Date First'}
             </button>
           </div>
-          
+
           {!hasBirthDateInfo && (
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mt-4 text-sm text-blue-600 dark:text-blue-400">
               <Info className="inline-block mr-1" size={16} />
@@ -591,7 +638,7 @@ const LifestyleSection = () => {
                 </li>
               </ul>
             </div>
-            
+
             <button
               onClick={() => setActiveScreen('life-timeline')}
               className={`px-6 py-3 rounded-lg font-medium ${
@@ -604,7 +651,7 @@ const LifestyleSection = () => {
               {hasBirthDateInfo ? 'View Your Timeline' : 'Set Birth Date First'}
             </button>
           </div>
-          
+
           {!hasBirthDateInfo && (
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mt-4 text-sm text-blue-600 dark:text-blue-400">
               <Info className="inline-block mr-1" size={16} />
@@ -619,7 +666,7 @@ const LifestyleSection = () => {
             <UserCheck className="text-green-500 dark:text-green-400" size={24} />
             Your Personality Profiles
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             {/* MBTI Profile Card */}
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-indigo-100 dark:border-indigo-900/20 overflow-hidden shadow-sm transition-colors">
@@ -631,7 +678,7 @@ const LifestyleSection = () => {
               </div>
               <div className="p-4">
                 {currentResults ? (
-                  <div 
+                  <div
                     className="cursor-pointer space-y-2"
                     onClick={() => setShowDetailedResults(true)}
                   >
@@ -664,7 +711,7 @@ const LifestyleSection = () => {
                 )}
               </div>
             </div>
-            
+
             {/* Enneagram Profile Card */}
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-purple-100 dark:border-purple-900/20 overflow-hidden shadow-sm transition-colors">
               <div className="bg-purple-50 dark:bg-purple-900/20 p-4 border-b border-purple-100 dark:border-purple-900/30">
@@ -675,7 +722,7 @@ const LifestyleSection = () => {
               </div>
               <div className="p-4">
                 {currentEnneagramResults ? (
-                  <div 
+                  <div
                     className="cursor-pointer space-y-2"
                     onClick={() => setShowDetailedEnneagramResults(true)}
                   >
@@ -708,7 +755,7 @@ const LifestyleSection = () => {
                 )}
               </div>
             </div>
-            
+
             {/* Zodiac Profile Card */}
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-amber-100 dark:border-amber-900/20 overflow-hidden shadow-sm transition-colors">
               <div className="bg-amber-50 dark:bg-amber-900/20 p-4 border-b border-amber-100 dark:border-amber-900/30">
@@ -719,13 +766,13 @@ const LifestyleSection = () => {
               </div>
               <div className="p-4">
                 {currentZodiacResults ? (
-                  <div 
+                  <div
                     className="cursor-pointer space-y-2"
                     onClick={() => setShowDetailedZodiacResults(true)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <span className="text-2xl font-bold text-amber-600 dark:text-amber-400" 
+                        <span className="text-2xl font-bold text-amber-600 dark:text-amber-400"
                           dangerouslySetInnerHTML={{ __html: zodiacSigns[currentZodiacSign].symbol }}></span>
                         <span className="text-slate-600 dark:text-slate-400">{zodiacSigns[currentZodiacSign].name}</span>
                       </div>
@@ -754,7 +801,7 @@ const LifestyleSection = () => {
               </div>
             </div>
 
-            
+
           </div>
         </div>
 
@@ -768,13 +815,13 @@ const LifestyleSection = () => {
                 16 Personalities
               </h3>
             </div>
-            
+
             <p className="text-slate-600 dark:text-slate-400 mb-6">
-              {currentResults 
+              {currentResults
                 ? "Want to learn more about your personality type and how it compares to others?"
                 : "Discover your personality type based on the Myers-Briggs Type Indicator (MBTI)."}
             </p>
-            
+
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => setActiveScreen('quiz')}
@@ -782,7 +829,7 @@ const LifestyleSection = () => {
               >
                 {currentResults ? "Retake Test" : "Take Personality Test"}
               </button>
-              
+
               <button
                 onClick={() => setActiveScreen('personality-library')}
                 className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg text-sm font-medium"
@@ -791,7 +838,7 @@ const LifestyleSection = () => {
               </button>
             </div>
           </div>
-          
+
           {/* Enneagram Card */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors h-full">
             <div className="flex items-center mb-4">
@@ -800,13 +847,13 @@ const LifestyleSection = () => {
                 Enneagram
               </h3>
             </div>
-            
+
             <p className="text-slate-600 dark:text-slate-400 mb-6">
               {currentEnneagramResults
                 ? `Explore how your Type ${currentEnneagramType} with a ${currentEnneagramWing} wing shapes your core motivations and fears.`
                 : "Discover your Enneagram type to understand your core motivations, fears and growth path."}
             </p>
-            
+
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => setActiveScreen('enneagram-test')}
@@ -816,7 +863,7 @@ const LifestyleSection = () => {
               </button>
             </div>
           </div>
-          
+
           {/* Zodiac Card */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors h-full">
             <div className="flex items-center mb-4">
@@ -825,13 +872,13 @@ const LifestyleSection = () => {
                 Zodiac Signs
               </h3>
             </div>
-            
+
             <p className="text-slate-600 dark:text-slate-400 mb-6">
               {currentZodiacResults
                 ? `Explore how your ${zodiacSigns[currentZodiacSign].name} sign influences different aspects of your life.`
                 : "Discover your zodiac sign and learn how celestial forces might influence your personality and life."}
             </p>
-            
+
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => setActiveScreen('zodiac-selector')}
@@ -839,7 +886,7 @@ const LifestyleSection = () => {
               >
                 {currentZodiacResults ? "Update Birth Date" : "Find Your Sign"}
               </button>
-              
+
               <button
                 onClick={() => setActiveScreen('zodiac-library')}
                 className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg text-sm font-medium"
@@ -850,35 +897,35 @@ const LifestyleSection = () => {
           </div>
 
           {/* Astrological Transits Card */}
-<div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors h-full">
-  <div className="flex items-center mb-4">
-    <Sparkles className="text-amber-500 dark:text-amber-400" size={24} />
-    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 ml-3">
-      Astrology Forecast
-    </h3>
-  </div>
-  
-  <p className="text-slate-600 dark:text-slate-400 mb-6">
-    {currentZodiacResults
-      ? `Discover how planetary transits, moon phases, and cosmic energies are influencing your ${zodiacSigns[currentZodiacSign].name} energy.`
-      : "Explore how celestial movements and planetary positions impact your daily life and personal growth."}
-  </p>
-  
-  <div className="flex flex-wrap gap-3">
-    <button
-      onClick={() => setActiveScreen('astrological-transits')}
-      className={`px-4 py-2 ${
-        hasBirthDateInfo
-          ? 'bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white'
-          : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
-      } rounded-lg text-sm font-medium`}
-      disabled={!hasBirthDateInfo}
-    >
-      {currentZodiacResults ? "View Your Cosmic Forecast" : "Set Birth Date First"}
-    </button>
-  </div>
-</div>
-          
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors h-full">
+            <div className="flex items-center mb-4">
+              <Sparkles className="text-amber-500 dark:text-amber-400" size={24} />
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 ml-3">
+                Astrology Forecast
+              </h3>
+            </div>
+
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              {currentZodiacResults
+                ? `Discover how planetary transits, moon phases, and cosmic energies are influencing your ${zodiacSigns[currentZodiacSign].name} energy.`
+                : "Explore how celestial movements and planetary positions impact your daily life and personal growth."}
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => setActiveScreen('astrological-transits')}
+                className={`px-4 py-2 ${
+                  hasBirthDateInfo
+                    ? 'bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                } rounded-lg text-sm font-medium`}
+                disabled={!hasBirthDateInfo}
+              >
+                {currentZodiacResults ? "View Your Cosmic Forecast" : "Set Birth Date First"}
+              </button>
+            </div>
+          </div>
+
           {/* Biorhythm Card */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors h-full">
             <div className="flex items-center mb-4">
@@ -887,11 +934,11 @@ const LifestyleSection = () => {
                 Biorhythm Tracker
               </h3>
             </div>
-            
+
             <p className="text-slate-600 dark:text-slate-400 mb-6">
               Track your physical, emotional, and intellectual cycles to find your optimal days for different activities.
             </p>
-            
+
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 rounded-lg p-4 mb-6">
               <div className="h-24 flex items-center justify-center">
                 <div className="w-full h-16 relative">
@@ -903,15 +950,15 @@ const LifestyleSection = () => {
                     <div className="w-full h-full flex justify-between items-center">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <div key={i} className="h-full flex flex-col justify-center">
-                          <div 
+                          <div
                             className="w-2 h-2 rounded-full bg-red-500 dark:bg-red-400"
                             style={{ marginTop: `${Math.sin(i * 1.5) * 20}px` }}
                           ></div>
-                          <div 
+                          <div
                             className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 mt-2"
                             style={{ marginTop: `${Math.cos(i * 1.2) * 15}px` }}
                           ></div>
-                          <div 
+                          <div
                             className="w-2 h-2 rounded-full bg-green-500 dark:bg-green-400 mt-2"
                             style={{ marginTop: `${Math.sin(i * 0.8 + 2) * 18}px` }}
                           ></div>
@@ -922,16 +969,16 @@ const LifestyleSection = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex justify-center">
-              <button 
+              <button
                 onClick={() => setActiveScreen('biorhythm-tracker')}
                 className="px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
                 Open Biorhythm Tracker
               </button>
             </div>
           </div>
-          
+
           {/* Numerology Card */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors h-full">
             <div className="flex items-center mb-4">
@@ -940,17 +987,17 @@ const LifestyleSection = () => {
                 Numerology
               </h3>
             </div>
-            
+
             <p className="text-slate-600 dark:text-slate-400 mb-6">
               {hasNumerologyResults
                 ? "View your full numerology chart and discover what your numbers reveal about your life path."
                 : "Calculate your life path number and discover its meaning for your personality and life journey."}
             </p>
-            
+
             <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/30 rounded-lg p-4 mb-6">
               <div className="flex flex-wrap gap-2 justify-center">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                  <div 
+                  <div
                     key={num}
                     className="w-10 h-10 rounded-full bg-white dark:bg-slate-700 border border-indigo-200 dark:border-indigo-700 flex items-center justify-center text-base font-bold text-indigo-700 dark:text-indigo-300"
                   >
@@ -959,16 +1006,16 @@ const LifestyleSection = () => {
                 ))}
               </div>
             </div>
-            
+
             <div className="flex justify-center">
-              <button 
+              <button
                 onClick={() => setActiveScreen('numerology-calculator')}
                 className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg text-sm font-medium">
                 {hasNumerologyResults ? "View Your Numerology Chart" : "Calculate Your Numbers"}
               </button>
             </div>
           </div>
-          
+
           {/* Compatibility Card */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors h-full">
             <div className="flex items-center mb-4">
@@ -977,19 +1024,19 @@ const LifestyleSection = () => {
                 Compatibility Finder
               </h3>
             </div>
-            
+
             <p className="text-slate-600 dark:text-slate-400 mb-6">
               Discover how compatible you are with different personality types, zodiac signs, and Enneagram numbers.
             </p>
-            
+
             <div className="bg-pink-50 dark:bg-pink-900/20 border border-pink-100 dark:border-pink-800/30 rounded-lg p-4 mb-6">
               <div className="flex items-center justify-center">
                 <HeartHandshake className="text-pink-500 dark:text-pink-400" size={48} />
               </div>
             </div>
-            
+
             <div className="flex justify-center">
-              <button 
+              <button
                 onClick={() => setActiveScreen('compatibility-finder')}
                 className="px-4 py-2 bg-pink-500 hover:bg-pink-600 dark:bg-pink-600 dark:hover:bg-pink-700 text-white rounded-lg text-sm font-medium">
                 Find Your Match
@@ -997,14 +1044,14 @@ const LifestyleSection = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Why Explore Your Personality */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors">
           <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2 transition-colors">
             <Info className="text-blue-500 dark:text-blue-400" size={24} />
             Why Explore Your Personality?
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex items-start gap-3">
               <div className="bg-blue-100 dark:bg-blue-900/50 p-2 rounded-lg text-blue-600 dark:text-blue-400">
@@ -1019,7 +1066,7 @@ const LifestyleSection = () => {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <div className="bg-green-100 dark:bg-green-900/50 p-2 rounded-lg text-green-600 dark:text-green-400">
                 <Briefcase size={20} />
@@ -1033,7 +1080,7 @@ const LifestyleSection = () => {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <div className="bg-purple-100 dark:bg-purple-900/50 p-2 rounded-lg text-purple-600 dark:text-purple-400">
                 <Users size={20} />
@@ -1047,7 +1094,7 @@ const LifestyleSection = () => {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <div className="bg-amber-100 dark:bg-amber-900/50 p-2 rounded-lg text-amber-600 dark:text-amber-400">
                 <Book size={20} />

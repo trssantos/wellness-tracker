@@ -1,0 +1,108 @@
+/* src/components/Lifestyle/TarotCardOfTheDay.css */
+
+/* Container for the grid of facedown cards */
+.tarot-card-pool {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive grid */
+    gap: 1rem; /* Space between cards */
+    justify-items: center; /* Center cards in grid cells */
+    padding: 1rem; /* Add some padding around the pool */
+  }
+  
+  /* Container for the 3D flip effect */
+  .tarot-card-container {
+    width: 150px; /* Adjusted size for the pool view */
+    height: 262.5px; /* Maintain aspect ratio (200x350 -> 150x262.5) */
+    perspective: 1000px; /* Distance from the viewer to the z-plane */
+    cursor: pointer;
+    transition: transform 0.3s ease-in-out; /* Add a slight scale/hover effect */
+  }
+  
+  .tarot-card-container:hover {
+      transform: scale(1.05); /* Slight zoom on hover */
+  }
+  
+  
+  /* The card itself - enables the flip */
+  .tarot-card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transition: transform 0.8s; /* Animation duration */
+    transform-style: preserve-3d; /* Keep child elements in 3D space */
+  }
+  
+  /* Apply the flip transform when is-revealed class is added */
+  /* This class is added to the container when a single card is revealed */
+  .tarot-card-container.is-revealed .tarot-card {
+    transform: rotateY(180deg);
+  }
+  
+  /* When a card is selected from the pool, apply flip animation */
+  /* This class is added to the container of the *clicked* card in the pool */
+  .tarot-card-container.is-selected .tarot-card {
+     transform: rotateY(180deg);
+  }
+  
+  
+  /* Both faces of the card */
+  .tarot-card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden; /* Hide the back face when flipped */
+    background-size: cover;
+    background-position: center;
+    border-radius: 0.5rem; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add shadow */
+  }
+  
+  /* The front face (revealed card) */
+  .tarot-card-front {
+    transform: rotateY(180deg); /* Initially flipped so it shows when the parent is rotated */
+  }
+  
+  /* The back face (facedown card) - CSS Generated */
+  .tarot-card-back {
+    /* Using a simple gradient and pattern for the card back */
+    background: linear-gradient(45deg, #4a0e4e, #8e24aa); /* Purple gradient */
+    position: relative; /* Needed for pseudo-elements */
+    overflow: hidden; /* Hide pattern overflow */
+  }
+  
+  /* Add a subtle pattern to the card back */
+  .tarot-card-back::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(#ffffff33 10%, transparent 10%), radial-gradient(#ffffff33 10%, transparent 10%);
+    background-size: 20px 20px; /* Size of the pattern dots */
+    background-position: 0 0, 10px 10px; /* Offset for a staggered pattern */
+    opacity: 0.5; /* Adjust opacity of the pattern */
+  }
+  
+  
+  /* Simple fade-in animation for revealed content */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+  
+  /* Ensure the single revealed card is larger */
+  .tarot-card-container.is-revealed {
+      width: 200px; /* Larger size for the revealed card */
+      height: 350px; /* Maintain aspect ratio */
+      margin: 0 auto; /* Center the single card */
+  }
+  
+  /* Hide other cards in the pool once one is selected/revealed */
+  /* This is handled by conditional rendering in JSX */
+  
+  

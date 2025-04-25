@@ -5,6 +5,8 @@ import { getStorage } from '../../utils/storage';
 import { enneagramTypes } from '../../utils/enneagramData';
 import { personalityTypes } from '../../utils/personalityData';
 import { zodiacSigns, getZodiacCompatibility } from '../../utils/zodiacData';
+import TopMatches from './TopMatches';
+
 
 const CompatibilityFinder = ({ onBack }) => {
   // User's profiles
@@ -184,41 +186,104 @@ const CompatibilityFinder = ({ onBack }) => {
   };
   
   // MBTI Communication score
-  const calculateMBTICommunicationScore = (type1, type2) => {
-    let score = 60; // Starting point
+  // MBTI Communication score calculation
+const calculateMBTICommunicationScore = (type1, type2) => {
+    // First determine if this is a naturally good pairing
+    const idealMatches = {
+      'INTJ': ['ENFP', 'ENTP'],
+      'INTP': ['ENTJ', 'ENFJ'],
+      'ENTJ': ['INTP', 'INFP'],
+      'ENTP': ['INTJ', 'INFJ'],
+      'INFJ': ['ENTP', 'ENFP'],
+      'INFP': ['ENTJ', 'ENFJ'],
+      'ENFJ': ['INTP', 'INFP'],
+      'ENFP': ['INTJ', 'INFJ'],
+      'ISTJ': ['ESFP', 'ESTP'],
+      'ISFJ': ['ESFP', 'ESTP'],
+      'ESTJ': ['ISFP', 'ISTP'],
+      'ESFJ': ['ISFP', 'ISTP'],
+      'ISTP': ['ESFJ', 'ESTJ'],
+      'ISFP': ['ESFJ', 'ESTJ'],
+      'ESTP': ['ISFJ', 'ISTJ'],
+      'ESFP': ['ISFJ', 'ISTJ']
+    };
     
-    // Extroversion/Introversion affects communication style
+    const isIdealMatch = idealMatches[type1]?.includes(type2) || idealMatches[type2]?.includes(type1);
+    
+    // For ideal matches, start with a higher baseline
+    let score = isIdealMatch ? 70 : 40;
+    
+    // Extroversion/Introversion - E/I
     if (type1[0] === type2[0]) {
-      score += 10; // Same communication energy
+      // Same communication energy can be good but...
+      score += 5;
     } else {
-      score += 5; // Complementary energy can work well too
+      // Different E/I can be complementary in ideal matches
+      score += isIdealMatch ? 10 : -5;
     }
     
-    // Sensing/Intuition affects information processing
+    // Sensing/Intuition - S/N
     if (type1[1] === type2[1]) {
-      score += 15; // Same information processing
+      // Same information processing generally helps communication
+      score += 15;
     } else {
-      score -= 5; // Different information processing can cause misunderstandings
+      // Different S/N can be challenging unless it's an ideal match
+      score += isIdealMatch ? 5 : -15;
     }
     
-    // Thinking/Feeling affects communication priorities
+    // Thinking/Feeling - T/F
     if (type1[2] === type2[2]) {
-      score += 10; // Same decision-making approach
+      // Same decision-making approach helps communication
+      score += 10;
     } else {
-      // Different approaches can be complementary or challenging
-      if ((type1[2] === 'T' && type2[2] === 'F') || (type1[2] === 'F' && type2[2] === 'T')) {
-        score += 0; // Neutral, depends on maturity
-      }
+      // In ideal matches, T/F difference can be complementary
+      score += isIdealMatch ? 5 : -10;
     }
     
-    // Judging/Perceiving affects communication structure
+    // Judging/Perceiving - J/P
     if (type1[3] === type2[3]) {
-      score += 10; // Same approach to structure
+      // Same approach to structure helps avoid friction
+      score += 10;
     } else {
-      score -= 10; // Different approaches to structure can cause friction
+      // In ideal matches, J/P difference can be helpful
+      score += isIdealMatch ? 5 : -15;
     }
     
-    return Math.min(100, Math.max(0, score));
+    // For truly compatible types, boost the score
+    if (isIdealMatch) {
+      score += 10;
+    }
+    
+    // For pairs known to struggle, reduce the score
+    const challengingPairs = {
+      'INTJ': ['ESFJ', 'ISFP'],
+      'INTP': ['ESFJ', 'ESTJ'],
+      'ENTJ': ['ISFP', 'ISFJ'],
+      'ENTP': ['ISFJ', 'ISTJ'],
+      'INFJ': ['ESTP', 'ISTP'],
+      'INFP': ['ESTJ', 'ESTP'],
+      'ENFJ': ['ISTP', 'ISTJ'],
+      'ENFP': ['ISTJ', 'ESTJ'],
+      'ISTJ': ['ENFP', 'ENTP'],
+      'ISFJ': ['ENTP', 'ENTJ'],
+      'ESTJ': ['INFP', 'INTP'],
+      'ESFJ': ['INTJ', 'INTP'],
+      'ISTP': ['ENFJ', 'INFJ'],
+      'ISFP': ['ENTJ', 'INTJ'],
+      'ESTP': ['INFJ', 'INFP'],
+      'ESFP': ['INTJ', 'INTP']
+    };
+    
+    if (challengingPairs[type1]?.includes(type2) || challengingPairs[type2]?.includes(type1)) {
+      score -= 20;
+    }
+    
+    // If it's the same type, communication is naturally smoother
+    if (type1 === type2) {
+      score += 15;
+    }
+    
+    return Math.min(100, Math.max(10, score));
   };
   
   // MBTI Communication description
@@ -249,30 +314,93 @@ const CompatibilityFinder = ({ onBack }) => {
   
   // MBTI Values score
   const calculateMBTIValuesScore = (type1, type2) => {
-    let score = 60; // Starting point
+    // First determine if this is a naturally good pairing
+    const idealMatches = {
+      'INTJ': ['ENFP', 'ENTP'],
+      'INTP': ['ENTJ', 'ENFJ'],
+      'ENTJ': ['INTP', 'INFP'],
+      'ENTP': ['INTJ', 'INFJ'],
+      'INFJ': ['ENTP', 'ENFP'],
+      'INFP': ['ENTJ', 'ENFJ'],
+      'ENFJ': ['INTP', 'INFP'],
+      'ENFP': ['INTJ', 'INFJ'],
+      'ISTJ': ['ESFP', 'ESTP'],
+      'ISFJ': ['ESFP', 'ESTP'],
+      'ESTJ': ['ISFP', 'ISTP'],
+      'ESFJ': ['ISFP', 'ISTP'],
+      'ISTP': ['ESFJ', 'ESTJ'],
+      'ISFP': ['ESFJ', 'ESTJ'],
+      'ESTP': ['ISFJ', 'ISTJ'],
+      'ESFP': ['ISFJ', 'ISTJ']
+    };
+    
+    const isIdealMatch = idealMatches[type1]?.includes(type2) || idealMatches[type2]?.includes(type1);
+    
+    // For ideal matches, start with a higher baseline
+    let score = isIdealMatch ? 75 : 40;
     
     // Sensing/Intuition strongly affects values
     if (type1[1] === type2[1]) {
-      score += 20; // Same information preference suggests similar worldviews
+      // Same information preference suggests similar worldviews
+      score += 15;
     } else {
-      score -= 10; // Different worldviews can create value conflicts
+      // Different worldviews can create value conflicts unless complementary
+      score += isIdealMatch ? 5 : -20;
     }
     
     // Thinking/Feeling strongly affects values
     if (type1[2] === type2[2]) {
-      score += 20; // Same decision approach suggests similar values
+      // Same decision approach suggests similar values
+      score += 15;
     } else {
-      score -= 5; // Different approaches can create different priorities
+      // In ideal matches, T/F difference can be complementary
+      score += isIdealMatch ? 10 : -15;
     }
     
     // Judging/Perceiving affects values around structure
     if (type1[3] === type2[3]) {
-      score += 10; // Same approach to planning and structure
+      // Same approach to planning and structure
+      score += 10;
     } else {
-      score -= 5; // Different approaches to planning can create friction
+      // In ideal matches, J/P difference can be complementary
+      score += isIdealMatch ? 5 : -10;
     }
     
-    return Math.min(100, Math.max(0, score));
+    // For truly compatible types, boost the score
+    if (isIdealMatch) {
+      score += 10;
+    }
+    
+    // For pairs known to struggle, reduce the score
+    const challengingPairs = {
+      'INTJ': ['ESFJ', 'ISFP'],
+      'INTP': ['ESFJ', 'ESTJ'],
+      'ENTJ': ['ISFP', 'ISFJ'],
+      'ENTP': ['ISFJ', 'ISTJ'],
+      'INFJ': ['ESTP', 'ISTP'],
+      'INFP': ['ESTJ', 'ESTP'],
+      'ENFJ': ['ISTP', 'ISTJ'],
+      'ENFP': ['ISTJ', 'ESTJ'],
+      'ISTJ': ['ENFP', 'ENTP'],
+      'ISFJ': ['ENTP', 'ENTJ'],
+      'ESTJ': ['INFP', 'INTP'],
+      'ESFJ': ['INTJ', 'INTP'],
+      'ISTP': ['ENFJ', 'INFJ'],
+      'ISFP': ['ENTJ', 'INTJ'],
+      'ESTP': ['INFJ', 'INFP'],
+      'ESFP': ['INTJ', 'INTP']
+    };
+    
+    if (challengingPairs[type1]?.includes(type2) || challengingPairs[type2]?.includes(type1)) {
+      score -= 20;
+    }
+    
+    // Same type will have very similar values
+    if (type1 === type2) {
+      score += 20;
+    }
+    
+    return Math.min(100, Math.max(10, score));
   };
   
   // MBTI Values description
@@ -298,30 +426,93 @@ const CompatibilityFinder = ({ onBack }) => {
   
   // MBTI Problem Solving score
   const calculateMBTIProblemSolvingScore = (type1, type2) => {
-    let score = 60; // Starting point
+    // First determine if this is a naturally good pairing
+    const idealMatches = {
+      'INTJ': ['ENFP', 'ENTP'],
+      'INTP': ['ENTJ', 'ENFJ'],
+      'ENTJ': ['INTP', 'INFP'],
+      'ENTP': ['INTJ', 'INFJ'],
+      'INFJ': ['ENTP', 'ENFP'],
+      'INFP': ['ENTJ', 'ENFJ'],
+      'ENFJ': ['INTP', 'INFP'],
+      'ENFP': ['INTJ', 'INFJ'],
+      'ISTJ': ['ESFP', 'ESTP'],
+      'ISFJ': ['ESFP', 'ESTP'],
+      'ESTJ': ['ISFP', 'ISTP'],
+      'ESFJ': ['ISFP', 'ISTP'],
+      'ISTP': ['ESFJ', 'ESTJ'],
+      'ISFP': ['ESFJ', 'ESTJ'],
+      'ESTP': ['ISFJ', 'ISTJ'],
+      'ESFP': ['ISFJ', 'ISTJ']
+    };
+    
+    const isIdealMatch = idealMatches[type1]?.includes(type2) || idealMatches[type2]?.includes(type1);
+    
+    // For ideal matches, start with a higher baseline
+    let score = isIdealMatch ? 75 : 40;
     
     // Sensing/Intuition affects problem-solving approach
     if (type1[1] === type2[1]) {
-      score += 15; // Same information gathering approach
+      // Same information gathering approach
+      score += 15;
     } else {
-      score += 10; // Different approaches can be complementary if respected
+      // Different approaches can be complementary in ideal matches
+      score += isIdealMatch ? 15 : -10;
     }
     
     // Thinking/Feeling strongly affects problem-solving
     if (type1[2] === type2[2]) {
-      score += 15; // Same decision-making approach
+      // Same decision-making approach
+      score += 15;
     } else {
-      score += 5; // Complementary perspectives can be beneficial
+      // In ideal matches, T/F difference creates balanced approach
+      score += isIdealMatch ? 15 : -15;
     }
     
     // Judging/Perceiving affects problem-solving process
     if (type1[3] === type2[3]) {
-      score += 15; // Same approach to structure and planning
+      // Same approach to structure and planning
+      score += 10;
     } else {
-      score -= 5; // Different approaches can create friction
+      // In ideal matches, J/P difference can be helpful
+      score += isIdealMatch ? 10 : -10;
     }
     
-    return Math.min(100, Math.max(0, score));
+    // For truly compatible types, boost the score
+    if (isIdealMatch) {
+      score += 15;
+    }
+    
+    // For challenging pairs, lower the score
+    const challengingPairs = {
+      'INTJ': ['ESFJ', 'ISFP'],
+      'INTP': ['ESFJ', 'ESTJ'],
+      'ENTJ': ['ISFP', 'ISFJ'],
+      'ENTP': ['ISFJ', 'ISTJ'],
+      'INFJ': ['ESTP', 'ISTP'],
+      'INFP': ['ESTJ', 'ESTP'],
+      'ENFJ': ['ISTP', 'ISTJ'],
+      'ENFP': ['ISTJ', 'ESTJ'],
+      'ISTJ': ['ENFP', 'ENTP'],
+      'ISFJ': ['ENTP', 'ENTJ'],
+      'ESTJ': ['INFP', 'INTP'],
+      'ESFJ': ['INTJ', 'INTP'],
+      'ISTP': ['ENFJ', 'INFJ'],
+      'ISFP': ['ENTJ', 'INTJ'],
+      'ESTP': ['INFJ', 'INFP'],
+      'ESFP': ['INTJ', 'INTP']
+    };
+    
+    if (challengingPairs[type1]?.includes(type2) || challengingPairs[type2]?.includes(type1)) {
+      score -= 20;
+    }
+    
+    // Same type will be aligned on problem-solving
+    if (type1 === type2) {
+      score += 15;
+    }
+    
+    return Math.min(100, Math.max(15, score));
   };
   
   // MBTI Problem Solving description
@@ -347,34 +538,110 @@ const CompatibilityFinder = ({ onBack }) => {
   
   // MBTI Emotional score
   const calculateMBTIEmotionalScore = (type1, type2) => {
-    let score = 60; // Starting point
+    // First determine if this is a naturally good pairing
+    const idealMatches = {
+      'INTJ': ['ENFP', 'ENTP'],
+      'INTP': ['ENTJ', 'ENFJ'],
+      'ENTJ': ['INTP', 'INFP'],
+      'ENTP': ['INTJ', 'INFJ'],
+      'INFJ': ['ENTP', 'ENFP'],
+      'INFP': ['ENTJ', 'ENFJ'],
+      'ENFJ': ['INTP', 'INFP'],
+      'ENFP': ['INTJ', 'INFJ'],
+      'ISTJ': ['ESFP', 'ESTP'],
+      'ISFJ': ['ESFP', 'ESTP'],
+      'ESTJ': ['ISFP', 'ISTP'],
+      'ESFJ': ['ISFP', 'ISTP'],
+      'ISTP': ['ESFJ', 'ESTJ'],
+      'ISFP': ['ESFJ', 'ESTJ'],
+      'ESTP': ['ISFJ', 'ISTJ'],
+      'ESFP': ['ISFJ', 'ISTJ']
+    };
+    
+    const isIdealMatch = idealMatches[type1]?.includes(type2) || idealMatches[type2]?.includes(type1);
+    
+    // For ideal matches, start with a higher baseline
+    let score = isIdealMatch ? 70 : 35;
     
     // Extroversion/Introversion affects emotional expression
     if (type1[0] === type2[0]) {
-      score += 10; // Same emotional energy
+      // Same emotional energy
+      score += 10;
     } else {
-      score += 5; // Different energies can be complementary
+      // Different energies create balance in ideal matches
+      score += isIdealMatch ? 15 : 0;
+    }
+    
+    // Sensing/Intuition affects emotional perception
+    if (type1[1] === type2[1]) {
+      // Similar perception of emotional data
+      score += 10;
+    } else {
+      score += isIdealMatch ? 10 : -5;
     }
     
     // Thinking/Feeling strongly affects emotional connection
     if (type1[2] === type2[2]) {
-      score += 20; // Same approach to emotions
+      // Same approach to emotions
+      score += 15;
     } else {
-      if (type1[2] === 'F' || type2[2] === 'F') {
-        score += 5; // Having at least one F type helps with emotional awareness
+      // In ideal matches, T/F difference creates balance
+      if (isIdealMatch) {
+        score += 15;
       } else {
-        score -= 10; // Two T types might neglect emotional needs
+        // Otherwise can be challenging
+        score -= 15;
       }
     }
     
     // Judging/Perceiving affects emotional flexibility
     if (type1[3] === type2[3]) {
-      score += 10; // Same approach to structure
+      // Same approach to structure
+      score += 5;
     } else {
-      score += 0; // Neutral impact
+      score += isIdealMatch ? 5 : -5;
     }
     
-    return Math.min(100, Math.max(0, score));
+    // For truly compatible types, boost the score
+    if (isIdealMatch) {
+      score += 15;
+    }
+    
+    // For challenging pairs, lower the score
+    const challengingPairs = {
+      'INTJ': ['ESFJ', 'ISFP'],
+      'INTP': ['ESFJ', 'ESTJ'],
+      'ENTJ': ['ISFP', 'ISFJ'],
+      'ENTP': ['ISFJ', 'ISTJ'],
+      'INFJ': ['ESTP', 'ISTP'],
+      'INFP': ['ESTJ', 'ESTP'],
+      'ENFJ': ['ISTP', 'ISTJ'],
+      'ENFP': ['ISTJ', 'ESTJ'],
+      'ISTJ': ['ENFP', 'ENTP'],
+      'ISFJ': ['ENTP', 'ENTJ'],
+      'ESTJ': ['INFP', 'INTP'],
+      'ESFJ': ['INTJ', 'INTP'],
+      'ISTP': ['ENFJ', 'INFJ'],
+      'ISFP': ['ENTJ', 'INTJ'],
+      'ESTP': ['INFJ', 'INFP'],
+      'ESFP': ['INTJ', 'INTP']
+    };
+    
+    if (challengingPairs[type1]?.includes(type2) || challengingPairs[type2]?.includes(type1)) {
+      score -= 25;
+    }
+    
+    // Same type will have similar emotional approaches
+    if (type1 === type2) {
+      score += 15;
+    }
+    
+    // Having at least one F type helps with emotional connection
+    if (type1[2] === 'F' || type2[2] === 'F') {
+      score += 5;
+    }
+    
+    return Math.min(100, Math.max(10, score));
   };
   
   // MBTI Emotional description
@@ -575,59 +842,106 @@ const CompatibilityFinder = ({ onBack }) => {
   
   // Calculate Enneagram communication score
   const calculateEnneagramCommunicationScore = (type1, type2) => {
-    let score = 60; // Starting point
-    
-    // Same triad often communicates similarly
+    // Communication is influenced by centers/triads and wing influence
     const headTypes = ['5', '6', '7'];
     const heartTypes = ['2', '3', '4'];
     const gutTypes = ['8', '9', '1'];
     
+    // Start with a baseline score
+    let score = 40;
+    
+    // Same center/triad often communicates similarly
     if ((headTypes.includes(type1) && headTypes.includes(type2)) ||
         (heartTypes.includes(type1) && heartTypes.includes(type2)) ||
         (gutTypes.includes(type1) && gutTypes.includes(type2))) {
+      score += 25;
+    }
+    
+    // Head and heart types can bridge analytical and emotional communication
+    if ((headTypes.includes(type1) && heartTypes.includes(type2)) ||
+        (headTypes.includes(type2) && heartTypes.includes(type1))) {
       score += 15;
     }
     
-    // Some type combinations have particularly good communication
-    const goodCommunicationPairs = {
-      '1': ['7', '3'],
-      '2': ['7', '4'],
-      '3': ['7', '9'],
-      '4': ['9', '2'],
-      '5': ['1', '9'],
-      '6': ['9', '2'],
-      '7': ['9', '3'],
-      '8': ['2', '9'],
-      '9': ['3', '7']
-    };
-    
-    if (goodCommunicationPairs[type1] && goodCommunicationPairs[type1].includes(type2)) {
-      score += 20;
+    // Head and gut types may struggle with different communication priorities
+    if ((headTypes.includes(type1) && gutTypes.includes(type2)) ||
+        (headTypes.includes(type2) && gutTypes.includes(type1))) {
+      score -= 10;
     }
     
-    // Some type combinations struggle with communication
-    const challengingCommunicationPairs = {
-      '1': ['8', '4'],
-      '2': ['5', '8'],
-      '3': ['4', '6'],
-      '4': ['3', '1'],
-      '5': ['2', '7'],
-      '6': ['8', '3'],
-      '7': ['1', '5'],
-      '8': ['1', '6'],
-      '9': ['8', '5']
+    // Heart and gut types may have power struggles in communication
+    if ((heartTypes.includes(type1) && gutTypes.includes(type2)) ||
+        (heartTypes.includes(type2) && gutTypes.includes(type1))) {
+      score -= 5;
+    }
+    
+    // Types that naturally communicate well together
+    const goodCommunicators = {
+      '1': ['3', '5'],
+      '2': ['7', '9'],
+      '3': ['1', '7'],
+      '4': ['5', '9'],
+      '5': ['1', '4'],
+      '6': ['9', '1'],
+      '7': ['2', '3'],
+      '8': ['2', '7'],
+      '9': ['2', '4', '6']
     };
     
-    if (challengingCommunicationPairs[type1] && challengingCommunicationPairs[type1].includes(type2)) {
+    if (goodCommunicators[type1]?.includes(type2) || goodCommunicators[type2]?.includes(type1)) {
+      score += 15;
+    }
+    
+    // Types that often struggle to communicate effectively
+    const challengingCommunicators = {
+      '1': ['4', '8'],
+      '2': ['5', '8'],
+      '3': ['4', '6'],
+      '4': ['1', '3', '8'],
+      '5': ['2', '7', '8'],
+      '6': ['3', '8'],
+      '7': ['1', '5'],
+      '8': ['1', '4', '5', '6'],
+      '9': ['8', '3']
+    };
+    
+    if (challengingCommunicators[type1]?.includes(type2) || challengingCommunicators[type2]?.includes(type1)) {
+      score -= 20;
+    }
+    
+    // Integration (growth) arrows often improve communication
+    const integrationArrows = {
+      '1': '7',
+      '2': '4',
+      '3': '6',
+      '4': '1',
+      '5': '8',
+      '6': '9',
+      '7': '5',
+      '8': '2',
+      '9': '3'
+    };
+    
+    if (integrationArrows[type1] === type2 || integrationArrows[type2] === type1) {
+      score += 10;
+    }
+    
+    // Type 9 is generally adaptable in communication
+    if (type1 === '9' || type2 === '9') {
+      score += 5;
+    }
+    
+    // Type 1 and 8 often have power struggles in communication
+    if ((type1 === '1' && type2 === '8') || (type1 === '8' && type2 === '1')) {
       score -= 15;
     }
     
-    // Same type understands each other's communication
+    // Same type understands each other's communication style
     if (type1 === type2) {
-      score += 15;
+      score += 20;
     }
     
-    return Math.min(100, Math.max(0, score));
+    return Math.min(100, Math.max(10, score));
   };
   
   // Get Enneagram communication description
@@ -672,57 +986,106 @@ const CompatibilityFinder = ({ onBack }) => {
   
   // Calculate Enneagram emotional support score
   const calculateEnneagramEmotionalScore = (type1, type2) => {
-    let score = 60; // Starting point
-    
-    // Heart center types are naturally attuned to emotional needs
+    // Emotional support is highly influenced by heart types
+    const headTypes = ['5', '6', '7'];
     const heartTypes = ['2', '3', '4'];
+    const gutTypes = ['8', '9', '1'];
+    
+    // Start with a baseline score
+    let score = 35;
+    
+    // Heart types naturally provide emotional support
     if (heartTypes.includes(type1) || heartTypes.includes(type2)) {
-      score += 10;
-    }
-    if (heartTypes.includes(type1) && heartTypes.includes(type2)) {
-      score += 10; // Both being heart types adds additional emotional awareness
-    }
-    
-    // Type 9 is naturally supportive
-    if (type1 === '9' || type2 === '9') {
-      score += 10;
-    }
-    
-    // Some combinations are particularly supportive
-    const supportivePairs = {
-      '1': ['2', '9'],
-      '2': ['4', '9'],
-      '3': ['2', '9'],
-      '4': ['2', '9'],
-      '5': ['9', '2'],
-      '6': ['2', '9'],
-      '7': ['2', '9'],
-      '8': ['2', '9'],
-      '9': ['2', '6']
-    };
-    
-    if (supportivePairs[type1] && supportivePairs[type1].includes(type2)) {
       score += 15;
     }
     
-    // Some combinations struggle with emotional support
-    const challengingSupportPairs = {
-      '1': ['5', '8'],
-      '2': ['5', '8'],
-      '3': ['5', '8'],
-      '4': ['5', '8'],
-      '5': ['8', '1'],
-      '6': ['8', '5'],
-      '7': ['1', '5'],
-      '8': ['5', '1'],
-      '9': ['5', '8']
-    };
-    
-    if (challengingSupportPairs[type1] && challengingSupportPairs[type1].includes(type2)) {
-      score -= 10;
+    // Two heart types can be emotionally intense or supportive
+    if (heartTypes.includes(type1) && heartTypes.includes(type2)) {
+      if ((type1 === '2' && type2 === '4') || (type1 === '4' && type2 === '2')) {
+        score += 20; // 2 and 4 understand emotional needs
+      } else if ((type1 === '3' && type2 === '4') || (type1 === '4' && type2 === '3')) {
+        score -= 10; // 3 and 4 can have emotional disconnects
+      } else {
+        score += 10; // Other heart type combinations
+      }
     }
     
-    return Math.min(100, Math.max(0, score));
+    // Head types may struggle with emotional expression
+    if (headTypes.includes(type1) && headTypes.includes(type2)) {
+      score -= 15;
+    }
+    
+    // Type 9 provides peaceful emotional support
+    if (type1 === '9' || type2 === '9') {
+      score += 20;
+    }
+    
+    // Type 2 is naturally emotionally supportive
+    if (type1 === '2' || type2 === '2') {
+      score += 20;
+    }
+    
+    // Type 5 may struggle with emotional expression
+    if (type1 === '5' || type2 === '5') {
+      score -= 15;
+    }
+    
+    // Specific combinations with strong emotional support
+    const emotionalSupporters = {
+      '2': ['4', '7', '9'],
+      '4': ['2', '9'],
+      '6': ['9', '2'],
+      '7': ['2', '9'],
+      '8': ['2'],
+      '9': ['2', '4', '6', '7']
+    };
+    
+    if (emotionalSupporters[type1]?.includes(type2) || emotionalSupporters[type2]?.includes(type1)) {
+      score += 20;
+    }
+    
+    // Specific combinations with emotional support challenges
+    const emotionalChallenges = {
+      '1': ['5', '8'],
+      '3': ['5', '8'],
+      '4': ['3', '5', '8'],
+      '5': ['1', '3', '4', '8'],
+      '8': ['1', '3', '4', '5']
+    };
+    
+    if (emotionalChallenges[type1]?.includes(type2) || emotionalChallenges[type2]?.includes(type1)) {
+      score -= 20;
+    }
+    
+    // Integration (growth) arrows often improve emotional support
+    const integrationArrows = {
+      '1': '7',
+      '2': '4',
+      '3': '6',
+      '4': '1',
+      '5': '8',
+      '6': '9',
+      '7': '5',
+      '8': '2',
+      '9': '3'
+    };
+    
+    if (integrationArrows[type1] === type2 || integrationArrows[type2] === type1) {
+      score += 10;
+    }
+    
+    // Same type may understand emotional needs but might reinforce issues
+    if (type1 === type2) {
+      if (['2', '4', '9'].includes(type1)) {
+        score += 15; // Emotionally aware types connect well with same type
+      } else if (['5', '8', '3'].includes(type1)) {
+        score -= 5; // Less emotionally expressive types may reinforce detachment
+      } else {
+        score += 5; // Other types
+      }
+    }
+    
+    return Math.min(100, Math.max(10, score));
   };
   
   // Get Enneagram emotional support description
@@ -755,33 +1118,98 @@ const CompatibilityFinder = ({ onBack }) => {
   
   // Calculate Enneagram growth score
   const calculateEnneagramGrowthScore = (type1, type2) => {
-    let score = 60; // Starting point
-    
     // Growth happens when types challenge each other in healthy ways
-    // Types connected by arrows often have growth potential
-    const growthConnections = {
-      '1': ['4', '7'],
-      '2': ['4', '8'],
-      '3': ['6', '9'],
-      '4': ['1', '2'],
-      '5': ['7', '8'],
-      '6': ['3', '9'],
-      '7': ['1', '5'],
-      '8': ['2', '5'],
-      '9': ['3', '6']
+    
+    // Start with a baseline score
+    let score = 45;
+    
+    // Integration (growth) arrows create strong growth potential
+    const integrationArrows = {
+      '1': '7',
+      '2': '4',
+      '3': '6',
+      '4': '1',
+      '5': '8',
+      '6': '9',
+      '7': '5',
+      '8': '2',
+      '9': '3'
     };
     
-    if (growthConnections[type1] && growthConnections[type1].includes(type2)) {
-      score += 25;
+    if (integrationArrows[type1] === type2 || integrationArrows[type2] === type1) {
+      score += 30;
     }
     
-    // Same type can understand but might not challenge growth
+    // Disintegration arrows can also create growth through challenge
+    const disintegrationArrows = {
+      '1': '4',
+      '2': '8',
+      '3': '9',
+      '4': '2',
+      '5': '7',
+      '6': '3',
+      '7': '1',
+      '8': '5',
+      '9': '6'
+    };
+    
+    if (disintegrationArrows[type1] === type2 || disintegrationArrows[type2] === type1) {
+      score += 15;
+    }
+    
+    // Types in the same triad may reinforce patterns rather than challenge
+    const headTypes = ['5', '6', '7'];
+    const heartTypes = ['2', '3', '4'];
+    const gutTypes = ['8', '9', '1'];
+    
+    if ((headTypes.includes(type1) && headTypes.includes(type2)) ||
+        (heartTypes.includes(type1) && heartTypes.includes(type2)) ||
+        (gutTypes.includes(type1) && gutTypes.includes(type2))) {
+      score -= 10;
+    }
+    
+    // Specific combinations known for mutual growth
+    const growthPairs = {
+      '1': ['7', '9', '2'],
+      '2': ['4', '1', '7'],
+      '3': ['6', '9', '1'],
+      '4': ['1', '9', '2'],
+      '5': ['8', '7', '1'],
+      '6': ['9', '3', '2'],
+      '7': ['5', '1', '4'],
+      '8': ['2', '5', '9'],
+      '9': ['3', '6', '1', '4']
+    };
+    
+    if (growthPairs[type1]?.includes(type2) || growthPairs[type2]?.includes(type1)) {
+      score += 15;
+    }
+    
+    // Challenging combinations that can lead to growth through friction
+    const challengingGrowth = {
+      '1': ['8', '7', '4'],
+      '2': ['5', '3', '8'],
+      '3': ['4', '1', '6'],
+      '4': ['3', '7', '8'],
+      '5': ['2', '7', '8'],
+      '6': ['8', '3', '7'],
+      '7': ['1', '6', '5'],
+      '8': ['1', '5', '6'],
+      '9': ['8', '7', '3']
+    };
+    
+    if (challengingGrowth[type1]?.includes(type2) || challengingGrowth[type2]?.includes(type1)) {
+      score += 10;
+    }
+    
+    // Same type understands but may not challenge growth
     if (type1 === type2) {
-      score += 5;
+      score -= 15;
     }
     
-    return Math.min(100, Math.max(0, score));
+    return Math.min(100, Math.max(15, score));
   };
+  
   
   // Get Enneagram growth description
   const getEnneagramGrowthDescription = (type1, type2) => {
@@ -829,7 +1257,10 @@ const CompatibilityFinder = ({ onBack }) => {
   
   // Calculate Enneagram conflict resolution score
   const calculateEnneagramConflictScore = (type1, type2) => {
-    let score = 60; // Starting point
+    // Conflict resolution varies greatly by type strategy
+    
+    // Start with a baseline score
+    let score = 40;
     
     // Types that withdraw during conflict
     const withdrawTypes = ['4', '5', '9'];
@@ -843,7 +1274,7 @@ const CompatibilityFinder = ({ onBack }) => {
     // Different conflict styles can create challenges
     if ((withdrawTypes.includes(type1) && againstTypes.includes(type2)) ||
         (withdrawTypes.includes(type2) && againstTypes.includes(type1))) {
-      score -= 15; // This combination often struggles with conflict
+      score -= 25; // This combination often struggles with conflict
     }
     
     // Similar conflict styles understand each other
@@ -853,22 +1284,77 @@ const CompatibilityFinder = ({ onBack }) => {
       score += 15; // Similar styles create understanding
     }
     
-    // Type 9s can struggle to address conflict
+    // Type 9s avoid conflict which can be problematic
     if (type1 === '9' || type2 === '9') {
-      score -= 10;
+      if (againstTypes.includes(type1) || againstTypes.includes(type2)) {
+        score -= 20; // 9 with assertive type can struggle
+      }
     }
     
     // Type 8s can be overwhelming in conflict
     if (type1 === '8' || type2 === '8') {
-      score -= 10;
+      if (withdrawTypes.includes(type1) || withdrawTypes.includes(type2)) {
+        score -= 25; // 8 with withdrawn type is challenging
+      }
+    }
+    
+    // Type 1s can be critical in conflict
+    if (type1 === '1' || type2 === '1') {
+      if (['4', '7', '9'].includes(type1) || ['4', '7', '9'].includes(type2)) {
+        score -= 15; // 1's criticism can be hard for these types
+      }
     }
     
     // Type 9 and 5 both avoid conflict but in different ways
     if ((type1 === '9' && type2 === '5') || (type1 === '5' && type2 === '9')) {
-      score -= 10;
+      score -= 10; // Can lead to unresolved issues
     }
     
-    return Math.min(100, Math.max(0, score));
+    // Specific combinations that handle conflict well
+    const goodConflictResolution = {
+      '1': ['3', '6'],
+      '2': ['6', '7'],
+      '3': ['1', '7'],
+      '5': ['1', '3'],
+      '6': ['1', '2', '9'],
+      '7': ['2', '3', '9'],
+      '8': ['3', '6', '7'],
+      '9': ['2', '6', '7']
+    };
+    
+    if (goodConflictResolution[type1]?.includes(type2) || goodConflictResolution[type2]?.includes(type1)) {
+      score += 15;
+    }
+    
+    // Integration (growth) pairs often handle conflict better
+    const integrationArrows = {
+      '1': '7',
+      '2': '4',
+      '3': '6',
+      '4': '1',
+      '5': '8',
+      '6': '9',
+      '7': '5',
+      '8': '2',
+      '9': '3'
+    };
+    
+    if (integrationArrows[type1] === type2 || integrationArrows[type2] === type1) {
+      score += 10;
+    }
+    
+    // Same type can either understand each other's conflict style or amplify it
+    if (type1 === type2) {
+      if (againstTypes.includes(type1)) {
+        score -= 10; // Can escalate conflicts
+      } else if (withdrawTypes.includes(type1)) {
+        score -= 15; // May never address issues
+      } else {
+        score += 5; // Toward types may handle conflict similarly
+      }
+    }
+    
+    return Math.min(100, Math.max(10, score));
   };
   
   // Get Enneagram conflict description
@@ -1152,42 +1638,114 @@ const CompatibilityFinder = ({ onBack }) => {
   
   // Calculate Zodiac emotional score
   const calculateZodiacEmotionalScore = (sign1, sign2) => {
-    let score = 60; // Starting point
+    // Element compatibility is key for emotional connection
+    const elements = {
+      'aries': 'fire', 'leo': 'fire', 'sagittarius': 'fire',
+      'taurus': 'earth', 'virgo': 'earth', 'capricorn': 'earth',
+      'gemini': 'air', 'libra': 'air', 'aquarius': 'air',
+      'cancer': 'water', 'scorpio': 'water', 'pisces': 'water'
+    };
     
-    // Water signs are emotionally compatible with each other
-    const waterSigns = ['cancer', 'scorpio', 'pisces'];
-    if (waterSigns.includes(sign1) && waterSigns.includes(sign2)) {
-      score += 25;
+    const sign1Element = elements[sign1];
+    const sign2Element = elements[sign2];
+    
+    // Start with a baseline score
+    let score = 30;
+    
+    // Same element - strong emotional understanding
+    if (sign1Element === sign2Element) {
+      score += 40;
     }
     
-    // Water and earth signs are emotionally compatible
-    const earthSigns = ['taurus', 'virgo', 'capricorn'];
-    if ((waterSigns.includes(sign1) && earthSigns.includes(sign2)) ||
-        (waterSigns.includes(sign2) && earthSigns.includes(sign1))) {
-      score += 20;
+    // Complementary elements have good emotional connection
+    const complementaryElements = {
+      'water': 'earth',
+      'earth': 'water',
+      'fire': 'air',
+      'air': 'fire'
+    };
+    
+    if (complementaryElements[sign1Element] === sign2Element) {
+      score += 30;
     }
     
-    // Fire and air signs are emotionally compatible
-    const fireSigns = ['aries', 'leo', 'sagittarius'];
-    const airSigns = ['gemini', 'libra', 'aquarius'];
-    if ((fireSigns.includes(sign1) && airSigns.includes(sign2)) ||
-        (fireSigns.includes(sign2) && airSigns.includes(sign1))) {
+    // Challenging elements struggle emotionally
+    const challengingElements = {
+      'fire': 'water',
+      'water': 'fire',
+      'earth': 'air',
+      'air': 'earth'
+    };
+    
+    if (challengingElements[sign1Element] === sign2Element) {
+      score -= 20;
+    }
+    
+    // Water signs are naturally emotionally attuned
+    if (sign1Element === 'water' && sign2Element === 'water') {
       score += 15;
     }
     
-    // Water and fire can be emotionally challenging
-    if ((waterSigns.includes(sign1) && fireSigns.includes(sign2)) ||
-        (waterSigns.includes(sign2) && fireSigns.includes(sign1))) {
-      score -= 15;
+    // Some specific sign combinations have special emotional connections
+    const specialConnections = {
+      'taurus': ['cancer', 'pisces', 'capricorn', 'virgo'],
+      'cancer': ['taurus', 'pisces', 'scorpio'],
+      'leo': ['libra', 'sagittarius', 'aries'],
+      'libra': ['leo', 'aquarius', 'gemini'],
+      'scorpio': ['cancer', 'pisces'],
+      'pisces': ['cancer', 'scorpio']
+    };
+    
+    if (specialConnections[sign1]?.includes(sign2) || specialConnections[sign2]?.includes(sign1)) {
+      score += 15;
     }
     
-    // Earth and air can be emotionally challenging
-    if ((earthSigns.includes(sign1) && airSigns.includes(sign2)) ||
-        (earthSigns.includes(sign2) && airSigns.includes(sign1))) {
-      score -= 10;
+    // Specifically challenging emotional combinations
+    const challengingCombinations = {
+      'aries': ['cancer', 'capricorn'],
+      'taurus': ['aquarius', 'sagittarius'],
+      'gemini': ['scorpio', 'capricorn'],
+      'cancer': ['aries', 'sagittarius'],
+      'leo': ['taurus', 'capricorn'],
+      'virgo': ['sagittarius', 'pisces'],
+      'libra': ['cancer', 'capricorn'],
+      'scorpio': ['gemini', 'leo'],
+      'sagittarius': ['taurus', 'cancer'],
+      'capricorn': ['aries', 'leo'],
+      'aquarius': ['taurus', 'scorpio'],
+      'pisces': ['gemini', 'virgo']
+    };
+    
+    if (challengingCombinations[sign1]?.includes(sign2) || challengingCombinations[sign2]?.includes(sign1)) {
+      score -= 25;
     }
     
-    return Math.min(100, Math.max(0, score));
+    // Traditional compatibility pairs have strong emotional connection
+    const traditionalPairs = {
+      'aries': ['leo', 'sagittarius', 'libra'],
+      'taurus': ['virgo', 'capricorn', 'cancer'],
+      'gemini': ['libra', 'aquarius'],
+      'cancer': ['scorpio', 'pisces', 'taurus'],
+      'leo': ['aries', 'sagittarius'],
+      'virgo': ['taurus', 'capricorn'],
+      'libra': ['gemini', 'aquarius'],
+      'scorpio': ['cancer', 'pisces'],
+      'sagittarius': ['aries', 'leo'],
+      'capricorn': ['taurus', 'virgo'],
+      'aquarius': ['gemini', 'libra'],
+      'pisces': ['cancer', 'scorpio']
+    };
+    
+    if (traditionalPairs[sign1]?.includes(sign2) || traditionalPairs[sign2]?.includes(sign1)) {
+      score += 20;
+    }
+    
+    // Same sign - can understand but may be too similar
+    if (sign1 === sign2) {
+      score += 25;
+    }
+    
+    return Math.min(100, Math.max(10, score));
   };
   
   // Get Zodiac emotional description
@@ -1230,53 +1788,108 @@ const CompatibilityFinder = ({ onBack }) => {
   
   // Calculate Zodiac communication score
   const calculateZodiacCommunicationScore = (sign1, sign2) => {
-    let score = 60; // Starting point
+    // Element compatibility for communication style
+    const elements = {
+      'aries': 'fire', 'leo': 'fire', 'sagittarius': 'fire',
+      'taurus': 'earth', 'virgo': 'earth', 'capricorn': 'earth',
+      'gemini': 'air', 'libra': 'air', 'aquarius': 'air',
+      'cancer': 'water', 'scorpio': 'water', 'pisces': 'water'
+    };
     
-    // Air signs communicate well with each other
-    const airSigns = ['gemini', 'libra', 'aquarius'];
-    if (airSigns.includes(sign1) && airSigns.includes(sign2)) {
+    // Start with a baseline score
+    let score = 40;
+    
+    const sign1Element = elements[sign1];
+    const sign2Element = elements[sign2];
+    
+    // Air signs excel at communication
+    if (sign1Element === 'air' && sign2Element === 'air') {
+      score += 35;
+    }
+    
+    // Air + Fire have dynamic communication
+    if ((sign1Element === 'air' && sign2Element === 'fire') ||
+        (sign1Element === 'fire' && sign2Element === 'air')) {
+      score += 30;
+    }
+    
+    // Earth + Water have supportive communication
+    if ((sign1Element === 'earth' && sign2Element === 'water') ||
+        (sign1Element === 'water' && sign2Element === 'earth')) {
       score += 25;
     }
     
-    // Air and fire signs communicate well
-    const fireSigns = ['aries', 'leo', 'sagittarius'];
-    if ((airSigns.includes(sign1) && fireSigns.includes(sign2)) ||
-        (airSigns.includes(sign2) && fireSigns.includes(sign1))) {
+    // Earth + Earth have practical communication
+    if (sign1Element === 'earth' && sign2Element === 'earth') {
+      score += 25;
+    }
+    
+    // Water + Water have intuitive communication but can lack clarity
+    if (sign1Element === 'water' && sign2Element === 'water') {
       score += 20;
     }
     
-    // Earth signs communicate well with each other
-    const earthSigns = ['taurus', 'virgo', 'capricorn'];
-    if (earthSigns.includes(sign1) && earthSigns.includes(sign2)) {
-      score += 20;
-    }
-    
-    // Water signs communicate well with each other
-    const waterSigns = ['cancer', 'scorpio', 'pisces'];
-    if (waterSigns.includes(sign1) && waterSigns.includes(sign2)) {
+    // Fire + Fire can be competitive in communication
+    if (sign1Element === 'fire' && sign2Element === 'fire') {
       score += 15;
     }
     
-    // Earth and water signs have decent communication
-    if ((earthSigns.includes(sign1) && waterSigns.includes(sign2)) ||
-        (earthSigns.includes(sign2) && waterSigns.includes(sign1))) {
-      score += 10;
+    // Earth + Air have significant communication challenges
+    if ((sign1Element === 'earth' && sign2Element === 'air') ||
+        (sign1Element === 'air' && sign2Element === 'earth')) {
+      score -= 20;
     }
     
-    // Earth and air signs can struggle to communicate
-    if ((earthSigns.includes(sign1) && airSigns.includes(sign2)) ||
-        (earthSigns.includes(sign2) && airSigns.includes(sign1))) {
+    // Fire + Water have communication clashes
+    if ((sign1Element === 'fire' && sign2Element === 'water') ||
+        (sign1Element === 'water' && sign2Element === 'fire')) {
       score -= 15;
     }
     
-    // Water and air can also have communication challenges
-    if ((waterSigns.includes(sign1) && airSigns.includes(sign2)) ||
-        (waterSigns.includes(sign2) && airSigns.includes(sign1))) {
-      score -= 10;
+    // Specific signs with communication compatibility
+    const goodCommunicators = {
+      'gemini': ['libra', 'aquarius', 'leo', 'aries'],
+      'libra': ['gemini', 'aquarius', 'leo', 'sagittarius'],
+      'aquarius': ['gemini', 'libra', 'sagittarius'],
+      'leo': ['gemini', 'libra', 'aries'],
+      'virgo': ['capricorn', 'taurus'],
+      'taurus': ['virgo', 'capricorn'],
+      'capricorn': ['virgo', 'taurus']
+    };
+    
+    if (goodCommunicators[sign1]?.includes(sign2) || goodCommunicators[sign2]?.includes(sign1)) {
+      score += 15;
     }
     
-    return Math.min(100, Math.max(0, score));
+    // Specific challenging communication pairs
+    const difficultCommunicators = {
+      'taurus': ['leo', 'aquarius', 'sagittarius'],
+      'scorpio': ['gemini', 'leo', 'aquarius'],
+      'capricorn': ['aries', 'libra'],
+      'virgo': ['sagittarius', 'pisces'],
+      'cancer': ['aries', 'libra']
+    };
+    
+    if (difficultCommunicators[sign1]?.includes(sign2) || difficultCommunicators[sign2]?.includes(sign1)) {
+      score -= 15;
+    }
+    
+    // Same sign communication can be either very smooth or too similar
+    if (sign1 === sign2) {
+      if (['gemini', 'libra', 'aquarius'].includes(sign1)) {
+        score += 20; // Air signs enjoy similar communication
+      } else if (['cancer', 'scorpio', 'pisces'].includes(sign1)) {
+        score += 15; // Water signs connect emotionally but may lack clarity
+      } else if (['taurus', 'virgo', 'capricorn'].includes(sign1)) {
+        score += 15; // Earth signs are straightforward with each other
+      } else {
+        score += 10; // Fire signs may compete for attention
+      }
+    }
+    
+    return Math.min(100, Math.max(10, score));
   };
+  
   
   // Get Zodiac communication description
   const getZodiacCommunicationDescription = (sign1, sign2) => {
@@ -1326,16 +1939,24 @@ const CompatibilityFinder = ({ onBack }) => {
   
   // Calculate Zodiac values score
   const calculateZodiacValuesScore = (sign1, sign2) => {
-    let score = 60; // Starting point
+    // Element and modality strongly affect values
+    const elements = {
+      'aries': 'fire', 'leo': 'fire', 'sagittarius': 'fire',
+      'taurus': 'earth', 'virgo': 'earth', 'capricorn': 'earth',
+      'gemini': 'air', 'libra': 'air', 'aquarius': 'air',
+      'cancer': 'water', 'scorpio': 'water', 'pisces': 'water'
+    };
     
-    // Same modality often shares values
     const modalities = {
       'cardinal': ['aries', 'cancer', 'libra', 'capricorn'],
       'fixed': ['taurus', 'leo', 'scorpio', 'aquarius'],
       'mutable': ['gemini', 'virgo', 'sagittarius', 'pisces']
     };
     
-    // Find modalities
+    // Get element and modality for each sign
+    const sign1Element = elements[sign1];
+    const sign2Element = elements[sign2];
+    
     let sign1Modality = '';
     let sign2Modality = '';
     
@@ -1344,46 +1965,27 @@ const CompatibilityFinder = ({ onBack }) => {
       if (signs.includes(sign2)) sign2Modality = modality;
     }
     
-    // Same modality shares core values
-    if (sign1Modality === sign2Modality) {
-      score += 20;
-    }
+    // Start with a baseline score
+    let score = 35;
     
-    // Same element often shares values
-    const elements = {
-      'fire': ['aries', 'leo', 'sagittarius'],
-      'earth': ['taurus', 'virgo', 'capricorn'],
-      'air': ['gemini', 'libra', 'aquarius'],
-      'water': ['cancer', 'scorpio', 'pisces']
-    };
-    
-    // Find elements
-    let sign1Element = '';
-    let sign2Element = '';
-    
-    for (const [element, signs] of Object.entries(elements)) {
-      if (signs.includes(sign1)) sign1Element = element;
-      if (signs.includes(sign2)) sign2Element = element;
-    }
-    
-    // Same element shares values
+    // Same element typically means shared values
     if (sign1Element === sign2Element) {
-      score += 15;
+      score += 30;
     }
     
-    // Some element combinations have complementary values
-    const complementaryElements = {
+    // Compatible elements often share values
+    const compatibleElements = {
       'fire': 'air',
       'air': 'fire',
       'earth': 'water',
       'water': 'earth'
     };
     
-    if (complementaryElements[sign1Element] === sign2Element) {
-      score += 10;
+    if (compatibleElements[sign1Element] === sign2Element) {
+      score += 20;
     }
     
-    // Some element combinations have challenging values
+    // Challenging elements often have different values
     const challengingElements = {
       'fire': 'water',
       'water': 'fire',
@@ -1392,10 +1994,79 @@ const CompatibilityFinder = ({ onBack }) => {
     };
     
     if (challengingElements[sign1Element] === sign2Element) {
-      score -= 15;
+      score -= 25;
     }
     
-    return Math.min(100, Math.max(0, score));
+    // Same modality can either align or compete on values
+    if (sign1Modality === sign2Modality) {
+      if (sign1Modality === 'cardinal') {
+        score += 15; // Both value initiative and leadership
+      } else if (sign1Modality === 'fixed') {
+        score += 20; // Both value stability and commitment
+      } else { // mutable
+        score += 10; // Both value flexibility but may lack direction
+      }
+    }
+    
+    // Different modalities can complement each other
+    if (sign1Modality !== sign2Modality) {
+      if ((sign1Modality === 'cardinal' && sign2Modality === 'fixed') ||
+          (sign1Modality === 'fixed' && sign2Modality === 'cardinal')) {
+        score += 15; // One initiates, one stabilizes
+      } else if ((sign1Modality === 'fixed' && sign2Modality === 'mutable') ||
+                 (sign1Modality === 'mutable' && sign2Modality === 'fixed')) {
+        score += 10; // One provides stability, one adapts
+      } else {
+        score += 5; // Cardinal and mutable can be scattered
+      }
+    }
+    
+    // Signs that traditionally share values
+    const sharedValues = {
+      'aries': ['leo', 'sagittarius', 'aquarius'],
+      'taurus': ['virgo', 'capricorn', 'cancer'],
+      'gemini': ['libra', 'aquarius', 'aries'],
+      'cancer': ['scorpio', 'pisces', 'taurus'],
+      'leo': ['aries', 'sagittarius', 'libra'],
+      'virgo': ['taurus', 'capricorn', 'scorpio'],
+      'libra': ['gemini', 'aquarius', 'leo'],
+      'scorpio': ['cancer', 'pisces', 'virgo'],
+      'sagittarius': ['aries', 'leo', 'aquarius'],
+      'capricorn': ['taurus', 'virgo', 'scorpio'],
+      'aquarius': ['gemini', 'libra', 'sagittarius'],
+      'pisces': ['cancer', 'scorpio', 'capricorn']
+    };
+    
+    if (sharedValues[sign1]?.includes(sign2) || sharedValues[sign2]?.includes(sign1)) {
+      score += 15;
+    }
+    
+    // Signs with particularly challenging value differences
+    const valueClashes = {
+      'aries': ['cancer', 'capricorn', 'taurus'],
+      'taurus': ['aquarius', 'sagittarius', 'aries'],
+      'gemini': ['capricorn', 'pisces', 'virgo'],
+      'cancer': ['aries', 'libra', 'sagittarius'],
+      'leo': ['scorpio', 'taurus', 'aquarius'],
+      'virgo': ['sagittarius', 'pisces', 'gemini'],
+      'libra': ['cancer', 'capricorn', 'scorpio'],
+      'scorpio': ['leo', 'aquarius', 'libra'],
+      'sagittarius': ['virgo', 'pisces', 'taurus'],
+      'capricorn': ['aries', 'libra', 'gemini'],
+      'aquarius': ['taurus', 'leo', 'scorpio'],
+      'pisces': ['gemini', 'virgo', 'sagittarius']
+    };
+    
+    if (valueClashes[sign1]?.includes(sign2) || valueClashes[sign2]?.includes(sign1)) {
+      score -= 20;
+    }
+    
+    // Same sign will typically share core values
+    if (sign1 === sign2) {
+      score += 25;
+    }
+    
+    return Math.min(100, Math.max(10, score));
   };
   
     // Get Zodiac values description
@@ -1471,61 +2142,124 @@ const CompatibilityFinder = ({ onBack }) => {
       
       // Calculate Zodiac physical score
       const calculateZodiacPhysicalScore = (sign1, sign2) => {
-        let score = 60; // Starting point
+        // Element compatibility is important for physical chemistry
+        const elements = {
+          'aries': 'fire', 'leo': 'fire', 'sagittarius': 'fire',
+          'taurus': 'earth', 'virgo': 'earth', 'capricorn': 'earth',
+          'gemini': 'air', 'libra': 'air', 'aquarius': 'air',
+          'cancer': 'water', 'scorpio': 'water', 'pisces': 'water'
+        };
         
-        // Fire and air signs have strong physical chemistry
-        const fireSigns = ['aries', 'leo', 'sagittarius'];
-        const airSigns = ['gemini', 'libra', 'aquarius'];
+        const sign1Element = elements[sign1];
+        const sign2Element = elements[sign2];
         
-        if ((fireSigns.includes(sign1) && airSigns.includes(sign2)) ||
-            (fireSigns.includes(sign2) && airSigns.includes(sign1))) {
+        // Start with a baseline score
+        let score = 40;
+        
+        // Fire and Air signs have strong physical chemistry
+        if ((sign1Element === 'fire' && sign2Element === 'air') ||
+            (sign1Element === 'air' && sign2Element === 'fire')) {
+          score += 35;
+        }
+        
+        // Earth and Water signs have sensual physical chemistry
+        if ((sign1Element === 'earth' && sign2Element === 'water') ||
+            (sign1Element === 'water' && sign2Element === 'earth')) {
+          score += 30;
+        }
+        
+        // Fire and Fire can be passionate but competitive
+        if (sign1Element === 'fire' && sign2Element === 'fire') {
           score += 25;
         }
         
-        // Fire and fire signs have intense physical chemistry
-        if (fireSigns.includes(sign1) && fireSigns.includes(sign2)) {
+        // Earth and Earth share sensuality but can be slow
+        if (sign1Element === 'earth' && sign2Element === 'earth') {
           score += 20;
         }
         
-        // Earth and water signs have sensual physical chemistry
-        const earthSigns = ['taurus', 'virgo', 'capricorn'];
-        const waterSigns = ['cancer', 'scorpio', 'pisces'];
-        
-        if ((earthSigns.includes(sign1) && waterSigns.includes(sign2)) ||
-            (earthSigns.includes(sign2) && waterSigns.includes(sign1))) {
+        // Water and Water have deep connection but can be too emotional
+        if (sign1Element === 'water' && sign2Element === 'water') {
           score += 20;
         }
         
-        // Scorpio has strong physical energy with most signs
-        if (sign1 === 'scorpio' || sign2 === 'scorpio') {
-          score += 10;
+        // Air and Air have mental connection but may lack physicality
+        if (sign1Element === 'air' && sign2Element === 'air') {
+          score += 15;
         }
         
-        // Taurus has sensual physical energy
-        if (sign1 === 'taurus' || sign2 === 'taurus') {
-          score += 10;
+        // Challenging combinations
+        if ((sign1Element === 'fire' && sign2Element === 'water') ||
+            (sign1Element === 'water' && sign2Element === 'fire')) {
+          score -= 15;
         }
         
-        // Special combinations with strong chemistry
-        const highChemistryCombos = [
-          ['aries', 'scorpio'], ['leo', 'scorpio'], ['scorpio', 'pisces'],
-          ['taurus', 'scorpio'], ['taurus', 'cancer'], ['cancer', 'scorpio']
+        if ((sign1Element === 'earth' && sign2Element === 'air') ||
+            (sign1Element === 'air' && sign2Element === 'earth')) {
+          score -= 15;
+        }
+        
+        // Signs with notable physical chemistry
+        const strongPhysical = {
+          'aries': ['leo', 'sagittarius', 'libra', 'scorpio'],
+          'taurus': ['cancer', 'scorpio', 'virgo', 'capricorn'],
+          'gemini': ['libra', 'aquarius', 'aries', 'leo'],
+          'cancer': ['taurus', 'scorpio', 'pisces', 'capricorn'],
+          'leo': ['aries', 'sagittarius', 'libra', 'gemini'],
+          'virgo': ['taurus', 'capricorn', 'scorpio', 'cancer'],
+          'libra': ['leo', 'aquarius', 'gemini', 'sagittarius'],
+          'scorpio': ['cancer', 'pisces', 'taurus', 'capricorn', 'aries'],
+          'sagittarius': ['aries', 'leo', 'libra', 'aquarius'],
+          'capricorn': ['taurus', 'virgo', 'scorpio', 'pisces'],
+          'aquarius': ['gemini', 'libra', 'sagittarius', 'aries'],
+          'pisces': ['cancer', 'scorpio', 'capricorn', 'taurus']
+        };
+        
+        if (strongPhysical[sign1]?.includes(sign2) || strongPhysical[sign2]?.includes(sign1)) {
+          score += 20;
+        }
+        
+        // Signs with specific physical chemistry challenges
+        const weakPhysical = {
+          'taurus': ['aquarius', 'sagittarius'],
+          'virgo': ['aries', 'sagittarius'],
+          'capricorn': ['aries', 'gemini'],
+          'aquarius': ['taurus', 'scorpio'],
+          'pisces': ['gemini', 'sagittarius']
+        };
+        
+        if (weakPhysical[sign1]?.includes(sign2) || weakPhysical[sign2]?.includes(sign1)) {
+          score -= 15;
+        }
+        
+        // Specific high-chemistry pairs get extra points
+        const specialChemistry = [
+          ['aries', 'scorpio'],
+          ['taurus', 'scorpio'],
+          ['leo', 'scorpio'],
+          ['scorpio', 'pisces'],
+          ['cancer', 'scorpio']
         ];
         
-        for (const combo of highChemistryCombos) {
-          if ((sign1 === combo[0] && sign2 === combo[1]) || (sign1 === combo[1] && sign2 === combo[0])) {
+        for (const pair of specialChemistry) {
+          if ((sign1 === pair[0] && sign2 === pair[1]) || (sign1 === pair[1] && sign2 === pair[0])) {
             score += 15;
             break;
           }
         }
         
-        // Same sign often has good physical understanding
+        // Same sign chemistry varies
         if (sign1 === sign2) {
-          score += 10;
+          if (['scorpio', 'taurus', 'leo'].includes(sign1)) {
+            score += 15; // These signs enjoy their own kind
+          } else {
+            score += 5; // Others may find same-sign chemistry too predictable
+          }
         }
         
-        return Math.min(100, Math.max(0, score));
+        return Math.min(100, Math.max(15, score));
       };
+      
       
       // Get Zodiac physical description
       const getZodiacPhysicalDescription = (sign1, sign2) => {
@@ -1796,6 +2530,9 @@ const CompatibilityFinder = ({ onBack }) => {
                 </div>
               </div>
             </div>
+
+            {/* Top Matches Display */}
+<TopMatches userProfiles={userProfiles} />
             
             {/* Partner Selection */}
             <div className="mb-6">

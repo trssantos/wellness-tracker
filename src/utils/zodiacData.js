@@ -195,18 +195,17 @@ export const zodiacSigns = {
       }
     }
   };
-  
-  // Get Zodiac sign from birthdate
-  export const getZodiacSign = (birthdate) => {
-    // Validate input
-    if (!(birthdate instanceof Date) || isNaN(birthdate.getTime())) {
-      console.error('Invalid birth date provided to getZodiacSign');
-      return null;
+
+export const getZodiacSign = (birthDate) => {
+    // Check if birthDate is valid
+    if (!birthDate || !(birthDate instanceof Date) || isNaN(birthDate.getTime())) {
+      console.warn('Invalid birth date provided to getZodiacSign:', birthDate);
+      return null; // Return null for invalid date
     }
-    
-    const month = birthdate.getMonth() + 1; // JavaScript months are 0-indexed
-    const day = birthdate.getDate();
-    
+
+    const month = birthDate.getMonth() + 1; // JavaScript months are 0-based
+    const day = birthDate.getDate();
+
     // Determine zodiac sign based on month and day
     if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) {
       return 'aries';
@@ -233,11 +232,11 @@ export const zodiacSigns = {
     } else if ((month === 2 && day >= 19) || (month === 3 && day <= 20)) {
       return 'pisces';
     }
-    
-    return null;
+
+    return null; // Return null if date doesn't match any sign
   };
-  
-    // Get color scheme for zodiac sign
+
+// Get color scheme for zodiac sign
   export const getZodiacColors = (sign) => {
     // Default colors if sign not found
     const defaultColors = {
@@ -247,7 +246,6 @@ export const zodiacSigns = {
       accent: 'text-slate-500 dark:text-slate-400',
       icon: 'text-slate-500 dark:text-slate-400'
     };
-    
     // Define colors by element
     const elementColors = {
       fire: {
@@ -279,53 +277,49 @@ export const zodiacSigns = {
         icon: 'text-purple-500 dark:text-purple-400'
       }
     };
-    
     // If sign not found or invalid, return default colors
     if (!sign || !zodiacSigns[sign]) {
       return defaultColors;
     }
-    
+
     // Get element for the sign
     const element = zodiacSigns[sign].element.toLowerCase();
-    
     // Return colors based on element
     return elementColors[element] || defaultColors;
   };
-  
-  // Get zodiac compatibility between two signs
+
+// Get zodiac compatibility between two signs
   export const getZodiacCompatibility = (sign1, sign2) => {
     // Validate input
     if (!sign1 || !sign2 || !zodiacSigns[sign1] || !zodiacSigns[sign2]) {
       return { score: 50, description: 'Unknown compatibility' };
     }
-    
+
     // Get elements for both signs
     const element1 = zodiacSigns[sign1].element.toLowerCase();
     const element2 = zodiacSigns[sign2].element.toLowerCase();
-    
+
     // Get modalities for both signs
     const getModality = (sign) => {
       const cardinalSigns = ['aries', 'cancer', 'libra', 'capricorn'];
       const fixedSigns = ['taurus', 'leo', 'scorpio', 'aquarius'];
       const mutableSigns = ['gemini', 'virgo', 'sagittarius', 'pisces'];
-      
+
       if (cardinalSigns.includes(sign)) return 'cardinal';
       if (fixedSigns.includes(sign)) return 'fixed';
       if (mutableSigns.includes(sign)) return 'mutable';
       return null;
     };
-    
+
     const modality1 = getModality(sign1);
     const modality2 = getModality(sign2);
-    
     // Calculate base score
     let score = 50;
-    
     // Same sign has good compatibility
     if (sign1 === sign2) {
       score += 20;
     }
-    
+
     // Element compatibility
     if (element1 === element2) {
       // Same element is harmonious
@@ -336,12 +330,10 @@ export const zodiacSigns = {
         ['fire', 'air'],
         ['earth', 'water']
       ];
-      
-      const areComplementary = complementaryPairs.some(pair => 
-        (pair[0] === element1 && pair[1] === element2) || 
+      const areComplementary = complementaryPairs.some(pair =>
+        (pair[0] === element1 && pair[1] === element2) ||
         (pair[0] === element2 && pair[1] === element1)
       );
-      
       if (areComplementary) {
         score += 15;
       } else {
@@ -349,23 +341,23 @@ export const zodiacSigns = {
         score -= 10;
       }
     }
-    
+
     // Modality compatibility
     if (modality1 === modality2) {
       // Same modality can create friction
       score -= 5;
     }
-    
+
     // Check if in each other's compatibility lists
     const isInCompatibilityList = (sign, targetSign) => {
       const compatibilityList = zodiacSigns[sign]?.details.compatibility.toLowerCase().split(', ');
       return compatibilityList && compatibilityList.includes(targetSign);
     };
-    
+
     if (isInCompatibilityList(sign1, sign2) || isInCompatibilityList(sign2, sign1)) {
       score += 20;
     }
-    
+
     // Special combinations with strong compatibility
     const strongPairs = [
       ['aries', 'leo'], ['taurus', 'cancer'], ['gemini', 'aquarius'],
@@ -373,22 +365,19 @@ export const zodiacSigns = {
       ['libra', 'gemini'], ['scorpio', 'pisces'], ['sagittarius', 'aries'],
       ['capricorn', 'taurus'], ['aquarius', 'gemini'], ['pisces', 'scorpio']
     ];
-    
-    const isStrongPair = strongPairs.some(pair => 
-      (pair[0] === sign1 && pair[1] === sign2) || 
+    const isStrongPair = strongPairs.some(pair =>
+      (pair[0] === sign1 && pair[1] === sign2) ||
       (pair[0] === sign2 && pair[1] === sign1)
     );
-    
     if (isStrongPair) {
       score += 10;
     }
-    
+
     // Ensure score is between 0-100
     score = Math.min(100, Math.max(0, score));
-    
+
     // Generate description
     let description = '';
-    
     if (score >= 80) {
       description = 'Exceptional compatibility with natural harmony and understanding.';
     } else if (score >= 70) {
@@ -402,19 +391,19 @@ export const zodiacSigns = {
     } else {
       description = 'Difficult compatibility requiring significant work on understanding each other.';
     }
-    
-    return { 
+
+    return {
       score,
       description,
       elementMatch: element1 === element2,
       complementaryElements: element1 !== element2 && (
-        (element1 === 'fire' && element2 === 'air') || 
+        (element1 === 'fire' && element2 === 'air') ||
         (element1 === 'air' && element2 === 'fire') ||
-        (element1 === 'earth' && element2 === 'water') || 
+        (element1 === 'earth' && element2 === 'water') ||
         (element1 === 'water' && element2 === 'earth')
       ),
       modalityMatch: modality1 === modality2
     };
   };
-  
-  export default zodiacSigns;
+
+export default zodiacSigns;

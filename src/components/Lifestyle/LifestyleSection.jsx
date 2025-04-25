@@ -18,6 +18,8 @@ import { getStorage, setStorage } from '../../utils/storage';
 import { personalityTypes } from '../../utils/personalityData';
 import { zodiacSigns, getZodiacSign } from '../../utils/zodiacData';
 import { enneagramTypes } from '../../utils/enneagramData';
+import AstrologicalTransits from './AstrologicalTransits';
+import MoonPhaseWidget from './MoonPhaseWidget';
 
 const LifestyleSection = () => {
   const [activeScreen, setActiveScreen] = useState('dashboard');
@@ -348,6 +350,16 @@ const LifestyleSection = () => {
           />
         );
 
+        case 'astrological-transits':
+  return (
+    <div className="space-y-4">
+      <AstrologicalTransits 
+        onBack={() => setActiveScreen('dashboard')}
+      />
+    </div>
+  );
+
+
       case 'dashboard':
       default:
         // If detailed personality results should be shown
@@ -405,6 +417,9 @@ const LifestyleSection = () => {
             </div>
           );
         }
+
+
+        
         
         // If detailed enneagram results should be shown
         if (showDetailedEnneagramResults && currentEnneagramResults) {
@@ -738,6 +753,8 @@ const LifestyleSection = () => {
                 )}
               </div>
             </div>
+
+            
           </div>
         </div>
 
@@ -831,6 +848,36 @@ const LifestyleSection = () => {
               </button>
             </div>
           </div>
+
+          {/* Astrological Transits Card */}
+<div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors h-full">
+  <div className="flex items-center mb-4">
+    <Sparkles className="text-amber-500 dark:text-amber-400" size={24} />
+    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 ml-3">
+      Astrology Forecast
+    </h3>
+  </div>
+  
+  <p className="text-slate-600 dark:text-slate-400 mb-6">
+    {currentZodiacResults
+      ? `Discover how planetary transits, moon phases, and cosmic energies are influencing your ${zodiacSigns[currentZodiacSign].name} energy.`
+      : "Explore how celestial movements and planetary positions impact your daily life and personal growth."}
+  </p>
+  
+  <div className="flex flex-wrap gap-3">
+    <button
+      onClick={() => setActiveScreen('astrological-transits')}
+      className={`px-4 py-2 ${
+        hasBirthDateInfo
+          ? 'bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white'
+          : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+      } rounded-lg text-sm font-medium`}
+      disabled={!hasBirthDateInfo}
+    >
+      {currentZodiacResults ? "View Your Cosmic Forecast" : "Set Birth Date First"}
+    </button>
+  </div>
+</div>
           
           {/* Biorhythm Card */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 transition-colors h-full">

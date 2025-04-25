@@ -1,298 +1,420 @@
 // src/utils/zodiacData.js
+
+// Zodiac signs data
 export const zodiacSigns = {
-    "aries": {
-      name: "Aries",
-      symbol: "♈",
-      dates: "March 21 - April 19",
-      element: "Fire",
-      ruling_planet: "Mars",
-      description: "Bold, ambitious, and energetic, Aries are natural leaders who are passionate about life and embrace challenges with enthusiasm.",
+    'aries': {
+      name: 'Aries',
+      dates: 'March 21 - April 19',
+      symbol: '♈',
+      element: 'Fire',
+      ruling_planet: 'Mars',
+      description: 'Aries are energetic, assertive, and independent, often taking initiative and leading the way with courage and determination.',
       details: {
-        strengths: "Courageous, determined, confident, enthusiastic, optimistic, honest, passionate",
-        weaknesses: "Impatient, moody, short-tempered, impulsive, aggressive",
-        compatibility: "Leo, Sagittarius, Gemini, Aquarius",
-        career: "Management, entrepreneurship, athletics, military, law enforcement, firefighting, emergency response",
-        love: "Passionate, spontaneous, and straightforward in relationships. Needs independence and adventure.",
-        wellness: "Benefits from high-intensity exercise, competitive sports, and activities that release excess energy",
-        traits: "Direct communicator, natural-born leader, independent, competitive, energetic",
-        hobbies: "Sports, adventure activities, competitive games, outdoor adventures, martial arts"
+        strengths: 'Courageous, determined, confident, enthusiastic, optimistic, honest, passionate',
+        weaknesses: 'Impatient, moody, short-tempered, impulsive, aggressive',
+        compatibility: 'Leo, Sagittarius, Gemini',
+        careers: 'Military, sports, leadership, entrepreneurship, firefighting',
+        hobbies: 'Competitive sports, adventure activities, physical challenges, leadership roles',
+        wellness: 'Benefit from high-intensity exercise, competition, and activities that release excess energy'
       }
     },
-    "taurus": {
-      name: "Taurus",
-      symbol: "♉",
-      dates: "April 20 - May 20",
-      element: "Earth",
-      ruling_planet: "Venus",
-      description: "Patient, reliable, and devoted, Taurus values stability and approaches life with steady determination and a strong sense of loyalty.",
+    'taurus': {
+      name: 'Taurus',
+      dates: 'April 20 - May 20',
+      symbol: '♉',
+      element: 'Earth',
+      ruling_planet: 'Venus',
+      description: 'Taurus are reliable, practical, and sensual, with a deep appreciation for beauty and comfort, valuing stability and security.',
       details: {
-        strengths: "Reliable, patient, practical, devoted, responsible, stable",
-        weaknesses: "Stubborn, possessive, uncompromising, materialistic",
-        compatibility: "Virgo, Capricorn, Cancer, Pisces",
-        career: "Finance, architecture, agriculture, culinary arts, luxury goods, real estate, interior design",
-        love: "Loyal, sensual, and committed in relationships. Values security and physical affection.",
-        wellness: "Benefits from routines, gentle exercise like yoga, connection with nature, and sensory experiences",
-        traits: "Persistent, security-focused, sensual, artistic, practical",
-        hobbies: "Cooking, gardening, art, music, collecting, fine dining, luxury experiences"
+        strengths: 'Reliable, patient, practical, devoted, responsible, stable',
+        weaknesses: 'Stubborn, possessive, uncompromising, inflexible',
+        compatibility: 'Virgo, Capricorn, Cancer',
+        careers: 'Finance, culinary arts, agriculture, luxury goods, real estate',
+        hobbies: 'Gardening, cooking, art collecting, singing, comfort-oriented activities',
+        wellness: 'Thrive with consistent, grounding routines and nature-based activities'
       }
     },
-    "gemini": {
-      name: "Gemini",
-      symbol: "♊",
-      dates: "May 21 - June 20",
-      element: "Air",
-      ruling_planet: "Mercury",
-      description: "Versatile, curious, and intellectual, Gemini are communicative individuals who love to learn and share ideas with a playful and adaptable approach to life.",
+    'gemini': {
+      name: 'Gemini',
+      dates: 'May 21 - June 20',
+      symbol: '♊',
+      element: 'Air',
+      ruling_planet: 'Mercury',
+      description: 'Gemini are versatile, curious, and communicative, with quick wit and adaptability, always seeking variety and mental stimulation.',
       details: {
-        strengths: "Gentle, affectionate, curious, adaptable, quick-witted, communicative",
-        weaknesses: "Nervous, inconsistent, indecisive, superficial, scattered",
-        compatibility: "Libra, Aquarius, Aries, Leo",
-        career: "Communications, journalism, teaching, sales, social media, public relations, translation",
-        love: "Intellectually stimulating, fun, and varied relationships. Needs mental connection and novelty.",
-        wellness: "Benefits from mental stimulation, varied exercise routines, social connection, and learning new skills",
-        traits: "Communicative, versatile, youthful, adaptable, intellectual",
-        hobbies: "Reading, writing, puzzles, trivia, language learning, social activities, traveling"
+        strengths: 'Gentle, affectionate, curious, adaptable, quick learning, versatile',
+        weaknesses: 'Nervous, inconsistent, indecisive, restless',
+        compatibility: 'Libra, Aquarius, Sagittarius',
+        careers: 'Communications, journalism, teaching, sales, social media',
+        hobbies: 'Reading, writing, puzzles, social activities, learning new skills',
+        wellness: 'Need variety in exercise and benefit from activities that engage the mind'
       }
     },
-    "cancer": {
-      name: "Cancer",
-      symbol: "♋",
-      dates: "June 21 - July 22",
-      element: "Water",
-      ruling_planet: "Moon",
-      description: "Intuitive, emotional, and nurturing, Cancer is deeply connected to home and family with a protective nature and strong empathetic abilities.",
+    'cancer': {
+      name: 'Cancer',
+      dates: 'June 21 - July 22',
+      symbol: '♋',
+      element: 'Water',
+      ruling_planet: 'Moon',
+      description: 'Cancer are nurturing, emotional, and intuitive, with strong protective instincts and deep emotional connections to home and family.',
       details: {
-        strengths: "Tenacious, highly imaginative, loyal, emotional, sympathetic, persuasive",
-        weaknesses: "Moody, pessimistic, suspicious, manipulative, insecure",
-        compatibility: "Scorpio, Pisces, Taurus, Virgo",
-        career: "Healthcare, education, social work, food industry, real estate, family businesses, counseling",
-        love: "Nurturing, protective, and emotionally deep relationships. Values security and emotional intimacy.",
-        wellness: "Benefits from water activities, emotional outlets like journaling, comfort foods in moderation, and cozy environments",
-        traits: "Intuitive, protective, nostalgic, creative, nurturing",
-        hobbies: "Cooking, family activities, home decoration, genealogy, water sports, history, collecting memorabilia"
+        strengths: 'Tenacious, highly imaginative, loyal, emotional, sympathetic, persuasive',
+        weaknesses: 'Moody, pessimistic, suspicious, manipulative, insecure',
+        compatibility: 'Scorpio, Pisces, Taurus',
+        careers: 'Healthcare, education, counseling, culinary arts, real estate',
+        hobbies: 'Cooking, gardening, genealogy, home decoration, water activities',
+        wellness: 'Benefit from water-based activities and emotionally nurturing practices'
       }
     },
-    "leo": {
-      name: "Leo",
-      symbol: "♌",
-      dates: "July 23 - August 22",
-      element: "Fire",
-      ruling_planet: "Sun",
-      description: "Dramatic, confident, and charismatic, Leo brings warmth and enthusiasm to all endeavors, with a natural flair for leadership and creativity.",
+    'leo': {
+      name: 'Leo',
+      dates: 'July 23 - August 22',
+      symbol: '♌',
+      element: 'Fire',
+      ruling_planet: 'Sun',
+      description: 'Leo are confident, dramatic, and ambitious, with natural leadership qualities and a generous spirit that draws others to them.',
       details: {
-        strengths: "Creative, passionate, generous, warm-hearted, cheerful, humorous",
-        weaknesses: "Arrogant, stubborn, self-centered, lazy, inflexible",
-        compatibility: "Aries, Sagittarius, Gemini, Libra",
-        career: "Entertainment, management, politics, marketing, education, fashion, performing arts",
-        love: "Romantic, passionate, and loyal relationships. Needs admiration, attention, and creative expression.",
-        wellness: "Benefits from activities that showcase talents, creative expression, social exercise, and heart-healthy nutrition",
-        traits: "Confident, theatrical, ambitious, loyal, dignified",
-        hobbies: "Performing, art, leadership roles, luxury experiences, social events, competitive activities"
+        strengths: 'Creative, passionate, generous, warm-hearted, cheerful, humorous',
+        weaknesses: 'Arrogant, stubborn, self-centered, lazy, inflexible',
+        compatibility: 'Aries, Sagittarius, Libra',
+        careers: 'Entertainment, management, politics, performance, teaching',
+        hobbies: 'Performing arts, social activities, luxury experiences, creative expression',
+        wellness: 'Thrive with active, social exercise and activities that allow self-expression'
       }
     },
-    "virgo": {
-      name: "Virgo",
-      symbol: "♍",
-      dates: "August 23 - September 22",
-      element: "Earth",
-      ruling_planet: "Mercury",
-      description: "Analytical, practical, and meticulous, Virgo approaches life with attention to detail and a desire to be of service with a methodical and organized mindset.",
+    'virgo': {
+      name: 'Virgo',
+      dates: 'August 23 - September 22',
+      symbol: '♍',
+      element: 'Earth',
+      ruling_planet: 'Mercury',
+      description: 'Virgo are analytical, practical, and meticulous, with a deep sense of duty and attention to detail that drives their methodical approach.',
       details: {
-        strengths: "Loyal, analytical, kind, hardworking, practical, systematic",
-        weaknesses: "Overly critical, perfectionist, worry-prone, conservative, judgmental",
-        compatibility: "Taurus, Capricorn, Cancer, Scorpio",
-        career: "Healthcare, research, analysis, editing, accounting, technology, nutrition, organization services",
-        love: "Thoughtful, service-oriented, and attentive relationships. Values improvement, clarity, and helpfulness.",
-        wellness: "Benefits from clean nutrition, digestive health focus, routine exercise, organization, and mental health practices",
-        traits: "Detail-oriented, analytical, helpful, modest, practical",
-        hobbies: "Crafts, puzzles, organizing, self-improvement, analysis, cooking, health research"
+        strengths: 'Loyal, analytical, kind, hardworking, practical, detail-oriented',
+        weaknesses: 'Overly critical, perfectionist, shy, worrisome, overly conservative',
+        compatibility: 'Taurus, Capricorn, Cancer',
+        careers: 'Healthcare, analytics, editing, research, administrative work',
+        hobbies: 'Crafts, DIY projects, organization, puzzles, health-focused activities',
+        wellness: 'Benefit from structured fitness routines and health-optimization practices'
       }
     },
-    "libra": {
-      name: "Libra",
-      symbol: "♎",
-      dates: "September 23 - October 22",
-      element: "Air",
-      ruling_planet: "Venus",
-      description: "Diplomatic, fair-minded, and social, Libra seeks harmony and balance in all areas of life with a focus on partnerships and aesthetic beauty.",
+    'libra': {
+      name: 'Libra',
+      dates: 'September 23 - October 22',
+      symbol: '♎',
+      element: 'Air',
+      ruling_planet: 'Venus',
+      description: 'Libra are diplomatic, fair-minded, and social, with a strong sense of justice and harmony, valuing balanced relationships and aesthetics.',
       details: {
-        strengths: "Cooperative, diplomatic, gracious, fair-minded, social, balanced",
-        weaknesses: "Indecisive, avoids confrontation, carries grudges, self-pitying",
-        compatibility: "Gemini, Aquarius, Leo, Sagittarius",
-        career: "Law, diplomacy, art, design, event planning, mediation, public relations, fashion",
-        love: "Harmonious, partnership-oriented, and balanced relationships. Values equality, peace, and beauty.",
-        wellness: "Benefits from balanced exercise routines, peaceful environments, aesthetic surroundings, and social wellness activities",
-        traits: "Balanced, harmonious, diplomatic, charming, idealistic",
-        hobbies: "Arts, social events, design, fashion, law and justice topics, debating, relationship building"
+        strengths: 'Cooperative, diplomatic, gracious, fair-minded, social',
+        weaknesses: 'Indecisive, avoids confrontation, holds grudges, self-pitying',
+        compatibility: 'Gemini, Aquarius, Leo',
+        careers: 'Law, diplomacy, design, counseling, human resources',
+        hobbies: 'Art appreciation, social events, fashion, relationship-building activities',
+        wellness: 'Thrive with partner-based exercise and aesthetically pleasing environments'
       }
     },
-    "scorpio": {
-      name: "Scorpio",
-      symbol: "♏",
-      dates: "October 23 - November 21",
-      element: "Water",
-      ruling_planet: "Pluto, Mars",
-      description: "Passionate, determined, and intense, Scorpio approaches life with emotional depth and powerful intuition, unafraid to explore life's mysteries.",
+    'scorpio': {
+      name: 'Scorpio',
+      dates: 'October 23 - November 21',
+      symbol: '♏',
+      element: 'Water',
+      ruling_planet: 'Pluto, Mars',
+      description: 'Scorpio are passionate, resourceful, and intense, with deep emotional connections and a powerful determination to uncover hidden truths.',
       details: {
-        strengths: "Resourceful, brave, passionate, stubborn, true friend, fierce loyalty",
-        weaknesses: "Distrusting, jealous, secretive, vengeful, controlling",
-        compatibility: "Cancer, Pisces, Virgo, Capricorn",
-        career: "Research, psychology, investigation, crisis management, surgery, finance, metaphysical fields",
-        love: "Intense, all-or-nothing, and deeply emotional relationships. Values trust, intimacy, and honesty.",
-        wellness: "Benefits from transformative practices, emotional release through exercise, water sports, and psychological exploration",
-        traits: "Mysterious, magnetic, intense, transformative, penetrating",
-        hobbies: "Mystery and detective topics, psychology, occult subjects, strategic games, investing"
+        strengths: 'Resourceful, brave, passionate, stubborn, loyal, focused',
+        weaknesses: 'Distrusting, jealous, secretive, manipulative, resentful',
+        compatibility: 'Cancer, Pisces, Capricorn',
+        careers: 'Psychology, investigation, research, surgery, crisis management',
+        hobbies: 'Mystery solving, research, strategic games, intense physical activities',
+        wellness: 'Benefit from transformative practices and exercises that channel intensity'
       }
     },
-    "sagittarius": {
-      name: "Sagittarius",
-      symbol: "♐",
-      dates: "November 22 - December 21",
-      element: "Fire",
-      ruling_planet: "Jupiter",
-      description: "Adventurous, optimistic, and philosophical, Sagittarius seeks freedom and knowledge with a love for exploration and big-picture thinking.",
+    'sagittarius': {
+      name: 'Sagittarius',
+      dates: 'November 22 - December 21',
+      symbol: '♐',
+      element: 'Fire',
+      ruling_planet: 'Jupiter',
+      description: 'Sagittarius are adventurous, optimistic, and philosophical, with a love for freedom and exploration that drives their quest for meaning.',
       details: {
-        strengths: "Generous, idealistic, great sense of humor, enthusiastic, open-minded, philosophical",
-        weaknesses: "Promises more than can deliver, impatient, says things without thinking, reckless",
-        compatibility: "Aries, Leo, Libra, Aquarius",
-        career: "Travel, higher education, publishing, law, outdoor work, sports, philosophy, religion",
-        love: "Freedom-loving, adventurous, and growth-oriented relationships. Values honesty, expansion, and shared beliefs.",
-        wellness: "Benefits from outdoor activities, variety in exercise, international cuisine exploration, and learning-based wellness",
-        traits: "Adventurous, optimistic, straightforward, philosophical, enthusiastic",
-        hobbies: "Travel, sports, outdoor activities, learning, philosophy, spiritual exploration, cultural experiences"
+        strengths: 'Generous, idealistic, great sense of humor, adventurous, enthusiastic',
+        weaknesses: 'Promises more than can deliver, impatient, says hurtful things',
+        compatibility: 'Aries, Leo, Aquarius',
+        careers: 'Travel, education, philosophy, outdoor work, entrepreneurship',
+        hobbies: 'Travel, outdoor adventures, learning, philosophical discussions',
+        wellness: 'Thrive with outdoor activities and exercise that feels like adventure'
       }
     },
-    "capricorn": {
-      name: "Capricorn",
-      symbol: "♑",
-      dates: "December 22 - January 19",
-      element: "Earth",
-      ruling_planet: "Saturn",
-      description: "Disciplined, responsible, and achievement-oriented, Capricorn approaches life with determination and practicality, building success through persistence.",
+    'capricorn': {
+      name: 'Capricorn',
+      dates: 'December 22 - January 19',
+      symbol: '♑',
+      element: 'Earth',
+      ruling_planet: 'Saturn',
+      description: 'Capricorn are disciplined, responsible, and ambitious, with a practical approach to achieving long-term goals through perseverance.',
       details: {
-        strengths: "Responsible, disciplined, self-control, good managers, practical wisdom",
-        weaknesses: "Know-it-all, unforgiving, pessimistic, expecting the worst, materialistic",
-        compatibility: "Taurus, Virgo, Scorpio, Pisces",
-        career: "Business, finance, management, government, construction, engineering, administration",
-        love: "Committed, traditional, and status-conscious relationships. Values stability, achievement, and long-term planning.",
-        wellness: "Benefits from structured fitness routines, goal setting, stress management, and connection with nature",
-        traits: "Ambitious, persevering, practical, reserved, disciplined",
-        hobbies: "Business, investing, climbing/hiking, traditional activities, building, history"
+        strengths: 'Responsible, disciplined, ambitious, practical, patient, careful',
+        weaknesses: 'Know-it-all, unforgiving, pessimistic, expecting the worst',
+        compatibility: 'Taurus, Virgo, Scorpio',
+        careers: 'Business, finance, management, government, architecture',
+        hobbies: 'Mountain climbing, traditional crafts, collecting, strategic games',
+        wellness: 'Benefit from goal-oriented fitness programs and structured routines'
       }
     },
-    "aquarius": {
-      name: "Aquarius",
-      symbol: "♒",
-      dates: "January 20 - February 18",
-      element: "Air",
-      ruling_planet: "Uranus, Saturn",
-      description: "Progressive, original, and humanitarian, Aquarius approaches life with an innovative mindset and a vision for a better future for all.",
+    'aquarius': {
+      name: 'Aquarius',
+      dates: 'January 20 - February 18',
+      symbol: '♒',
+      element: 'Air',
+      ruling_planet: 'Uranus, Saturn',
+      description: 'Aquarius are progressive, original, and independent, with humanitarian ideals and innovative thinking that challenge the status quo.',
       details: {
-        strengths: "Progressive, original, independent, humanitarian, inventive, logical",
-        weaknesses: "Runs from emotional expression, temperamental, uncompromising, aloof, detached",
-        compatibility: "Gemini, Libra, Aries, Sagittarius",
-        career: "Technology, science, social reform, humanitarian work, research, aviation, astrology",
-        love: "Intellectually stimulating, friendship-based, and unconventional relationships. Values freedom, equality, and originality.",
-        wellness: "Benefits from group fitness, technological health monitoring, innovative wellness approaches, and mental stimulation",
-        traits: "Innovative, eccentric, humanitarian, detached, intellectual",
-        hobbies: "Technology, science, social causes, futuristic concepts, group activities, unusual pursuits"
+        strengths: 'Progressive, original, independent, humanitarian, inventive',
+        weaknesses: 'Emotionally detached, temperamental, uncompromising, aloof',
+        compatibility: 'Gemini, Libra, Sagittarius',
+        careers: 'Science, technology, social activism, research, psychology',
+        hobbies: 'Technology, social causes, unique activities, scientific exploration',
+        wellness: 'Thrive with innovative exercise programs and intellectual approaches to health'
       }
     },
-    "pisces": {
-      name: "Pisces",
-      symbol: "♓",
-      dates: "February 19 - March 20",
-      element: "Water",
-      ruling_planet: "Neptune, Jupiter",
-      description: "Compassionate, artistic, and deeply intuitive, Pisces approaches life with empathy and imagination, often sacrificing personal needs for others.",
+    'pisces': {
+      name: 'Pisces',
+      dates: 'February 19 - March 20',
+      symbol: '♓',
+      element: 'Water',
+      ruling_planet: 'Neptune, Jupiter',
+      description: 'Pisces are intuitive, compassionate, and artistic, with spiritual depth and emotional sensitivity that connect them to universal experiences.',
       details: {
-        strengths: "Compassionate, artistic, intuitive, gentle, wise, musical, spiritual",
-        weaknesses: "Fearful, overly trusting, sad, escapist, victim mentality, self-sacrificing",
-        compatibility: "Cancer, Scorpio, Capricorn, Taurus",
-        career: "Arts, music, healthcare, social work, spiritual practices, psychology, film industry",
-        love: "Romantic, empathetic, and dreamy relationships. Values emotional connection, compassion, and spiritual harmony.",
-        wellness: "Benefits from water activities, creative expression, spiritual practices, gentle movement, and emotional healing",
-        traits: "Compassionate, adaptable, imaginative, sensitive, intuitive",
-        hobbies: "Arts, music, poetry, spiritual activities, water sports, dream analysis, mystical studies"
+        strengths: 'Compassionate, intuitive, artistic, gentle, wise, musical',
+        weaknesses: 'Fearful, overly trusting, sad, desire to escape reality',
+        compatibility: 'Cancer, Scorpio, Capricorn',
+        careers: 'Arts, healthcare, spiritual work, counseling, veterinary',
+        hobbies: 'Music, poetry, water activities, meditation, creative expression',
+        wellness: 'Benefit from gentle, flowing exercises and mind-body practices'
       }
     }
   };
   
-  // Helper function to determine zodiac sign from birth date
-  export const getZodiacSign = (birthDate) => {
-    // Convert string to Date if needed
-    const date = typeof birthDate === 'string' ? new Date(birthDate) : birthDate;
+  // Get Zodiac sign from birthdate
+  export const getZodiacSign = (birthdate) => {
+    // Validate input
+    if (!(birthdate instanceof Date) || isNaN(birthdate.getTime())) {
+      console.error('Invalid birth date provided to getZodiacSign');
+      return null;
+    }
     
-    // Get month and day
-    const month = date.getMonth() + 1; // JavaScript months are 0-indexed
-    const day = date.getDate();
+    const month = birthdate.getMonth() + 1; // JavaScript months are 0-indexed
+    const day = birthdate.getDate();
     
     // Determine zodiac sign based on month and day
-    switch (month) {
-      case 1: // January
-        return day <= 19 ? "capricorn" : "aquarius";
-      case 2: // February
-        return day <= 18 ? "aquarius" : "pisces";
-      case 3: // March
-        return day <= 20 ? "pisces" : "aries";
-      case 4: // April
-        return day <= 19 ? "aries" : "taurus";
-      case 5: // May
-        return day <= 20 ? "taurus" : "gemini";
-      case 6: // June
-        return day <= 20 ? "gemini" : "cancer";
-      case 7: // July
-        return day <= 22 ? "cancer" : "leo";
-      case 8: // August
-        return day <= 22 ? "leo" : "virgo";
-      case 9: // September
-        return day <= 22 ? "virgo" : "libra";
-      case 10: // October
-        return day <= 22 ? "libra" : "scorpio";
-      case 11: // November
-        return day <= 21 ? "scorpio" : "sagittarius";
-      case 12: // December
-        return day <= 21 ? "sagittarius" : "capricorn";
-      default:
-        return null;
+    if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) {
+      return 'aries';
+    } else if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) {
+      return 'taurus';
+    } else if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) {
+      return 'gemini';
+    } else if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) {
+      return 'cancer';
+    } else if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) {
+      return 'leo';
+    } else if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) {
+      return 'virgo';
+    } else if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) {
+      return 'libra';
+    } else if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) {
+      return 'scorpio';
+    } else if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) {
+      return 'sagittarius';
+    } else if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) {
+      return 'capricorn';
+    } else if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) {
+      return 'aquarius';
+    } else if ((month === 2 && day >= 19) || (month === 3 && day <= 20)) {
+      return 'pisces';
     }
+    
+    return null;
   };
   
-  // Helper function to get visual attributes for a sign
+    // Get color scheme for zodiac sign
   export const getZodiacColors = (sign) => {
-    const elementsColors = {
-      "fire": {
-        bg: "bg-red-50 dark:bg-red-900/30",
-        border: "border-red-200 dark:border-red-800/50",
-        text: "text-red-700 dark:text-red-300",
-        accent: "text-red-500 dark:text-red-400",
-        icon: "text-red-500 dark:text-red-400"
+    // Default colors if sign not found
+    const defaultColors = {
+      bg: 'bg-slate-50 dark:bg-slate-800',
+      text: 'text-slate-700 dark:text-slate-300',
+      border: 'border-slate-200 dark:border-slate-700',
+      accent: 'text-slate-500 dark:text-slate-400',
+      icon: 'text-slate-500 dark:text-slate-400'
+    };
+    
+    // Define colors by element
+    const elementColors = {
+      fire: {
+        bg: 'bg-red-50 dark:bg-red-900/20',
+        text: 'text-red-700 dark:text-red-300',
+        border: 'border-red-200 dark:border-red-800/40',
+        accent: 'text-red-500 dark:text-red-400',
+        icon: 'text-red-500 dark:text-red-400'
       },
-      "earth": {
-        bg: "bg-green-50 dark:bg-green-900/30",
-        border: "border-green-200 dark:border-green-800/50",
-        text: "text-green-700 dark:text-green-300",
-        accent: "text-green-500 dark:text-green-400",
-        icon: "text-green-500 dark:text-green-400"
+      earth: {
+        bg: 'bg-green-50 dark:bg-green-900/20',
+        text: 'text-green-700 dark:text-green-300',
+        border: 'border-green-200 dark:border-green-800/40',
+        accent: 'text-green-500 dark:text-green-400',
+        icon: 'text-green-500 dark:text-green-400'
       },
-      "air": {
-        bg: "bg-blue-50 dark:bg-blue-900/30",
-        border: "border-blue-200 dark:border-blue-800/50",
-        text: "text-blue-700 dark:text-blue-300",
-        accent: "text-blue-500 dark:text-blue-400",
-        icon: "text-blue-500 dark:text-blue-400"
+      air: {
+        bg: 'bg-blue-50 dark:bg-blue-900/20',
+        text: 'text-blue-700 dark:text-blue-300',
+        border: 'border-blue-200 dark:border-blue-800/40',
+        accent: 'text-blue-500 dark:text-blue-400',
+        icon: 'text-blue-500 dark:text-blue-400'
       },
-      "water": {
-        bg: "bg-purple-50 dark:bg-purple-900/30",
-        border: "border-purple-200 dark:border-purple-800/50",
-        text: "text-purple-700 dark:text-purple-300",
-        accent: "text-purple-500 dark:text-purple-400",
-        icon: "text-purple-500 dark:text-purple-400"
+      water: {
+        bg: 'bg-purple-50 dark:bg-purple-900/20',
+        text: 'text-purple-700 dark:text-purple-300',
+        border: 'border-purple-200 dark:border-purple-800/40',
+        accent: 'text-purple-500 dark:text-purple-400',
+        icon: 'text-purple-500 dark:text-purple-400'
       }
     };
-  
-    const signData = zodiacSigns[sign.toLowerCase()];
-    if (!signData) return elementsColors.fire; // Default
     
-    return elementsColors[signData.element.toLowerCase()];
+    // If sign not found or invalid, return default colors
+    if (!sign || !zodiacSigns[sign]) {
+      return defaultColors;
+    }
+    
+    // Get element for the sign
+    const element = zodiacSigns[sign].element.toLowerCase();
+    
+    // Return colors based on element
+    return elementColors[element] || defaultColors;
   };
+  
+  // Get zodiac compatibility between two signs
+  export const getZodiacCompatibility = (sign1, sign2) => {
+    // Validate input
+    if (!sign1 || !sign2 || !zodiacSigns[sign1] || !zodiacSigns[sign2]) {
+      return { score: 50, description: 'Unknown compatibility' };
+    }
+    
+    // Get elements for both signs
+    const element1 = zodiacSigns[sign1].element.toLowerCase();
+    const element2 = zodiacSigns[sign2].element.toLowerCase();
+    
+    // Get modalities for both signs
+    const getModality = (sign) => {
+      const cardinalSigns = ['aries', 'cancer', 'libra', 'capricorn'];
+      const fixedSigns = ['taurus', 'leo', 'scorpio', 'aquarius'];
+      const mutableSigns = ['gemini', 'virgo', 'sagittarius', 'pisces'];
+      
+      if (cardinalSigns.includes(sign)) return 'cardinal';
+      if (fixedSigns.includes(sign)) return 'fixed';
+      if (mutableSigns.includes(sign)) return 'mutable';
+      return null;
+    };
+    
+    const modality1 = getModality(sign1);
+    const modality2 = getModality(sign2);
+    
+    // Calculate base score
+    let score = 50;
+    
+    // Same sign has good compatibility
+    if (sign1 === sign2) {
+      score += 20;
+    }
+    
+    // Element compatibility
+    if (element1 === element2) {
+      // Same element is harmonious
+      score += 20;
+    } else {
+      // Complementary elements (fire-air, earth-water)
+      const complementaryPairs = [
+        ['fire', 'air'],
+        ['earth', 'water']
+      ];
+      
+      const areComplementary = complementaryPairs.some(pair => 
+        (pair[0] === element1 && pair[1] === element2) || 
+        (pair[0] === element2 && pair[1] === element1)
+      );
+      
+      if (areComplementary) {
+        score += 15;
+      } else {
+        // Challenging elements (fire-water, earth-air)
+        score -= 10;
+      }
+    }
+    
+    // Modality compatibility
+    if (modality1 === modality2) {
+      // Same modality can create friction
+      score -= 5;
+    }
+    
+    // Check if in each other's compatibility lists
+    const isInCompatibilityList = (sign, targetSign) => {
+      const compatibilityList = zodiacSigns[sign]?.details.compatibility.toLowerCase().split(', ');
+      return compatibilityList && compatibilityList.includes(targetSign);
+    };
+    
+    if (isInCompatibilityList(sign1, sign2) || isInCompatibilityList(sign2, sign1)) {
+      score += 20;
+    }
+    
+    // Special combinations with strong compatibility
+    const strongPairs = [
+      ['aries', 'leo'], ['taurus', 'cancer'], ['gemini', 'aquarius'],
+      ['cancer', 'pisces'], ['leo', 'sagittarius'], ['virgo', 'capricorn'],
+      ['libra', 'gemini'], ['scorpio', 'pisces'], ['sagittarius', 'aries'],
+      ['capricorn', 'taurus'], ['aquarius', 'gemini'], ['pisces', 'scorpio']
+    ];
+    
+    const isStrongPair = strongPairs.some(pair => 
+      (pair[0] === sign1 && pair[1] === sign2) || 
+      (pair[0] === sign2 && pair[1] === sign1)
+    );
+    
+    if (isStrongPair) {
+      score += 10;
+    }
+    
+    // Ensure score is between 0-100
+    score = Math.min(100, Math.max(0, score));
+    
+    // Generate description
+    let description = '';
+    
+    if (score >= 80) {
+      description = 'Exceptional compatibility with natural harmony and understanding.';
+    } else if (score >= 70) {
+      description = 'Strong compatibility with complementary energies that balance each other.';
+    } else if (score >= 60) {
+      description = 'Good compatibility with some differences that can strengthen the relationship.';
+    } else if (score >= 50) {
+      description = 'Average compatibility requiring effort to understand different perspectives.';
+    } else if (score >= 40) {
+      description = 'Challenging compatibility with considerable differences to navigate.';
+    } else {
+      description = 'Difficult compatibility requiring significant work on understanding each other.';
+    }
+    
+    return { 
+      score,
+      description,
+      elementMatch: element1 === element2,
+      complementaryElements: element1 !== element2 && (
+        (element1 === 'fire' && element2 === 'air') || 
+        (element1 === 'air' && element2 === 'fire') ||
+        (element1 === 'earth' && element2 === 'water') || 
+        (element1 === 'water' && element2 === 'earth')
+      ),
+      modalityMatch: modality1 === modality2
+    };
+  };
+  
+  export default zodiacSigns;

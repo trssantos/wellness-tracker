@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Repeat,Route, BarChart2, ArrowLeft, Edit3, Trash2, Play, Clock, Calendar, 
          MapPin, DollarSign, Dumbbell, Activity, AlertTriangle } from 'lucide-react';
 import { getWorkoutTypes, getWorkoutLocations, getEquipmentOptions, getWorkoutById, getAllCompletedWorkouts } from '../../utils/workoutUtils';
-import WorkoutPlayerModal from './WorkoutPlayerModal';
+import WorkoutPlayer from './WorkoutPlayer';
 import WorkoutCalendar from './WorkoutCalendar';
 import { formatDateForStorage } from '../../utils/dateUtils';
 import { getWeightUnit } from '../../utils/storage';
@@ -13,7 +13,6 @@ import WorkoutTypeDetails from './WorkoutTypeDetails';
 
 const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showPlayer, setShowPlayer] = useState(false);
   const [currentDate, setCurrentDate] = useState(formatDateForStorage(new Date()));
   const [completedWorkouts, setCompletedWorkouts] = useState([]);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' or 'calendar'
@@ -21,7 +20,7 @@ const WorkoutDetails = ({ workout, onEdit, onBack, onDelete }) => {
   const [refreshTrigger, setRefreshTrigger] = useState(0); // To trigger refreshes
   const [weightUnit, setWeightUnit] = useState('lbs');
   // Add state to track if player is showing
-const [isPlayerShowing, setIsPlayerShowing] = useState(false);
+  const [isPlayerShowing, setIsPlayerShowing] = useState(false);
 
   // Initialize with the workout prop and load completions
   useEffect(() => {
@@ -201,15 +200,13 @@ const [isPlayerShowing, setIsPlayerShowing] = useState(false);
   // Format the frequency days
   const frequencyText = workoutData?.frequency?.map(day => getDayName(day)).join(', ') || '';
 
-  // Start workout - simply show the modal
+  // Start workout - update the state to show the player
   const startWorkout = () => {
     setIsPlayerShowing(true);
-    setShowPlayer(true);
   };
 
   // Handle workout completion
   const handleWorkoutComplete = (completedWorkout) => {
-    setShowPlayer(false);
     setIsPlayerShowing(false);
     // Refresh data after completing a workout
     refreshWorkoutData();
@@ -358,7 +355,7 @@ const [isPlayerShowing, setIsPlayerShowing] = useState(false);
       </div>
 
       {/* Workout Type Specific Information */}
-<WorkoutTypeDetails workout={workoutData} />
+      <WorkoutTypeDetails workout={workoutData} />
 
       {/* Schedule */}
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-6">
@@ -541,22 +538,37 @@ const [isPlayerShowing, setIsPlayerShowing] = useState(false);
       </div>
 
        {/* Workout Progress Tracking */}
-<WorkoutProgress 
-  workout={workoutData}
-  completedWorkouts={completedWorkouts}
-/>
+      <WorkoutProgress 
+        workout={workoutData}
+        completedWorkouts={completedWorkouts}
+      />
 
-{/* Personal Records */}
-<PersonalRecords
-  workoutType={workoutData?.type}
-  exerciseFilter={workoutData?.exercises?.map(ex => ex.name) || []}
-/>
+      {/* Personal Records */}
+      <PersonalRecords
+        workoutType={workoutData?.type}
+        exerciseFilter={workoutData?.exercises?.map(ex => ex.name) || []}
+      />
     </>
     
   );
 
   if (!workoutData) return null;
 
+  // If the player is showing, render the player instead of workout details
+  if (isPlayerShowing) {
+    return (
+      <div className="px-2 sm:px-0 w-full">
+        <WorkoutPlayer
+          workoutId={workoutData.id}
+          date={currentDate}
+          onComplete={handleWorkoutComplete}
+          onClose={() => setIsPlayerShowing(false)}
+        />
+      </div>
+    );
+  }
+
+  // Otherwise render the normal workout details view
   return (
     <div className="px-2 sm:px-0 w-full">
       <div className="grid grid-cols-[auto,1fr] items-center gap-2 mb-4 sm:mb-6">
@@ -572,17 +584,15 @@ const [isPlayerShowing, setIsPlayerShowing] = useState(false);
       </div>
 
       {/* Quick Action Buttons */}
-      {!isPlayerShowing && (
-  <div className="flex gap-2 mb-6">
-    <button
-      onClick={startWorkout}
-      className="flex-1 py-2 sm:py-3 rounded-lg bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 font-medium flex items-center justify-center gap-2 transition-colors"
-    >
-      <Play size={18} />
-      Start Workout
-    </button>
-  </div>
-)}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={startWorkout}
+          className="flex-1 py-2 sm:py-3 rounded-lg bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 font-medium flex items-center justify-center gap-2 transition-colors"
+        >
+          <Play size={18} />
+          Start Workout
+        </button>
+      </div>
 
       {/* Tab Navigation */}
       <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6">
@@ -662,20 +672,6 @@ const [isPlayerShowing, setIsPlayerShowing] = useState(false);
           </div>
         </div>
       )}
-      
-      {/* Workout Player Modal */}
-      {showPlayer && (
-  <WorkoutPlayerModal
-    workoutId={workoutData.id}
-    date={currentDate}
-    onComplete={handleWorkoutComplete}
-    onClose={() => {
-      setShowPlayer(false);
-      setIsPlayerShowing(false);
-    }}
-  />
-)}
-
     </div>
   );
 };

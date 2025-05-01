@@ -49,19 +49,20 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const [activeView, setActiveView] = useState('workout'); // 'workout' or 'cassette'
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
   const playerRef = useRef(null);
   
   // Refs for timer
   const timerRef = useRef(null);
   
   // Sound effects
-  const startSound = useRef(new Audio('https://freesound.org/data/previews/476/476177_7724198-lq.mp3'));
-  const completeSound = useRef(new Audio('https://freesound.org/data/previews/131/131660_2398403-lq.mp31'));
-  const waterBreakSound = useRef(new Audio('https://freesound.org/data/previews/341/341695_5858296-lq.mp3'));
-  const clickSound = useRef(new Audio('https://freesound.org/data/previews/573/573588_13006337-lq.mp3'));
-  const setCompleteSound = useRef(new Audio('https://freesound.org/data/previews/413/413749_4284968-lq.mp3'));
-  const exerciseCompleteSound = useRef(new Audio('https://freesound.org/data/previews/270/270402_5123851-lq.mp31'));
-  const motivationSound = useRef(new Audio('https://freesound.org/data/previews/448/448268_7343324-lq.mp31'));
+  const startSound = useRef(null);//new Audio('https://freesound.org/data/previews/476/476177_7724198-lq.mp3'));
+  const completeSound = useRef(null);//new Audio('https://freesound.org/data/previews/131/131660_2398403-lq.mp31'));
+  const waterBreakSound = useRef(null);//new Audio('https://freesound.org/data/previews/341/341695_5858296-lq.mp3'));
+  const clickSound = useRef(null);//new Audio('https://freesound.org/data/previews/573/573588_13006337-lq.mp3'));
+  const setCompleteSound = useRef(null);//new Audio('https://freesound.org/data/previews/413/413749_4284968-lq.mp3'));
+  const exerciseCompleteSound = useRef(null);//new Audio('https://freesound.org/data/previews/270/270402_5123851-lq.mp31'));
+  const motivationSound = useRef(null);//new Audio('https://freesound.org/data/previews/448/448268_7343324-lq.mp31'));
   
   // Exercise-specific state
   const [currentExercise, setCurrentExercise] = useState(null);
@@ -74,10 +75,9 @@ const WorkoutPlayer = ({ workoutId, date, onComplete, onClose }) => {
   const [exerciseDurationUnit, setExerciseDurationUnit] = useState('min');
   const [exerciseDistance, setExerciseDistance] = useState('');
   const [exerciseIntensity, setExerciseIntensity] = useState('medium');
-  const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
 
   const [waterBreaksTaken, setWaterBreaksTaken] = useState(0);
-const [waterBreakTime, setWaterBreakTime] = useState(0);
+  const [waterBreakTime, setWaterBreakTime] = useState(0);
 
   // Load workout on mount
   useEffect(() => {
@@ -143,13 +143,13 @@ const [waterBreakTime, setWaterBreakTime] = useState(0);
     }
     
     // Preload sound files
-    startSound.current.preload = 'auto';
-    completeSound.current.preload = 'auto';
-    waterBreakSound.current.preload = 'auto';
-    clickSound.current.preload = 'auto';
-    setCompleteSound.current.preload = 'auto';
-    exerciseCompleteSound.current.preload = 'auto';
-    motivationSound.current.preload = 'auto';
+    //startSound.current.preload = 'auto';
+    //completeSound.current.preload = 'auto';
+    //waterBreakSound.current.preload = 'auto';
+    //clickSound.current.preload = 'auto';
+    //setCompleteSound.current.preload = 'auto';
+    //exerciseCompleteSound.current.preload = 'auto';
+    //motivationSound.current.preload = 'auto';
     
     // Set up touch event handlers for swipe gestures
     let touchStartX = 0;
@@ -407,10 +407,10 @@ const [waterBreakTime, setWaterBreakTime] = useState(0);
 
   // Play sound effect
   const playSound = (sound) => {
-    if (!isMuted && sound.current) {
-      sound.current.currentTime = 0;
-      sound.current.play().catch(err => console.log('Audio error:', err));
-    }
+    //if (!isMuted && sound.current) {
+    //  sound.current.currentTime = 0;
+    //  sound.current.play().catch(err => console.log('Audio error:', err));
+    //}
   };
 
   // Calculate pause duration helper function
@@ -1167,6 +1167,17 @@ const [waterBreakTime, setWaterBreakTime] = useState(0);
     onComplete(completedWorkout);
   };
 
+  // Handle going back
+  const handleGoBack = () => {
+    // Show confirmation if workout is in progress
+    if (currentState !== 'ready' && currentState !== 'summary') {
+      setShowCancelConfirmModal(true);
+    } else {
+      // If not started or already finished, just go back
+      onClose();
+    }
+  };
+
   // If no workout loaded, show loader
   if (!workout) {
     return (
@@ -1213,10 +1224,10 @@ const [waterBreakTime, setWaterBreakTime] = useState(0);
       {/* Header with title and controls */}
       <div className={`wp-player-header ${showControls ? 'wp-visible' : 'wp-hidden'}`}>
         <button 
-          onClick={() => setShowCancelConfirmModal(true)}
+          onClick={handleGoBack}
           className="wp-player-button"
         >
-          <X size={20} />
+          <ArrowLeft size={20} />
         </button>
         <div className="wp-player-title">
           <h2>{workout.name}</h2>
@@ -1345,19 +1356,19 @@ const [waterBreakTime, setWaterBreakTime] = useState(0);
           
           {/* Summary state */}
           {currentState === 'summary' && (
-  <WorkoutSummary 
-    workout={workout}
-    completedExercises={completedExercises}
-    totalTime={totalTimeElapsed}
-    waterBreaksTaken={waterBreaksTaken}  // Pass the water break count
-    waterBreakTime={waterBreakTime}      // Pass the total water break time
-    notes={notes}
-    onNotesChange={setNotes}
-    onSave={saveWorkoutResults}
-    onClose={onClose}
-    theme={theme}
-  />
-)}
+            <WorkoutSummary 
+              workout={workout}
+              completedExercises={completedExercises}
+              totalTime={totalTimeElapsed}
+              waterBreaksTaken={waterBreaksTaken}
+              waterBreakTime={waterBreakTime}
+              notes={notes}
+              onNotesChange={setNotes}
+              onSave={saveWorkoutResults}
+              onClose={onClose}
+              theme={theme}
+            />
+          )}
           
           {/* Achievement Popup */}
           {showAchievement && currentAchievement && (
@@ -1425,12 +1436,10 @@ const [waterBreakTime, setWaterBreakTime] = useState(0);
         </div>
       )}
       
-     
-
       {/* Cancel Confirmation Modal */}
       {showCancelConfirmModal && (
-        <div className="exit-confirmation-overlay">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">
                 <X size={24} />
@@ -1453,21 +1462,13 @@ const [waterBreakTime, setWaterBreakTime] = useState(0);
               </button>
               
               <button
-          onClick={(e) => {
-            // Prevent event bubbling
-            onClose();
-           // e.stopPropagation();
-           
-            // Use setTimeout to ensure this happens after the current event cycle
-            setTimeout(() => {
-              
-              localStorage.removeItem('workout-player-state');
-            }, 0);
-            // Close modal and exit the workout
-            setShowCancelConfirmModal(false);
-          }}
-          className="px-4 py-2 rounded-lg bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-        >
+                onClick={() => {
+                  onClose();
+                  localStorage.removeItem('workout-player-state');
+                  setShowCancelConfirmModal(false);
+                }}
+                className="px-4 py-2 rounded-lg bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+              >
                 <X size={20} />
                 End Workout
               </button>
@@ -1478,8 +1479,8 @@ const [waterBreakTime, setWaterBreakTime] = useState(0);
 
       {/* Pause Modal for interruptions */}
       {showPauseModal && (
-        <div className="pause-confirmation-overlay">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
                 <Pause size={24} />

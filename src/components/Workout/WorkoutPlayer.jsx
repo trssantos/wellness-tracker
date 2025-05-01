@@ -1429,7 +1429,7 @@ const [waterBreakTime, setWaterBreakTime] = useState(0);
 
       {/* Cancel Confirmation Modal */}
       {showCancelConfirmModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div className="exit-confirmation-overlay">
           <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">
@@ -1478,7 +1478,7 @@ const [waterBreakTime, setWaterBreakTime] = useState(0);
 
       {/* Pause Modal for interruptions */}
       {showPauseModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div className="pause-confirmation-overlay">
           <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-xl animate-bounce-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">

@@ -5,6 +5,7 @@ import {AlertTriangle, Sun, Moon,X, ArrowLeft, Plus, Trash2, Save, Clock, Calend
          Users, Award, Zap, Droplet, Ruler, Gauge, Repeat, Edit } from 'lucide-react';
 import { createWorkout, updateWorkout, getWorkoutTypes, getWorkoutLocations, getEquipmentOptions } from '../../utils/workoutUtils';
 import { getWeightUnit, getDistanceUnit } from '../../utils/storage';
+import DraggableExerciseList from './DraggableExerciseList';
 
 const WorkoutForm = ({ workout, onSave, onCancel }) => {
   // Form state
@@ -2175,79 +2176,19 @@ const getTypeSpecificFields = () => {
           No exercises added to this workout yet.
         </div>
       ) : (
-        <div className="space-y-2">
-          {formData.exercises.map((exercise, index) => (
-            <div
-              key={index}
-              className={`flex items-start p-3 rounded-lg border transition-colors
-                ${editingExerciseIndex === index
-                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-                  : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700'
-                }`}
-            >
-              {/* Number badge */}
-              <div className="w-8 h-8 mr-3 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-blue-700 dark:text-blue-300 font-medium">{index + 1}</span>
-              </div>
-              
-              {/* Content */}
-              <div className="flex-1 min-w-0"> 
-                {/* Exercise name with text wrapping */}
-                <div className="font-medium text-slate-700 dark:text-slate-200 text-sm break-words">
-                  {exercise.name}
-                </div>
-                
-                {/* Exercise details - Updated to handle both exercise types */}
-                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 break-words">
-                  {exercise.isDurationBased ? (
-                    // Duration-based exercise details with sets
-                    <>
-                      {exercise.sets > 1 ? 
-                        `${exercise.sets}×${exercise.duration} ${exercise.durationUnit || 'min'}` : 
-                        `${exercise.duration} ${exercise.durationUnit || 'min'}`}
-                      {exercise.distance ? ` • ${exercise.distance}${!exercise.distance.includes('km') && !exercise.distance.includes('mi') && !exercise.distance.includes('m') ? ' ' + distanceUnit : ''} distance` : ''}
-                      {exercise.restTime ? ` • ${exercise.restTime}s rest` : ''}
-                    </>
-                  ) : (
-                    // Traditional strength exercise details
-                    <>
-                      {exercise.sets}×{exercise.reps}
-                      {exercise.weight ? ` • ${exercise.weight} ${weightUnit}` : ''}
-                      {exercise.restTime ? ` • ${exercise.restTime}s rest` : ''}
-                    </>
-                  )}
-                </div>
-                
-                {/* Notes - with text wrapping, limited to 3 lines */}
-                {exercise.notes && (
-                  <div className="text-xs italic text-slate-500 dark:text-slate-400 mt-1 break-words line-clamp-3">
-                    {exercise.notes}
-                  </div>
-                )}
-              </div>
-              
-              {/* Action buttons */}
-              <div className="flex gap-1 ml-2">
-                <button
-                  type="button"
-                  onClick={() => handleEditExercise(index)}
-                  className="p-2 text-blue-500 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-full flex-shrink-0"
-                  title="Edit exercise"
-                >
-                  <Edit size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeExercise(index)}
-                  className="p-2 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-full flex-shrink-0"
-                  title="Delete exercise"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <DraggableExerciseList 
+    exercises={formData.exercises}
+    onReorder={(newExercises) => {
+      setFormData(prev => ({
+        ...prev,
+        exercises: newExercises
+      }));
+    }}
+    onEdit={handleEditExercise}
+    onRemove={removeExercise}
+    weightUnit={weightUnit}
+    distanceUnit={distanceUnit}
+  />
       )}
     </div>
   )}

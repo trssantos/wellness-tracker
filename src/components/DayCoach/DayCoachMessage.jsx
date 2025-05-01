@@ -3,9 +3,12 @@
 import React, { useState } from 'react';
 import { MessageCircle, User, Star, ThumbsUp, ThumbsDown, Copy, Check, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import StatisticDisplay from './StatisticDisplay';
+import ActionButton from './ActionButton';
+
 
 // Component to display a single message in the chat
-const DayCoachMessage = ({ message, onReply, displaySuggestions = true, isMobile = false }) => {
+const DayCoachMessage = ({ message, onReply, onExecuteAction, displaySuggestions = true, isMobile = false }) => {
     const [liked, setLiked] = useState(false);
     const [disliked, setDisliked] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -13,6 +16,69 @@ const DayCoachMessage = ({ message, onReply, displaySuggestions = true, isMobile
     const [suggestionsVisible, setSuggestionsVisible] = useState(false);
     
     const isCoach = message.sender === 'coach';
+
+    // Add this function inside the DayCoachMessage component
+const parseSpecialContent = (content) => {
+  if (!content) return { content, stats: null, actions: [] };
+  
+  // Extract stats data
+  const statsRegex = /\[STATS:(.*?)\]/g;
+  let statsMatch;
+  let stats = null;
+  let modifiedContent = content;
+  
+  // Find stats markers
+  while ((statsMatch = statsRegex.exec(content)) !== null) {
+    try {
+      const statsJson = statsMatch[1];
+      const statsData = JSON.parse(statsJson);
+      
+      // Format stats for display
+      stats = Object.entries(statsData).map(([label, value]) => {
+        // Determine color based on label or value
+        let color = 'blue';
+        if (label.includes('focus')) color = 'green';
+        else if (label.includes('mood')) color = 'blue';
+        else if (label.includes('stress')) color = 'purple';
+        else if (value.startsWith('+')) color = 'green';
+        else if (value.startsWith('-')) color = 'red';
+        
+        return { label, value, color };
+      });
+      
+      // Remove the marker from content
+      modifiedContent = modifiedContent.replace(statsMatch[0], '');
+    } catch (e) {
+      console.error('Error parsing stats data:', e);
+    }
+  }
+  
+  // Extract action data
+  const actionRegex = /\[ACTION:(.*?)\]/g;
+  let actionMatch;
+  const actions = [];
+  
+  // Find action markers
+  while ((actionMatch = actionRegex.exec(content)) !== null) {
+    try {
+      const actionJson = actionMatch[1];
+      const actionData = JSON.parse(actionJson);
+      actions.push(actionData);
+      
+      // Remove the marker from content
+      modifiedContent = modifiedContent.replace(actionMatch[0], '');
+    } catch (e) {
+      console.error('Error parsing action data:', e);
+    }
+  }
+  
+  return { content: modifiedContent, stats, actions };
+};
+
+     // Parse special content if this is a coach message
+  const { content: parsedContent, stats, actions } = 
+  isCoach ? parseSpecialContent(message.content) : { content: message.content, stats: null, actions: [] };
+
   
   // Format timestamp for display
   const formatTime = (timestamp) => {
@@ -24,6 +90,10 @@ const DayCoachMessage = ({ message, onReply, displaySuggestions = true, isMobile
     }
   };
   
+
+
+
+
   // Handle copying message to clipboard
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content).then(() => {
@@ -106,10 +176,24 @@ const DayCoachMessage = ({ message, onReply, displaySuggestions = true, isMobile
                   : 'text-white prose-headings:text-white'
               }`}>
                 <ReactMarkdown>
-                  {message.content}
+                  {parsedContent}
                 </ReactMarkdown>
               </div>
             </div>
+             {/* Add statistics display if there are stats */}
+          {stats && <StatisticDisplay stats={stats} />}
+          {/* Add action buttons if there are actions */}
+          {actions.length > 0 && (
+            <div className="mt-2">
+              {actions.map((action, index) => (
+                <ActionButton
+                  key={index}
+                  action={action}
+                  onExecute={onExecuteAction}
+                />
+              ))}
+            </div>
+          )}
           </div>
                 
           {/* Message actions with suggestions button for mobile */}

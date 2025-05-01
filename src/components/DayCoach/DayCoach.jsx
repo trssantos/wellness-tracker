@@ -229,6 +229,168 @@ useEffect(() => {
       setShowClearDialog(false);
     }
   };
+
+  // Helper function to format date for display
+const formatDateDisplay = (dateStr) => {
+  const date = new Date(dateStr);
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  if (date.toDateString() === today.toDateString()) {
+    return 'today';
+  } else if (date.toDateString() === tomorrow.toDateString()) {
+    return 'tomorrow';
+  } else {
+    return date.toLocaleDateString('default', {
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+};
+
+  // Add this function inside the DayCoach component
+const handleExecuteAction = (action) => {
+  console.log('Executing action:', action);
+  
+  if (action.type === 'ADD_TASK') {
+    const { task } = action;
+    
+    if (!task || !task.title) {
+      console.error('Invalid task data in action:', action);
+      return;
+    }
+    
+    try {
+      // Get today's date or use a specified date
+      const today = formatDateForStorage(new Date());
+      const targetDate = action.date || today;
+      
+      // Get storage data
+      const storage = getStorage();
+      const dayData = storage[targetDate] || {};
+      
+      // Determine task list to use (custom, AI, or default)
+      let taskList = dayData.customTasks || dayData.aiTasks || dayData.defaultTasks || [];
+      
+      // If no task list exists, create one
+      if (!taskList || !Array.isArray(taskList) || taskList.length === 0) {
+        taskList = [
+          {
+            title: 'Coach Suggested',
+            items: []
+          }
+        ];
+      }
+      
+      // Find the appropriate category or use the first one
+      let targetCategory;
+      if (task.category) {
+        targetCategory = taskList.find(cat => cat.title === task.category);
+      }
+      
+      // If category not found, use first or create new one
+      if (!targetCategory) {
+        if (taskList.length > 0) {
+          targetCategory = taskList[0];
+        } else {
+          targetCategory = {
+            title: task.category || 'Coach Suggested',
+            items: []
+          };
+          taskList.push(targetCategory);
+        }
+      }
+      
+      // Add the task if it doesn't already exist
+      if (!targetCategory.items.includes(task.title)) {
+        targetCategory.items.push(task.title);
+        
+        // Initialize checked state for this task
+        if (!dayData.checked) {
+          dayData.checked = {};
+        }
+        dayData.checked[`${targetCategory.title}|${task.title}`] = false;
+        
+        // Update the task list in storage
+        if (dayData.customTasks) {
+          dayData.customTasks = taskList;
+        } else if (dayData.aiTasks) {
+          dayData.aiTasks = taskList;
+        } else {
+          dayData.customTasks = taskList;
+        }
+        
+        // Save to storage
+        storage[targetDate] = dayData;
+        setStorage(storage);
+        
+        // Update the UI
+        const coachData = getDayCoachData();
+        setMessages(coachData.messages || []);
+        setUserData(coachData.userData || null);
+        
+        // Show confirmation message
+        const confirmationMessage = {
+          id: `coach-msg-${Date.now()}`,
+          sender: 'coach',
+          content: `I've added "${task.title}" to your tasks for ${formatDateDisplay(targetDate)}. ${task.time ? `It's scheduled for ${task.time}.` : ''}`,
+          timestamp: new Date().toISOString(),
+          isRead: true
+        };
+        
+        // Add confirmation message
+        saveDayCoachMessage(confirmationMessage);
+        setMessages(prev => [...prev, confirmationMessage]);
+      } else {
+        // Task already exists, show a message
+        const existingTaskMessage = {
+          id: `coach-msg-${Date.now()}`,
+          sender: 'coach',
+          content: `You already have "${task.title}" in your tasks for ${formatDateDisplay(targetDate)}.`,
+          timestamp: new Date().toISOString(),
+          isRead: true
+        };
+        
+        // Add message
+        saveDayCoachMessage(existingTaskMessage);
+        setMessages(prev => [...prev, existingTaskMessage]);
+      }
+    } catch (error) {
+      console.error('Error executing ADD_TASK action:', error);
+      
+      // Show error message
+      const errorMessage = {
+        id: `coach-msg-${Date.now()}`,
+        sender: 'coach',
+        content: `I'm sorry, I couldn't add that task. Please try again.`,
+        timestamp: new Date().toISOString(),
+        isRead: true,
+        isError: true
+      };
+      
+      saveDayCoachMessage(errorMessage);
+      setMessages(prev => [...prev, errorMessage]);
+    }
+  } else if (action.type === 'SET_REMINDER') {
+    // Handle reminder setting functionality
+    // This would integrate with your reminder system
+    console.log('Setting reminder:', action);
+    
+    // Show confirmation message
+    const confirmationMessage = {
+      id: `coach-msg-${Date.now()}`,
+      sender: 'coach',
+      content: `I've set a reminder for ${action.time || 'you'}.`,
+      timestamp: new Date().toISOString(),
+      isRead: true
+    };
+    
+    saveDayCoachMessage(confirmationMessage);
+    setMessages(prev => [...prev, confirmationMessage]);
+  }
+};
+
   
 
   // Group messages by date
@@ -681,17 +843,18 @@ if (!storage.dayCoach?.userData?.preferences?.proactiveMessages) {
         />
         {group.messages.map((message, index) => (
           <DayCoachMessage 
-            key={message.id} 
-            message={message} 
-            onReply={handleQuickReply}
-            displaySuggestions={
-              message.sender === 'coach' && 
-              index === group.messages.length - 1 &&
-              groupIndex === groupMessagesByDate(messages).length - 1 &&
-              !quickReplies.length
-            }
-            isMobile={window.innerWidth < 640}
-          />
+          key={message.id} 
+          message={message} 
+          onReply={handleQuickReply}
+          onExecuteAction={handleExecuteAction}  // Add this prop
+          displaySuggestions={
+            message.sender === 'coach' && 
+            index === group.messages.length - 1 &&
+            groupIndex === groupMessagesByDate(messages).length - 1 &&
+            !quickReplies.length
+          }
+          isMobile={window.innerWidth < 640}
+        />
         ))}
       </React.Fragment>
     ))}

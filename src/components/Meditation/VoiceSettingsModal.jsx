@@ -7,6 +7,21 @@ const VoiceSettingsModal = ({ onClose }) => {
   const [availableVoices, setAvailableVoices] = useState([]);
   const [testText, setTestText] = useState("This is a sample meditation voice. How does it sound?");
   const speechSynthesisRef = useRef(window.speechSynthesis);
+  const modalRef = useRef(null);
+  
+  // Open modal when component mounts
+  useEffect(() => {
+    if (modalRef.current) {
+      modalRef.current.showModal();
+    }
+    
+    // Cleanup when unmounting
+    return () => {
+      if (modalRef.current && modalRef.current.open) {
+        modalRef.current.close();
+      }
+    };
+  }, []);
   
   useEffect(() => {
     // Function to load voices
@@ -131,19 +146,24 @@ const VoiceSettingsModal = ({ onClose }) => {
   })();
   
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-70 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-          <h2 className="text-lg font-medium text-slate-800 dark:text-slate-100">Voice Settings</h2>
+    <dialog 
+      id="voice-settings-modal" 
+      ref={modalRef}
+      className="modal-base"
+      onClick={(e) => e.target.id === 'voice-settings-modal' && onClose()}
+    >
+      <div className="modal-content max-w-md" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">Voice Settings</h2>
           <button 
             onClick={onClose}
-            className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            className="modal-close-button"
           >
             <X size={20} />
           </button>
         </div>
         
-        <div className="p-4 space-y-6">
+        <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Select Voice
@@ -310,7 +330,7 @@ const VoiceSettingsModal = ({ onClose }) => {
           </div>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 };
 

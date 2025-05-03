@@ -26,6 +26,21 @@ const BreathingExercise = ({
   const audioRef = useRef(null);
   const circleRef = useRef(null);
   const speechSynthesisRef = useRef(null);
+  const mainDialogRef = useRef(null);
+
+  // Open the modal when component mounts
+  useEffect(() => {
+    if (mainDialogRef.current) {
+      mainDialogRef.current.showModal();
+    }
+    
+    // Cleanup when unmounting
+    return () => {
+      if (mainDialogRef.current && mainDialogRef.current.open) {
+        mainDialogRef.current.close();
+      }
+    };
+  }, []);
 
   // Ensure currentExercise gets set properly when component mounts or selectedExercise changes
   useEffect(() => {
@@ -560,9 +575,15 @@ const BreathingExercise = ({
   // Loading state
   if (!currentExercise) {
     return (
-      <div className="fixed inset-0 bg-slate-900/95 z-50 flex items-center justify-center">
-        <div className="text-white">Loading exercise...</div>
-      </div>
+      <dialog 
+        id="breathing-exercise-modal" 
+        ref={mainDialogRef}
+        className="modal-base"
+      >
+        <div className="modal-content max-w-full h-screen flex items-center justify-center bg-slate-900/95">
+          <div className="text-white">Loading exercise...</div>
+        </div>
+      </dialog>
     );
   }
   
@@ -570,207 +591,221 @@ const BreathingExercise = ({
   const config = getExerciseConfig(currentExercise.id);
   
   return (
-    <div 
-      className="fixed inset-0 bg-slate-900/95 z-50 flex flex-col items-center justify-center overflow-y-auto"
-      onMouseMove={handleMouseMove}
-    >
-      {/* Audio element for ambient sound */}
-      <audio 
-        ref={audioRef} 
-        src="/ambient-sounds/calm-meditation.mp3" 
-        loop 
-      />
-      
-      {/* Header with controls */}
-      <div className={`absolute top-0 left-0 right-0 p-4 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="flex justify-between items-center">
-          <button 
-            onClick={onClose}
-            className="p-2 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
-          >
-            <X size={24} />
-          </button>
+    <>
+      <dialog 
+        id="breathing-exercise-modal" 
+        ref={mainDialogRef}
+        className="modal-base"
+        onClick={(e) => e.target.id === 'breathing-exercise-modal' && onClose()}
+      >
+        <div 
+          className="modal-content max-w-full h-screen p-0 bg-slate-900/95 flex flex-col items-center justify-center overflow-y-auto"
+          onMouseMove={handleMouseMove}
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Audio element for ambient sound */}
+          <audio 
+            ref={audioRef} 
+            src="/ambient-sounds/calm-meditation.mp3" 
+            loop 
+          />
           
-          <div>
-            <h2 className="text-xl font-medium text-white">{currentExercise.name}</h2>
-            <p className="text-slate-300 text-sm text-center">
-              {category.title} • Cycle {cycleCount}/{config ? config.cycles : '?'}
-            </p>
-          </div>
-          
-          <button
-            onClick={() => onToggleFavorite(currentExercise.id)}
-            className="p-2 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
-          >
-            <Star size={24} className={isFavorite ? 'fill-amber-500 text-amber-500' : ''} />
-          </button>
-        </div>
-      </div>
-      
-      {/* Main breathing animation */}
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <div className="relative mb-4">
-          <div 
-            ref={circleRef}
-            className="w-48 h-48 xs:w-56 xs:h-56 sm:w-64 sm:h-64 bg-purple-500/20 rounded-full flex items-center justify-center"
-          >
-            <div className="w-40 h-40 xs:w-44 xs:h-44 sm:w-52 sm:h-52 bg-purple-500/30 rounded-full flex items-center justify-center pulse-animation">
-              <div className="w-24 h-24 xs:w-28 xs:h-28 sm:w-32 sm:h-32 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
-                <Heart size={36} className="text-white" />
+          {/* Header with controls */}
+          <div className={`absolute top-0 left-0 right-0 p-4 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+            <div className="flex justify-between items-center">
+              <button 
+                onClick={onClose}
+                className="p-2 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
+              >
+                <X size={24} />
+              </button>
+              
+              <div>
+                <h2 className="text-xl font-medium text-white">{currentExercise.name}</h2>
+                <p className="text-slate-300 text-sm text-center">
+                  {category.title} • Cycle {cycleCount}/{config ? config.cycles : '?'}
+                </p>
               </div>
+              
+              <button
+                onClick={() => onToggleFavorite(currentExercise.id)}
+                className="p-2 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
+              >
+                <Star size={24} className={isFavorite ? 'fill-amber-500 text-amber-500' : ''} />
+              </button>
             </div>
           </div>
-        </div>
-        
-        {/* Phase indicator and timer */}
-        <div className="text-center">
-          <h3 className="text-xl xs:text-2xl font-medium text-white mb-2">{getPhaseDisplayName()}</h3>
-          <p className="text-3xl xs:text-4xl font-bold text-white mb-4">{timer}</p>
-          <p className="text-lg text-slate-300">{instructions}</p>
-        </div>
-      </div>
-      
-      {/* Bottom controls */}
-      <div className={`absolute bottom-0 left-0 right-0 p-6 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="flex justify-center items-center gap-3 xs:gap-4 sm:gap-8">
-          <button
-            onClick={toggleMute}
-            className="p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
-          >
-            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-          </button>
           
-          <button
-            onClick={togglePlayPause}
-            className="p-4 xs:p-6 text-white bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full hover:from-purple-600 hover:to-indigo-600 transition-colors"
-          >
-            {isPlaying ? <Pause size={24} /> : <Play size={24} />}
-          </button>
+          {/* Main breathing animation */}
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="relative mb-4">
+              <div 
+                ref={circleRef}
+                className="w-48 h-48 xs:w-56 xs:h-56 sm:w-64 sm:h-64 bg-purple-500/20 rounded-full flex items-center justify-center"
+              >
+                <div className="w-40 h-40 xs:w-44 xs:h-44 sm:w-52 sm:h-52 bg-purple-500/30 rounded-full flex items-center justify-center pulse-animation">
+                  <div className="w-24 h-24 xs:w-28 xs:h-28 sm:w-32 sm:h-32 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
+                    <Heart size={36} className="text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Phase indicator and timer */}
+            <div className="text-center">
+              <h3 className="text-xl xs:text-2xl font-medium text-white mb-2">{getPhaseDisplayName()}</h3>
+              <p className="text-3xl xs:text-4xl font-bold text-white mb-4">{timer}</p>
+              <p className="text-lg text-slate-300">{instructions}</p>
+            </div>
+          </div>
           
-          <button
-            onClick={skipToNextPhase}
-            className="p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
-            disabled={activePhase === 'complete'}
-          >
-            <SkipForward size={20} className={activePhase === 'complete' ? 'opacity-50' : ''} />
-          </button>
+          {/* Bottom controls */}
+          <div className={`absolute bottom-0 left-0 right-0 p-6 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+            <div className="flex justify-center items-center gap-3 xs:gap-4 sm:gap-8">
+              <button
+                onClick={toggleMute}
+                className="p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
+              >
+                {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+              </button>
+              
+              <button
+                onClick={togglePlayPause}
+                className="p-4 xs:p-6 text-white bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full hover:from-purple-600 hover:to-indigo-600 transition-colors"
+              >
+                {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+              </button>
+              
+              <button
+                onClick={skipToNextPhase}
+                className="p-2 xs:p-3 text-white bg-slate-800/70 rounded-full hover:bg-slate-700/70 transition-colors"
+                disabled={activePhase === 'complete'}
+              >
+                <SkipForward size={20} className={activePhase === 'complete' ? 'opacity-50' : ''} />
+              </button>
+            </div>
+          </div>
+          
+          {/* CSS for animations */}
+          <style jsx>{`
+            @keyframes breathe-in {
+              from {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.2);
+              }
+              to {
+                transform: scale(1.1);
+                box-shadow: 0 0 30px 10px rgba(147, 51, 234, 0.4);
+              }
+            }
+            
+            @keyframes breathe-out {
+              from {
+                transform: scale(1.1);
+                box-shadow: 0 0 30px 10px rgba(147, 51, 234, 0.4);
+              }
+              to {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.2);
+              }
+            }
+            
+            @keyframes idle-breathing {
+              from {
+                transform: scale(0.95);
+                box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.2);
+              }
+              to {
+                transform: scale(1);
+                box-shadow: 0 0 20px 7px rgba(147, 51, 234, 0.3);
+              }
+            }
+            
+            .pulse-animation {
+              animation: pulse 2s infinite;
+            }
+            
+            @keyframes pulse {
+              0% {
+                box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.4);
+              }
+              70% {
+                box-shadow: 0 0 0 15px rgba(147, 51, 234, 0);
+              }
+              100% {
+                box-shadow: 0 0 0 0 rgba(147, 51, 234, 0);
+              }
+            }
+          `}</style>
         </div>
-      </div>
-      
-      {/* CSS for animations */}
-      <style jsx>{`
-        @keyframes breathe-in {
-          from {
-            transform: scale(0.8);
-            box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.2);
-          }
-          to {
-            transform: scale(1.1);
-            box-shadow: 0 0 30px 10px rgba(147, 51, 234, 0.4);
-          }
-        }
-        
-        @keyframes breathe-out {
-          from {
-            transform: scale(1.1);
-            box-shadow: 0 0 30px 10px rgba(147, 51, 234, 0.4);
-          }
-          to {
-            transform: scale(0.8);
-            box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.2);
-          }
-        }
-        
-        @keyframes idle-breathing {
-          from {
-            transform: scale(0.95);
-            box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.2);
-          }
-          to {
-            transform: scale(1);
-            box-shadow: 0 0 20px 7px rgba(147, 51, 234, 0.3);
-          }
-        }
-        
-        .pulse-animation {
-          animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-          0% {
-            box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.4);
-          }
-          70% {
-            box-shadow: 0 0 0 15px rgba(147, 51, 234, 0);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgba(147, 51, 234, 0);
-          }
-        }
-      `}</style>
+      </dialog>
       
       {/* Before feeling dialog */}
       <dialog 
         id="before-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
+        className="modal-base"
       >
-        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
-          How are you feeling now?
-        </h3>
-        <div className="grid grid-cols-5 gap-2 mb-6">
-          {[1, 2, 3, 4, 5].map(feeling => (
-            <button
-              key={feeling}
-              onClick={() => handleBeforeFeeling(feeling)}
-              className={`p-3 rounded-full flex items-center justify-center transition-colors hover:bg-slate-100 dark:hover:bg-slate-700`}
-            >
-              <span className="text-2xl">
-                {feeling === 1 ? '😔' : 
-                 feeling === 2 ? '😕' : 
-                 feeling === 3 ? '😐' : 
-                 feeling === 4 ? '🙂' : 
-                 '😊'}
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
-          <span>Stressed</span>
-          <span>Relaxed</span>
+        <div className="modal-content max-w-xs">
+          <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
+            How are you feeling now?
+          </h3>
+          <div className="grid grid-cols-5 gap-2 mb-6">
+            {[1, 2, 3, 4, 5].map(feeling => (
+              <button
+                key={feeling}
+                onClick={() => handleBeforeFeeling(feeling)}
+                className={`p-3 rounded-full flex items-center justify-center transition-colors hover:bg-slate-100 dark:hover:bg-slate-700`}
+              >
+                <span className="text-2xl">
+                  {feeling === 1 ? '😔' : 
+                   feeling === 2 ? '😕' : 
+                   feeling === 3 ? '😐' : 
+                   feeling === 4 ? '🙂' : 
+                   '😊'}
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
+            <span>Stressed</span>
+            <span>Relaxed</span>
+          </div>
         </div>
       </dialog>
       
       {/* After feeling dialog */}
       <dialog 
         id="after-feeling-dialog" 
-        className="bg-white dark:bg-slate-800 rounded-xl p-4 xs:p-6 w-64 xs:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto shadow-xl"
+        className="modal-base"
       >
-        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
-          How do you feel now?
-        </h3>
-        <div className="grid grid-cols-5 gap-2 mb-6">
-          {[1, 2, 3, 4, 5].map(feeling => (
-            <button
-              key={feeling}
-              onClick={() => handleCompleteExercise(feeling)}
-              className={`p-3 rounded-full flex items-center justify-center transition-colors hover:bg-slate-100 dark:hover:bg-slate-700`}
-            >
-              <span className="text-2xl">
-                {feeling === 1 ? '😔' : 
-                 feeling === 2 ? '😕' : 
-                 feeling === 3 ? '😐' : 
-                 feeling === 4 ? '🙂' : 
-                 '😊'}
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
-          <span>Stressed</span>
-          <span>Relaxed</span>
+        <div className="modal-content max-w-xs">
+          <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-4">
+            How do you feel now?
+          </h3>
+          <div className="grid grid-cols-5 gap-2 mb-6">
+            {[1, 2, 3, 4, 5].map(feeling => (
+              <button
+                key={feeling}
+                onClick={() => handleCompleteExercise(feeling)}
+                className={`p-3 rounded-full flex items-center justify-center transition-colors hover:bg-slate-100 dark:hover:bg-slate-700`}
+              >
+                <span className="text-2xl">
+                  {feeling === 1 ? '😔' : 
+                   feeling === 2 ? '😕' : 
+                   feeling === 3 ? '😐' : 
+                   feeling === 4 ? '🙂' : 
+                   '😊'}
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
+            <span>Stressed</span>
+            <span>Relaxed</span>
+          </div>
         </div>
       </dialog>
-    </div>
+    </>
   );
 };
 

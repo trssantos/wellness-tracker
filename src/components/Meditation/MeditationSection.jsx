@@ -624,12 +624,7 @@ const MeditationSection = () => {
 
       
     
-      {/* Voice Settings Modal */}
-      {showVoiceSettings && (
-        <VoiceSettingsModal 
-          onClose={() => setShowVoiceSettings(false)} 
-        />
-      )}
+      
     
       {/* Add animation styles */}
       <style jsx>{`
@@ -700,6 +695,13 @@ const MeditationSection = () => {
         }
       `}</style>
     </div>
+
+    {/* Voice Settings Modal */}
+    {showVoiceSettings && (
+        <VoiceSettingsModal 
+          onClose={() => setShowVoiceSettings(false)} 
+        />
+      )}
     {/* Exercise Modal */}
     {selectedExercise && (() => {
       if (selectedExercise.type === 'category') {

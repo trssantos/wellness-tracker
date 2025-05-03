@@ -11,7 +11,6 @@ import ExpenseTracker from './ExpenseTracker';
 import BudgetManager from './BudgetManager';
 import SavingsGoals from './SavingsGoals';
 import FinancialInsights from './FinancialInsights';
-import QuickEntryFAB from './QuickEntryFAB';
 import SpendingChart from './SpendingChart';
 import UpcomingBills from './UpcomingBills';
 import CalendarView from './CalendarView';
@@ -30,7 +29,7 @@ import {
   getCategoryById, addBudget, addSavingsGoal, updateBudget, getCategoryIconComponent
 } from '../../utils/financeUtils';
 
-const FinanceSection = () => {
+const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
   // State variables
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState(null);
@@ -149,7 +148,7 @@ const FinanceSection = () => {
     const interval = setInterval(processTransactions, 3600000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [externalRefreshTrigger]);
 
   // Function to filter transactions by date (past or future)
   const filterTransactionsByDate = (transactions, futureOnly = false) => {
@@ -215,7 +214,7 @@ const FinanceSection = () => {
     // Sort by amount, descending
     categoryData.sort((a, b) => b.value - a.value);
     setChartData(categoryData);
-  }, [selectedPeriod, refreshTrigger]);
+  }, [selectedPeriod, refreshTrigger, externalRefreshTrigger]);
 
   // Toggle expanded sections
   const toggleSection = (section) => {
@@ -274,6 +273,7 @@ const FinanceSection = () => {
   };
 
   return (
+    <>
     <div className="space-y-3">
       {/* Finance Header */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
@@ -862,11 +862,13 @@ const FinanceSection = () => {
         </div>
       )}
       
-      {/* Quick Entry Floating Action Button */}
-      <QuickEntryFAB onTransactionAdded={handleRefresh} />
       
-      {/* Modals */}
-      {showAddTransaction && (
+      
+      
+    </div>
+
+    {/* Modals */}
+    {showAddTransaction && (
         <TransactionModal
           onClose={() => setShowAddTransaction(false)}
           onTransactionAdded={() => {
@@ -919,7 +921,8 @@ const FinanceSection = () => {
           onCancel={() => setConfirmAction(null)}
         />
       )}
-    </div>
+    
+    </>
   );
 };
 

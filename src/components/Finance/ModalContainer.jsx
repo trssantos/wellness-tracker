@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
 const ModalContainer = ({ 
@@ -6,48 +6,67 @@ const ModalContainer = ({
   children, 
   onClose, 
   maxWidth = 'md',
-  preventOutsideClose = false
+  preventOutsideClose = false,
+  id = 'modal-container'
 }) => {
+  const dialogRef = useRef(null);
+
+  // Open modal when component mounts
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+    }
+  }, []);
+
   // Close on ESC key
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && !preventOutsideClose) {
+        onClose();
+      }
     };
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, preventOutsideClose]);
 
-  // Handle outside click
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget && !preventOutsideClose) {
-      onClose();
+  const handleClose = () => {
+    if (dialogRef.current) {
+      dialogRef.current.close();
     }
+    onClose();
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-      onClick={handleBackdropClick}
+    <dialog 
+      ref={dialogRef}
+      id={id}
+      className="modal-base"
+      onClick={(e) => {
+        if (!preventOutsideClose && e.target.tagName === 'DIALOG') {
+          handleClose();
+        }
+      }}
     >
       <div 
-        className={`bg-white dark:bg-slate-800 rounded-xl w-full max-w-${maxWidth} shadow-xl overflow-auto max-h-[90vh]`}
+        className={`modal-content max-w-${maxWidth}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-4 sm:p-5 border-b border-slate-200 dark:border-slate-700">
-          <h3 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-white">{title}</h3>
+        <div className="modal-header">
+          <h3 className="modal-title">{title}</h3>
           <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+            onClick={handleClose}
+            className="modal-close-button"
           >
             <X size={20} />
           </button>
         </div>
-        <div className="p-4 sm:p-5 overflow-auto">
+        <div className="modal-body">
           {children}
         </div>
       </div>
-    </div>
+    </dialog>
   );
 };
 

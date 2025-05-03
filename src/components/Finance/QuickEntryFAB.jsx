@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, TrendingUp, TrendingDown, X } from 'lucide-react';
-import { addTransaction, getFinanceData } from '../../utils/financeUtils';
+import { Plus, TrendingUp, TrendingDown } from 'lucide-react';
 import QuickTransactionModal from './QuickTransactionModal';
 
 const QuickEntryFAB = ({ onTransactionAdded }) => {
@@ -37,7 +36,8 @@ const QuickEntryFAB = ({ onTransactionAdded }) => {
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-4">
+      {/* FAB Container - Ensure proper fixed positioning */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
         {/* Quick access buttons */}
         {isOpen && (
           <>
@@ -70,7 +70,7 @@ const QuickEntryFAB = ({ onTransactionAdded }) => {
               : 'bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700'
           }`}
         >
-          <Plus size={24} className="text-white" />
+          <Plus size={24} className="text-white transition-transform duration-300" />
         </button>
       </div>
       

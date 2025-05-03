@@ -530,6 +530,7 @@ const MeditationSection = () => {
   };
 
   return (
+    <>
     <div className="space-y-6 w-full max-w-full overflow-hidden meditation-container">
       {/* Tabs */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 mb-2 transition-colors">
@@ -621,158 +622,7 @@ const MeditationSection = () => {
         />
       )}
 
-      {/* Exercise Modal */}
-      {selectedExercise && (() => {
-        if (selectedExercise.type === 'category') {
-          switch (selectedExercise.data.id) {
-            case 'breathing':
-              return (
-                <BreathingExercise
-                  category={selectedExercise.data}
-                  onClose={handleCloseExercise}
-                  onComplete={saveSession}
-                  onToggleFavorite={toggleFavorite}
-                  favorites={meditationData.favorites}
-                />
-              );
-            case 'guided':
-              return (
-                <GuidedMeditation
-                  category={selectedExercise.data}
-                  onClose={handleCloseExercise}
-                  onComplete={saveSession}
-                  onToggleFavorite={toggleFavorite}
-                  favorites={meditationData.favorites}
-                />
-              );
-            case 'grounding':
-              return (
-                <GroundingExercises
-                  category={selectedExercise.data}
-                  onClose={handleCloseExercise}
-                  onComplete={saveSession}
-                  onToggleFavorite={toggleFavorite}
-                  favorites={meditationData.favorites}
-                />
-              );
-            case 'ambient':
-              return (
-                <AmbientSounds
-                  category={selectedExercise.data}
-                  onClose={handleCloseExercise}
-                  onComplete={saveSession}
-                  onToggleFavorite={toggleFavorite}
-                  favorites={meditationData.favorites}
-                />
-              );
-            case 'sleep':
-              return (
-                <SleepSounds
-                  category={selectedExercise.data}
-                  onClose={handleCloseExercise}
-                  onComplete={saveSession}
-                  onToggleFavorite={toggleFavorite}
-                  favorites={meditationData.favorites}
-                />
-              );
-            case 'quick':
-              return (
-                <BreathingExercise // Reuse the breathing component for quick exercises
-                  category={selectedExercise.data}
-                  onClose={handleCloseExercise}
-                  onComplete={saveSession}
-                  onToggleFavorite={toggleFavorite}
-                  favorites={meditationData.favorites}
-                  isQuick={true}
-                />
-              );
-            default:
-              return null;
-          }
-        } else if (selectedExercise.type === 'exercise') {
-          // Individual exercise
-          const { data, categoryData } = selectedExercise;
-          
-          switch (categoryData.id) {
-            case 'breathing':
-              return (
-                <BreathingExercise
-                  category={categoryData}
-                  selectedExercise={data}
-                  onClose={handleCloseExercise}
-                  onComplete={saveSession}
-                  onToggleFavorite={toggleFavorite}
-                  favorites={meditationData.favorites}
-                />
-              );
-            case 'guided':
-              return (
-                <GuidedMeditation
-                  category={categoryData}
-                  selectedExercise={data}
-                  onClose={handleCloseExercise}
-                  onComplete={saveSession}
-                  onToggleFavorite={toggleFavorite}
-                  favorites={meditationData.favorites}
-                />
-              );
-            case 'grounding':
-              return (
-                <GroundingExercises
-                  category={categoryData}
-                  selectedExercise={data}
-                  onClose={handleCloseExercise}
-                  onComplete={saveSession}
-                  onToggleFavorite={toggleFavorite}
-                  favorites={meditationData.favorites}
-                />
-              );
-            case 'ambient':
-              return (
-                <AmbientSounds
-                  category={categoryData}
-                  selectedExercise={data}
-                  onClose={handleCloseExercise}
-                  onComplete={saveSession}
-                  onToggleFavorite={toggleFavorite}
-                  favorites={meditationData.favorites}
-                />
-              );
-            case 'sleep':
-              return (
-                <SleepSounds
-                  category={categoryData}
-                  selectedExercise={data}
-                  onClose={handleCloseExercise}
-                  onComplete={saveSession}
-                  onToggleFavorite={toggleFavorite}
-                  favorites={meditationData.favorites}
-                />
-              );
-            case 'quick':
-              return (
-                <BreathingExercise
-                  category={categoryData}
-                  selectedExercise={data}
-                  onClose={handleCloseExercise}
-                  onComplete={saveSession}
-                  onToggleFavorite={toggleFavorite}
-                  favorites={meditationData.favorites}
-                  isQuick={true}
-                />
-              );
-            default:
-              return null;
-          }
-        } else if (selectedExercise.type === 'tips') {
-          return (
-            <MeditationTips 
-              onClose={handleCloseExercise}
-            />
-          );
-        }
-        return null;
-      })()}
+      
     
       {/* Voice Settings Modal */}
       {showVoiceSettings && (
@@ -850,6 +700,159 @@ const MeditationSection = () => {
         }
       `}</style>
     </div>
+    {/* Exercise Modal */}
+    {selectedExercise && (() => {
+      if (selectedExercise.type === 'category') {
+        switch (selectedExercise.data.id) {
+          case 'breathing':
+            return (
+              <BreathingExercise
+                category={selectedExercise.data}
+                onClose={handleCloseExercise}
+                onComplete={saveSession}
+                onToggleFavorite={toggleFavorite}
+                favorites={meditationData.favorites}
+              />
+            );
+          case 'guided':
+            return (
+              <GuidedMeditation
+                category={selectedExercise.data}
+                onClose={handleCloseExercise}
+                onComplete={saveSession}
+                onToggleFavorite={toggleFavorite}
+                favorites={meditationData.favorites}
+              />
+            );
+          case 'grounding':
+            return (
+              <GroundingExercises
+                category={selectedExercise.data}
+                onClose={handleCloseExercise}
+                onComplete={saveSession}
+                onToggleFavorite={toggleFavorite}
+                favorites={meditationData.favorites}
+              />
+            );
+          case 'ambient':
+            return (
+              <AmbientSounds
+                category={selectedExercise.data}
+                onClose={handleCloseExercise}
+                onComplete={saveSession}
+                onToggleFavorite={toggleFavorite}
+                favorites={meditationData.favorites}
+              />
+            );
+          case 'sleep':
+            return (
+              <SleepSounds
+                category={selectedExercise.data}
+                onClose={handleCloseExercise}
+                onComplete={saveSession}
+                onToggleFavorite={toggleFavorite}
+                favorites={meditationData.favorites}
+              />
+            );
+          case 'quick':
+            return (
+              <BreathingExercise // Reuse the breathing component for quick exercises
+                category={selectedExercise.data}
+                onClose={handleCloseExercise}
+                onComplete={saveSession}
+                onToggleFavorite={toggleFavorite}
+                favorites={meditationData.favorites}
+                isQuick={true}
+              />
+            );
+          default:
+            return null;
+        }
+      } else if (selectedExercise.type === 'exercise') {
+        // Individual exercise
+        const { data, categoryData } = selectedExercise;
+        
+        switch (categoryData.id) {
+          case 'breathing':
+            return (
+              <BreathingExercise
+                category={categoryData}
+                selectedExercise={data}
+                onClose={handleCloseExercise}
+                onComplete={saveSession}
+                onToggleFavorite={toggleFavorite}
+                favorites={meditationData.favorites}
+              />
+            );
+          case 'guided':
+            return (
+              <GuidedMeditation
+                category={categoryData}
+                selectedExercise={data}
+                onClose={handleCloseExercise}
+                onComplete={saveSession}
+                onToggleFavorite={toggleFavorite}
+                favorites={meditationData.favorites}
+              />
+            );
+          case 'grounding':
+            return (
+              <GroundingExercises
+                category={categoryData}
+                selectedExercise={data}
+                onClose={handleCloseExercise}
+                onComplete={saveSession}
+                onToggleFavorite={toggleFavorite}
+                favorites={meditationData.favorites}
+              />
+            );
+          case 'ambient':
+            return (
+              <AmbientSounds
+                category={categoryData}
+                selectedExercise={data}
+                onClose={handleCloseExercise}
+                onComplete={saveSession}
+                onToggleFavorite={toggleFavorite}
+                favorites={meditationData.favorites}
+              />
+            );
+          case 'sleep':
+            return (
+              <SleepSounds
+                category={categoryData}
+                selectedExercise={data}
+                onClose={handleCloseExercise}
+                onComplete={saveSession}
+                onToggleFavorite={toggleFavorite}
+                favorites={meditationData.favorites}
+              />
+            );
+          case 'quick':
+            return (
+              <BreathingExercise
+                category={categoryData}
+                selectedExercise={data}
+                onClose={handleCloseExercise}
+                onComplete={saveSession}
+                onToggleFavorite={toggleFavorite}
+                favorites={meditationData.favorites}
+                isQuick={true}
+              />
+            );
+          default:
+            return null;
+        }
+      } else if (selectedExercise.type === 'tips') {
+        return (
+          <MeditationTips 
+            onClose={handleCloseExercise}
+          />
+        );
+      }
+      return null;
+    })()}
+    </>
   );
 };
 

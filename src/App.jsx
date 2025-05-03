@@ -50,6 +50,7 @@ import { formatDateForStorage } from './utils/dateUtils';
 import TaskSearchModal from './components/TaskSearchModal';
 import NotesSection from './components/Notes/NotesSection';
 import LifestyleSection from './components/Lifestyle/LifestyleSection';
+import QuickEntryFAB from './components/Finance/QuickEntryFAB';
 
 const App = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -69,10 +70,15 @@ const [sleepDate, setSleepDate] = useState(null);
 const [taskParams, setTaskParams] = useState(null);
 const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
+const [financeRefreshTrigger, setFinanceRefreshTrigger] = useState(0);
+
 // Track if Focus section has an active session
 const hasFocusSession = useRef(false);
 const preventNavigationAway = useRef(false);
 
+const handleFinanceRefresh = () => {
+  setFinanceRefreshTrigger(prev => prev + 1);
+};
 
   // Initialize reminder service on app start and run data migration
   useEffect(() => {
@@ -262,6 +268,8 @@ const hasPendingTasksOnDate = (dateToCheck, targetDate) => {
       }
     }
   }
+
+  
   
   // Helper function to check if a task was completed in a date range
   const wasCompletedInDateRange = (taskText, startDateStr, endDateStr) => {
@@ -632,8 +640,8 @@ const handlePendingTasksAction = (action, tasks = []) => {
   return (
     <ThemeProvider>
       <WorkoutThemeProvider>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors ${isFullscreenActive ? 'fullscreen-app-mode' : ''}">
-  <div className="grid grid-cols-[auto_1fr]">
+      <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors ${isFullscreenActive ? 'fullscreen-app-mode' : ''}`}>
+         <div className="flex">
           {/* Sidebar Navigation */}
           <Sidebar 
             activeSection={activeSection} 
@@ -698,7 +706,9 @@ const handlePendingTasksAction = (action, tasks = []) => {
 
 
 <SectionContainer id="finance" isActive={activeSection === 'finance'}>
-  <FinanceSection />
+ <FinanceSection 
+                refreshTrigger={financeRefreshTrigger}
+              />
 </SectionContainer>
 
 
@@ -747,6 +757,12 @@ const handlePendingTasksAction = (action, tasks = []) => {
           onSearch={handleOpenSearch}
         />
         )}
+
+        {/* Quick Entry Floating Action Button */}
+        {activeSection === 'finance' && (
+        <QuickEntryFAB onTransactionAdded={handleFinanceRefresh} />
+        )}
+    
         
         {/* Modals */}
         <FlowGuide />

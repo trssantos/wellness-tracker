@@ -3,7 +3,7 @@ import {
   Zap, Coins, DollarSign, PiggyBank, TrendingUp, BarChart2, CreditCard, 
   Calendar, Wallet, ChevronUp, ChevronDown, Settings, Tag, Clock, BadgePercent, 
   TrendingDown, Award, Plus, Filter, Search, ArrowRight, Download, RefreshCw,
-  LayoutDashboard, FileText, LineChart
+  LayoutDashboard, FileText, LineChart, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 // Import components
@@ -26,7 +26,8 @@ import recurringTransactionService from '../../utils/RecurringTransactionService
 import { 
   calculateFinancialStats, processRecurringTransactions, 
   getFinancialInsights, getSpendingMoodCorrelation, getFinanceData,
-  getCategoryById, addBudget, addSavingsGoal, updateBudget, getCategoryIconComponent
+  getCategoryById, addBudget, addSavingsGoal, updateBudget, getCategoryIconComponent,
+  getCurrentMonthKey, formatMonthKey
 } from '../../utils/financeUtils';
 
 const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
@@ -42,6 +43,17 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
     upcoming: true
   });
   
+  // Separate state for overview and insights
+  const [currentMonth, setCurrentMonth] = useState(new Date()); // For overview tab
+  const [selectedPeriod, setSelectedPeriod] = useState('month'); // For insights tab
+  const [selectedDateRange, setSelectedDateRange] = useState({
+    start: new Date(new Date().setMonth(new Date().getMonth() - 1)),
+    end: new Date()
+  });
+  
+  // Month picker state
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  
   // Modal states
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showAddBudget, setShowAddBudget] = useState(false);
@@ -50,11 +62,6 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
   const [confirmAction, setConfirmAction] = useState(null);
   
   // Data states
-  const [selectedPeriod, setSelectedPeriod] = useState('month');
-  const [selectedDateRange, setSelectedDateRange] = useState({
-    start: new Date(new Date().setMonth(new Date().getMonth() - 1)),
-    end: new Date()
-  });
   const [insights, setInsights] = useState({ score: 0, insights: [] });
   const [correlations, setCorrelations] = useState([]);
   const [chartData, setChartData] = useState([]);
@@ -65,6 +72,35 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
   
   // Calendar mode for upcoming tab
   const [calendarMode, setCalendarMode] = useState(false);
+
+  // Month navigation handlers
+  const handlePreviousMonth = () => {
+    const prevMonth = new Date(currentMonth);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    setCurrentMonth(prevMonth);
+  };
+  
+  const handleNextMonth = () => {
+    const nextMonth = new Date(currentMonth);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    setCurrentMonth(nextMonth);
+  };
+
+  // Handle month picker selection
+  const handleMonthSelection = (e) => {
+    const selectedDate = new Date(e.target.value);
+    if (!isNaN(selectedDate.getTime())) {
+      setCurrentMonth(selectedDate);
+      setShowMonthPicker(false);
+    }
+  };
+
+  // Format current month for input value (YYYY-MM format)
+  const formatMonthForInput = (date) => {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    return `${year}-${month}`;
+  };
 
   // Add this helper function to your FinanceSection.jsx
   const getCategoryColorClass = (category) => {
@@ -91,7 +127,6 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
     
     return colorMap[category.color] || 'bg-slate-600 dark:bg-slate-600 text-slate-800 dark:text-slate-100';
   };
-
 
   // Define tab items with icons and labels
   const tabItems = [
@@ -131,6 +166,31 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Close month picker when clicking outside or pressing ESC
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMonthPicker && !event.target.closest('.month-picker-container')) {
+        setShowMonthPicker(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && showMonthPicker) {
+        setShowMonthPicker(false);
+      }
+    };
+
+    if (showMonthPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showMonthPicker]);
+
   // Process recurring transactions on first load and when page refreshes
   useEffect(() => {
     const processTransactions = async () => {
@@ -167,8 +227,7 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
     });
   };
 
-
-  // Calculate stats when period changes or data is refreshed
+  // Calculate stats when month changes (for overview) or data is refreshed
   useEffect(() => {
     // Get data
     const financeData = getFinanceData();
@@ -184,8 +243,17 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
     // Get recurring transactions as bills
     setBills(financeData.recurringTransactions || []);
     
-    // Calculate financial stats
-    const newStats = calculateFinancialStats(selectedPeriod);
+    // For overview tab: Calculate stats for the selected month
+    let newStats;
+    if (activeTab === 'overview') {
+      // Calculate stats for the specific month
+      const monthKey = getCurrentMonthKey(); // You might want to create a function to get month key from currentMonth
+      newStats = calculateFinancialStats('month', getCurrentMonthKey(currentMonth));
+    } else {
+      // For other tabs: Use the selected period
+      newStats = calculateFinancialStats(selectedPeriod);
+    }
+    
     setStats(newStats);
     
     // Get financial insights
@@ -214,7 +282,12 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
     // Sort by amount, descending
     categoryData.sort((a, b) => b.value - a.value);
     setChartData(categoryData);
-  }, [selectedPeriod, refreshTrigger, externalRefreshTrigger]);
+  }, [selectedPeriod, refreshTrigger, externalRefreshTrigger, currentMonth, activeTab]);
+
+  // Helper function to get month key from date
+  const getCurrentMonthKey = (date = new Date()) => {
+    return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+  };
 
   // Toggle expanded sections
   const toggleSection = (section) => {
@@ -284,16 +357,64 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
           </h2>
           
           <div className="flex items-center gap-2">
-            <select 
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-lg px-2 py-1 text-xs border-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
-            >
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="quarter">This Quarter</option>
-              <option value="year">This Year</option>
-            </select>
+            {/* Conditional controls based on active tab */}
+            {activeTab === 'overview' ? (
+              // Month selector for overview
+              <div className="flex items-center gap-1 relative">
+                <button
+                  onClick={handlePreviousMonth}
+                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  aria-label="Previous month"
+                >
+                  <ChevronLeft size={16} className="text-slate-600 dark:text-slate-300" />
+                </button>
+                
+                <div className="relative month-picker-container">
+                  <button
+                    onClick={() => setShowMonthPicker(!showMonthPicker)}
+                    className="text-sm font-medium text-slate-800 dark:text-slate-100 min-w-[120px] text-center hover:bg-slate-100 dark:hover:bg-slate-700 px-2 py-1 rounded-lg transition-colors flex items-center justify-center gap-1"
+                  >
+                    <span>{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+                    <ChevronDown size={12} className={`text-slate-500 dark:text-slate-400 transition-transform ${showMonthPicker ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {/* Month Picker Dropdown */}
+                  {showMonthPicker && (
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-50">
+                      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-2">
+                        <input
+                          type="month"
+                          value={formatMonthForInput(currentMonth)}
+                          onChange={handleMonthSelection}
+                          className="bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <button
+                  onClick={handleNextMonth}
+                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  aria-label="Next month"
+                >
+                  <ChevronRight size={16} className="text-slate-600 dark:text-slate-300" />
+                </button>
+              </div>
+            ) : activeTab === 'insights' ? (
+              // Period selector for insights
+              <select 
+                value={selectedPeriod}
+                onChange={(e) => setSelectedPeriod(e.target.value)}
+                className="bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-lg px-2 py-1 text-xs border-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
+              >
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="quarter">This Quarter</option>
+                <option value="year">This Year</option>
+              </select>
+            ) : null}
             
             <button 
               onClick={() => setShowSettings(true)}
@@ -318,7 +439,7 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
               </div>
               <div className="flex justify-between items-end">
                 <div className="text-xs text-slate-800 dark:text-slate-400">
-                  Projected
+                  {activeTab === 'overview' ? 'Month' : 'Projected'}
                   <span className={`ml-1 flex items-center ${stats.upcoming.net >= 0 
                     ? 'text-green-500 dark:text-green-400' 
                     : 'text-red-500 dark:text-red-400'}`}>
@@ -327,7 +448,7 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
                     ) : (
                       <TrendingUp size={10} className="mr-0.5" />
                     )}
-                    {formatCurrency(stats.projected.balance)}
+                    {activeTab === 'overview' ? formatCurrency(stats.current.balance) : formatCurrency(stats.projected.balance)}
                   </span>
                 </div>
                 <span className="font-bold text-lg text-amber-500 dark:text-amber-300 break-words">
@@ -346,7 +467,7 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
               </div>
               <div className="flex justify-between items-end">
                 <div className="text-xs text-slate-800 dark:text-slate-400">
-                  Upcoming
+                  {activeTab === 'overview' ? 'This Month' : 'Upcoming'}
                   <span className="ml-1 text-green-500 dark:text-green-400">
                     +{formatCurrency(stats.upcoming.income)}
                   </span>
@@ -367,7 +488,7 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
               </div>
               <div className="flex justify-between items-end">
                 <div className="text-xs text-slate-800 dark:text-slate-400">
-                  Upcoming
+                  {activeTab === 'overview' ? 'This Month' : 'Upcoming'}
                   <span className="ml-1 text-red-500 dark:text-red-400">
                     -{formatCurrency(stats.upcoming.expenses)}
                   </span>
@@ -434,6 +555,11 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
         {activeTab === 'overview' && (
           <div className="space-y-4">
+            {/* Show selected month info */}
+            <div className="text-center text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Showing data for {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+            </div>
+            
             {/* Upcoming Bills Section */}
             <div>
               <div 
@@ -492,15 +618,23 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
               
               {expandedSections.transactions && (
                 <div className="mb-3">
-                  {/* Filter to get only past and today's transactions */}
+                  {/* Filter to get only past and today's transactions for the selected month */}
                   {(() => {
-                    const recentTransactions = filterTransactionsByDate(transactions, false);
+                    const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+                    const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+                    
+                    const monthTransactions = transactions.filter(transaction => {
+                      const txDate = new Date(transaction.date || transaction.timestamp);
+                      return txDate >= monthStart && txDate <= monthEnd;
+                    });
+                    
+                    const recentTransactions = filterTransactionsByDate(monthTransactions, false);
                     
                     if (recentTransactions.length === 0) {
                       return (
                         <div className="flex flex-col items-center justify-center p-6 text-slate-800 dark:text-slate-400 bg-slate-700/50 dark:bg-slate-700/50 rounded-lg">
                           <CreditCard size={42} className="text-slate-500 dark:text-slate-500 mb-2" />
-                          <p>No transactions found</p>
+                          <p>No transactions found for {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
                         </div>
                       );
                     }
@@ -573,6 +707,7 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
               )}
             </div>
 
+            {/* Rest of overview sections remain the same... */}
             {/* Quick Insights - Spending Breakdown */}
             <div>
               <div 
@@ -593,7 +728,7 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
                   {chartData.length === 0 ? (
                     <div className="flex flex-col items-center justify-center p-6 text-slate-800 dark:text-slate-400 bg-slate-700/50 dark:bg-slate-700/50 rounded-lg">
                       <BarChart2 size={42} className="text-slate-500 dark:text-slate-500 mb-2" />
-                      <p>No spending data to display</p>
+                      <p>No spending data to display for {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
                     </div>
                   ) : (
                     <>
@@ -616,7 +751,6 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
                 </div>
               )}
             </div>
-           
             
             {/* Budget Overview */}
             <div>
@@ -677,7 +811,7 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
                     ) : (
                       <div className="flex flex-col items-center justify-center p-6 text-slate-800 dark:text-slate-400 bg-slate-700/50 dark:bg-slate-700/50 rounded-lg">
                         <Wallet size={42} className="text-slate-500 dark:text-slate-500 mb-2" />
-                        <p>No budgets created yet</p>
+                        <p>No budgets created for {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
                       </div>
                     )}
                   </div>
@@ -711,8 +845,6 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
                 </div>
               )}
             </div>
-            
-            
           </div>
         )}
         
@@ -731,8 +863,6 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
                 <Wallet className="text-amber-400 dark:text-amber-400" size={18} />
                 Budget Manager
               </h4>
-              
-              
             </div>
             <BudgetManager 
               refreshTrigger={refreshTrigger} 
@@ -752,8 +882,6 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
         
         {activeTab === 'upcoming' && (
           <div>
-            {/* Header section remains the same */}
-            
             {calendarMode ? (
               <CalendarView 
                 transactions={transactions}
@@ -775,7 +903,7 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
                     transactions={transactions}
                     bills={bills}
                     currency={currency}
-                    onRefresh={handleRefresh} // Add this line
+                    onRefresh={handleRefresh} 
                     onBillClick={(item) => {
                       console.log('Bill clicked:', item);
                     }}
@@ -799,7 +927,7 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
         )}
       </div>
       
-      {/* Wellbeing Integration Section */}
+      {/* Wellbeing Integration Section - only show for overview */}
       {activeTab === 'overview' && correlations.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 transition-colors">
           <h3 className="text-base font-medium text-slate-800 dark:text-slate-100 mb-3 transition-colors flex items-center gap-2">
@@ -861,10 +989,6 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
           </p>
         </div>
       )}
-      
-      
-      
-      
     </div>
 
     {/* Modals */}
@@ -921,7 +1045,6 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
           onCancel={() => setConfirmAction(null)}
         />
       )}
-    
     </>
   );
 };

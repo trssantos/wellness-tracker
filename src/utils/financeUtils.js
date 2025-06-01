@@ -12,9 +12,8 @@ import { formatDateForStorage } from './dateUtils';
 
 
 // Add these new helper functions at the beginning of financeUtils.js
-export const getCurrentMonthKey = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+export const getCurrentMonthKey = (date = new Date()) => {
+  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
 };
 
 export const formatMonthKey = (monthKey) => {
@@ -94,7 +93,7 @@ export const addTransaction = (transaction) => {
   // Add to transactions array
   financeData.transactions.unshift(transaction);
   
-  // Update budget spent amounts automatically
+  // Update budget spent amounts automatically for current month
   if (transaction.amount < 0) {
     // Only update the budget from past or today's transactions, not future ones
     const txDate = new Date(transaction.date || transaction.timestamp);
@@ -102,9 +101,22 @@ export const addTransaction = (transaction) => {
     today.setHours(0, 0, 0, 0);
     
     if (txDate <= today) {
-      const budget = financeData.budgets.find(b => b.category === transaction.category);
-      if (budget) {
-        budget.spent = (parseFloat(budget.spent) || 0) + Math.abs(transaction.amount);
+      const txMonth = getCurrentMonthKey(txDate);
+      const currentMonth = getCurrentMonthKey();
+      
+      // Update budget for the transaction's month if it's the current month
+      if (txMonth === currentMonth) {
+        const currentBudgets = financeData.budgetHistory[currentMonth] || [];
+        const budget = currentBudgets.find(b => b.category === transaction.category);
+        if (budget) {
+          budget.spent = (parseFloat(budget.spent) || 0) + Math.abs(transaction.amount);
+        }
+        
+        // Also update the legacy budgets array for backward compatibility
+        const legacyBudget = financeData.budgets.find(b => b.category === transaction.category);
+        if (legacyBudget) {
+          legacyBudget.spent = (parseFloat(legacyBudget.spent) || 0) + Math.abs(transaction.amount);
+        }
       }
     }
   }
@@ -132,6 +144,7 @@ export const updateTransaction = (transactionId, updatedData) => {
     const oldTxDate = new Date(oldTransaction.date || oldTransaction.timestamp);
     oldTxDate.setHours(0, 0, 0, 0);
     const oldTxInPast = oldTxDate <= today;
+    const oldTxMonth = getCurrentMonthKey(oldTxDate);
     
     // Determine if new transaction will be in the past or today
     let newTxDate = oldTxDate;
@@ -140,37 +153,54 @@ export const updateTransaction = (transactionId, updatedData) => {
       newTxDate.setHours(0, 0, 0, 0);
     }
     const newTxInPast = newTxDate <= today;
+    const newTxMonth = getCurrentMonthKey(newTxDate);
     
     // Update the transaction, converting amount to number if needed
     if (updatedData.amount !== undefined) {
       updatedData.amount = parseFloat(updatedData.amount);
     }
     
-    // Handle budget adjustments
+    // Handle budget adjustments for current month only
+    const currentMonth = getCurrentMonthKey();
+    
     // If category or amount changed, adjust budgets
     if ((updatedData.category && updatedData.category !== oldTransaction.category) || 
         (updatedData.amount !== undefined && updatedData.amount !== oldTransaction.amount) ||
         (oldTxInPast !== newTxInPast)) {
         
-      // Only process budget changes for past transactions
-      if (oldTxInPast) {
-        // If old transaction was an expense and in the past, remove its amount from the old budget
+      // Only process budget changes for current month transactions
+      if (oldTxInPast && oldTxMonth === currentMonth) {
+        // If old transaction was an expense and in the current month, remove its amount from the old budget
         if (oldTransaction.amount < 0) {
-          const oldBudget = financeData.budgets.find(b => b.category === oldTransaction.category);
+          const currentBudgets = financeData.budgetHistory[currentMonth] || [];
+          const oldBudget = currentBudgets.find(b => b.category === oldTransaction.category);
           if (oldBudget) {
             oldBudget.spent = Math.max(0, (parseFloat(oldBudget.spent) || 0) - Math.abs(oldTransaction.amount));
+          }
+          
+          // Also update legacy budget
+          const legacyOldBudget = financeData.budgets.find(b => b.category === oldTransaction.category);
+          if (legacyOldBudget) {
+            legacyOldBudget.spent = Math.max(0, (parseFloat(legacyOldBudget.spent) || 0) - Math.abs(oldTransaction.amount));
           }
         }
       }
       
-      // If new transaction is an expense and in the past, add its amount to the new budget
-      if (newTxInPast && (updatedData.amount !== undefined ? updatedData.amount < 0 : oldTransaction.amount < 0)) {
+      // If new transaction is an expense and in the current month, add its amount to the new budget
+      if (newTxInPast && newTxMonth === currentMonth && (updatedData.amount !== undefined ? updatedData.amount < 0 : oldTransaction.amount < 0)) {
         const amount = updatedData.amount !== undefined ? updatedData.amount : oldTransaction.amount;
         const categoryToUse = updatedData.category || oldTransaction.category;
-        const newBudget = financeData.budgets.find(b => b.category === categoryToUse);
+        const currentBudgets = financeData.budgetHistory[currentMonth] || [];
+        const newBudget = currentBudgets.find(b => b.category === categoryToUse);
         
         if (newBudget) {
           newBudget.spent = (parseFloat(newBudget.spent) || 0) + Math.abs(amount);
+        }
+        
+        // Also update legacy budget
+        const legacyNewBudget = financeData.budgets.find(b => b.category === categoryToUse);
+        if (legacyNewBudget) {
+          legacyNewBudget.spent = (parseFloat(legacyNewBudget.spent) || 0) + Math.abs(amount);
         }
       }
     }
@@ -212,10 +242,23 @@ export const deleteTransaction = (transactionId) => {
   const transaction = financeData.transactions.find(t => t.id === transactionId);
   
   if (transaction && transaction.amount < 0) {
-    // If it was an expense, remove its amount from the budget
-    const budget = financeData.budgets.find(b => b.category === transaction.category);
-    if (budget) {
-      budget.spent = Math.max(0, (parseFloat(budget.spent) || 0) - Math.abs(transaction.amount));
+    // If it was an expense, remove its amount from the current month budget only
+    const txDate = new Date(transaction.date || transaction.timestamp);
+    const txMonth = getCurrentMonthKey(txDate);
+    const currentMonth = getCurrentMonthKey();
+    
+    if (txMonth === currentMonth) {
+      const currentBudgets = financeData.budgetHistory[currentMonth] || [];
+      const budget = currentBudgets.find(b => b.category === transaction.category);
+      if (budget) {
+        budget.spent = Math.max(0, (parseFloat(budget.spent) || 0) - Math.abs(transaction.amount));
+      }
+      
+      // Also update legacy budget
+      const legacyBudget = financeData.budgets.find(b => b.category === transaction.category);
+      if (legacyBudget) {
+        legacyBudget.spent = Math.max(0, (parseFloat(legacyBudget.spent) || 0) - Math.abs(transaction.amount));
+      }
     }
   }
   
@@ -1293,102 +1336,110 @@ export const getSpendingMoodCorrelation = () => {
 };
 
 
-// Calculate financial stats
-export const calculateFinancialStats = (period = 'month', monthKey) => {
+// Calculate financial stats - FIXED to properly handle monthly data
+export const calculateFinancialStats = (period = 'month', monthKey, dateRange) => {
   const financeData = getFinanceData();
   const now = new Date();
-  now.setHours(23, 59, 59, 999);  // Set to end of day
+  now.setHours(23, 59, 59, 999);
   
-  // Use the specified month key or the current month
-  const currentMonthKey = monthKey || financeData.currentBudgetMonth || getCurrentMonthKey();
+  let startDate, endDate;
+  let selectedMonth = monthKey;
   
-  let startDate;
-  let endDate = new Date(now); // Default end date is today
-  
-  // Calculate start and end dates based on period
-  switch (period) {
-    case 'week':
-      // Calculate start of week (Sunday)
-      startDate = new Date(now);
-      const day = startDate.getDay(); // 0 for Sunday, 1 for Monday, etc.
-      startDate.setDate(startDate.getDate() - day); // Go to beginning of week (Sunday)
-      startDate.setHours(0, 0, 0, 0); // Start of day
-      break;
+  // If dateRange is provided, use it
+  if (dateRange) {
+    startDate = new Date(dateRange.start);
+    endDate = new Date(dateRange.end);
+    endDate.setHours(23, 59, 59, 999);
+  }
+  // If monthKey is provided, calculate for that specific month
+  else if (monthKey) {
+    const [year, month] = monthKey.split('-').map(Number);
+    startDate = new Date(year, month - 1, 1);
+    startDate.setHours(0, 0, 0, 0);
+    endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    selectedMonth = monthKey;
     
-    case 'month':
-      // First day of current month
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      startDate.setHours(0, 0, 0, 0);
-      // Last day of current month
-      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-      break;
+    // For future months, don't include any data
+    if (startDate > now) {
+      startDate = now;
+      endDate = now;
+    }
+    // For current month, end at today
+    else if (endDate > now) {
+      endDate = new Date(now);
+    }
+  }
+  // Otherwise, calculate based on period
+  else {
+    selectedMonth = financeData.currentBudgetMonth || getCurrentMonthKey();
     
-    case 'quarter':
-      // First day of current quarter
-      const currentQuarter = Math.floor(now.getMonth() / 3);
-      startDate = new Date(now.getFullYear(), currentQuarter * 3, 1);
-      startDate.setHours(0, 0, 0, 0);
-      // Last day of current quarter
-      endDate = new Date(now.getFullYear(), (currentQuarter + 1) * 3, 0, 23, 59, 59, 999);
-      break;
-    
-    case 'year':
-      // First day of current year
-      startDate = new Date(now.getFullYear(), 0, 1);
-      startDate.setHours(0, 0, 0, 0);
-      // Last day of current year
-      endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-      break;
-    
-    default:
-      // Default to current month
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      startDate.setHours(0, 0, 0, 0);
-      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    switch (period) {
+      case 'week':
+        startDate = new Date(now);
+        const day = startDate.getDay();
+        startDate.setDate(startDate.getDate() - day);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now);
+        break;
+      
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        if (endDate > now) endDate = now;
+        selectedMonth = getCurrentMonthKey();
+        break;
+      
+      case 'quarter':
+        const currentQuarter = Math.floor(now.getMonth() / 3);
+        startDate = new Date(now.getFullYear(), currentQuarter * 3, 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now.getFullYear(), (currentQuarter + 1) * 3, 0, 23, 59, 59, 999);
+        if (endDate > now) endDate = now;
+        break;
+      
+      case 'year':
+        startDate = new Date(now.getFullYear(), 0, 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+        if (endDate > now) endDate = now;
+        break;
+      
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        if (endDate > now) endDate = now;
+        selectedMonth = getCurrentMonthKey();
+    }
   }
   
-  // If endDate is in the future, set it to now
-  if (endDate > now) {
-    endDate = now;
-  }
-  
-  const startDateIso = startDate.toISOString();
-  const endDateIso = endDate.toISOString();
-  
-  // Filter transactions for the period
+  // Filter transactions for the period - separate past and future
   const allTransactions = financeData.transactions || [];
   
-  // Separate current (past + today) and future transactions
   const currentTransactions = allTransactions.filter(t => {
-    const txDate = new Date(t.date || t.timestamp);
-    txDate.setHours(0, 0, 0, 0);
-    return txDate <= now;
+    const txDate = new Date(t.timestamp);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return txDate >= startDate && txDate <= endDate && txDate <= today;
   });
   
   const futureTransactions = allTransactions.filter(t => {
-    const txDate = new Date(t.date || t.timestamp);
-    txDate.setHours(0, 0, 0, 0);
-    return txDate > now;
-  });
-  
-  // Filter period transactions - using both start and end dates
-  const periodTransactions = currentTransactions.filter(t => {
     const txDate = new Date(t.timestamp);
-    return txDate >= startDate && txDate <= endDate;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return txDate > today;
   });
   
-  // Calculate current stats (only transactions up to today)
-  // Calculate total income
-  const income = periodTransactions
+  // Calculate current stats (past + today)
+  const income = currentTransactions
     .filter(t => t.amount > 0)
     .reduce((sum, t) => sum + t.amount, 0);
   
-  // Calculate total expenses
-  const expenses = periodTransactions
+  const expenses = currentTransactions
     .filter(t => t.amount < 0)
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
   
-  // Calculate balance
   const balance = income - expenses;
   
   // Calculate upcoming stats (future transactions)
@@ -1401,14 +1452,11 @@ export const calculateFinancialStats = (period = 'month', monthKey) => {
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
   
   const upcomingNet = upcomingIncome - upcomingExpenses;
-  
-  // Calculate projected balance (current + upcoming)
   const projectedBalance = balance + upcomingNet;
   
   // Calculate category breakdown (using only current transactions)
   const categoryBreakdown = {};
-  
-  periodTransactions.forEach(transaction => {
+  currentTransactions.forEach(transaction => {
     if (!transaction.category) return;
     
     const category = transaction.category;
@@ -1421,11 +1469,9 @@ export const calculateFinancialStats = (period = 'month', monthKey) => {
     categoryBreakdown[category] += amount;
   });
   
-  // Calculate monthly change (compare with previous period)
+  // Calculate monthly change (only for month period)
   let monthlyChange = 0;
-  
-  if (period === 'month') {
-    // Calculate previous month's range
+  if (period === 'month' && !dateRange) {
     const prevMonthStart = new Date(startDate);
     prevMonthStart.setMonth(prevMonthStart.getMonth() - 1);
     
@@ -1433,9 +1479,11 @@ export const calculateFinancialStats = (period = 'month', monthKey) => {
     prevMonthEnd.setDate(prevMonthEnd.getDate() - 1);
     prevMonthEnd.setHours(23, 59, 59, 999);
     
-    const previousMonthTransactions = currentTransactions.filter(t => {
+    const previousMonthTransactions = allTransactions.filter(t => {
       const txDate = new Date(t.timestamp);
-      return txDate >= prevMonthStart && txDate <= prevMonthEnd;
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      return txDate >= prevMonthStart && txDate <= prevMonthEnd && txDate <= today;
     });
     
     const prevIncome = previousMonthTransactions
@@ -1447,50 +1495,39 @@ export const calculateFinancialStats = (period = 'month', monthKey) => {
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
     
     const prevBalance = prevIncome - prevExpenses;
-    
     monthlyChange = balance - prevBalance;
   }
   
-  // Safely get budgets for the current month
+  // Get budgets for the selected month
   let monthBudgets = [];
-  
-  // First try from budget history
-  if (financeData.budgetHistory && financeData.budgetHistory[currentMonthKey]) {
-    monthBudgets = financeData.budgetHistory[currentMonthKey];
-  } 
-  // If no budget history, try from regular budgets (backward compatibility)
-  else if (financeData.budgets) {
+  if (financeData.budgetHistory && financeData.budgetHistory[selectedMonth]) {
+    monthBudgets = financeData.budgetHistory[selectedMonth];
+  } else if (selectedMonth === getCurrentMonthKey() && financeData.budgets) {
     monthBudgets = financeData.budgets;
   }
   
-  // Ensure monthBudgets is definitely an array before mapping
+  // Ensure monthBudgets is an array
   if (!Array.isArray(monthBudgets)) {
     monthBudgets = [];
   }
   
-  // Calculate budget progress for the current month
+  // Calculate budget progress
   const budgets = monthBudgets.map(budget => {
-    // For historical data, use the values already stored
-    // For current month, calculate from transactions
     let spent = budget.spent || 0;
     
-    // Only recalculate if we're looking at the current month
-    if (currentMonthKey === getCurrentMonthKey() && period === 'month') {
-      // Check if this is a group budget
+    // Only recalculate spent amount for current month and when using month period
+    if (selectedMonth === getCurrentMonthKey() && (period === 'month' && !dateRange)) {
       if (budget.isGroupBudget && budget.category.startsWith('group-')) {
         const groupName = getGroupNameFromId(budget.category);
-        
-        // Sum transactions for all categories in this group
-        spent = periodTransactions
+        spent = currentTransactions
           .filter(t => {
-            if (t.amount >= 0) return false; // Only expenses
+            if (t.amount >= 0) return false;
             const categoryGroup = getCategoryGroup(t.category);
             return categoryGroup.toLowerCase() === groupName.toLowerCase();
           })
           .reduce((sum, t) => sum + Math.abs(t.amount), 0);
       } else {
-        // Regular category budget
-        spent = periodTransactions
+        spent = currentTransactions
           .filter(t => t.amount < 0 && t.category === budget.category)
           .reduce((sum, t) => sum + Math.abs(t.amount), 0);
       }
@@ -1505,9 +1542,8 @@ export const calculateFinancialStats = (period = 'month', monthKey) => {
   });
   
   // Calculate spending by category group
-  const spendingByGroup = getSpendingByGroup(periodTransactions);
+  const spendingByGroup = getSpendingByGroup(currentTransactions);
   
-  // Return compiled stats with both current and upcoming data
   return {
     period,
     income,
@@ -1517,10 +1553,9 @@ export const calculateFinancialStats = (period = 'month', monthKey) => {
     categoryBreakdown,
     budgets,
     spendingByGroup,
-    startDate: startDateIso,
-    endDate: endDateIso,
-    selectedMonth: currentMonthKey,
-    // New properties for upcoming transactions
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    selectedMonth,
     current: {
       income,
       expenses,
@@ -1535,7 +1570,7 @@ export const calculateFinancialStats = (period = 'month', monthKey) => {
       balance: projectedBalance
     }
   };
-}
+};
 
 // Create task from transaction
 export const createTaskFromTransaction = (transaction) => {

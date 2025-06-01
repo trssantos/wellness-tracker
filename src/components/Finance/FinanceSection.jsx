@@ -83,7 +83,13 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
   const handleNextMonth = () => {
     const nextMonth = new Date(currentMonth);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
-    setCurrentMonth(nextMonth);
+    
+    // Don't allow navigating past current month
+    const today = new Date();
+    if (nextMonth.getFullYear() < today.getFullYear() || 
+        (nextMonth.getFullYear() === today.getFullYear() && nextMonth.getMonth() <= today.getMonth())) {
+      setCurrentMonth(nextMonth);
+    }
   };
 
   // Handle month picker selection
@@ -246,11 +252,11 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
     // For overview tab: Calculate stats for the selected month
     let newStats;
     if (activeTab === 'overview') {
-      // Calculate stats for the specific month
-      const monthKey = getCurrentMonthKey(); // You might want to create a function to get month key from currentMonth
-      newStats = calculateFinancialStats('month', getCurrentMonthKey(currentMonth));
+      // Calculate stats for the specific month selected in overview
+      const monthKey = getCurrentMonthKey(currentMonth);
+      newStats = calculateFinancialStats('month', monthKey);
     } else {
-      // For other tabs: Use the selected period
+      // For other tabs: Use the selected period without month restriction
       newStats = calculateFinancialStats(selectedPeriod);
     }
     
@@ -283,11 +289,6 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
     categoryData.sort((a, b) => b.value - a.value);
     setChartData(categoryData);
   }, [selectedPeriod, refreshTrigger, externalRefreshTrigger, currentMonth, activeTab]);
-
-  // Helper function to get month key from date
-  const getCurrentMonthKey = (date = new Date()) => {
-    return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-  };
 
   // Toggle expanded sections
   const toggleSection = (section) => {
@@ -345,6 +346,28 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
     });
   };
 
+  // Function to filter transactions for a specific month
+  const getTransactionsForMonth = (transactions, monthDate) => {
+    const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+    const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+    monthEnd.setHours(23, 59, 59, 999);
+    
+    return transactions.filter(transaction => {
+      const txDate = new Date(transaction.date || transaction.timestamp);
+      return txDate >= monthStart && txDate <= monthEnd;
+    });
+  };
+
+  // Check if we can navigate to next month
+  const canNavigateToNextMonth = () => {
+    const today = new Date();
+    const nextMonth = new Date(currentMonth);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    
+    return nextMonth.getFullYear() < today.getFullYear() || 
+           (nextMonth.getFullYear() === today.getFullYear() && nextMonth.getMonth() <= today.getMonth());
+  };
+
   return (
     <>
     <div className="space-y-3">
@@ -386,6 +409,7 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
                           type="month"
                           value={formatMonthForInput(currentMonth)}
                           onChange={handleMonthSelection}
+                          max={formatMonthForInput(new Date())}
                           className="bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400"
                           autoFocus
                         />
@@ -396,8 +420,13 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
                 
                 <button
                   onClick={handleNextMonth}
-                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    canNavigateToNextMonth() 
+                      ? 'hover:bg-slate-100 dark:hover:bg-slate-700' 
+                      : 'opacity-50 cursor-not-allowed'
+                  }`}
                   aria-label="Next month"
+                  disabled={!canNavigateToNextMonth()}
                 >
                   <ChevronRight size={16} className="text-slate-600 dark:text-slate-300" />
                 </button>
@@ -439,7 +468,10 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
               </div>
               <div className="flex justify-between items-end">
                 <div className="text-xs text-slate-800 dark:text-slate-400">
-                  {activeTab === 'overview' ? 'Month' : 'Projected'}
+                  {activeTab === 'overview' ? 
+                    currentMonth.toLocaleDateString('default', { month: 'short' }) : 
+                    'Projected'
+                  }
                   <span className={`ml-1 flex items-center ${stats.upcoming.net >= 0 
                     ? 'text-green-500 dark:text-green-400' 
                     : 'text-red-500 dark:text-red-400'}`}>
@@ -467,7 +499,10 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
               </div>
               <div className="flex justify-between items-end">
                 <div className="text-xs text-slate-800 dark:text-slate-400">
-                  {activeTab === 'overview' ? 'This Month' : 'Upcoming'}
+                  {activeTab === 'overview' ? 
+                    currentMonth.toLocaleDateString('default', { month: 'short' }) : 
+                    'Upcoming'
+                  }
                   <span className="ml-1 text-green-500 dark:text-green-400">
                     +{formatCurrency(stats.upcoming.income)}
                   </span>
@@ -488,7 +523,10 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
               </div>
               <div className="flex justify-between items-end">
                 <div className="text-xs text-slate-800 dark:text-slate-400">
-                  {activeTab === 'overview' ? 'This Month' : 'Upcoming'}
+                  {activeTab === 'overview' ? 
+                    currentMonth.toLocaleDateString('default', { month: 'short' }) : 
+                    'Upcoming'
+                  }
                   <span className="ml-1 text-red-500 dark:text-red-400">
                     -{formatCurrency(stats.upcoming.expenses)}
                   </span>
@@ -620,14 +658,7 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
                 <div className="mb-3">
                   {/* Filter to get only past and today's transactions for the selected month */}
                   {(() => {
-                    const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-                    const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-                    
-                    const monthTransactions = transactions.filter(transaction => {
-                      const txDate = new Date(transaction.date || transaction.timestamp);
-                      return txDate >= monthStart && txDate <= monthEnd;
-                    });
-                    
+                    const monthTransactions = getTransactionsForMonth(transactions, currentMonth);
                     const recentTransactions = filterTransactionsByDate(monthTransactions, false);
                     
                     if (recentTransactions.length === 0) {
@@ -707,7 +738,6 @@ const FinanceSection = ({ refreshTrigger: externalRefreshTrigger }) => {
               )}
             </div>
 
-            {/* Rest of overview sections remain the same... */}
             {/* Quick Insights - Spending Breakdown */}
             <div>
               <div 

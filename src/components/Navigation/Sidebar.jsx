@@ -1,8 +1,8 @@
 // components/Navigation/Sidebar.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Heart,StickyNote,Trophy, Apple,Coins,Focus, Menu, X, Home, BarChart2, Brain, Dumbbell, 
-  MessageCircle, Layout, Bell, Settings, HelpCircle, Moon, Sun, Zap
+  Heart, StickyNote, Trophy, Apple, Coins, Focus, Menu, X, Home, BarChart2, Brain, Dumbbell, 
+  MessageCircle, Layout, Bell, Settings, HelpCircle, Moon, Sun, Zap, LayoutDashboard, Target
 } from 'lucide-react';
 import { useTheme } from '../ThemeProvider';
 import { hasUnreadMessages } from '../../utils/dayCoachUtils';
@@ -40,63 +40,24 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
     // Set up interval
     const checkUnreadInterval = setInterval(() => {
       setHasUnreadCoachMessages(checkForUnreadMessages());
-    }, 60000); // Check every minute
+    }, 5000); // Check every 5 seconds
     
-    return () => {
-      clearInterval(checkUnreadInterval);
-    };
+    // Cleanup
+    return () => clearInterval(checkUnreadInterval);
   }, []);
 
-  // Inside the Sidebar component, add this useEffect to check for unread messages
-  useEffect(() => {
-    // Check for unread messages initially
-    try {
-      // Check if the function is available
-      if (typeof hasUnreadMessages === 'function') {
-        setHasUnreadCoachMessages(hasUnreadMessages());
-      }
-    } catch (error) {
-      console.error('Error checking unread messages:', error);
-    }
-    
-    // Set up interval to check for unread messages
-    const checkUnreadInterval = setInterval(() => {
-      try {
-        // Check if the function is available
-        if (typeof hasUnreadMessages === 'function') {
-          const hasUnread = hasUnreadMessages();
-          setHasUnreadCoachMessages(hasUnread);
-        }
-      } catch (error) {
-        console.error('Error checking unread messages:', error);
-      }
-    }, 60000); // Check every minute
-    
-    return () => {
-      clearInterval(checkUnreadInterval);
-    };
-  }, []);
-  
-  // Handle screen resize to detect mobile
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth >= 768) {
-        setIsOpen(true); // Always open on desktop
-      }
     };
 
     window.addEventListener('resize', handleResize);
-    handleResize(); // Initialize on mount
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Add swipe gesture detection for mobile
+  // Add touch handlers on mobile
   useEffect(() => {
-    // Only apply touch handlers on mobile
+    // Only add touch handlers on mobile
     if (!isMobile) return;
     
     let touchStartX = 0;
@@ -143,14 +104,20 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
     }
   };
 
-  // Navigation sections
+  // Navigation sections - Complete list with dashboard at the top
   const sections = [
-    { id: 'overview', label: 'Overview', icon: <Home size={20} /> },
+    { id: 'dashboard', label: 'Today', icon: <LayoutDashboard size={20} /> },
+    { id: 'overview', label: 'Tasks', icon: <Home size={20} /> },
     { id: 'stats', label: 'Stats', icon: <BarChart2 size={20} /> },
-    { id: 'habits', label: 'Habits', icon: <Zap size={20} /> },
+    { id: 'habits', label: 'Habits', icon: <Target size={20} /> },
     { id: 'meditation', label: 'Mental Health', icon: <Brain size={20} /> },
     { id: 'workout', label: 'Workout', icon: <Dumbbell size={20} /> },
-    { id: 'coach', label: 'Day Coach', icon: <MessageCircle size={20} /> },
+    { 
+      id: 'coach', 
+      label: 'Day Coach', 
+      icon: <MessageCircle size={20} />,
+      hasNotification: hasUnreadCoachMessages
+    },
     { id: 'focus', label: 'Focus', icon: <Focus size={20} /> },
     { id: 'finance', label: 'Finance', icon: <Coins size={20} /> },
     { id: 'nutrition', label: 'Nutrition', icon: <Apple size={20} /> },
@@ -164,7 +131,6 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
     { id: 'nutritionShowcase', label: 'Nutrition - Showcase', icon: <Apple size={20} /> },
     { id: 'goalsShowcase', label: 'Goals - Showcase', icon: <Trophy size={20} /> },
     { id: 'meditationShowcase', label: 'Meditation - Showcase', icon: <Brain size={20} /> },
-    
   ];
 
   return (
@@ -221,80 +187,64 @@ export const Sidebar = ({ activeSection, onSectionChange, onReminderSettingsOpen
                     className={`
                       w-full flex items-center p-2 rounded-lg transition-colors
                       ${activeSection === section.id 
-                        ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' 
-                        : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'}
+                        ? 'bg-blue-500 dark:bg-blue-600 text-white' 
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }
                     `}
                   >
-                    <div className="flex items-center w-full">
-                      <span className="flex-shrink-0 relative">
-                        {section.icon}
-                        {section.id === 'coach' && hasUnreadCoachMessages && (
-                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-                        )}
-                      </span>
-                      <span className="ml-3 md:hidden lg:inline whitespace-nowrap">{section.label}</span>
-                      <span className="hidden md:inline lg:hidden group-hover:hidden absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">
-                        {section.label}
-                        {section.id === 'coach' && hasUnreadCoachMessages && (
-                          <span className="ml-1 inline-flex items-center justify-center w-3 h-3 bg-red-500 rounded-full"></span>
-                        )}
-                      </span>
-                    </div>
+                    <span className="flex-shrink-0 relative">
+                      {section.icon}
+                      {section.hasNotification && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+                      )}
+                    </span>
+                    <span className="ml-3 md:hidden lg:inline transition-all duration-300">
+                      {section.label}
+                    </span>
                   </button>
                 </li>
               ))}
             </ul>
           </nav>
 
-          {/* Bottom actions */}
-          <div className="p-2 border-t border-slate-200 dark:border-slate-700">
-            <ul className="space-y-2">
-              <li>
-                <button
-                  onClick={onReminderSettingsOpen}
-                  className="w-full flex items-center p-2 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 text-amber-700 dark:text-amber-300 transition-colors"
-                >
-                  <span className="flex-shrink-0"><Bell size={20} /></span>
-                  <span className="ml-3 md:hidden lg:inline">Reminders</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={onSettingsOpen}
-                  className="w-full flex items-center p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
-                >
-                  <span className="flex-shrink-0"><Settings size={20} /></span>
-                  <span className="ml-3 md:hidden lg:inline">Settings</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={onHelpOpen}
-                  className="w-full flex items-center p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-300 transition-colors"
-                >
-                  <span className="flex-shrink-0"><HelpCircle size={20} /></span>
-                  <span className="ml-3 md:hidden lg:inline">Help</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={toggleTheme}
-                  className="w-full flex items-center p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
-                >
-                  <span className="flex-shrink-0">
-                    {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-                  </span>
-                  <span className="ml-3 md:hidden lg:inline">
-                    {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-                  </span>
-                </button>
-              </li>
-            </ul>
+          {/* Bottom Actions */}
+          <div className="p-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            >
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              <span className="ml-3 md:hidden lg:inline">
+                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              </span>
+            </button>
+            
+            <button
+              onClick={onReminderSettingsOpen}
+              className="w-full flex items-center p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            >
+              <Bell size={20} />
+              <span className="ml-3 md:hidden lg:inline">Reminders</span>
+            </button>
+            
+            <button
+              onClick={onSettingsOpen}
+              className="w-full flex items-center p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            >
+              <Settings size={20} />
+              <span className="ml-3 md:hidden lg:inline">Settings</span>
+            </button>
+            
+            <button
+              onClick={onHelpOpen}
+              className="w-full flex items-center p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            >
+              <HelpCircle size={20} />
+              <span className="ml-3 md:hidden lg:inline">Help</span>
+            </button>
           </div>
         </div>
       </aside>
     </>
   );
 };
-
-export default Sidebar;

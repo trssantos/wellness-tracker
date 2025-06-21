@@ -1,4 +1,5 @@
 import { getStorage, setStorage } from './storage';
+import { formatDateForStorage } from './dateUtils'; // Add this missing import
 
 /**
  * Get all nutrition entries for a specific date
@@ -139,8 +140,9 @@ export const analyzeFoodMoodCorrelations = (days = 30) => {
   const startDate = new Date();
   startDate.setDate(endDate.getDate() - days);
   
-  const startDateStr = startformatDateForStorage(date);
-  const endDateStr = endformatDateForStorage(date);
+  // Fixed the typos and variable names
+  const startDateStr = formatDateForStorage(startDate);
+  const endDateStr = formatDateForStorage(endDate);
   
   const foodFrequency = {};
   const foodMoodImpact = {};
@@ -229,42 +231,113 @@ export const analyzeFoodMoodCorrelations = (days = 30) => {
     }
   });
   
-  // Sort by frequency
-  correlations.sort((a, b) => b.frequency - a.frequency);
-  
-  // Get top mood and energy boosters
-  const moodBoosters = [...correlations]
-    .filter(item => item.moodImpact > 0)
-    .sort((a, b) => b.moodImpact - a.moodImpact)
-    .slice(0, 5);
-    
-  const energyBoosters = [...correlations]
-    .filter(item => item.energyImpact > 0)
-    .sort((a, b) => b.energyImpact - a.energyImpact)
-    .slice(0, 5);
-  
   return {
-    correlations: correlations.slice(0, 10),
-    moodBoosters,
-    energyBoosters,
-    dataPoints: correlations.length
+    correlations: correlations.sort((a, b) => b.frequency - a.frequency),
+    totalFoods: Object.keys(foodFrequency).length,
+    analysisRange: {
+      start: startDateStr,
+      end: endDateStr,
+      days
+    }
   };
 };
 
 /**
- * Convert mood string to numeric value
- * @param {string} mood - Mood string
+ * Helper function to convert mood string to numeric value
+ * @param {string|number} mood - Mood value
  * @returns {number} Numeric mood value
  */
-export const convertMoodToValue = (mood) => {
+const convertMoodToValue = (mood) => {
+  if (typeof mood === 'number') return mood;
+  
+  // Convert mood strings to numbers if needed
   const moodMap = {
-    'GREAT': 5,
-    'GOOD': 4, 
-    'OKAY': 3,
-    'MEH': 2,
-    'BAD': 1,
-    'OVERWHELMED': 0
+    'terrible': 1,
+    'bad': 2,
+    'okay': 3,
+    'good': 4,
+    'excellent': 5
   };
   
-  return moodMap[mood] || 3;
+  return moodMap[mood] || 3; // Default to 3 if unknown
+};
+
+/**
+ * Get daily nutritional summaries for a date range
+ * @param {number} days - Number of days to include
+ * @returns {Array} Array of daily nutrition summaries
+ */
+export const getDailyNutritionSummaries = (days = 7) => {
+  const storage = getStorage();
+  const summaries = [];
+  
+  for (let i = 0; i < days; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateStr = formatDateForStorage(date);
+    
+    const entries = getFoodEntries(dateStr);
+    const waterIntake = storage.nutrition?.[dateStr]?.waterIntake || 0;
+    
+    // Calculate totals
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+    
+    entries.forEach(entry => {
+      totalCalories += entry.calories || 0;
+      totalProtein += entry.protein || 0;
+      totalCarbs += entry.carbs || 0;
+      totalFat += entry.fat || 0;
+    });
+    
+    summaries.push({
+      date: dateStr,
+      displayDate: date.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
+      entries: entries.length,
+      waterIntake,
+      calories: totalCalories,
+      protein: totalProtein,
+      carbs: totalCarbs,
+      fat: totalFat
+    });
+  }
+  
+  return summaries.reverse(); // Most recent first
+};
+
+/**
+ * Get water intake for a specific date
+ * @param {string} dateStr - Date in YYYY-MM-DD format
+ * @returns {number} Water intake amount
+ */
+export const getWaterIntake = (dateStr) => {
+  const storage = getStorage();
+  return storage.nutrition?.[dateStr]?.waterIntake || 0;
+};
+
+/**
+ * Update water intake for a specific date
+ * @param {string} dateStr - Date in YYYY-MM-DD format
+ * @param {number} amount - Water intake amount
+ * @returns {boolean} Success status
+ */
+export const updateWaterIntake = (dateStr, amount) => {
+  const storage = getStorage();
+  
+  // Initialize nutrition storage if not exists
+  if (!storage.nutrition) {
+    storage.nutrition = {};
+  }
+  
+  // Initialize date entry if not exists
+  if (!storage.nutrition[dateStr]) {
+    storage.nutrition[dateStr] = { entries: [] };
+  }
+  
+  storage.nutrition[dateStr].waterIntake = Math.max(0, amount);
+  setStorage(storage);
+  
+  return true;
 };

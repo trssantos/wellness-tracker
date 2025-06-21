@@ -26,7 +26,7 @@ import { Settings } from './components/Settings';
 import { ThemeProvider } from './components/ThemeProvider';
 import { TaskReminder } from './components/TaskReminder';
 import { VoiceTaskInput } from './components/VoiceTaskInput';
-import MoodTimeTracker from './components/MoodTimeTracker'; // Import the new component
+import MoodTimeTracker from './components/MoodTimeTracker';
 import { getStorage, setStorage } from './utils/storage';
 import reminderService from './utils/reminderService';
 import { migrateToMorningEveningFormat } from './utils/dataMigration';
@@ -37,7 +37,6 @@ import HabitSection from './components/Sections/HabitSection';
 import HabitTaskIntegration from './components/HabitTaskIntegration';
 import { injectHabitTasks } from './utils/habitTrackerUtils';
 import WorkoutSection from './components/Sections/WorkoutSection';
-// Import the WorkoutThemeProvider
 import { WorkoutThemeProvider } from './context/ThemeContext';
 import { saveFocusSessionState } from './utils/FocusSessionState';
 import DayCoach from './components/DayCoach/DayCoach';
@@ -45,15 +44,16 @@ import { initTaskRegistry, migrateTasksToRegistry } from './utils/taskRegistry';
 import { NutritionPlaceholder } from './components/Nutrition/NutritionPlaceholder';
 import NutritionTracker from './components/Nutrition/NutritionTracker';
 import BucketList from './components/Goals/BucketList';
-import MeditationSection  from './components/Meditation/MeditationSection';
+import MeditationSection from './components/Meditation/MeditationSection';
 import { formatDateForStorage } from './utils/dateUtils';
 import TaskSearchModal from './components/TaskSearchModal';
 import NotesSection from './components/Notes/NotesSection';
 import LifestyleSection from './components/Lifestyle/LifestyleSection';
 import QuickEntryFAB from './components/Finance/QuickEntryFAB';
+import Dashboard from './components/Dashboard/Dashboard';
 
 const App = () => {
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeSection, setActiveSection] = useState('dashboard');
   const [selectedDay, setSelectedDay] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [storageData, setStorageData] = useState(getStorage());
@@ -65,20 +65,40 @@ const App = () => {
   const [moodTimeDate, setMoodTimeDate] = useState(null);
   const [moodTimeDefaultTime, setMoodTimeDefaultTime] = useState('morning');
   const [pendingTasksDate, setPendingTasksDate] = useState(null);
-const [pendingTasksForDate, setPendingTasksForDate] = useState(null);
-const [sleepDate, setSleepDate] = useState(null);
-const [taskParams, setTaskParams] = useState(null);
-const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [pendingTasksForDate, setPendingTasksForDate] = useState(null);
+  const [sleepDate, setSleepDate] = useState(null);
+  const [taskParams, setTaskParams] = useState(null);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [financeRefreshTrigger, setFinanceRefreshTrigger] = useState(0);
 
-const [financeRefreshTrigger, setFinanceRefreshTrigger] = useState(0);
+  // Track if Focus section has an active session
+  const hasFocusSession = useRef(false);
+  const preventNavigationAway = useRef(false);
 
-// Track if Focus section has an active session
-const hasFocusSession = useRef(false);
-const preventNavigationAway = useRef(false);
+  // Add habit task integration state
+  const [habitTaskIntegrationData, setHabitTaskIntegrationData] = useState(null);
 
-const handleFinanceRefresh = () => {
-  setFinanceRefreshTrigger(prev => prev + 1);
-};
+  // Add a task search modal state
+  const [showTaskSearchModal, setShowTaskSearchModal] = useState(false);
+  const [taskSearchDate, setTaskSearchDate] = useState(null);
+
+  const handleFinanceRefresh = () => {
+    setFinanceRefreshTrigger(prev => prev + 1);
+  };
+
+  // Force update storage data
+  const handleStorageUpdate = () => {
+    const newData = getStorage();
+    setStorageData(newData);
+    setStorageVersion(prev => prev + 1);
+    
+    // Also trigger finance refresh
+    setFinanceRefreshTrigger(prev => prev + 1);
+  };
+
+  const updateTaskSearchState = (date = null) => {
+    setTaskSearchDate(date);
+  };
 
   // Initialize reminder service on app start and run data migration
   useEffect(() => {
@@ -91,241 +111,45 @@ const handleFinanceRefresh = () => {
     }
 
     // Initialize task registry - this should only run once
-  const initRegistry = async () => {
-    console.log('Initializing task registry...');
-    
-    // Initialize the task registry
-    const registry = initTaskRegistry();
-    
-    // Check if we need to run migration (if there are no tasks yet)
-    if (!registry.tasks || Object.keys(registry.tasks).length === 0) {
-      console.log('No tasks in registry, starting migration...');
+    const initRegistry = async () => {
+      console.log('Initializing task registry...');
       
-      try {
-        // Show a small delay to not block the UI
-        setTimeout(() => {
-          const result = migrateTasksToRegistry();
-          if (result.migrated) {
-            console.log(`Migration complete: found ${result.uniqueTasks} unique tasks from ${result.tasksProcessed} total tasks`);
-            // Force a refresh of storage data
-            handleStorageUpdate();
-          }
-        }, 500);
-      } catch (error) {
-        console.error('Error during task registry migration:', error);
+      // Initialize the task registry
+      const registry = initTaskRegistry();
+      
+      // Check if we need to run migration (if there are no tasks yet)
+      if (!registry.tasks || Object.keys(registry.tasks).length === 0) {
+        console.log('No tasks in registry, starting migration...');
+        
+        try {
+          // Show a small delay to not block the UI
+          setTimeout(() => {
+            const result = migrateTasksToRegistry();
+            if (result.migrated) {
+              console.log(`Migration complete: found ${result.uniqueTasks} unique tasks from ${result.tasksProcessed} total tasks`);
+              // Force a refresh of storage data
+              handleStorageUpdate();
+            }
+          }, 500);
+        } catch (error) {
+          console.error('Error during task registry migration:', error);
+        }
       }
-    } else {
-      console.log(`Task registry already contains ${Object.keys(registry.tasks).length} tasks`);
-    }
-  };
-  
-  initRegistry();
+    };
     
-    // Initialize the reminder service
+    initRegistry();
+    
+    // Initialize reminder service
     reminderService.init();
-    
-    // Add the service to window for access from other components
-    window.reminderService = reminderService;
-    
-    // Add a handler for opening actions from reminders
-    window.openReminderAction = () => {
-      // Default action when a notification is clicked is to open today's tasks
-      const today = formatDateForStorage(new Date());
-      handleDaySelect(today);
+
+    // Handle storage update events
+    const handleStorageChange = () => {
+      handleStorageUpdate();
     };
 
-     // Add our new function to make it accessible from DayChecklist
-  window.checkForPendingTasksMultiDay = checkForPendingTasksMultiDay;
-    
-    // Add a handler for opening actions from task reminders
-    window.openTaskReminderAction = handleTaskReminderAction;
-    
-    // Setup service worker message listener for notification clicks
-    if (navigator.serviceWorker) {
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        console.log('Received message from service worker:', event.data);
-        
-        // Handle open-reminder message
-        if (event.data && event.data.type === 'open-reminder') {
-          const today = formatDateForStorage(new Date());
-          handleDaySelect(today);
-        }
-        
-        // Handle open-task-reminder message
-        if (event.data && event.data.type === 'open-task-reminder') {
-          if (event.data.dateKey && event.data.taskText) {
-            handleTaskReminderAction(event.data.dateKey, event.data.taskText);
-          }
-        }
-      });
-    }
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
-
- 
-  
-  const handleOpenSearch = () => {
-    setIsSearchModalOpen(true);
-    
-    // Use setTimeout to ensure state is updated before opening the modal
-    setTimeout(() => {
-      const searchModal = document.getElementById('task-search-modal');
-      if (searchModal) {
-        searchModal.showModal();
-      }
-    }, 50);
-  };
-
-  // 1. Add a new function to check for pending tasks from multiple days
-  const checkForPendingTasksMultiDay = (currentDate, daysToCheck = 7) => {
-    console.log(`Checking for pending tasks for date ${currentDate} from up to ${daysToCheck} days ago`);
-    
-    // This will store all dates with pending tasks
-    const datesWithPendingTasks = [];
-    
-    // Convert currentDate to Date object if it's a string
-    const currentDateObj = new Date(currentDate);
-    
-    // Check each of the past days
-    for (let i = 1; i <= daysToCheck; i++) {
-      // Calculate the date to check
-      const checkDateObj = new Date(currentDateObj);
-      checkDateObj.setDate(currentDateObj.getDate() - i);
-      const checkDateStr = formatDateForStorage(checkDateObj);
-      
-      // Check if this date has pending tasks
-      const hasPendingTasks = hasPendingTasksOnDate(checkDateStr);
-      
-      if (hasPendingTasks) {
-        datesWithPendingTasks.push(checkDateStr);
-      }
-    }
-    
-    // If we found any dates with pending tasks
-    if (datesWithPendingTasks.length > 0) {
-      console.log(`Found pending tasks from dates: ${datesWithPendingTasks.join(', ')}`);
-      
-      // Use the most recent date with pending tasks for the modal
-      // (it will scan back from there in the component)
-      datesWithPendingTasks.sort((a, b) => new Date(b) - new Date(a));
-      const mostRecentDate = datesWithPendingTasks[0];
-      
-      // Set state for the pending tasks modal
-      setPendingTasksDate(mostRecentDate);
-      setPendingTasksForDate(currentDate);
-      
-      // Show the modal
-      setTimeout(() => {
-        const modal = document.getElementById('pending-tasks-modal');
-        if (modal) {
-          modal.showModal();
-        } else {
-          console.error('Pending tasks modal not found');
-        }
-      }, 100);
-      
-      return true;
-    }
-    
-    console.log('No pending tasks found from previous days');
-    return false;
-  };
-
-// 2. This helper function checks if a specific date has pending tasks
-// Similar to logic in findPreviousTaskDate but for a specific date
-const hasPendingTasksOnDate = (dateToCheck, targetDate) => {
-  const storage = getStorage();
-  const dayData = storage[dateToCheck];
-  
-  // If no data for this day, it has no pending tasks
-  if (!dayData) return false;
-  
-  // Only consider days with checked items
-  if (!dayData.checked) return false;
-  
-  // Get all task items from various possible task lists
-  const taskCategories = dayData.customTasks || dayData.aiTasks || dayData.defaultTasks;
-  if (!taskCategories || !Array.isArray(taskCategories)) return false;
-  
-  // Helper function to check if a task is from a habit
-  const isHabitTask = (taskText) => {
-    return taskText.startsWith('[') && taskText.includes(']');
-  };
-  
-  // If target date is provided, get all its tasks to exclude
-  const targetDayTasks = new Set();
-  if (targetDate) {
-    const targetDayData = storage[targetDate];
-    if (targetDayData) {
-      const targetTaskCategories = targetDayData.customTasks || targetDayData.aiTasks || targetDayData.defaultTasks;
-      if (targetTaskCategories && Array.isArray(targetTaskCategories)) {
-        targetTaskCategories.forEach(category => {
-          if (category && category.items && Array.isArray(category.items)) {
-            category.items.forEach(task => {
-              targetDayTasks.add(task);
-            });
-          }
-        });
-      }
-    }
-  }
-
-  
-  
-  // Helper function to check if a task was completed in a date range
-  const wasCompletedInDateRange = (taskText, startDateStr, endDateStr) => {
-    const startDate = new Date(startDateStr);
-    const endDate = new Date(endDateStr);
-    
-    // Loop through each day in the range
-    const currentCheck = new Date(startDate);
-    currentCheck.setDate(currentCheck.getDate() + 1); // Start from the day after
-    
-    while (currentCheck <= endDate) {
-      const checkDateStr = formatDateForStorage(currentCheck);
-      const checkDayData = storage[checkDateStr];
-      
-      // If this day has data and the task was completed, return true
-      if (checkDayData && checkDayData.checked) {
-        // Check both category-based format and old format
-        const wasCompleted = Object.entries(checkDayData.checked).some(([key, isChecked]) => {
-          // For category-based format, extract just the task text
-          const taskTextPart = key.includes('|') ? key.split('|')[1] : key;
-          return isChecked === true && taskTextPart === taskText;
-        });
-        
-        if (wasCompleted) return true;
-      }
-      
-      // Move to next day
-      currentCheck.setDate(currentCheck.getDate() + 1);
-    }
-    
-    return false;
-  };
-  
-  // Check if any tasks on this date are uncompleted, not in target day, not habits, not completed later
-  let hasUncompletedTasks = false;
-  
-  for (const category of taskCategories) {
-    for (const task of category.items) {
-      // Use both old and new category-based checked format
-      const taskId = `${category.title}|${task}`;
-      const isTaskChecked = dayData.checked[taskId] === true || dayData.checked[task] === true;
-      
-      // Skip if task is completed, is a habit task, already in target day, or completed later
-      if (!isTaskChecked && 
-          !isHabitTask(task) && 
-          !targetDayTasks.has(task) &&
-          !wasCompletedInDateRange(task, dateToCheck, targetDate || formatDateForStorage(new Date()))) {
-        hasUncompletedTasks = true;
-        break;
-      }
-    }
-    if (hasUncompletedTasks) break;
-  }
-  
-  return hasUncompletedTasks;
-};
 
   // Update event listeners to handle the page unload event
   useEffect(() => {
@@ -392,10 +216,7 @@ const hasPendingTasksOnDate = (dateToCheck, targetDate) => {
     document.getElementById('voice-task-modal').showModal();
   };
 
-  const handleStorageUpdate = () => {
-    setStorageData(getStorage());
-    setStorageVersion(prev => prev + 1); // Increment version to force re-render
-  };
+  
 
   const handleDaySelect = (dateStr, params = {}) => {
     setSelectedDay(dateStr);
@@ -434,12 +255,18 @@ const hasPendingTasksOnDate = (dateToCheck, targetDate) => {
         const hasAnyTasks = 
           (dayData.aiTasks && dayData.aiTasks.length > 0) || 
           (dayData.customTasks && dayData.customTasks.length > 0) ||
+          (dayData.defaultTasks && dayData.defaultTasks.length > 0) ||
           // Check if there are any checked items, which would indicate tasks exist
           (dayData.checked && Object.keys(dayData.checked).length > 0);
         
         if (hasAnyTasks) {
-          // If tasks exist, go directly to the checklist
-          document.getElementById('checklist-modal').showModal();
+          // If tasks exist, check for pending tasks first, then go to checklist
+          if (!checkForPendingTasks(selectedDay)) {
+            // If no pending tasks, open checklist directly
+            setTimeout(() => {
+              document.getElementById('checklist-modal').showModal();
+            }, 100);
+          }
         } else {
           // If no tasks exist, show the task list selector
           document.getElementById('task-list-selector-modal').showModal();
@@ -568,17 +395,17 @@ const handleCustomTasksCreated = () => {
 const handlePendingTasksAction = (action, tasks = []) => {
   console.log('Handling pending tasks action:', action, 'with tasks:', tasks);
   if (action === 'import' && tasks.length > 0) {
-  // Import tasks into the current day
-  console.log('Importing tasks into day:', pendingTasksForDate);
-  importDeferredTasks(pendingTasksForDate, tasks);
-  injectHabitTasks(pendingTasksForDate);
-  
-  handleStorageUpdate();
+    // Import tasks into the current day
+    console.log('Importing tasks into day:', pendingTasksForDate);
+    importDeferredTasks(pendingTasksForDate, tasks);
+    injectHabitTasks(pendingTasksForDate);
+    
+    handleStorageUpdate();
   }
   // Close pending tasks modal
   const modal = document.getElementById('pending-tasks-modal');
   if (modal) {
-  modal.close();
+    modal.close();
   }
   // Store the date before resetting state
   const targetDate = pendingTasksForDate;
@@ -587,17 +414,46 @@ const handlePendingTasksAction = (action, tasks = []) => {
   setPendingTasksForDate(null);
   // Only try to open the checklist modal if we have a valid date
   if (targetDate) {
-  // First check if the modal exists
-  setTimeout(() => {
-  setSelectedDay(targetDate);
-  const checklistModal = document.getElementById('checklist-modal');
-  if (checklistModal) {
-  checklistModal.showModal();
-  } else {
-  console.error('Could not find checklist-modal element');
+    // First check if the modal exists
+    setTimeout(() => {
+      setSelectedDay(targetDate);
+      const checklistModal = document.getElementById('checklist-modal');
+      if (checklistModal) {
+        checklistModal.showModal();
+      } else {
+        console.error('Could not find checklist-modal element');
+      }
+    }, 100);
   }
-  }, 100);
-  }
+};
+
+const handleOpenSearch = () => {
+  setIsSearchModalOpen(true);
+};
+
+  // Handle mood time tracker
+  const handleMoodTimeTracker = (date, defaultTime = 'morning') => {
+    setMoodTimeDate(date);
+    setMoodTimeDefaultTime(defaultTime);
+    
+    setTimeout(() => {
+      const modal = document.getElementById('mood-time-tracker-modal');
+      if (modal) {
+        modal.showModal();
+      }
+    }, 100);
+  };
+
+  // Handle habit task integration
+  const handleHabitTaskIntegration = (data) => {
+    setHabitTaskIntegrationData(data);
+    
+    setTimeout(() => {
+      const modal = document.getElementById('habit-task-integration-modal');
+      if (modal) {
+        modal.showModal();
+      }
+    }, 100);
   };
 
   const handleReminderSettingsOpen = () => {
@@ -637,308 +493,316 @@ const handlePendingTasksAction = (action, tasks = []) => {
     }
   };
 
+  // Add navigation handler for dashboard
+  const handleDashboardNavigate = (targetSection) => {
+    setActiveSection(targetSection);
+  };
+
   return (
     <ThemeProvider>
       <WorkoutThemeProvider>
-      <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors ${isFullscreenActive ? 'fullscreen-app-mode' : ''}`}>
-         <div className="flex">
-          {/* Sidebar Navigation */}
-          <Sidebar 
-            activeSection={activeSection} 
-            onSectionChange={handleSectionChange}
-            onReminderSettingsOpen={handleReminderSettingsOpen}
-            onSettingsOpen={handleSettingsOpen}
-            onHelpOpen={handleHelpOpen}
-          />
-          
-          {/* Main Content Area */}
-          <div className="w-full flex justify-center px-4 py-4">
-      <div className="w-full max-w-6xl">
-              {/* Section Containers */}
-              <SectionContainer id="overview" isActive={activeSection === 'overview'}>
-                <Overview 
-                  selectedDay={selectedDay}
-                  onSelectDay={handleDaySelect}
-                  currentMonth={currentMonth}
-                  onMonthChange={setCurrentMonth}
-                  storageData={storageData}
-                />
-              </SectionContainer>
+        <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors ${isFullscreenActive ? 'fullscreen-app-mode' : ''}`}>
+          <div className="flex">
+            {/* Sidebar Navigation */}
+            <Sidebar 
+              activeSection={activeSection} 
+              onSectionChange={handleSectionChange}
+              onReminderSettingsOpen={handleReminderSettingsOpen}
+              onSettingsOpen={handleSettingsOpen}
+              onHelpOpen={handleHelpOpen}
+            />
+            
+            {/* Main Content Area */}
+            <div className="w-full flex justify-center px-4 py-4">
+              <div className="w-full max-w-6xl">
+                {/* Section Containers */}
+                
+                {/* Dashboard Section */}
+                <SectionContainer id="dashboard" isActive={activeSection === 'dashboard'}>
+                  <Dashboard 
+                    onNavigate={handleDashboardNavigate}
+                    currentMonth={currentMonth}
+                  />
+                </SectionContainer>
+                
+                <SectionContainer id="overview" isActive={activeSection === 'overview'}>
+                  <Overview 
+                    selectedDay={selectedDay}
+                    onSelectDay={handleDaySelect}
+                    currentMonth={currentMonth}
+                    onMonthChange={setCurrentMonth}
+                    storageData={storageData}
+                  />
+                </SectionContainer>
 
-              <SectionContainer id="stats" isActive={activeSection === 'stats'}>
-                <Stats 
-                  storageData={storageData}
-                  currentMonth={currentMonth}
-                />
-              </SectionContainer>
-              <SectionContainer id="habits" isActive={activeSection === 'habits'}>
-  <HabitSection />
-</SectionContainer>
+                <SectionContainer id="stats" isActive={activeSection === 'stats'}>
+                  <Stats 
+                    storageData={storageData}
+                    currentMonth={currentMonth}
+                  />
+                </SectionContainer>
+                
+                <SectionContainer id="habits" isActive={activeSection === 'habits'}>
+                  <HabitSection />
+                </SectionContainer>
 
-<SectionContainer id="meditation" isActive={activeSection === 'meditation'}>
-  <MeditationSection />
-</SectionContainer>
+                <SectionContainer id="meditation" isActive={activeSection === 'meditation'}>
+                  <MeditationSection />
+                </SectionContainer>
 
-<SectionContainer id="bucketList" isActive={activeSection === 'bucketList'}>
-  <BucketList />
-</SectionContainer>
+                <SectionContainer id="bucketList" isActive={activeSection === 'bucketList'}>
+                  <BucketList />
+                </SectionContainer>
 
-              <SectionContainer id="meditationShowcase" isActive={activeSection === 'meditationShowcase'}>
-                <MeditationSectionPlaceholder />
-              </SectionContainer>
+                <SectionContainer id="meditationShowcase" isActive={activeSection === 'meditationShowcase'}>
+                  <MeditationSectionPlaceholder />
+                </SectionContainer>
 
-              <SectionContainer id="workout" isActive={activeSection === 'workout'}>
-  <WorkoutSection />
-</SectionContainer>
+                <SectionContainer id="workout" isActive={activeSection === 'workout'}>
+                  <WorkoutSection />
+                </SectionContainer>
 
-              <SectionContainer id="coach" isActive={activeSection === 'coach'}>
-                <DayCoach />
-              </SectionContainer>
+                <SectionContainer id="coach" isActive={activeSection === 'coach'}>
+                  <DayCoach />
+                </SectionContainer>
 
-              <SectionContainer id="focus" isActive={activeSection === 'focus'}>
-  <FocusSection 
-    onFullscreenChange={setIsFullscreenActive} 
-  />
-</SectionContainer>
-<SectionContainer id="nutrition" isActive={activeSection === 'nutrition'}>
-  <NutritionTracker />
-</SectionContainer>
+                <SectionContainer id="focus" isActive={activeSection === 'focus'}>
+                  <FocusSection 
+                    onFullscreenChange={setIsFullscreenActive} 
+                  />
+                </SectionContainer>
+                
+                <SectionContainer id="nutrition" isActive={activeSection === 'nutrition'}>
+                  <NutritionTracker />
+                </SectionContainer>
 
+                <SectionContainer id="finance" isActive={activeSection === 'finance'}>
+                  <FinanceSection 
+                    refreshTrigger={financeRefreshTrigger}
+                  />
+                </SectionContainer>
 
-<SectionContainer id="finance" isActive={activeSection === 'finance'}>
- <FinanceSection 
-                refreshTrigger={financeRefreshTrigger}
-              />
-</SectionContainer>
+                <SectionContainer id="templates" isActive={activeSection === 'templates'}>
+                  <TemplatesSection />
+                </SectionContainer>
 
+                <SectionContainer id="notes" isActive={activeSection === 'notes'}>
+                  <NotesSection />
+                </SectionContainer>
 
-              <SectionContainer id="templates" isActive={activeSection === 'templates'}>
-                <TemplatesSection />
-              </SectionContainer>
+                <SectionContainer id="lifestyle" isActive={activeSection === 'lifestyle'}>
+                  <LifestyleSection />
+                </SectionContainer>
 
-              <SectionContainer id="notes" isActive={activeSection === 'notes'}>
-  <NotesSection />
-</SectionContainer>
+                <SectionContainer id="habitsShowcase" isActive={activeSection === 'habitsShowcase'}>
+                  <HabitsPlaceholder />
+                </SectionContainer>
+                
+                <SectionContainer id="focusShowcase" isActive={activeSection === 'focusShowcase'}>
+                  <FocusPlaceholder />
+                </SectionContainer>
 
-<SectionContainer id="lifestyle" isActive={activeSection === 'lifestyle'}>
-  <LifestyleSection />
-</SectionContainer>
+                <SectionContainer id="financeShowcase" isActive={activeSection === 'financeShowcase'}>
+                  <FinancePlaceholder />
+                </SectionContainer>
 
-
-
-              <SectionContainer id="habitsShowcase" isActive={activeSection === 'habitsShowcase'}>
-  <HabitsPlaceholder />
-</SectionContainer>
-<SectionContainer id="focusShowcase" isActive={activeSection === 'focusShowcase'}>
-  <FocusPlaceholder />
-</SectionContainer>
-
-
-<SectionContainer id="financeShowcase" isActive={activeSection === 'financeShowcase'}>
-  <FinancePlaceholder />
-</SectionContainer>
-
-
-<SectionContainer id="nutritionShowcase" isActive={activeSection === 'nutritionShowcase'}>
-  <NutritionPlaceholder />
-</SectionContainer>
-
-
-              
+                <SectionContainer id="nutritionShowcase" isActive={activeSection === 'nutritionShowcase'}>
+                  <NutritionPlaceholder />
+                </SectionContainer>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Floating action button */}
-        {activeSection === 'overview' && (
-        <FloatingMenu 
-          onDaySelect={handleDaySelect}
-          onVoiceInput={handleVoiceInput}
-          onSearch={handleOpenSearch}
-        />
-        )}
+          {/* Floating action button */}
+          {activeSection === 'overview' && (
+            <FloatingMenu 
+              onDaySelect={handleDaySelect}
+              onVoiceInput={handleVoiceInput}
+              onSearch={handleOpenSearch}
+            />
+          )}
 
-        {/* Quick Entry Floating Action Button */}
-        {activeSection === 'finance' && (
-        <QuickEntryFAB onTransactionAdded={handleFinanceRefresh} />
-        )}
-    
+          {/* Quick Entry Floating Action Button */}
+          {activeSection === 'finance' && (
+            <QuickEntryFAB onTransactionAdded={handleFinanceRefresh} />
+          )}
         
-        {/* Modals */}
-        <FlowGuide />
-        
-        <DayActionSelector
-          date={selectedDay}
-          onClose={() => {
-            document.getElementById('day-action-modal').close();
-          }}
-          onSelectAction={handleDayAction}
-        />
-        
-        {/* New Morning/Evening Mood Tracker */}
-        <MoodTimeTracker
-          date={moodTimeDate}
-          onClose={() => {
-            document.getElementById('mood-time-tracker-modal').close();
-            setMoodTimeDate(null);
-            handleStorageUpdate();
-          }}
-        />
+          {/* Modals */}
+          <FlowGuide />
+          
+          <DayActionSelector
+            date={selectedDay}
+            onClose={() => {
+              document.getElementById('day-action-modal').close();
+            }}
+            onSelectAction={handleDayAction}
+          />
+          
+          {/* New Morning/Evening Mood Tracker */}
+          <MoodTimeTracker
+            date={moodTimeDate}
+            onClose={() => {
+              document.getElementById('mood-time-tracker-modal').close();
+              setMoodTimeDate(null);
+              handleStorageUpdate();
+            }}
+          />
 
-        <TaskListSelector
-          date={selectedDay}
-          onClose={() => {
-            document.getElementById('task-list-selector-modal').close();
-          }}
-          onSelectType={handleTaskTypeSelection}
-        />
+          <TaskListSelector
+            date={selectedDay}
+            onClose={() => {
+              document.getElementById('task-list-selector-modal').close();
+            }}
+            onSelectType={handleTaskTypeSelection}
+          />
 
-        <AITaskGenerator
-          date={selectedDay}
-          onClose={() => {
-            document.getElementById('ai-generator-modal').close();
-            setSelectedDay(null);
-            handleStorageUpdate();
-          }}
-          onTasksGenerated={handleAITasksGenerated}
-        />
+          <AITaskGenerator
+            date={selectedDay}
+            onClose={() => {
+              document.getElementById('ai-generator-modal').close();
+              setSelectedDay(null);
+              handleStorageUpdate();
+            }}
+            onTasksGenerated={handleAITasksGenerated}
+          />
 
-        <CustomTaskListCreator
-          date={selectedDay}
-          onClose={() => {
-            document.getElementById('custom-tasklist-modal').close();
-            setSelectedDay(null);
-            handleStorageUpdate();
-          }}
-          onTasksGenerated={handleCustomTasksCreated}
-        />
+          <CustomTaskListCreator
+            date={selectedDay}
+            onClose={() => {
+              document.getElementById('custom-tasklist-modal').close();
+              setSelectedDay(null);
+              handleStorageUpdate();
+            }}
+            onTasksGenerated={handleCustomTasksCreated}
+          />
 
-        <MoodSelector 
-          date={selectedDay} 
-          onClose={() => {
-            document.getElementById('mood-modal').close();
-            setSelectedDay(null);
-            handleStorageUpdate();
-          }} 
-        />
-        
-        <DayChecklist 
-  date={selectedDay}
-  storageVersion={storageVersion}
-  taskParams={taskParams} // Pass the task parameters
-  onClose={() => {
-    document.getElementById('checklist-modal').close();
-    setSelectedDay(null);
-    setTaskParams(null); // Reset task params when closing
-    handleStorageUpdate();
-  }}
-/>
+          <MoodSelector 
+            date={selectedDay} 
+            onClose={() => {
+              document.getElementById('mood-modal').close();
+              setSelectedDay(null);
+              handleStorageUpdate();
+            }}
+          />
 
-        <DayNotes 
-          date={selectedDay}
-          onClose={() => {
-            document.getElementById('notes-modal').close();
-            setSelectedDay(null);
-            handleStorageUpdate();
-          }}
-        />
+          <DayNotes 
+            date={selectedDay}
+            onClose={() => {
+              document.getElementById('notes-modal').close();
+              setSelectedDay(null);
+              handleStorageUpdate();
+            }}
+          />
 
-        <WorkoutTracker
-          date={selectedDay}
-          onClose={() => {
-            document.getElementById('workout-modal').close();
-            setSelectedDay(null);
-            handleStorageUpdate();
-          }}
-        />
-        
-        <ReminderSettings
-          onClose={() => {
-            document.getElementById('reminder-settings-modal').close();
-            handleStorageUpdate();
-            
-            // Reload reminders when settings are closed
-            if (window.reminderService) {
-              window.reminderService.loadReminders();
-            }
-          }}
-        />
-        
-        <Settings
-          onClose={handleSettingsClose}
-        />
+          <WorkoutTracker 
+            date={selectedDay}
+            onClose={() => {
+              document.getElementById('workout-modal').close();
+              setSelectedDay(null);
+              handleStorageUpdate();
+            }}
+          />
 
-        {/* Pending Tasks Modal */}
-        <PendingTasksModal
-  currentDate={pendingTasksForDate}
-  previousDate={pendingTasksDate}
-  onAction={handlePendingTasksAction}
-/>
+          <SleepTracker 
+            date={sleepDate}
+            onClose={() => {
+              document.getElementById('sleep-tracker-modal').close();
+              setSleepDate(null);
+              handleStorageUpdate();
+            }}
+          />
 
-<SleepTracker
-        date={sleepDate}
-        onClose={() => {
-          document.getElementById('sleep-tracker-modal').close();
-          setSleepDate(null);
-          handleStorageUpdate();
-        }}
-      />
+          <DayChecklist 
+            date={selectedDay}
+            onClose={() => {
+              document.getElementById('checklist-modal').close();
+              setSelectedDay(null);
+              handleStorageUpdate();
+            }}
+          />
 
-{isSearchModalOpen && (
-  <TaskSearchModal
-    onClose={() => {
-      setIsSearchModalOpen(false);
-      const modal = document.getElementById('task-search-modal');
-      if (modal) {
-        modal.close();
-      }
-    }}
-    onSelectDay={handleDaySelect}
-  />
-)}
+          {/* Pending Tasks Modal */}
+          <PendingTasksModal 
+            previousDate={pendingTasksDate}
+            targetDate={pendingTasksForDate}
+            onAction={handlePendingTasksAction}
+          />
 
-        <VoiceTaskInput 
-          date={voiceInputDate}
-          onClose={() => {
-            document.getElementById('voice-task-modal').close();
-            setVoiceInputDate(null);
-            handleStorageUpdate();
-          }}
-          onTaskAdded={(taskType) => {
-            console.log('Task added via voice to task type:', taskType);
-            handleStorageUpdate();
-            
-            // After voice task is added, close the modal and directly open checklist
-            if (voiceInputDate) {
-              // Close the current modal
-              document.getElementById('voice-task-modal').close();
-              
-              // Update selected day
-              setSelectedDay(voiceInputDate);
-              
-              // Force a storage version update to ensure the latest data is shown
-              setStorageVersion(prev => prev + 1);
-              
-              // Directly open the checklist modal instead of the task selector
-              setTimeout(() => {
-                const checklistModal = document.getElementById('checklist-modal');
-                if (checklistModal) {
-                  checklistModal.showModal();
-                } else {
-                  console.error('Could not find checklist-modal element');
-                  // Fallback to the regular flow if modal not found
-                  handleDayAction('progress');
+          {/* Habit Task Integration Modal */}
+          <HabitTaskIntegration 
+            data={habitTaskIntegrationData}
+            onClose={() => {
+              document.getElementById('habit-task-integration-modal').close();
+              setHabitTaskIntegrationData(null);
+              handleStorageUpdate();
+            }}
+          />
+
+          {isSearchModalOpen && (
+            <TaskSearchModal
+              onClose={() => {
+                setIsSearchModalOpen(false);
+                const modal = document.getElementById('task-search-modal');
+                if (modal) {
+                  modal.close();
                 }
-              }, 100);
-            }
-          }}
-        />
+              }}
+              onSelectDay={handleDaySelect}
+            />
+          )}
 
+          <VoiceTaskInput 
+            date={voiceInputDate}
+            onClose={() => {
+              document.getElementById('voice-task-modal').close();
+              setVoiceInputDate(null);
+              handleStorageUpdate();
+            }}
+            onTaskAdded={(taskType) => {
+              console.log('Task added via voice to task type:', taskType);
+              handleStorageUpdate();
+              
+              // After voice task is added, close the modal and directly open checklist
+              if (voiceInputDate) {
+                // Close the current modal
+                document.getElementById('voice-task-modal').close();
+                
+                // Update selected day
+                setSelectedDay(voiceInputDate);
+                
+                // Force a storage version update to ensure the latest data is shown
+                setStorageVersion(prev => prev + 1);
+                
+                // Directly open the checklist modal instead of the task selector
+                setTimeout(() => {
+                  const checklistModal = document.getElementById('checklist-modal');
+                  if (checklistModal) {
+                    checklistModal.showModal();
+                  } else {
+                    console.error('Could not find checklist-modal element');
+                    // Fallback to the regular flow if modal not found
+                    handleDayAction('progress');
+                  }
+                }, 100);
+              }
+            }}
+          />
 
-      </div>
+          {/* Settings and Reminder Modals */}
+          <ReminderSettings 
+            onClose={() => document.getElementById('reminder-settings-modal').close()}
+          />
+
+          <Settings 
+            onClose={handleSettingsClose}
+          />
+
+          {/* Task Reminder Component */}
+          <TaskReminder onStorageUpdate={handleStorageUpdate} />
+        </div>
       </WorkoutThemeProvider>
     </ThemeProvider>
   );
 };
 
-export default App; 
+export default App;

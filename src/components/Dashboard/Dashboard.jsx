@@ -88,13 +88,13 @@ const Dashboard = ({ onNavigate, currentMonth = new Date() }) => {
       
       // Get today's day of week (0 = Sunday, 1 = Monday, etc.)
       const todayDayOfWeek = new Date().getDay();
-      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const todayDayName = dayNames[todayDayOfWeek];
+      const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const todayDayName = dayNames[todayDayOfWeek];
       
       // Filter habits scheduled for today
       const todaysScheduledHabits = habits.filter(habit => {
-        if (!habit.schedule || !habit.schedule.days) return false;
-        return habit.schedule.days[todayDayName] === true;
+        if (!habit.frequency || !Array.isArray(habit.frequency)) return false;
+        return habit.frequency.includes(todayDayName);
       });
       
       const completedHabits = todaysScheduledHabits.filter(h => todayHabits[h.id]?.completed).length;
